@@ -47,11 +47,6 @@ jobs:
           profile: minimal
 
       - uses: Swatinem/rust-cache@v1
-
-      - name: Check spelling
-        run: |
-          sudo apt-get install aspell
-          ci/spellcheck.sh list
       - name: Run doctest
         uses: actions-rs/cargo@v1
         with:
@@ -68,7 +63,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --doc --features doc_test --features wasm_test
+          args: --doc --features doc_test
 
 
 
@@ -101,7 +96,7 @@ jobs:
 
       - name: Run tests - mvvm
         run: |
-          wasm-pack test --chrome --firefox --headless -- --features "wasm_test"
+          wasm-pack test --chrome --firefox --headless
 
   unit_tests:
     name: Unit Tests on ${{ matrix.toolchain }}
