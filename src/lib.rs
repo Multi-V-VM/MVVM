@@ -1,11 +1,13 @@
 #![allow(clippy::needless_doctest_main)]
-#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/102379947?s=96&v=4")]
 #![cfg_attr(documenting, feature(doc_cfg))]
+#![deny(unsafe_op_in_unsafe_fn)]
 
+extern crate alloc;
+#[cfg(any(test, feature = "std"))]
+extern crate std;
 
-mod elf;
-mod parser;
-mod wasm;
-mod runtime;
-mod codegen;
 mod cache;
+mod codegen;
+mod elf;
+mod runtime;
+mod wasm;

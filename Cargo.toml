@@ -7,6 +7,8 @@ version = "0.1.0"
 [dependencies]
 wasm-bindgen = "0.2"
 wasm-bindgen-test = "0.3.30"
-wasmtime-jit="0.36.0"
+# wasmtime-jit="0.36.0"
+getrandom = {version = "0.2", features = ["js"]}
+goblin = {version = "0.5.1", default-features = false, features = ["elf32", "elf64", "alloc", "endian_fd"]}
 [lib]
 crate-type = ["cdylib", "rlib"]
