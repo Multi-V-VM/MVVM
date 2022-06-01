@@ -1,30 +1,5 @@
-use alloc::{boxed::Box, collections::BTreeMap, format, string::String, vec::Vec};
-use goblin::elf::{header, program_header, Elf, Reloc};
-use std::{
-    cmp,
-    convert::{TryFrom, TryInto},
-    dbg, fmt,
-    ops::{Deref, Range},
-    println,
-};
-#[derive(Debug)]
-pub enum ELFError {
-    GoblinError(goblin::error::Error),
-    AddressError(String),
-}
+use super::elf::ElfError;
 
-impl From<goblin::error::Error> for ELFError {
-    fn from(e: goblin::error::Error) -> Self {
-        Self::GoblinError(e)
-    }
-}
-impl From<String> for ELFError {
-    fn from(e: String) -> Self {
-        Self::AddressError(e)
-    }
-}
-
-type ParseResult<T> = Result<T, ELFError>;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct PageIndexOfs<I, O> {
@@ -42,10 +17,7 @@ impl<I, O> PageIndexOfs<I, O> {
     }
 }
 
-// pub struct InstructionIter<'a>{
-
-// }
-
+#[derive(Debug)]
 pub enum Page<'a> {
     Borrowed(&'a [u8; Page::SIZE]),
     Owned(Box<[u8; Page::SIZE]>),
@@ -59,19 +31,14 @@ impl<'a> Page<'a> {
             offset: addr as usize % Self::SIZE,
         }
     }
-    fn valid_page_index_and_offset(addr: u64) -> Result<PageIndexOfs<usize, usize>, ELFError> {
+    fn valid_page_index_and_offset(addr: u64) -> Result<PageIndexOfs<usize, usize>, ElfError> {
         let res: PageIndexOfs<u64, usize> = Self::page_index_and_offset(addr);
         if res.page_index < Self::VALID_SIZE as u64 {
             Ok(res.map_page_index(|v| v as usize))
         } else {
-            Err(ELFError::AddressError(
-                format!("Invalid address: {}", addr,),
+            Err(ElfError::AddressError(
+                addr,"Invalid address".to_string(),
             ))
         }
     }
-}
-
-pub struct Binary<'a> {
-    entry: usize,
-    pages: Vec<Option<Page<'a>>>,
 }

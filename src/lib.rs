@@ -8,6 +8,6 @@ extern crate std;
 
 mod cache;
 mod codegen;
-mod elf;
+mod frontend;
 mod runtime;
 mod wasm;
