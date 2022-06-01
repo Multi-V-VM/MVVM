@@ -8,7 +8,6 @@ version = "0.1.0"
 wasm-bindgen = "0.2"
 wasm-bindgen-test = "0.3.30"
 # wasmtime-jit="0.36.0"
-riscv="0.8.0"
 getrandom = {version = "0.2", features = ["js"]}
 zero = "0.1.2"
 bytemuck = "1.9.1"
