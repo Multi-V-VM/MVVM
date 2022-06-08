@@ -3,10 +3,10 @@ use std::ops::RangeInclusive;
 use super::page::Page;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ISABase{
+pub enum ISABase {
     RV32,
     RV64,
-    RV128
+    RV128,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ISAExtension {
@@ -22,14 +22,14 @@ pub enum ISAExtension {
     Zifencei,
     Zicsr,
 }
-#[derive(Debug,Clone)]
-pub struct ISA{
-   base: ISABase,
-   ext: ISAExtension,
+#[derive(Debug, Clone)]
+pub struct ISA {
+    base: ISABase,
+    ext: ISAExtension,
 }
 
-impl ISABase{
-    fn get_name(self)->&'static str{
+impl ISABase {
+    fn get_name(self) -> &'static str {
         match self {
             Self::RV32 => "RV32",
             Self::RV64 => "RV64",
@@ -37,9 +37,9 @@ impl ISABase{
         }
     }
 }
-impl ISAExtension{
-    fn get_name(self)->&'static str{
-        match self{
+impl ISAExtension {
+    fn get_name(self) -> &'static str {
+        match self {
             Self::I => "I",
             Self::M => "M",
             Self::A => "A",
@@ -81,27 +81,26 @@ pub struct InstructionField {
 #[derive(Debug, Clone)]
 pub struct InstBitRange {
     pub bits: RangeInclusive<u8>,
-    pub end_bit_pos:usize,
-    pub start_bit_pos:usize,
+    pub end_bit_pos: usize,
+    pub start_bit_pos: usize,
 }
-#[derive(Debug,Clone)]
-pub struct Instruction{
- pub isa: ISA,
- pub name: InstructionName,
- pub fields: Vec<InstructionField>
+#[derive(Debug, Clone)]
+pub struct Instruction {
+    pub isa: ISA,
+    pub name: InstructionName,
+    pub fields: Vec<InstructionField>,
 }
 
-#[derive(Debug,Clone)]
-pub struct InstructionIter<'a>{
+#[derive(Debug, Clone)]
+pub struct InstructionIter<'a> {
     pub address: u64,
-    pub memory_map: &'a Vec<Option<Page<'a>>>
+    pub memory_map: &'a Vec<Option<Page<'a>>>,
 }
 
-impl Iterator for InstructionIter<'_>{
-    type Item = (u64,Instruction);
+impl Iterator for InstructionIter<'_> {
+    type Item = (u64, Instruction);
 
     fn next(&mut self) -> Option<Self::Item> {
         todo!()
     }
-
 }

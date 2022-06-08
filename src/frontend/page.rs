@@ -1,6 +1,5 @@
 use super::elf::ElfError;
 
-
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct PageIndexOfs<I, O> {
     pub page_index: I,
@@ -36,9 +35,7 @@ impl<'a> Page<'a> {
         if res.page_index < Self::VALID_SIZE as u64 {
             Ok(res.map_page_index(|v| v as usize))
         } else {
-            Err(ElfError::AddressError(
-                addr,"Invalid address".to_string(),
-            ))
+            Err(ElfError::AddressError(addr, "Invalid address".to_string()))
         }
     }
 }
