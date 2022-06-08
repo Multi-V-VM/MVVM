@@ -54,7 +54,19 @@ impl ISAExtension{
         }
     }
 }
-
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct RType(pub u32);
+impl RType {
+    pub fn rs2(&self) -> u32 {
+        (self.0 >> 20) & 0x1f
+    }
+    pub fn rs1(&self) -> u32 {
+        (self.0 >> 15) & 0x1f
+    }
+    pub fn rd(&self) -> u32 {
+        (self.0 >> 7) & 0x1f
+    }
+}
 #[derive(Debug, Clone)]
 pub struct InstructionName {
     pub pos: usize,
