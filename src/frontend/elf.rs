@@ -1,5 +1,20 @@
+use std::mem::MaybeUninit;
 use std::{fmt, mem};
 use zero::{read, read_array, read_str, Pod};
+
+pub const TYPE_LOOS: u32 = 0x60000000;
+pub const TYPE_HIOS: u32 = 0x6fffffff;
+pub const TYPE_LOPROC: u32 = 0x70000000;
+pub const TYPE_HIPROC: u32 = 0x7fffffff;
+pub const TYPE_GNU_RELRO: u32 = TYPE_LOOS + 0x474e552;
+pub const ET_EXEC: u16 = 2;
+pub const SHT_LOOS: u32 = 0x60000000;
+pub const SHT_HIOS: u32 = 0x6fffffff;
+pub const SHT_LOPROC: u32 = 0x70000000;
+pub const SHT_HIPROC: u32 = 0x7fffffff;
+pub const SHT_LOUSER: u32 = 0x80000000;
+pub const SHT_HIUSER: u32 = 0xffffffff;
+
 #[derive(Debug)]
 pub enum ElfError {
     /// The Binary is Malformed SomeWhere
@@ -37,8 +52,8 @@ pub struct ElfFile<'a> {
     pub header_part1: &'a HeaderPt1,
     pub header_part2: HeaderPt2<'a>,
     pub section: SectionHeader<'a>,
-    pub program: &'a ProgramHeader<'a>,
-    pub section_data: &'a SectionData<'a>,
+    pub program: ProgramHeader<'a>,
+    pub section_data: SectionData<'a>,
 }
 impl<'a> ElfFile<'a> {
     pub fn get_shstr(&self, index: u32) -> ParseResult<&'a str> {
@@ -46,22 +61,15 @@ impl<'a> ElfFile<'a> {
             .map(|shstr_table| read_str(&shstr_table[(index as usize)..]))
     }
     fn get_shstr_table(&self) -> ParseResult<&'a [u8]> {
-        let header = self
-            .parse_section_header(self.input, self.header_part2.get_sh_str_index());
+        let header = self.parse_section_header(self.input, self.header_part2.get_sh_str_index());
         header.map(|h| &self.input[(h.get_offset() as usize)..])
     }
     pub fn parse_header(&self, input: &'a [u8]) -> ParseResult<(&'a HeaderPt1, HeaderPt2<'a>)> {
         let size_part1 = mem::size_of::<HeaderPt1>();
-        if input.len() < size_part1 {
-            return Err(ElfError::Malformed(String::from(
-                "File is shorter than the first ELF header",
-            )));
+        if self.header_part1.magic != [0x7f, b'E', b'L', b'F'] {
+            ElfError::BadMagic(bytemuck::cast(self.header_part1.magic));
         }
-        let header_part1: &'a HeaderPt1 = read(&input[..size_part1]);
-        if header_part1.magic != [0x7f, b'E', b'L', b'F'] {
-            ElfError::BadMagic(bytemuck::cast(header_part1.magic));
-        }
-        let header_part2 = match header_part1.get_class() {
+        let header_part2 = match self.header_part1.get_class() {
             Class::ThirtyTwo => HeaderPt2::Header32(read(
                 &input[size_part1..size_part1 + mem::size_of::<HeaderPt2_<u32>>()],
             )),
@@ -72,7 +80,7 @@ impl<'a> ElfFile<'a> {
                 return Err(ElfError::Malformed(String::from("Invalid ELF Class")));
             }
         };
-        Ok((header_part1, header_part2))
+        Ok((self.header_part1, header_part2))
     }
 
     pub fn parse_section_header(
@@ -100,21 +108,51 @@ impl<'a> ElfFile<'a> {
         &self,
         input: &'a [u8],
         index: u16,
-    ) -> ParseResult<&'a ProgramHeader<'a>> {
-        todo!()
-    }
-    pub fn new(&self, input: &'a [u8]) -> Self {
-        let (header_part1, header_part2) = self.parse_header(self.input).unwrap();
-        let section = self.parse_section_header(input, 0).unwrap();
-        let program = self.parse_program_header(input, 0).unwrap();
-        Self {
-            input,
-            header_part1,
-            header_part2,
-            section,
-            program,
-            section_data: todo!(),
+    ) -> ParseResult<ProgramHeader<'a>> {
+        if !(index < self.header_part2.get_ph_count()
+            && self.header_part2.get_ph_offset() > 0
+            && self.header_part2.get_ph_entry_size() > 0)
+        {
+            return Err(ElfError::Malformed(String::from(
+                "No Program Header in the file.",
+            )));
         }
+        let start = self.header_part2.get_ph_offset() as usize
+            + index as usize * self.header_part2.get_entry_point() as usize;
+        let end = start + self.header_part2.get_ph_entry_size() as usize;
+        match self.header_part1.get_class() {
+            Class::ThirtyTwo => Ok(ProgramHeader::ProgramHeader32(read(&input[start..end]))),
+            Class::SixtyFour => Ok(ProgramHeader::ProgramHeader64(read(&input[start..end]))),
+            Class::None | Class::Other(_) => unreachable!(),
+        }
+    }
+    pub fn new(input: &'a [u8]) -> ParseResult<Self> {
+        let size_part1 = mem::size_of::<HeaderPt1>();
+        if input.len() < size_part1 {
+            return Err(ElfError::Malformed(String::from(
+                "File is shorter than the first ELF header",
+            )));
+        }
+        Ok(Self {
+            input: &input,
+            header_part1: read(&input[..size_part1]),
+            header_part2: unsafe { mem::zeroed() },
+            section: unsafe { mem::zeroed() },
+            program: unsafe { mem::zeroed() },
+            section_data: unsafe { mem::zeroed() },
+        })
+    }
+    pub fn parse(&mut self) -> ParseResult<()> {
+        let (header_part1, header_part2) = self.parse_header(self.input).unwrap();
+        self.header_part1 = header_part1;
+        self.header_part2 = header_part2;
+        let section = self.parse_section_header(self.input, 0).unwrap();
+        let program = self.parse_program_header(self.input, 0).unwrap();
+        let section_data = section.get_data(self).unwrap();
+        self.section = section;
+        self.program = program;
+        self.section_data = section_data;
+        Ok(())
     }
 }
 #[derive(Copy, Clone, Debug)]
@@ -499,7 +537,7 @@ pub enum Machine {
     Other(u16),
 }
 
-#[derive(Debug, Clone,PartialEq,Eq,Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum SectionHeaderType {
     /// marks an unused section header
     SectionNull,
@@ -556,7 +594,7 @@ impl<'a> SectionHeader<'a> {
     }
 
     pub fn get_type(&self) -> ParseResult<SectionHeaderType> {
-        Ok(self.get_section_type())
+        self.get_section_type()
     }
 
     pub fn get_data(&self, elf_file: &ElfFile<'a>) -> ParseResult<SectionData<'a>> {
@@ -572,7 +610,7 @@ impl<'a> SectionHeader<'a> {
         }
 
         self.get_type().map(|typ| match typ {
-            _ | SectionHeaderType::NOTE | SectionHeaderType::NoBits => SectionData::Empty,
+            _ | SectionHeaderType::SectionNull | SectionHeaderType::NoBits => SectionData::Empty,
             SectionHeaderType::ProgramBits
             | SectionHeaderType::SharedLibrary
             | SectionHeaderType::OsSpecific(_)
@@ -624,67 +662,114 @@ impl<'a> SectionHeader<'a> {
         })
     }
     pub fn raw_data(&self, elf_file: &ElfFile<'a>) -> &'a [u8] {
-        assert_ne!(self.get_section_type(), SectionHeaderType::NOTE);
+        assert_ne!(self.get_section_type().unwrap(), SectionHeaderType::SectionNull);
         &elf_file.input[self.get_offset() as usize..(self.get_offset() + self.get_size()) as usize]
     }
-    fn get_flags(&self)->u64{
+    fn get_flags(&self) -> u64 {
         match *self {
             SectionHeader::SectionHeader32(h) => h.flags as u64,
             SectionHeader::SectionHeader64(h) => h.flags,
         }
     }
-    fn get_name_ (&self)->u32{
+    fn get_name_(&self) -> u32 {
         match *self {
             SectionHeader::SectionHeader32(h) => h.name,
             SectionHeader::SectionHeader64(h) => h.name,
         }
     }
-    fn get_address(&self)->u64{
-        match *self{
+    fn get_address(&self) -> u64 {
+        match *self {
             SectionHeader::SectionHeader32(h) => h.address as u64,
             SectionHeader::SectionHeader64(h) => h.address,
         }
     }
-    fn get_offset(&self)->u64{
-        match *self{
+    fn get_offset(&self) -> u64 {
+        match *self {
             SectionHeader::SectionHeader32(h) => h.offset as u64,
             SectionHeader::SectionHeader64(h) => h.offset,
         }
     }
-    fn get_size(&self)->u64{
-        match *self{
+    fn get_size(&self) -> u64 {
+        match *self {
             SectionHeader::SectionHeader32(h) => h.size as u64,
             SectionHeader::SectionHeader64(h) => h.size,
         }
     }
-    fn get_section_type(&self)->SectionHeaderType{
-        match *self{
-            SectionHeader::SectionHeader32(h) => h.section_type,
-            SectionHeader::SectionHeader64(h) => h.section_type,
+    fn get_section_type(&self) -> ParseResult<SectionHeaderType> {
+        match *self {
+            SectionHeader::SectionHeader32(h) => {match h.section_type{
+                0 => Ok(SectionHeaderType::SectionNull),
+                1 => Ok(SectionHeaderType::ProgramBits),
+                2 => Ok(SectionHeaderType::SymbolTable),
+                3 => Ok(SectionHeaderType::StringTable),
+                4 => Ok(SectionHeaderType::RelocationAddendTable),
+                5 => Ok(SectionHeaderType::HashTable),
+                6 => Ok(SectionHeaderType::DynamicLinkingTable),
+                7 => Ok(SectionHeaderType::NOTE),
+                8 => Ok(SectionHeaderType::NoBits),
+                9 => Ok(SectionHeaderType::RelocationTable),
+                10 => Ok(SectionHeaderType::SharedLibrary),
+                11 => Ok(SectionHeaderType::DynamicSymbolTable),
+                // sic.
+                14 => Ok(SectionHeaderType::InitializeArray),
+                15 => Ok(SectionHeaderType::TerminationArray),
+                16 => Ok(SectionHeaderType::PreInitializeArray),
+                17 => Ok(SectionHeaderType::Group),
+                18 => Ok(SectionHeaderType::SymTabShIndex),
+                st if st >= SHT_LOOS && st <= SHT_HIOS => Ok(SectionHeaderType::OsSpecific(st)),
+                st if st >= SHT_LOPROC && st <= SHT_HIPROC => Ok(SectionHeaderType::ProcessorSpecific(st)),
+                st if st >= SHT_LOUSER && st <= SHT_HIUSER => Ok(SectionHeaderType::User(st)),
+                _ => Err(ElfError::Malformed(String::from("Invalid sh type"))),
+                _=>unreachable!()
+            }},
+            SectionHeader::SectionHeader64(h) => {match h.section_type{
+                0 => Ok(SectionHeaderType::SectionNull),
+                1 => Ok(SectionHeaderType::ProgramBits),
+                2 => Ok(SectionHeaderType::SymbolTable),
+                3 => Ok(SectionHeaderType::StringTable),
+                4 => Ok(SectionHeaderType::RelocationAddendTable),
+                5 => Ok(SectionHeaderType::HashTable),
+                6 => Ok(SectionHeaderType::DynamicLinkingTable),
+                7 => Ok(SectionHeaderType::NOTE),
+                8 => Ok(SectionHeaderType::NoBits),
+                9 => Ok(SectionHeaderType::RelocationTable),
+                10 => Ok(SectionHeaderType::SharedLibrary),
+                11 => Ok(SectionHeaderType::DynamicSymbolTable),
+                // sic.
+                14 => Ok(SectionHeaderType::InitializeArray),
+                15 => Ok(SectionHeaderType::TerminationArray),
+                16 => Ok(SectionHeaderType::PreInitializeArray),
+                17 => Ok(SectionHeaderType::Group),
+                18 => Ok(SectionHeaderType::SymTabShIndex),
+                st if st >= SHT_LOOS && st <= SHT_HIOS => Ok(SectionHeaderType::OsSpecific(st)),
+                st if st >= SHT_LOPROC && st <= SHT_HIPROC => Ok(SectionHeaderType::ProcessorSpecific(st)),
+                st if st >= SHT_LOUSER && st <= SHT_HIUSER => Ok(SectionHeaderType::User(st)),
+                _ => Err(ElfError::Malformed(String::from("Invalid sh type"))),
+                _=>unreachable!()
+            }}
         }
     }
-    fn get_link(&self)->u32{
-        match *self{
-            SectionHeader::SectionHeader32(h) => h.link ,
+    fn get_link(&self) -> u32 {
+        match *self {
+            SectionHeader::SectionHeader32(h) => h.link,
             SectionHeader::SectionHeader64(h) => h.link,
         }
     }
-    fn get_info(&self)->u32{
-        match *self{
-            SectionHeader::SectionHeader32(h) => h.info ,
+    fn get_info(&self) -> u32 {
+        match *self {
+            SectionHeader::SectionHeader32(h) => h.info,
             SectionHeader::SectionHeader64(h) => h.info,
         }
     }
-
 }
 
-#[derive(Debug, Clone,Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct SectionHeader_<P> {
     ///	contains the offset, in bytes, to the section name, relative to the start of the section
     /// name string table.
     name: u32,
     /// identifies the section type.
-    section_type: SectionHeaderType,
+    section_type: u32,
     /// identifies the attributes of the section.
     flags: P,
     /// contains the virtual address of the beginning of the section in memory. If the section is
@@ -708,12 +793,11 @@ pub struct SectionHeader_<P> {
     entry_size: P,
 }
 
-impl<P> SectionHeader_<P> {
-}
+impl<P> SectionHeader_<P> {}
 
 unsafe impl<P> Pod for SectionHeader_<P> {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SectionData<'a> {
     Empty,
     Undefined(&'a [u8]),
@@ -917,6 +1001,177 @@ pub struct ProgramHeader64 {
 }
 unsafe impl Pod for ProgramHeader32 {}
 unsafe impl Pod for ProgramHeader64 {}
+
+impl ProgramHeader32 {
+    pub fn get_type(&self) -> ParseResult<ProgramHeaderType> {
+        match self.type_ {
+            0 => Ok(ProgramHeaderType::Null),
+            1 => Ok(ProgramHeaderType::Load),
+            2 => Ok(ProgramHeaderType::Dynamic),
+            3 => Ok(ProgramHeaderType::Interp),
+            4 => Ok(ProgramHeaderType::Note),
+            5 => Ok(ProgramHeaderType::ShLib),
+            6 => Ok(ProgramHeaderType::Phdr),
+            7 => Ok(ProgramHeaderType::Tls),
+            TYPE_GNU_RELRO => Ok(ProgramHeaderType::GnuRelro),
+            t if t >= TYPE_LOOS && t <= TYPE_HIOS => Ok(ProgramHeaderType::OsSpecific(t)),
+            t if t >= TYPE_LOPROC && t <= TYPE_HIPROC => {
+                Ok(ProgramHeaderType::ProcessorSpecific(t))
+            }
+            _ => Err(ElfError::Malformed(String::from("Invalid type"))),
+        }
+    }
+    pub fn get_data<'a>(&self, elf: &ElfFile<'a>) -> ParseResult<SegmentData<'a>> {
+        self.get_type().map(|typ| match typ {
+            ProgramHeaderType::Null => SegmentData::Empty,
+            ProgramHeaderType::Dynamic => {
+                let data = self.raw_data(elf);
+                match elf.header_part1.get_class() {
+                    Class::ThirtyTwo => SegmentData::Dynamic32(read_array(data)),
+                    Class::SixtyFour => SegmentData::Dynamic64(read_array(data)),
+                    Class::None | Class::Other(_) => unreachable!(),
+                }
+            }
+            ProgramHeaderType::Load
+            | ProgramHeaderType::Interp
+            | ProgramHeaderType::ShLib
+            | ProgramHeaderType::Phdr
+            | ProgramHeaderType::GnuRelro
+            | ProgramHeaderType::OsSpecific(_)
+            | ProgramHeaderType::ProcessorSpecific(_)
+            | ProgramHeaderType::Tls => SegmentData::Undefined(self.raw_data(elf)),
+            ProgramHeaderType::Note => todo!(),
+        });
+        todo!()
+    }
+    pub fn raw_data<'a>(&self, elf_file: &ElfFile<'a>) -> &'a [u8] {
+        assert!(self
+            .get_type()
+            .map(|typ| typ != ProgramHeaderType::Null)
+            .unwrap_or(false));
+        &elf_file.input[self.offset as usize..(self.offset + self.file_size) as usize]
+    }
+}
+
+impl ProgramHeader64 {
+    pub fn get_type(&self) -> ParseResult<ProgramHeaderType> {
+        match self.type_ {
+            0 => Ok(ProgramHeaderType::Null),
+            1 => Ok(ProgramHeaderType::Load),
+            2 => Ok(ProgramHeaderType::Dynamic),
+            3 => Ok(ProgramHeaderType::Interp),
+            4 => Ok(ProgramHeaderType::Note),
+            5 => Ok(ProgramHeaderType::ShLib),
+            6 => Ok(ProgramHeaderType::Phdr),
+            7 => Ok(ProgramHeaderType::Tls),
+            TYPE_GNU_RELRO => Ok(ProgramHeaderType::GnuRelro),
+            t if t >= TYPE_LOOS && t <= TYPE_HIOS => Ok(ProgramHeaderType::OsSpecific(t)),
+            t if t >= TYPE_LOPROC && t <= TYPE_HIPROC => {
+                Ok(ProgramHeaderType::ProcessorSpecific(t))
+            }
+            _ => Err(ElfError::Malformed(String::from("Invalid type"))),
+        }
+    }
+    pub fn get_data<'a>(&self, elf: &ElfFile<'a>) -> ParseResult<SegmentData<'a>> {
+        self.get_type().map(|typ| match typ {
+            ProgramHeaderType::Null => SegmentData::Empty,
+            ProgramHeaderType::Dynamic => {
+                let data = self.raw_data(elf);
+                match elf.header_part1.get_class() {
+                    Class::ThirtyTwo => SegmentData::Dynamic32(read_array(data)),
+                    Class::SixtyFour => SegmentData::Dynamic64(read_array(data)),
+                    Class::None | Class::Other(_) => unreachable!(),
+                }
+            }
+            ProgramHeaderType::Load
+            | ProgramHeaderType::Interp
+            | ProgramHeaderType::ShLib
+            | ProgramHeaderType::Phdr
+            | ProgramHeaderType::GnuRelro
+            | ProgramHeaderType::OsSpecific(_)
+            | ProgramHeaderType::ProcessorSpecific(_)
+            | ProgramHeaderType::Tls => SegmentData::Undefined(self.raw_data(elf)),
+            ProgramHeaderType::Note => todo!(),
+        });
+        todo!()
+    }
+    pub fn raw_data<'a>(&self, elf_file: &ElfFile<'a>) -> &'a [u8] {
+        assert!(self
+            .get_type()
+            .map(|typ| typ != ProgramHeaderType::Null)
+            .unwrap_or(false));
+        &elf_file.input[self.offset as usize..(self.offset + self.file_size) as usize]
+    }
+}
+
+impl<'a> ProgramHeader<'a> {
+    pub fn get_type(&self) -> ParseResult<ProgramHeaderType> {
+        match *self {
+            ProgramHeader::ProgramHeader32(ph) => ph.get_type(),
+            ProgramHeader::ProgramHeader64(ph) => ph.get_type(),
+        }
+    }
+
+    pub fn get_data(&self, elf_file: &ElfFile<'a>) -> ParseResult<SegmentData<'a>> {
+        match *self {
+            ProgramHeader::ProgramHeader32(ph) => ph.get_data(elf_file),
+            ProgramHeader::ProgramHeader64(ph) => ph.get_data(elf_file),
+        }
+    }
+    pub fn get_align(&self) -> u64 {
+        match *self {
+            ProgramHeader::ProgramHeader32(h) => h.align as u64,
+            ProgramHeader::ProgramHeader64(h) => h.align,
+        }
+    }
+    pub fn get_file_size(&self) -> u64 {
+        match *self {
+            ProgramHeader::ProgramHeader32(h) => h.file_size as u64,
+            ProgramHeader::ProgramHeader64(h) => h.file_size,
+        }
+    }
+    pub fn get_mem_size(&self) -> u64 {
+        match *self {
+            ProgramHeader::ProgramHeader32(h) => h.mem_size as u64,
+            ProgramHeader::ProgramHeader64(h) => h.mem_size as u64,
+        }
+    }
+    pub fn get_offset(&self) -> u64 {
+        match *self {
+            ProgramHeader::ProgramHeader32(h) => h.offset as u64,
+            ProgramHeader::ProgramHeader64(h) => h.offset as u64,
+        }
+    }
+    pub fn physical_addr(&self) -> u64 {
+        match *self {
+            ProgramHeader::ProgramHeader32(h) => h.physical_addr as u64,
+            ProgramHeader::ProgramHeader64(h) => h.physical_addr as u64,
+        }
+    }
+    pub fn virtual_addr(&self) -> u64 {
+        match *self {
+            ProgramHeader::ProgramHeader32(h) => h.virtual_addr as u64,
+            ProgramHeader::ProgramHeader64(h) => h.virtual_addr as u64,
+        }
+    }
+    pub fn get_flags(&self) -> u32 {
+        match *self {
+            ProgramHeader::ProgramHeader32(h) => h.flags,
+            ProgramHeader::ProgramHeader64(h) => h.flags,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum SegmentData<'a> {
+    Empty,
+    Undefined(&'a [u8]),
+    Dynamic32(&'a [Dynamic<u32>]),
+    Dynamic64(&'a [Dynamic<u64>]),
+    /// Note32 uses 4-byte words, which I'm not sure how to manage.
+    /// The pointer is to the start of the name field in the note.
+    Note64(&'a NoteHeader, &'a [u8]), /* TODO Interp and Phdr should probably be defined some how, but I can't find the details. */
+}
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ProgramHeaderType {

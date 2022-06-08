@@ -1,16 +1,19 @@
 use super::page::Page;
-use super::elf::ParseResult;
+use super::elf::{ParseResult, ElfFile};
 
 /// From ELF Byte to Page
 pub struct Binary<'a> {
-    entry: usize,
     pages: Vec<Option<Page<'a>>>,
 }
 
 impl<'a> Binary<'a>{
     pub fn parse(bytes:&'a [u8])->ParseResult<Self>{
-        
-        todo!()
+        let mut elf =  ElfFile::new(bytes).unwrap( );
+        elf.parse()?;
+        let mut pages = Vec::new();
+        Ok(Self{
+            pages
+        })
     }
 }
 
