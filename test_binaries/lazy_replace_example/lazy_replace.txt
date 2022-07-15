@@ -1,0 +1,50 @@
+	.section	__TEXT,__text,regular,pure_instructions
+	nop
+	xor	eax, eax
+	lea	rdx, [rax + 0xa]
+	nop
+	nop
+	nop
+	xor	eax, eax
+	lea	rcx, [rax + 0xb]
+	nop
+	nop
+	nop
+	add	rdx, rcx
+	nop
+	nop
+	nop
+	shl	rdx, 0x3
+	nop
+	nop
+	nop
+	xor	rcx, -0x1
+	nop
+	nop
+	nop
+	xor	eax, eax
+	lea	rdi, [rax]
+	nop
+	nop
+	nop
+	xor	eax, eax
+	lea	r14, [rax + 0x5d]
+	nop
+	nop
+	nop
+	mov	qword ptr [rip + 0x7f267131], rdx
+	mov	qword ptr [rip + 0x7f267132], rcx
+	call	-0x16b
+	mov	rdi, 0x10094
+	movabs	rsi, 0x780000267260
+	call	0x7f004640
+	xor	esi, esi
+	call	-0x108
+	nop
+	nop
+	nop
+	ret
+	nop
+	nop
+	nop
+	nop

@@ -90,6 +90,9 @@ pub struct Instruction {
     pub name: InstructionName,
     pub fields: Vec<InstructionField>,
 }
+impl Instruction{
+    fn parse_instruction()
+}
 
 #[derive(Debug, Clone)]
 pub struct InstructionIter<'a> {

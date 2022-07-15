@@ -1,0 +1,2 @@
+add_test: main.c
+	riscv64-unknown-linux-gnu-gcc -o add_test main.c -fPIE -static -march=rv64im -mabi=lp64 -O3

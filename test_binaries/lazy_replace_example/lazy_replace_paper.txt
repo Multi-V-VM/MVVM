@@ -1,0 +1,27 @@
+; addi x6, x0, 10
+xor	eax, eax
+lea	rdx, [rax + 10]
+
+
+; addi x7, x0, 11
+xor	eax, eax
+lea	rcx, [rax + 11]
+
+
+; add x6, x6, x7
+add	rdx, rcx
+
+
+
+
+
+; slli x6, x6, 3
+shl	rdx, 3
+
+
+; xori x7, x7, -1
+xor	rcx, -1
+
+; write-back
+mov [gp_file + 8 * 6], rdx
+mov [gp_file + 8 * 7], rcx

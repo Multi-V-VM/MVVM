@@ -10,4 +10,5 @@ mod cache;
 mod codegen;
 mod frontend;
 mod runtime;
+mod tools;
 mod wasm;

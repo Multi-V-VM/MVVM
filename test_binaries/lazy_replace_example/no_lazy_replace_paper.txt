@@ -1,0 +1,25 @@
+; addi x6, x0, 10
+xor	eax, eax
+lea	rax, [rax + 10]
+mov [gp_file + 8 * 6], rax
+
+; addi x7, x0, 11
+xor	eax, eax
+lea rax, [rax + 11]
+mov	[gp_file + 8 * 7], rax
+
+; add x6, x6, x7
+mov	rax, [gp_file + 8 * 6]
+mov	rdx, [gp_file + 8 * 7]
+add	rax, rdx
+mov	[gp_file + 8 * 6], rax
+
+; slli x6, x6, 3
+mov	rax, [gp_file + 8 * 6]
+shl	rax, 3
+mov	[gp_file + 8 * 6], rax
+
+; xori x7, x7, -1
+mov	rax, [gp_file + 8 * 7]
+xor	rax, -1
+mov	[gp_file + 8 * 7], rax
