@@ -82,8 +82,9 @@ impl<'a> ElfFile<'a> {
         index: u16,
     ) -> ParseResult<SectionHeader<'a>> {
         /* From index 0 (SHN_UNDEF) is an error */
-        let start = (index as u64 * self.header_part2.get_sh_entry_size() as u64
-            + self.header_part2.get_sh_offset()) as usize;
+        let start = (index as u64 * self.header_part2.get_sh_entry_size() as u64 +
+        self.header_part2.get_sh_offset() as u64) as usize;
+        dbg!(start);
         let end = start + self.header_part2.get_sh_entry_size() as usize;
         Ok(match self.header_part1.get_class() {
             Class::ThirtyTwo => {
@@ -167,6 +168,19 @@ pub struct HeaderPt1 {
     // Often also just padding.
     pub abi_version: u8,
     pub padding: [u8; 7],
+}
+impl fmt::Display for HeaderPt1 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "ELF header:")?;
+        writeln!(f, "    magic:            {:?}", self.magic)?;
+        writeln!(f, "    class:            {:?}", self.class)?;
+        writeln!(f, "    data:             {:?}", self.data)?;
+        writeln!(f, "    version:          {:?}", self.version)?;
+        writeln!(f, "    os abi:           {:?}", self.os_abi)?;
+        writeln!(f, "    abi version:      {:?}", self.abi_version)?;
+        writeln!(f, "    padding:          {:?}", self.padding)?;
+        Ok(())
+    }
 }
 impl HeaderPt1 {
     pub fn get_class(&self) -> Class {
@@ -631,6 +645,22 @@ pub enum SectionHeader<'a> {
     SectionHeader64(&'a SectionHeader_<u64>),
 }
 
+impl<'a> fmt::Display for SectionHeader<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "Section header:")?;
+        writeln!(f, "    name:             {:?}", self.get_name_())?;
+        writeln!(f, "    type:             {:?}", self.get_type())?;
+        writeln!(f, "    flags:            {:?}", self.get_flags())?;
+        writeln!(f, "    address:          {:?}", self.get_address())?;
+        writeln!(f, "    offset:           {:?}", self.get_offset())?;
+        writeln!(f, "    size:             {:?}", self.get_size())?;
+        writeln!(f, "    link:             {:?}", self.get_link())?;
+        writeln!(f, "    align:            {:?}", self.get_align())?;
+        writeln!(f, "    entry size:       {:?}", self.get_entry_size())?;
+        Ok(())
+    }
+}
+
 impl<'a> SectionHeader<'a> {
     // Note that this function is O(n) in the length of the name.
     pub fn get_name(&self, elf_file: &ElfFile<'a>) -> ParseResult<&'a str> {
@@ -640,10 +670,6 @@ impl<'a> SectionHeader<'a> {
             ))),
             _ => elf_file.get_shstr(self.get_name_()),
         })
-    }
-
-    pub fn get_type(&self) -> ParseResult<SectionHeaderType> {
-        self.get_section_type()
     }
 
     pub fn get_data(&self, elf_file: &ElfFile<'a>) -> ParseResult<SectionData<'a>> {
@@ -717,6 +743,9 @@ impl<'a> SectionHeader<'a> {
         );
         &elf_file.input[self.get_offset() as usize..(self.get_offset() + self.get_size()) as usize]
     }
+    pub fn get_type(&self) -> ParseResult<SectionHeaderType> {
+        self.get_section_type()
+    }
     fn get_flags(&self) -> u64 {
         match *self {
             SectionHeader::SectionHeader32(h) => h.flags as u64,
@@ -733,6 +762,18 @@ impl<'a> SectionHeader<'a> {
         match *self {
             SectionHeader::SectionHeader32(h) => h.address as u64,
             SectionHeader::SectionHeader64(h) => h.address,
+        }
+    }
+    fn get_align(&self) -> u64 {
+        match *self {
+            SectionHeader::SectionHeader32(h) => h.alignment as u64,
+            SectionHeader::SectionHeader64(h) => h.alignment,
+        }
+    }
+    fn get_entry_size(&self) -> u64 {
+        match *self {
+            SectionHeader::SectionHeader32(h) => h.entry_size as u64,
+            SectionHeader::SectionHeader64(h) => h.entry_size,
         }
     }
     fn get_offset(&self) -> u64 {
@@ -824,6 +865,7 @@ impl<'a> SectionHeader<'a> {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[repr(C)]
 pub struct SectionHeader_<P> {
     ///	contains the offset, in bytes, to the section name, relative to the start of the section
     /// name string table.
@@ -880,6 +922,33 @@ pub enum SectionData<'a> {
     Dynamic32(&'a [Dynamic<u32>]),
     Dynamic64(&'a [Dynamic<u64>]),
     HashTable(&'a HashTable),
+}
+
+impl<'a> fmt::Display for SectionData<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self{
+            SectionData::Empty => writeln!(f, "SectionData::Empty")?,
+            SectionData::Undefined(_) => writeln!(f,"SectionData::Undefined")?,
+            SectionData::Group { flags, indicies } => writeln!(f,"SectionData::Group")?,
+            SectionData::StrArray(_) => writeln!(f,"SectionData::StrArray")?,
+            SectionData::FnArray32(_) => writeln!(f,"SectionData::FnArray32")?,
+            SectionData::FnArray64(_) => writeln!(f,"SectionData::FnArray64")?,
+            SectionData::SymbolTable32(_) => writeln!(f,"SectionData::SymbolTable32")?,
+            SectionData::SymbolTable64(_) => writeln!(f,"SectionData::SymbolTable64")?,
+            SectionData::DynSymbolTable32(_) => writeln!(f,"SectionData::DynSymbolTable32")?,
+            SectionData::DynSymbolTable64(_) => writeln!(f,"SectionData::DynSymbolTable64")?,
+            SectionData::SymTabShIndex(_) => writeln!(f,"SectionData::SymTabShIndex")?,
+            SectionData::Note64(_, _) => writeln!(f,"SectionData::Note64")?,
+            SectionData::Rela32(_) => writeln!(f,"SectionData::Rela32")?,
+            SectionData::Rela64(_) => writeln!(f,"SectionData::Rela64")?,
+            SectionData::Rel32(_) => writeln!(f,"SectionData::Rel32")?,
+            SectionData::Rel64(_) => writeln!(f,"SectionData::Rel64")?,
+            SectionData::Dynamic32(_) => writeln!(f,"SectionData::Dynamic32")?,
+            SectionData::Dynamic64(_) => writeln!(f,"SectionData::Dynamic64")?,
+            SectionData::HashTable(_) => writeln!(f,"SectionData::HashTable")?,
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -1055,7 +1124,20 @@ pub enum ProgramHeader<'a> {
     ProgramHeader32(&'a ProgramHeader32),
     ProgramHeader64(&'a ProgramHeader64),
 }
-
+impl<'a> fmt::Display for ProgramHeader<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "Program header:")?;
+        writeln!(f, "    type:             {:?}", self.get_type())?;
+        writeln!(f, "    flags:            {}", self.get_flags())?;
+        writeln!(f, "    offset:           {:#x}", self.get_offset())?;
+        writeln!(f, "    virtual address:  {:#x}", self.get_virtual_addr())?;
+        writeln!(f, "    physical address: {:#x}", self.get_physical_addr())?;
+        writeln!(f, "    file size:        {:#x}", self.get_file_size())?;
+        writeln!(f, "    memory size:      {:#x}", self.get_mem_size())?;
+        writeln!(f, "    align:            {:#x}", self.get_align())?;
+        Ok(())
+    }
+}
 #[derive(Copy, Clone, Debug, Default)]
 #[repr(C)]
 pub struct ProgramHeader32 {
@@ -1204,6 +1286,18 @@ impl<'a> ProgramHeader<'a> {
         match *self {
             ProgramHeader::ProgramHeader32(h) => h.align as u64,
             ProgramHeader::ProgramHeader64(h) => h.align,
+        }
+    }
+    pub fn get_virtual_addr(&self) -> u64 {
+        match *self {
+            ProgramHeader::ProgramHeader32(h) => h.virtual_addr as u64,
+            ProgramHeader::ProgramHeader64(h) => h.virtual_addr,
+        }
+    }
+    pub fn get_physical_addr(&self) -> u64 {
+        match *self {
+            ProgramHeader::ProgramHeader32(h) => h.physical_addr as u64,
+            ProgramHeader::ProgramHeader64(h) => h.physical_addr,
         }
     }
     pub fn get_file_size(&self) -> u64 {
