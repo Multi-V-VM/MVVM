@@ -20,7 +20,6 @@ macro_rules! parse_not_meet{
 impl<'a> Binary<'a> {
     pub fn parse(bytes: &'a [u8]) -> ParseResult<Self> {
         let mut elf = ElfFile::new(bytes).unwrap();
-        elf.parse()?;
         parse_not_meet!(
             elf.header_part1.get_class(),
             Class::SixtyFour,
@@ -28,8 +27,8 @@ impl<'a> Binary<'a> {
         );
         parse_not_meet!(
             elf.header_part1.get_data(),
-            Data::BigEndian,
-            String::from("Not big endian Binary")
+            Data::LittleEndian,
+            String::from("Not little endian Binary")
         );
         parse_not_meet!(
             elf.header_part2.get_type(),
@@ -42,11 +41,15 @@ impl<'a> Binary<'a> {
             String::from("Not RISCV Binary")
         );
         parse_not_meet!(
-            elf.interpreter.interpreter,
+            elf.parse_interpreter().unwrap(),
             "/lib/ld-linux-riscv64-lp64d.so.1",
-            String::from("Not RISCV Binary")
+            String::from("Not RISCV Dynamic Linked")
         );
-
+        let program_iter = elf.program_iter();
+        println!("Program header size: {}", elf.header_part2.get_ph_count());
+        for ph in program_iter {
+            println!(" data:{}", ph.get_data(&elf))
+        }
         let mut pages = Vec::new();
         Ok(Self { pages })
     }

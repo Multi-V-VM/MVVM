@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-use std::mem::MaybeUninit;
 use std::{fmt, mem};
 use zero::{read, read_array, read_str, Pod};
 
@@ -51,12 +49,8 @@ pub type ParseResult<T> = Result<T, ElfError>;
 #[derive(Debug, Clone)]
 pub struct ElfFile<'a> {
     pub input: &'a [u8],
-    pub interpreter: &'a Interpreter<'a>,
     pub header_part1: &'a HeaderPt1,
     pub header_part2: HeaderPt2<'a>,
-    pub section: Vec<SectionHeader<'a>>,
-    pub program: Vec<ProgramHeader<'a>>,
-    pub section_data: Vec<SectionData<'a>>,
 }
 impl<'a> ElfFile<'a> {
     pub fn get_shstr(&self, index: u32) -> ParseResult<&'a str> {
@@ -66,6 +60,20 @@ impl<'a> ElfFile<'a> {
     fn get_shstr_table(&self) -> ParseResult<&'a [u8]> {
         let header = self.parse_section_header(self.input, self.header_part2.get_sh_str_index());
         header.map(|h| &self.input[(h.get_offset() as usize)..])
+    }
+
+    pub fn section_iter(&self) -> impl Iterator<Item = SectionHeader<'a>> + '_ {
+        SectionIter {
+            file: self,
+            next_index: 0,
+        }
+    }
+
+    pub fn program_iter(&self) -> impl Iterator<Item = ProgramHeader<'_>> {
+        ProgramIter {
+            file: self,
+            next_index: 0,
+        }
     }
 
     pub fn parse_section_header(
@@ -103,7 +111,7 @@ impl<'a> ElfFile<'a> {
             )));
         }
         let start = self.header_part2.get_ph_offset() as usize
-            + index as usize * self.header_part2.get_entry_point() as usize;
+            + index as usize * self.header_part2.get_ph_entry_size() as usize;
         let end = start + self.header_part2.get_ph_entry_size() as usize;
         match self.header_part1.get_class() {
             Class::ThirtyTwo => Ok(ProgramHeader::ProgramHeader32(read(&input[start..end]))),
@@ -132,38 +140,21 @@ impl<'a> ElfFile<'a> {
         };
         Ok(Self {
             input: &input,
-            interpreter: read(&input[..size_part1]),
             header_part1: header_part1,
             header_part2: header_part2,
-            section: vec![],
-            program: vec![],
-            section_data: vec![],
         })
     }
-    pub fn parse(&mut self) -> ParseResult<()> {
-        for i in 0..self.header_part2.get_ph_count() {
-            let program_temp = self.parse_program_header(self.input, i).unwrap();
-            let section_temp = self.parse_section_header(self.input, i).unwrap();
-            if (program_temp.get_type() == ProgramHeaderType::Interp
-                && program_temp.get_file_size() != 0)
-            {
-                let count = (program_temp.get_file_size() - 1) as usize;
-                let offset = program_temp.get_offset() as usize;
-                self.interpreter = read(&self.input[offset..count]);
+    pub fn parse_interpreter(&mut self) -> ParseResult<&str> {
+        for ph in self.program_iter() {
+            if ph.get_type() == ProgramHeaderType::Interp && ph.get_file_size() != 0 {
+                let count = (ph.get_file_size() - 1) as usize;
+                let offset = ph.get_offset() as usize;
+                return Ok(std::str::from_utf8(&self.input[offset..(offset + count)]).unwrap());
             }
-            self.section.push(section_temp);
-            self.section_data.push(section_temp.get_data(self).unwrap());
-            self.program.push(program_temp);
         }
-        Ok(())
+        Err(ElfError::Malformed("No Interp".into()))
     }
 }
-#[derive(Copy, Clone, Debug)]
-#[repr(C)]
-pub struct Interpreter<'a> {
-    pub interpreter: &'a str,
-}
-unsafe impl<'a> Pod for Interpreter<'a> {}
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
@@ -273,6 +264,25 @@ pub enum HeaderPt2<'a> {
     Header32(&'a HeaderPt2_<u32>),
     Header64(&'a HeaderPt2_<u64>),
 }
+
+impl<'a> fmt::Display for HeaderPt2<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "    type:             {:?}", self.get_type())?;
+        writeln!(f, "    machine:          {:?}", self.get_machine())?;
+        writeln!(f, "    version:          {}", self.get_version())?;
+        writeln!(f, "    entry_point:      {}", self.get_entry_point())?;
+        writeln!(f, "    ph_offset:        {}", self.get_ph_offset())?;
+        writeln!(f, "    sh_offset:        {}", self.get_sh_offset())?;
+        writeln!(f, "    flags:            {}", self.get_flags())?;
+        writeln!(f, "    header_size:      {}", self.get_header_size())?;
+        writeln!(f, "    ph_entry_size:    {}", self.get_ph_entry_size())?;
+        writeln!(f, "    ph_count:         {}", self.get_ph_count())?;
+        writeln!(f, "    sh_entry_size:    {}", self.get_sh_entry_size())?;
+        writeln!(f, "    sh_count:         {}", self.get_sh_count())?;
+        writeln!(f, "    sh_str_index:     {}", self.get_sh_str_index())?;
+        Ok(())
+    }
+}
 impl<'a> HeaderPt2<'a> {
     pub fn get_size(&self) -> usize {
         match *self {
@@ -302,7 +312,7 @@ impl<'a> HeaderPt2<'a> {
     }
     pub fn get_machine(&self) -> Machine {
         match *self {
-            HeaderPt2::Header32(h) => match h.type_ {
+            HeaderPt2::Header32(h) => match h.machine {
                 0x04 => Machine::MotorolaM68k,
                 0x05 => Machine::MotorolaM88k,
                 0x06 => Machine::IntelMCU,
@@ -351,7 +361,7 @@ impl<'a> HeaderPt2<'a> {
                 0x101 => Machine::WDC65C816,
                 other => Machine::Other(other),
             },
-            HeaderPt2::Header64(h) => match h.type_ {
+            HeaderPt2::Header64(h) => match h.machine {
                 0x04 => Machine::MotorolaM68k,
                 0x05 => Machine::MotorolaM88k,
                 0x06 => Machine::IntelMCU,
@@ -402,61 +412,67 @@ impl<'a> HeaderPt2<'a> {
             },
         }
     }
-    fn get_version(&self) -> u32 {
+    pub fn get_version(&self) -> u32 {
         match *self {
             HeaderPt2::Header32(h) => h.version,
             HeaderPt2::Header64(h) => h.version,
         }
     }
-    fn get_entry_point(&self) -> u64 {
+    pub fn get_entry_point(&self) -> u64 {
         match *self {
             HeaderPt2::Header32(h) => h.entry_point as u64,
             HeaderPt2::Header64(h) => h.entry_point,
         }
     }
-    fn get_ph_offset(&self) -> u64 {
+    pub fn get_ph_offset(&self) -> u64 {
         match *self {
             HeaderPt2::Header32(h) => h.ph_offset as u64,
             HeaderPt2::Header64(h) => h.ph_offset,
         }
     }
-    fn get_sh_offset(&self) -> u64 {
+    pub fn get_sh_offset(&self) -> u64 {
         match *self {
             HeaderPt2::Header32(h) => h.sh_offset as u64,
             HeaderPt2::Header64(h) => h.sh_offset,
         }
     }
-    fn get_flags(&self) -> u32 {
+    pub fn get_flags(&self) -> u32 {
         match *self {
             HeaderPt2::Header32(h) => h.flags,
             HeaderPt2::Header64(h) => h.flags,
         }
     }
-    fn get_header_size(&self) -> u16 {
+    pub fn get_header_size(&self) -> u16 {
         match *self {
             HeaderPt2::Header32(h) => h.header_size,
             HeaderPt2::Header64(h) => h.header_size,
         }
     }
-    fn get_ph_entry_size(&self) -> u16 {
+    pub fn get_ph_entry_size(&self) -> u16 {
         match *self {
             HeaderPt2::Header32(h) => h.ph_entry_size,
             HeaderPt2::Header64(h) => h.ph_entry_size,
         }
     }
-    fn get_ph_count(&self) -> u16 {
+    pub fn get_ph_count(&self) -> u16 {
         match *self {
             HeaderPt2::Header32(h) => h.ph_count,
             HeaderPt2::Header64(h) => h.ph_count,
         }
     }
-    fn get_sh_entry_size(&self) -> u16 {
+    pub fn get_sh_count(&self) -> u16 {
+        match *self {
+            HeaderPt2::Header32(h) => h.sh_count,
+            HeaderPt2::Header64(h) => h.sh_count,
+        }
+    }
+    pub fn get_sh_entry_size(&self) -> u16 {
         match *self {
             HeaderPt2::Header32(h) => h.sh_entry_size,
             HeaderPt2::Header64(h) => h.sh_entry_size,
         }
     }
-    fn get_sh_str_index(&self) -> u16 {
+    pub fn get_sh_str_index(&self) -> u16 {
         match *self {
             HeaderPt2::Header32(h) => h.sh_str_index,
             HeaderPt2::Header64(h) => h.sh_str_index,
@@ -584,6 +600,29 @@ pub enum SectionHeaderType {
     OsSpecific(u32),
     ProcessorSpecific(u32),
     User(u32),
+}
+
+#[derive(Debug, Clone)]
+pub struct SectionIter<'b, 'a: 'b> {
+    pub file: &'b ElfFile<'a>,
+    pub next_index: u16,
+}
+
+impl<'b, 'a> Iterator for SectionIter<'b, 'a> {
+    type Item = SectionHeader<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let count = self.file.header_part2.get_sh_count();
+        if self.next_index >= count {
+            return None;
+        }
+
+        let result = self
+            .file
+            .parse_section_header(self.file.input, self.next_index);
+        self.next_index += 1;
+        result.ok()
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -988,6 +1027,28 @@ pub struct HashTable {
     first_bucket: u32,
 }
 
+#[derive(Debug, Clone)]
+pub struct ProgramIter<'b, 'a: 'b> {
+    pub file: &'b ElfFile<'a>,
+    pub next_index: u16,
+}
+
+impl<'b, 'a> Iterator for ProgramIter<'b, 'a> {
+    type Item = ProgramHeader<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let count = self.file.header_part2.get_ph_count();
+        if self.next_index >= count {
+            return None;
+        }
+
+        let result = self
+            .file
+            .parse_program_header(self.file.input, self.next_index);
+        self.next_index += 1;
+        result.ok()
+    }
+}
 unsafe impl Pod for HashTable {}
 #[derive(Debug, Clone, Copy)]
 pub enum ProgramHeader<'a> {
