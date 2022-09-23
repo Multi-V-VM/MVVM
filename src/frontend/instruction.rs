@@ -8,6 +8,54 @@ pub enum ISABase {
     RV64,
     RV128,
 }
+/// Rd
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rd(pub Reg);
+/// Rs
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rs(pub Reg);
+/// Rs1
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rs1(pub Reg);
+/// Rs2
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rs2(pub Reg);
+/// Rs3
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rs3(pub Reg);
+/// Atomic instruction flag: Acquire
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct AQ(pub bool);
+/// Atomic instruction flag: Release
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct RL(pub bool);
+
+/// Shift-amount
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct Shamt(pub u8);
+
+/// Xx From X0-X31 or X63
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Xx<const MAX: u32>(u32, char);
+
+impl<const MAX: u32> Xx<MAX> {
+    pub fn new(value: u32, prefix: char) -> Self {
+        Self(value, prefix)
+    }
+}
+impl<const MAX: u32> Into<String> for Xx<MAX> {
+    fn into(self) -> String {
+        format!("{}{}", self.0, self.1)
+    }
+}
+/// Reg
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Reg {
+    X(Xx<32>),
+    F(Xx<32>),
+    PC,
+    FCSR,
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ISAExtension {
     I,
@@ -76,7 +124,6 @@ pub struct InstructionName {
 #[derive(Debug, Clone)]
 pub struct InstructionField {
     pub instruction_bit_range: InstBitRange,
-    // pub field_def: FieldDef,
 }
 #[derive(Debug, Clone)]
 pub struct InstBitRange {
@@ -90,8 +137,20 @@ pub struct Instruction {
     pub name: InstructionName,
     pub fields: Vec<InstructionField>,
 }
-impl Instruction{
-    fn parse_instruction()
+impl Instruction {
+    fn parse_instruction() -> Instruction {
+        Instruction {
+            isa: ISA {
+                base: ISABase::RV32,
+                ext: ISAExtension::I,
+            },
+            name: InstructionName {
+                pos: 0,
+                name: "".to_string(),
+            },
+            fields: vec![],
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

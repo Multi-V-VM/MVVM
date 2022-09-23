@@ -82,8 +82,8 @@ impl<'a> ElfFile<'a> {
         index: u16,
     ) -> ParseResult<SectionHeader<'a>> {
         /* From index 0 (SHN_UNDEF) is an error */
-        let start = (index as u64 * self.header_part2.get_sh_entry_size() as u64 +
-        self.header_part2.get_sh_offset() as u64) as usize;
+        let start = (index as u64 * self.header_part2.get_sh_entry_size() as u64
+            + self.header_part2.get_sh_offset() as u64) as usize;
         dbg!(start);
         let end = start + self.header_part2.get_sh_entry_size() as usize;
         Ok(match self.header_part1.get_class() {
@@ -926,26 +926,26 @@ pub enum SectionData<'a> {
 
 impl<'a> fmt::Display for SectionData<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self{
+        match *self {
             SectionData::Empty => writeln!(f, "SectionData::Empty")?,
-            SectionData::Undefined(_) => writeln!(f,"SectionData::Undefined")?,
-            SectionData::Group { flags, indicies } => writeln!(f,"SectionData::Group")?,
-            SectionData::StrArray(_) => writeln!(f,"SectionData::StrArray")?,
-            SectionData::FnArray32(_) => writeln!(f,"SectionData::FnArray32")?,
-            SectionData::FnArray64(_) => writeln!(f,"SectionData::FnArray64")?,
-            SectionData::SymbolTable32(_) => writeln!(f,"SectionData::SymbolTable32")?,
-            SectionData::SymbolTable64(_) => writeln!(f,"SectionData::SymbolTable64")?,
-            SectionData::DynSymbolTable32(_) => writeln!(f,"SectionData::DynSymbolTable32")?,
-            SectionData::DynSymbolTable64(_) => writeln!(f,"SectionData::DynSymbolTable64")?,
-            SectionData::SymTabShIndex(_) => writeln!(f,"SectionData::SymTabShIndex")?,
-            SectionData::Note64(_, _) => writeln!(f,"SectionData::Note64")?,
-            SectionData::Rela32(_) => writeln!(f,"SectionData::Rela32")?,
-            SectionData::Rela64(_) => writeln!(f,"SectionData::Rela64")?,
-            SectionData::Rel32(_) => writeln!(f,"SectionData::Rel32")?,
-            SectionData::Rel64(_) => writeln!(f,"SectionData::Rel64")?,
-            SectionData::Dynamic32(_) => writeln!(f,"SectionData::Dynamic32")?,
-            SectionData::Dynamic64(_) => writeln!(f,"SectionData::Dynamic64")?,
-            SectionData::HashTable(_) => writeln!(f,"SectionData::HashTable")?,
+            SectionData::Undefined(_) => writeln!(f, "SectionData::Undefined")?,
+            SectionData::Group { flags, indicies } => writeln!(f, "SectionData::Group")?,
+            SectionData::StrArray(_) => writeln!(f, "SectionData::StrArray")?,
+            SectionData::FnArray32(_) => writeln!(f, "SectionData::FnArray32")?,
+            SectionData::FnArray64(_) => writeln!(f, "SectionData::FnArray64")?,
+            SectionData::SymbolTable32(_) => writeln!(f, "SectionData::SymbolTable32")?,
+            SectionData::SymbolTable64(_) => writeln!(f, "SectionData::SymbolTable64")?,
+            SectionData::DynSymbolTable32(_) => writeln!(f, "SectionData::DynSymbolTable32")?,
+            SectionData::DynSymbolTable64(_) => writeln!(f, "SectionData::DynSymbolTable64")?,
+            SectionData::SymTabShIndex(_) => writeln!(f, "SectionData::SymTabShIndex")?,
+            SectionData::Note64(_, _) => writeln!(f, "SectionData::Note64")?,
+            SectionData::Rela32(_) => writeln!(f, "SectionData::Rela32")?,
+            SectionData::Rela64(_) => writeln!(f, "SectionData::Rela64")?,
+            SectionData::Rel32(_) => writeln!(f, "SectionData::Rel32")?,
+            SectionData::Rel64(_) => writeln!(f, "SectionData::Rel64")?,
+            SectionData::Dynamic32(_) => writeln!(f, "SectionData::Dynamic32")?,
+            SectionData::Dynamic64(_) => writeln!(f, "SectionData::Dynamic64")?,
+            SectionData::HashTable(_) => writeln!(f, "SectionData::HashTable")?,
         }
         Ok(())
     }

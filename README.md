@@ -4,7 +4,7 @@ MVVM is a double JIT VM from RiscV assembly or elf to wasm, with all linux imple
 ## Comparison of WebAssembly and RISC-V
 1. Code/Data Separation
 
-Most modern architectures, including RISC-V, use the same address space for code and data, but WebAssembly does not. In fact, the running code does not even have a way to read/write itself. The reasons for this design may be
+Most modern architectures, including RISC-V, use the same address space for code and data, but WebAssembly does not. In fact, the running code does not even have a way to read/write itself.
 
 Simplify the implementation of the JIT compiler. If the code is self-modifying, then the JIT compiler needs to have the ability to detect changes and regenerate the target code, which requires a fairly complex implementation mechanism.
 

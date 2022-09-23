@@ -13,3 +13,7 @@ Cargo.lock
 # Added by cargo
 
 /target
+
+/pkg
+/.ipynb_checkpoints
+/.vscode
