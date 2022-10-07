@@ -20,7 +20,7 @@ macro_rules! parse_not_meet{
 impl<'a> Binary<'a> {
     pub fn parse(bytes: &'a [u8]) -> ParseResult<Self> {
         let mut elf = ElfFile::new(bytes).unwrap();
-        let mut pages = Vec::new();
+        let pages = Vec::new();
         parse_not_meet!(
             elf.header_part1.get_class(),
             Class::SixtyFour,
