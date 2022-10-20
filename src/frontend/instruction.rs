@@ -109,7 +109,7 @@ impl<const HIGH_BIT: usize, const LOW_BIT: usize> Imm32<HIGH_BIT, LOW_BIT> {
         res
     }
     pub fn decode_sext(self) -> i32 {
-        todo!()
+        ((self.decode() << (31 - HIGH_BIT)) as i32) >> (31 - HIGH_BIT)
     }
 }
 #[derive(Debug, Clone)]
