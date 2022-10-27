@@ -53,6 +53,7 @@ impl<const MAX: u32> Into<String> for Xx<MAX> {
 pub enum Reg {
     X(Xx<32>),
     F(Xx<32>),
+    V(Xx<32>),
     PC,
     FCSR,
 }
@@ -63,6 +64,7 @@ pub enum ISAExtension {
     M,
     A,
     F,
+    E,
     D,
     Q,
     C,
@@ -134,6 +136,7 @@ impl ISAExtension {
             Self::M => "M",
             Self::A => "A",
             Self::F => "F",
+            Self::E => "#",
             Self::D => "D",
             Self::Q => "Q",
             Self::V => "V",
@@ -219,6 +222,7 @@ pub enum RV32M {
     REMU(Rd, Rs1, Rs2),
 }
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum RV32A {
     LR_W(Rd, Rs1, AQ, RL),
     SC_W(Rd, Rs1, Rs2, AQ, RL),
@@ -233,6 +237,7 @@ pub enum RV32A {
     AMOMAXU_W(Rd, Rs1, Rs2, AQ, RL),
 }
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum RV32F {
     FLW(Rd, Rs1, Imm32<11, 0>),
     FSW(Rs1, Rs2, Imm32<11, 0>),
@@ -261,7 +266,12 @@ pub enum RV32F {
     FCVT_S_WU(Rd, Rs1, RoundingMode),
     FMV_W_X(Rd, Rs1),
 }
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV32E {}
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum RV32D {
     FLD(Rd, Rs1, Imm32<11, 0>),
     FSD(Rs1, Rs2, Imm32<11, 0>),
@@ -290,8 +300,51 @@ pub enum RV32D {
     FCVT_D_W(Rd, Rs1, RoundingMode),
     FCVT_D_WU(Rd, Rs1, RoundingMode),
 }
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum RV32V {}
+#[allow(non_camel_case_types)]
+pub enum RV32Zifencei {
+    FENCE_I(Rd, Rs1, Imm32<11, 0>),
+}
+
+/// https://github.com/nervosnetwork/ckb-vm/issues/222
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV32V {
+    VSETVLI(Rd, Rs1, Imm32<11, 0>),
+    VLE16_V(Rd, Rs1, Imm32<11, 0>),
+    VLSE16_V(Rd, Rs1, Imm32<11, 0>),
+    VWMACC_VV(Rd, Rs1, Rs2, Imm32<11, 0>),
+}
+
+/// typed RV32 instructions
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV32Instr {
+    RV32I(RV32I),
+    RV32M(RV32M),
+    RV32A(RV32A),
+    RV32F(RV32F),
+    RV32E(RV32E),
+    RV32D(RV32D),
+    RV32V(RV32V),
+    RV32Zifencei(RV32Zifencei),
+    RV32Zcsr(RV32Zifencei),
+}
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV64Instr {
+    RV64I(RV64I),
+    RV64M(RV64M),
+    RV64A(RV64A),
+    RV64F(RV64F),
+    RV64E(RV64E),
+    RV64D(RV64D),
+    RV64V(RV64V),
+    RV64Zifencei(RV64Zifencei),
+    RV64Zcsr(RV64Zifencei),
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct FenceFm(pub Xx<16>);
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -309,14 +362,22 @@ pub struct InstBitRange {
     pub end_bit_pos: usize,
     pub start_bit_pos: usize,
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Instr {
+    RV32(RV32Instr),
+    RV64(RV64Instr),
+    NOP,
+}
+
 #[derive(Debug, Clone)]
 pub struct Instruction {
     pub isa: ISA,
     pub name: InstructionName,
     pub fields: Vec<InstructionField>,
+    pub Instrs: Vec<Instr>,
 }
 impl Instruction {
-    fn parse_instruction() -> Instruction {
+    fn parse_instruction(self) -> Instruction {
         Instruction {
             isa: ISA {
                 base: ISABase::RV32,
@@ -327,6 +388,7 @@ impl Instruction {
                 name: "".to_string(),
             },
             fields: vec![],
+            Instrs: vec![],
         }
     }
 }
@@ -342,5 +404,23 @@ impl Iterator for InstructionIter<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::isa::untyped::JType;
+
+    #[test]
+    fn test_layout() {
+        // jal x0, -6*4
+        let instr_asm: u32 = 0b_1_1111110100_1_11111111_00000_1101111;
+        let instr = JType::from_bytes(instr_asm.to_le_bytes());
+        assert_eq!(instr.opcode(), 0b_1101111);
+        assert_eq!(instr.rd(), 0b0);
+        assert_eq!(instr.imm19_12(), 0b11111111);
+        assert_eq!(instr.imm11(), 0b1);
+        assert_eq!(instr.imm10_1(), 0b1111110100);
+        assert_eq!(instr.imm20(), 0b1);
     }
 }
