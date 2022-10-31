@@ -23,6 +23,9 @@ pub struct Rs2(pub Reg);
 /// Rs3
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rs3(pub Reg);
+/// Vmask
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VM(pub bool);
 /// Atomic instruction flag: Acquire
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct AQ(pub bool);
@@ -136,7 +139,7 @@ impl ISAExtension {
             Self::M => "M",
             Self::A => "A",
             Self::F => "F",
-            Self::E => "#",
+            Self::E => "E",
             Self::D => "D",
             Self::Q => "Q",
             Self::V => "V",
@@ -269,7 +272,50 @@ pub enum RV32F {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
-pub enum RV32E {}
+pub enum RV32E {
+    LUI(Rd, Imm32<31, 12>),
+    AUIPC(Rd, Imm32<31, 12>),
+    JAL(Rd, Imm32<31, 12>),
+    JALR(Rd, Rs, Imm32<31, 12>),
+    BEQ(Rs1, Rs2, Imm32<31, 12>),
+    BNE(Rs1, Rs2, Imm32<31, 12>),
+    BLT(Rs1, Rs2, Imm32<12, 1>),
+    BGE(Rs1, Rs2, Imm32<12, 1>),
+    BLTU(Rs1, Rs2, Imm32<12, 1>),
+    BGEU(Rs1, Rs2, Imm32<12, 1>),
+    LB(Rd, Rs1, Imm32<11, 0>),
+    LH(Rd, Rs1, Imm32<11, 0>),
+    LW(Rd, Rs1, Imm32<11, 0>),
+    LBU(Rd, Rs1, Imm32<11, 0>),
+    LHU(Rd, Rs1, Imm32<11, 0>),
+    SB(Rs1, Rs2, Imm32<11, 0>),
+    SH(Rs1, Rs2, Imm32<11, 0>),
+    SW(Rs1, Rs2, Imm32<11, 0>),
+    ADDI(Rd, Rs1, Imm32<11, 0>),
+    SLTI(Rd, Rs1, Imm32<11, 0>),
+    SLTIU(Rd, Rs1, Imm32<11, 0>),
+    XORI(Rd, Rs1, Imm32<11, 0>),
+    ORI(Rd, Rs1, Imm32<11, 0>),
+    ANDI(Rd, Rs1, Imm32<11, 0>),
+    SLLI(Rd, Rs1, Shamt),
+    SRLI(Rd, Rs1, Shamt),
+    SRAI(Rd, Rs1, Shamt),
+    ADD(Rd, Rs1, Rs2),
+    SUB(Rd, Rs1, Rs2),
+    SLL(Rd, Rs1, Rs2),
+    SLT(Rd, Rs1, Rs2),
+    SLTU(Rd, Rs1, Rs2),
+    XOR(Rd, Rs1, Rs2),
+    SRL(Rd, Rs1, Rs2),
+    SRA(Rd, Rs1, Rs2),
+    OR(Rd, Rs1, Rs2),
+    AND(Rd, Rs1, Rs2),
+    FENCE(Rd, Rs1, FenceSucc, FencePred, FenceFm),
+    FENCE_TSO,
+    PAUSE,
+    ECALL,
+    EBREAK,
+}
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum RV32D {
@@ -300,23 +346,313 @@ pub enum RV32D {
     FCVT_D_W(Rd, Rs1, RoundingMode),
     FCVT_D_WU(Rd, Rs1, RoundingMode),
 }
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
-pub enum RV32Zifencei {
-    FENCE_I(Rd, Rs1, Imm32<11, 0>),
-}
-
 /// https://github.com/nervosnetwork/ckb-vm/issues/222
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
-pub enum RV32V {
-    VSETVLI(Rd, Rs1, Imm32<11, 0>),
-    VLE16_V(Rd, Rs1, Imm32<11, 0>),
-    VLSE16_V(Rd, Rs1, Imm32<11, 0>),
-    VWMACC_VV(Rd, Rs1, Rs2, Imm32<11, 0>),
+pub enum RVV {
+    VSETIVLI(Rd, Rs1, Imm32<20, 10>),
+    VSETVLI(Rd, Rs1, Imm32<20, 11>),
+    VSETVL(Rd, Rs1, Rs2),
+    VLM_V(Rd, Rs1), // The first is v register and the second is normal register
+    VLE8_V(Rd, Rs1, VM),
+    VLE16_V(Rd, Rs1, VM),
+    VLE32_V(Rd, Rs1, VM),
+    VLE64_V(Rd, Rs1, VM),
+    VLE128_V(Rd, Rs1, VM),
+    VLE256_V(Rd, Rs1, VM),
+    VLE512_V(Rd, Rs1, VM),
+    VLE1024_V(Rd, Rs1, VM),
+    VSM_V(Rs3, Rs1),
+    VSE8_V(Rs3, Rs1, VM),
+    VSE16_V(Rs3, Rs1, VM),
+    VSE32_V(Rs3, Rs1, VM),
+    VSE64_V(Rd, Rs1),
+    VSE128_V(Rd, Rs1),
+    VSE256_V(Rd, Rs1),
+    VSE512_V(Rd, Rs1),
+    VSE1024_V(Rd, Rs1),
+    VADD_VV(Rd, Rs1),
+    VADD_VX(Rd, Rs1),
+    VADD_VI(Rd, Rs1),
+    VSUB_VV(Rd, Rs1),
+    VSUB_VX(Rd, Rs1),
+    VRSUB_VX(Rd, Rs1),
+    VRSUB_VI(Rd, Rs1),
+    VMUL_VV(Rd, Rs1),
+    VMUL_VX(Rd, Rs1),
+    VDIV_VV(Rd, Rs1),
+    VDIV_VX(Rd, Rs1),
+    VDIVU_VV(Rd, Rs1),
+    VDIVU_VX(Rd, Rs1),
+    VREM_VV(Rd, Rs1),
+    VREM_VX(Rd, Rs1),
+    VREMU_VV(Rd, Rs1),
+    VREMU_VX(Rd, Rs1),
+    VSLL_VV(Rd, Rs1),
+    VSLL_VX(Rd, Rs1),
+    VSLL_VI(Rd, Rs1),
+    VSRL_VV(Rd, Rs1),
+    VSRL_VX(Rd, Rs1),
+    VSRL_VI(Rd, Rs1),
+    VSRA_VV(Rd, Rs1),
+    VSRA_VX(Rd, Rs1),
+    VSRA_VI(Rd, Rs1),
+    VMSEQ_VV(Rd, Rs1),
+    VMSEQ_VX(Rd, Rs1),
+    VMSEQ_VI(Rd, Rs1),
+    VMSNE_VV(Rd, Rs1),
+    VMSNE_VX(Rd, Rs1),
+    VMSNE_VI(Rd, Rs1),
+    VMSLTU_VV(Rd, Rs1),
+    VMSLTU_VX(Rd, Rs1),
+    VMSLT_VV(Rd, Rs1),
+    VMSLT_VX(Rd, Rs1),
+    VMSLEU_VV(Rd, Rs1),
+    VMSLEU_VX(Rd, Rs1),
+    VMSLEU_VI(Rd, Rs1),
+    VMSLE_VV(Rd, Rs1),
+    VMSLE_VX(Rd, Rs1),
+    VMSLE_VI(Rd, Rs1),
+    VMSGTU_VX(Rd, Rs1),
+    VMSGTU_VI(Rd, Rs1),
+    VMSGT_VX(Rd, Rs1),
+    VMSGT_VI(Rd, Rs1),
+    VMINU_VV(Rd, Rs1),
+    VMINU_VX(Rd, Rs1),
+    VMIN_VV(Rd, Rs1),
+    VMIN_VX(Rd, Rs1),
+    VMAXU_VV(Rd, Rs1),
+    VMAXU_VX(Rd, Rs1),
+    VMAX_VV(Rd, Rs1),
+    VMAX_VX(Rd, Rs1),
+    VWADDU_VV(Rd, Rs1),
+    VWADDU_VX(Rd, Rs1),
+    VWSUBU_VV(Rd, Rs1),
+    VWSUBU_VX(Rd, Rs1),
+    VWADD_VV(Rd, Rs1),
+    VWADD_VX(Rd, Rs1),
+    VWSUB_VV(Rd, Rs1),
+    VWSUB_VX(Rd, Rs1),
+    VWADDU_WV(Rd, Rs1),
+    VWADDU_WX(Rd, Rs1),
+    VWSUBU_WV(Rd, Rs1),
+    VWSUBU_WX(Rd, Rs1),
+    VWADD_WV(Rd, Rs1),
+    VWADD_WX(Rd, Rs1),
+    VWSUB_WV(Rd, Rs1),
+    VWSUB_WX(Rd, Rs1),
+    VZEXT_VF8(Rd, Rs1),
+    VSEXT_VF8(Rd, Rs1),
+    VZEXT_VF4(Rd, Rs1),
+    VSEXT_VF4(Rd, Rs1),
+    VZEXT_VF2(Rd, Rs1),
+    VSEXT_VF2(Rd, Rs1),
+    VADC_VVM(Rd, Rs1),
+    VADC_VXM(Rd, Rs1),
+    VADC_VIM(Rd, Rs1),
+    VMADC_VVM(Rd, Rs1),
+    VMADC_VXM(Rd, Rs1),
+    VMADC_VIM(Rd, Rs1),
+    VMADC_VV(Rd, Rs1),
+    VMADC_VX(Rd, Rs1),
+    VMADC_VI(Rd, Rs1),
+    VSBC_VVM(Rd, Rs1),
+    VSBC_VXM(Rd, Rs1),
+    VMSBC_VVM(Rd, Rs1),
+    VMSBC_VXM(Rd, Rs1),
+    VMSBC_VV(Rd, Rs1),
+    VMSBC_VX(Rd, Rs1),
+    VAND_VV(Rd, Rs1),
+    VAND_VI(Rd, Rs1),
+    VAND_VX(Rd, Rs1),
+    VOR_VV(Rd, Rs1),
+    VOR_VX(Rd, Rs1),
+    VOR_VI(Rd, Rs1),
+    VXOR_VV(Rd, Rs1),
+    VXOR_VX(Rd, Rs1),
+    VXOR_VI(Rd, Rs1),
+    VNSRL_WV(Rd, Rs1),
+    VNSRL_WX(Rd, Rs1),
+    VNSRL_WI(Rd, Rs1),
+    VNSRA_WV(Rd, Rs1),
+    VNSRA_WX(Rd, Rs1),
+    VNSRA_WI(Rd, Rs1),
+    VMULH_VV(Rd, Rs1),
+    VMULH_VX(Rd, Rs1),
+    VMULHU_VV(Rd, Rs1),
+    VMULHU_VX(Rd, Rs1),
+    VMULHSU_VV(Rd, Rs1),
+    VMULHSU_VX(Rd, Rs1),
+    VWMULU_VV(Rd, Rs1),
+    VWMULU_VX(Rd, Rs1),
+    VWMULSU_VV(Rd, Rs1),
+    VWMULSU_VX(Rd, Rs1),
+    VWMUL_VV(Rd, Rs1),
+    VWMUL_VX(Rd, Rs1),
+    VMV_V_V(Rd, Rs1),
+    VMV_V_X(Rd, Rs1),
+    VMV_V_I(Rd, Rs1),
+    VSADDU_VV(Rd, Rs1),
+    VSADDU_VX(Rd, Rs1),
+    VSADDU_VI(Rd, Rs1),
+    VSADD_VV(Rd, Rs1),
+    VSADD_VX(Rd, Rs1),
+    VSADD_VI(Rd, Rs1),
+    VSSUBU_VV(Rd, Rs1),
+    VSSUBU_VX(Rd, Rs1),
+    VSSUB_VV(Rd, Rs1),
+    VSSUB_VX(Rd, Rs1),
+    VAADDU_VV(Rd, Rs1),
+    VAADDU_VX(Rd, Rs1),
+    VAADD_VV(Rd, Rs1),
+    VAADD_VX(Rd, Rs1),
+    VASUBU_VV(Rd, Rs1),
+    VASUBU_VX(Rd, Rs1),
+    VASUB_VV(Rd, Rs1),
+    VASUB_VX(Rd, Rs1),
+    VMV1R_V(Rd, Rs1),
+    VMV2R_V(Rd, Rs1),
+    VMV4R_V(Rd, Rs1),
+    VMV8R_V(Rd, Rs1),
+    VFIRST_M(Rd, Rs1),
+    VMAND_MM(Rd, Rs1),
+    VMNAND_MM(Rd, Rs1),
+    VMANDNOT_MM(Rd, Rs1),
+    VMXOR_MM(Rd, Rs1),
+    VMOR_MM(Rd, Rs1),
+    VMNOR_MM(Rd, Rs1),
+    VMORNOT_MM(Rd, Rs1),
+    VMXNOR_MM(Rd, Rs1),
+    VLSE8_V(Rd, Rs1),
+    VLSE16_V(Rd, Rs1),
+    VLSE32_V(Rd, Rs1),
+    VLSE64_V(Rd, Rs1),
+    VLSE128_V(Rd, Rs1),
+    VLSE256_V(Rd, Rs1),
+    VLSE512_V(Rd, Rs1),
+    VLSE1024_V(Rd, Rs1),
+    VSSE8_V(Rd, Rs1),
+    VSSE16_V(Rd, Rs1),
+    VSSE32_V(Rd, Rs1),
+    VSSE64_V(Rd, Rs1),
+    VSSE128_V(Rd, Rs1),
+    VSSE256_V(Rd, Rs1),
+    VSSE512_V(Rd, Rs1),
+    VSSE1024_V(Rd, Rs1),
+    VLUXEI8_V(Rd, Rs1),
+    VLUXEI16_V(Rd, Rs1),
+    VLUXEI32_V(Rd, Rs1),
+    VLUXEI64_V(Rd, Rs1),
+    VLUXEI128_V(Rd, Rs1),
+    VLUXEI256_V(Rd, Rs1),
+    VLUXEI512_V(Rd, Rs1),
+    VLUXEI1024_V(Rd, Rs1),
+    VLOXEI8_V(Rd, Rs1),
+    VLOXEI16_V(Rd, Rs1),
+    VLOXEI32_V(Rd, Rs1),
+    VLOXEI64_V(Rd, Rs1),
+    VLOXEI128_V(Rd, Rs1),
+    VLOXEI256_V(Rd, Rs1),
+    VLOXEI512_V(Rd, Rs1),
+    VLOXEI1024_V(Rd, Rs1),
+    VSUXEI8_V(Rd, Rs1),
+    VSUXEI16_V(Rd, Rs1),
+    VSUXEI32_V(Rd, Rs1),
+    VSUXEI64_V(Rd, Rs1),
+    VSUXEI128_V(Rd, Rs1),
+    VSUXEI256_V(Rd, Rs1),
+    VSUXEI512_V(Rd, Rs1),
+    VSUXEI1024_V(Rd, Rs1),
+    VSOXEI8_V(Rd, Rs1),
+    VSOXEI16_V(Rd, Rs1),
+    VSOXEI32_V(Rd, Rs1),
+    VSOXEI64_V(Rd, Rs1),
+    VSOXEI128_V(Rd, Rs1),
+    VSOXEI256_V(Rd, Rs1),
+    VSOXEI512_V(Rd, Rs1),
+    VSOXEI1024_V(Rd, Rs1),
+    VL1RE8_V(Rd, Rs1),
+    VL1RE16_V(Rd, Rs1),
+    VL1RE32_V(Rd, Rs1),
+    VL1RE64_V(Rd, Rs1),
+    VL2RE8_V(Rd, Rs1),
+    VL2RE16_V(Rd, Rs1),
+    VL2RE32_V(Rd, Rs1),
+    VL2RE64_V(Rd, Rs1),
+    VL4RE8_V(Rd, Rs1),
+    VL4RE16_V(Rd, Rs1),
+    VL4RE32_V(Rd, Rs1),
+    VL4RE64_V(Rd, Rs1),
+    VL8RE8_V(Rd, Rs1),
+    VL8RE16_V(Rd, Rs1),
+    VL8RE32_V(Rd, Rs1),
+    VL8RE64_V(Rd, Rs1),
+    VS1R_V(Rd, Rs1),
+    VS2R_V(Rd, Rs1),
+    VS4R_V(Rd, Rs1),
+    VS8R_V(Rd, Rs1),
+    VMACC_VV(Rd, Rs1),
+    VMACC_VX(Rd, Rs1),
+    VNMSAC_VV(Rd, Rs1),
+    VNMSAC_VX(Rd, Rs1),
+    VMADD_VV(Rd, Rs1),
+    VMADD_VX(Rd, Rs1),
+    VNMSUB_VV(Rd, Rs1),
+    VNMSUB_VX(Rd, Rs1),
+    VSSRL_VV(Rd, Rs1),
+    VSSRL_VX(Rd, Rs1),
+    VSSRL_VI(Rd, Rs1),
+    VSSRA_VV(Rd, Rs1),
+    VSSRA_VX(Rd, Rs1),
+    VSSRA_VI(Rd, Rs1),
+    VSMUL_VV(Rd, Rs1),
+    VSMUL_VX(Rd, Rs1),
+    VWMACCU_VV(Rd, Rs1),
+    VWMACCU_VX(Rd, Rs1),
+    VWMACC_VV(Rd, Rs1),
+    VWMACC_VX(Rd, Rs1),
+    VWMACCSU_VV(Rd, Rs1),
+    VWMACCSU_VX(Rd, Rs1),
+    VWMACCUS_VX(Rd, Rs1),
+    VMERGE_VVM(Rd, Rs1),
+    VMERGE_VXM(Rd, Rs1),
+    VMERGE_VIM(Rd, Rs1),
+    VNCLIPU_WV(Rd, Rs1),
+    VNCLIPU_WX(Rd, Rs1),
+    VNCLIPU_WI(Rd, Rs1),
+    VNCLIP_WV(Rd, Rs1),
+    VNCLIP_WX(Rd, Rs1),
+    VNCLIP_WI(Rd, Rs1),
+    VREDSUM_VS(Rd, Rs1),
+    VREDAND_VS(Rd, Rs1),
+    VREDOR_VS(Rd, Rs1),
+    VREDXOR_VS(Rd, Rs1),
+    VREDMINU_VS(Rd, Rs1),
+    VREDMIN_VS(Rd, Rs1),
+    VREDMAXU_VS(Rd, Rs1),
+    VREDMAX_VS(Rd, Rs1),
+    VWREDSUMU_VS(Rd, Rs1),
+    VWREDSUM_VS(Rd, Rs1),
+    VCPOP_M(Rd, Rs1),
+    VMSBF_M(Rd, Rs1),
+    VMSOF_M(Rd, Rs1),
+    VMSIF_M(Rd, Rs1),
+    VIOTA_M(Rd, Rs1),
+    VID_V(Rd, Rs1),
+    VMV_X_S(Rd, Rs1),
+    VMV_S_X(Rd, Rs1),
+    VCOMPRESS_VM(Rd, Rs1),
+    VSLIDE1UP_VX(Rd, Rs1),
+    VSLIDEUP_VX(Rd, Rs1),
+    VSLIDEUP_VI(Rd, Rs1),
+    VSLIDE1DOWN_VX(Rd, Rs1),
+    VSLIDEDOWN_VX(Rd, Rs1),
+    VSLIDEDOWN_VI(Rd, Rs1),
+    VRGATHER_VX(Rd, Rs1),
+    VRGATHER_VV(Rd, Rs1),
+    VRGATHEREI16_VV(Rd, Rs1),
+    VRGATHER_VI(Rd, Rs1),
 }
-
 /// typed RV32 instructions
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
@@ -327,10 +663,108 @@ pub enum RV32Instr {
     RV32F(RV32F),
     RV32E(RV32E),
     RV32D(RV32D),
-    RV32V(RV32V),
-    RV32Zifencei(RV32Zifencei),
-    RV32Zcsr(RV32Zifencei),
+    RV32V(RVV),
+    RV32Zifencei(RVZifencei),
+    RV32Zcsr(RVZcsr),
 }
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV64I {
+    LWU(Rd, Rs1, Imm32<11, 0>),
+    LD(Rd, Rs1, Imm32<11, 0>),
+    SD(Rs1, Rs2, Imm32<11, 0>),
+    SLLI(Rd, Rs1, Shamt),
+    SRLI(Rd, Rs1, Shamt),
+    SRAI(Rd, Rs1, Shamt),
+    ADDIW(Rd, Rs1, Imm32<11, 0>),
+    SLLIW(Rd, Rs1, Shamt),
+    SRLIW(Rd, Rs1, Shamt),
+    SRAIW(Rd, Rs1, Shamt),
+    ADDW(Rd, Rs1, Rs2),
+    SUBW(Rd, Rs1, Rs2),
+    SLLW(Rd, Rs1, Rs2),
+    SRLW(Rd, Rs1, Rs2),
+    SRAW(Rd, Rs1, Rs2),
+}
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV64M {
+    MULW(Rd, Rs1, Rs2),
+    DIVW(Rd, Rs1, Rs2),
+    DIVUW(Rd, Rs1, Rs2),
+    REMW(Rd, Rs1, Rs2),
+    REMUW(Rd, Rs1, Rs2),
+}
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV64A {
+    LR_D(Rd, Rs1, AQ, RL),
+    SC_D(Rd, Rs1, Rs2, AQ, RL),
+    AMOSWAP_D(Rd, Rs1, Rs2, AQ, RL),
+    AMOADD_D(Rd, Rs1, Rs2, AQ, RL),
+    AMOXOR_D(Rd, Rs1, Rs2, AQ, RL),
+    AMOAND_D(Rd, Rs1, Rs2, AQ, RL),
+    AMOOR_D(Rd, Rs1, Rs2, AQ, RL),
+    AMOMIN_D(Rd, Rs1, Rs2, AQ, RL),
+    AMOMAX_D(Rd, Rs1, Rs2, AQ, RL),
+    AMOMINU_D(Rd, Rs1, Rs2, AQ, RL),
+    AMOMAXU_D(Rd, Rs1, Rs2, AQ, RL),
+}
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV64F {
+    FCVT_L_S(Rd, Rs1, RoundingMode),
+    FCVT_LU_S(Rd, Rs1, RoundingMode),
+    FCVT_S_L(Rd, Rs1, RoundingMode),
+    FCVT_S_LU(Rd, Rs1, RoundingMode),
+}
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV64E {
+    LWU(Rd, Rs1, Imm32<11, 0>),
+    LD(Rd, Rs1, Imm32<11, 0>),
+    SD(Rs1, Rs2, Imm32<11, 0>),
+    SLLI(Rd, Rs1, Shamt),
+    SRLI(Rd, Rs1, Shamt),
+    SRAI(Rd, Rs1, Shamt),
+    ADDIW(Rd, Rs1, Imm32<11, 0>),
+    SLLIW(Rd, Rs1, Shamt),
+    SRLIW(Rd, Rs1, Shamt),
+    SRAIW(Rd, Rs1, Shamt),
+    ADDW(Rd, Rs1, Rs2),
+    SUBW(Rd, Rs1, Rs2),
+    SLLW(Rd, Rs1, Rs2),
+    SRLW(Rd, Rs1, Rs2),
+    SRAW(Rd, Rs1, Rs2),
+}
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV64D {
+    FCVT_L_D(Rd, Rs1, RoundingMode),
+    FCVT_LU_D(Rd, Rs1, RoundingMode),
+    FMV_X_D(Rd, Rs1),
+    FCVT_D_L(Rd, Rs1, RoundingMode),
+    FCVT_D_LU(Rd, Rs1, RoundingMode),
+    FMV_D_X(Rd, Rs1),
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RVZcsr {
+    CSRRW(Rd, Rs1, CSRAddr),
+    CSRRS(Rd, Rs1, CSRAddr),
+    CSRRC(Rd, Rs1, CSRAddr),
+    CSRRWI(Rd, UImm, CSRAddr),
+    CSRRSI(Rd, UImm, CSRAddr),
+    CSRRCI(Rd, UImm, CSRAddr),
+}
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RVZifencei {
+    FENCE_I(Rd, Rs1, Imm32<11, 0>),
+}
+
+/// typed RV64 instructions
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum RV64Instr {
@@ -340,9 +774,18 @@ pub enum RV64Instr {
     RV64F(RV64F),
     RV64E(RV64E),
     RV64D(RV64D),
-    RV64V(RV64V),
-    RV64Zifencei(RV64Zifencei),
-    RV64Zcsr(RV64Zifencei),
+    RV64V(RVV),
+    RV64Zifencei(RVZifencei),
+    RV64Zcsr(RVZcsr),
+}
+
+/// typed RV64 instructions
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RV128Instr {
+    RV128V(RVV),
+    RV128Zifencei(RVZifencei),
+    RV128Zcsr(RVZcsr),
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -366,29 +809,43 @@ pub struct InstBitRange {
 pub enum Instr {
     RV32(RV32Instr),
     RV64(RV64Instr),
+    RV128(RV128Instr),
     NOP,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct CSRAddr(pub Imm32<11, 0>);
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct UImm(pub Imm32<4, 0>);
+
+impl CSRAddr {
+    pub fn value(self) -> u16 {
+        self.0.decode() as u16
+    }
+}
+
+impl UImm {
+    pub fn value(self) -> u32 {
+        self.0.decode()
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct Instruction {
-    pub isa: ISA,
     pub name: InstructionName,
-    pub fields: Vec<InstructionField>,
-    pub Instrs: Vec<Instr>,
+    pub field: InstructionField,
+    pub Instr: Instr,
 }
 impl Instruction {
-    fn parse_instruction(self) -> Instruction {
+    fn parse_instruction(self, bit: [u8; 32]) -> Instruction {
         Instruction {
-            isa: ISA {
-                base: ISABase::RV32,
-                ext: ISAExtension::I,
-            },
             name: InstructionName {
                 pos: 0,
                 name: "".to_string(),
             },
-            fields: vec![],
-            Instrs: vec![],
+            field: todo!(),
+            Instr: todo!(),
         }
     }
 }
