@@ -1,6 +1,6 @@
+use super::page::{Page, PageIndexOfs};
 use std::ops::RangeInclusive;
 
-use super::page::Page;
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ISABase {
@@ -60,6 +60,17 @@ pub enum Reg {
     PC,
     FCSR,
 }
+
+// impl Into<i32> for Reg{
+//     fn into(self) -> i32{
+//         match self {
+//             Reg::X(x) => x.0 as i32,
+//             Reg::F(x) => x.0 as i32,
+//             Reg::V(x) => x.0 as i32,
+//             Reg::PC => 0,
+//             Reg::FCSR => 0,
+//         }
+// }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ISAExtension {
@@ -164,11 +175,52 @@ impl RType {
     }
 }
 #[derive(Debug, Clone)]
+#[allow(non_camel_case_types)]
+pub enum OpCode {
+    LOAD = 0b00000,
+    LOAD_FP = 0b00001,
+    _custom_0 = 0b00010,
+    MISC_MEM = 0b00011,
+    OP_IMM = 0b00100,
+    AUIPC = 0b00101,
+    OP_IMM_32 = 0b00110,
+
+    STORE = 0b01000,
+    STORE_FP = 0b01001,
+    _custom_1 = 0b01010,
+    AMO = 0b01011,
+    OP = 0b01100,
+    LUI = 0b01101,
+    OP_32 = 0b01110,
+
+    MADD = 0b10000,
+    MSUB = 0b10001,
+    NMSUB = 0b10010,
+    NMADD = 0b10011,
+    OP_FP = 0b10100,
+    _reversed_0 = 0b10101,
+    _custom_2_or_rv128 = 0b10110,
+
+    BRANCH = 0b11000,
+    JALR = 0b11001,
+    _reversed_1 = 0b11010,
+    JAL = 0b11011,
+    SYSTEM = 0b11100,
+    _reversed_2 = 0b11101,
+    _custom_3_or_rv128 = 0b11110,
+}
+impl Into<i32> for OpCode {
+    fn into(self) -> i32 {
+        self as i32
+    }
+}
+#[derive(Debug, Clone)]
 pub struct InstructionName {
     pub pos: usize,
     pub name: String,
 }
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum RV32I {
     LUI(Rd, Imm32<31, 12>),
     AUIPC(Rd, Imm32<31, 12>),
@@ -837,8 +889,12 @@ pub struct Instruction {
     pub field: InstructionField,
     pub Instr: Instr,
 }
+#[inline(always)]
+pub fn x(instruction_bits: u32, lower: usize, length: usize, shifts: usize) -> u32 {
+    ((instruction_bits >> lower) & ((1 << length) - 1)) << shifts
+}
 impl Instruction {
-    fn parse_instruction(self, bit: [u8; 32]) -> Instruction {
+    fn parse(bit: &[u8]) -> Instruction {
         Instruction {
             name: InstructionName {
                 pos: 0,
@@ -847,6 +903,18 @@ impl Instruction {
             field: todo!(),
             Instr: todo!(),
         }
+    }
+    fn opcode(self) -> OpCode {
+        todo!()
+    }
+    fn rd(self) -> Reg {
+        todo!()
+    }
+    fn rs1(self) -> Reg {
+        todo!()
+    }
+    fn imm<const HIGH_BIT: usize, const LOW_BIT: usize>(self) -> Imm32<HIGH_BIT, LOW_BIT> {
+        todo!()
     }
 }
 
@@ -860,24 +928,57 @@ impl Iterator for InstructionIter<'_> {
     type Item = (u64, Instruction);
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        let mut bytes = [0; 32];
+        //    self.address, &mut bytes
+        let mut address = self.address;
+        let mut read_len = 0;
+        let mut data: &mut [u8] = &mut bytes;
+        let PageIndexOfs {
+            page_index,
+            mut offset,
+        } = Page::valid_page_index_and_offset(address).unwrap();
+        for page_index in page_index.. {
+            if let Some(page) = self
+                .memory_map
+                .get(page_index)
+                .and_then(Option::as_ref)
+                .map(|v| &(*v))
+            {
+                let the_rest_page = &page[offset..];
+                if data.len() <= the_rest_page.len() {
+                    data.copy_from_slice(&the_rest_page[..data.len()]);
+                    read_len += data.len();
+                }
+                let (current_data, data_rest) = data.split_at_mut(the_rest_page.len());
+                current_data.copy_from_slice(the_rest_page);
+                read_len += current_data.len();
+                data = data_rest;
+                address += the_rest_page.len() as u64;
+                offset = 0;
+            } else {
+                continue;
+            }
+        }
+
+        let instruction = Instruction::parse(&bytes[..read_len]);
+        Some((address, instruction))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::isa::untyped::JType;
+    use crate::frontend::instruction::Instruction;
 
     #[test]
     fn test_layout() {
         // jal x0, -6*4
         let instr_asm: u32 = 0b_1_1111110100_1_11111111_00000_1101111;
-        let instr = JType::from_bytes(instr_asm.to_le_bytes());
-        assert_eq!(instr.opcode(), 0b_1101111);
-        assert_eq!(instr.rd(), 0b0);
-        assert_eq!(instr.imm19_12(), 0b11111111);
-        assert_eq!(instr.imm11(), 0b1);
-        assert_eq!(instr.imm10_1(), 0b1111110100);
-        assert_eq!(instr.imm20(), 0b1);
+        let instr = Instruction::parse(&instr_asm.to_le_bytes());
+        // assert_eq!(instr.opcode(), OpCode(0b_1101111));
+        // assert_eq!(instr.rd(), Reg(0b0));
+        // assert_eq!(instr.imm(), 0b11111111);
+        // assert_eq!(instr.imm11(), 0b1);
+        // assert_eq!(instr.imm10_1(), 0b1111110100);
+        // assert_eq!(instr.imm20(), 0b1);
     }
 }
