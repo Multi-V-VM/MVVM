@@ -1,4 +1,5 @@
 use crate::frontend::elf::{Class, Machine, ProgramHeaderType};
+use crate::frontend::BIT_LENGTH;
 
 use super::elf::{Data, ElfError, ElfFile, ParseResult, Type};
 use super::page::Page;
@@ -22,11 +23,15 @@ impl<'a> Binary<'a> {
     pub fn parse(bytes: &'a [u8]) -> ParseResult<Self> {
         let mut elf = ElfFile::new(bytes).unwrap();
         let pages = Vec::new();
-        parse_not_meet!(
-            elf.header_part1.get_class(),
-            Class::SixtyFour,
-            String::from("Not 64bit Binary")
-        );
+
+        unsafe {
+            match elf.header_part1.get_class() {
+                Class::ThirtyTwo => BIT_LENGTH = 0,
+                Class::SixtyFour => BIT_LENGTH = 1,
+                Class::OneTwentyEight => BIT_LENGTH = 2,
+                _ => return Err(ElfError::NotMeet(String::from("Not expected Class Binary"))),
+            }
+        }
         parse_not_meet!(
             elf.header_part1.get_data(),
             Data::LittleEndian,
@@ -45,7 +50,7 @@ impl<'a> Binary<'a> {
         parse_not_meet!(
             elf.parse_interpreter().unwrap(),
             "/lib/ld-linux-riscv64-lp64d.so.1",
-            String::from("Not RISCV Dynam     ic Linked")
+            String::from("Not RISCV Dynamatic Linked")
         );
         let program_iter = elf.program_iter();
         // iterate the program and iterate the bytes
@@ -128,7 +133,6 @@ impl<'a> Binary<'a> {
             "Section header size: {}",
             elf.header_part2.get_sh_count() - 1
         );
-        // section_iter.;
         section_iter.next();
         for sh in section_iter {
             dbg!(" {}", sh.get_data(&elf));
@@ -148,5 +152,6 @@ mod test {
             "/test_binaries/test1"
         )))
         .unwrap();
+        unsafe { assert_eq!(BIT_LENGTH, 1) }
     }
 }

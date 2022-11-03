@@ -95,7 +95,7 @@ impl<'a> ElfFile<'a> {
                 let header = read(&input[start..end]);
                 SectionHeader::SectionHeader64(header)
             }
-            Class::None | Class::Other(_) => todo!(),
+            _ => todo!(),
         })
     }
     pub fn parse_program_header(
@@ -117,7 +117,7 @@ impl<'a> ElfFile<'a> {
         match self.header_part1.get_class() {
             Class::ThirtyTwo => Ok(ProgramHeader::ProgramHeader32(read(&input[start..end]))),
             Class::SixtyFour => Ok(ProgramHeader::ProgramHeader64(read(&input[start..end]))),
-            Class::None | Class::Other(_) => unreachable!(),
+            _ => unreachable!(),
         }
     }
     pub fn new(input: &'a [u8]) -> ParseResult<Self> {
@@ -236,6 +236,7 @@ pub enum Class {
     None,
     ThirtyTwo,
     SixtyFour,
+    OneTwentyEight,
     Other(u8),
 }
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -674,12 +675,13 @@ impl<'a> SectionHeader<'a> {
 
     pub fn get_data(&self, elf_file: &ElfFile<'a>) -> ParseResult<SectionData<'a>> {
         macro_rules! array_data {
-            ($data32: ident, $data64: ident) => {{
+            ($data32: ident, $data64: ident, $data128: ident) => {{
                 let data = self.raw_data(elf_file);
                 match elf_file.header_part1.get_class() {
                     Class::ThirtyTwo => SectionData::$data32(read_array(data)),
                     Class::SixtyFour => SectionData::$data64(read_array(data)),
-                    Class::None | Class::Other(_) => unreachable!(),
+                    Class::OneTwentyEight => SectionData::$data128(read_array(data)),
+                    _ => unreachable!(),
                 }
             }};
         }
@@ -691,28 +693,27 @@ impl<'a> SectionHeader<'a> {
             | SectionHeaderType::OsSpecific(_)
             | SectionHeaderType::ProcessorSpecific(_)
             | SectionHeaderType::User(_) => SectionData::Undefined(self.raw_data(elf_file)),
-            SectionHeaderType::SymbolTable => array_data!(SymbolTable32, SymbolTable64),
+            SectionHeaderType::SymbolTable => {
+                array_data!(SymbolTable32, SymbolTable64, SymbolTable128)
+            }
             SectionHeaderType::DynamicSymbolTable => {
-                array_data!(DynSymbolTable32, DynSymbolTable64)
+                array_data!(DynSymbolTable32, DynSymbolTable64, DynSymbolTable128)
             }
             SectionHeaderType::StringTable => SectionData::StrArray(self.raw_data(elf_file)),
             SectionHeaderType::InitializeArray
             | SectionHeaderType::TerminationArray
             | SectionHeaderType::PreInitializeArray => {
-                array_data!(FnArray32, FnArray64)
+                array_data!(FnArray32, FnArray64, FnArray128)
             }
-            SectionHeaderType::RelocationAddendTable => array_data!(Rela32, Rela64),
-            SectionHeaderType::RelocationAddendTable => array_data!(Rel32, Rel64),
-            SectionHeaderType::DynamicLinkingTable => array_data!(Dynamic32, Dynamic64),
+            SectionHeaderType::RelocationAddendTable => array_data!(Rela32, Rela64, Rela128),
+            SectionHeaderType::RelocationAddendTable => array_data!(Rel32, Rel64, Rel128),
+            SectionHeaderType::DynamicLinkingTable => array_data!(Dynamic32, Dynamic64, Dynamic128),
             SectionHeaderType::Group => {
                 let data = self.raw_data(elf_file);
                 unsafe {
                     let flags: &'a u32 = mem::transmute(&data[0]);
                     let indicies: &'a [u32] = read_array(&data[4..]);
-                    SectionData::Group {
-                        flags: flags,
-                        indicies: indicies,
-                    }
+                    SectionData::Group { flags, indicies }
                 }
             }
             SectionHeaderType::SymTabShIndex => {
@@ -721,13 +722,17 @@ impl<'a> SectionHeader<'a> {
             SectionHeaderType::NOTE => {
                 let data = self.raw_data(elf_file);
                 match elf_file.header_part1.get_class() {
-                    Class::ThirtyTwo => unimplemented!(),
+                    Class::ThirtyTwo => {
+                        let header: &'a NoteHeader = read(&data[0..12]);
+                        let index = &data[12..];
+                        SectionData::Note32(header, index)
+                    }
                     Class::SixtyFour => {
                         let header: &'a NoteHeader = read(&data[0..12]);
                         let index = &data[12..];
                         SectionData::Note64(header, index)
                     }
-                    Class::None | Class::Other(_) => unreachable!(),
+                    _ => unreachable!(),
                 }
             }
             SectionHeaderType::HashTable => {
@@ -907,20 +912,26 @@ pub enum SectionData<'a> {
     StrArray(&'a [u8]),
     FnArray32(&'a [u32]),
     FnArray64(&'a [u64]),
+    FnArray128(&'a [u64]),
     SymbolTable32(&'a [Entry32]),
     SymbolTable64(&'a [Entry64]),
+    SymbolTable128(&'a [Entry128]),
     DynSymbolTable32(&'a [DynEntry32]),
     DynSymbolTable64(&'a [DynEntry64]),
+    DynSymbolTable128(&'a [DynEntry128]),
     SymTabShIndex(&'a [u32]),
-    // Note32 uses 4-byte words, which I'm not sure how to manage.
-    // The pointer is to the start of the name field in the note.
+    Note32(&'a NoteHeader, &'a [u8]),
     Note64(&'a NoteHeader, &'a [u8]),
+    Note128(&'a NoteHeader, &'a [u8]),
     Rela32(&'a [Rela<u32>]),
     Rela64(&'a [Rela<u64>]),
+    Rela128(&'a [Rela<u64>]),
     Rel32(&'a [Rel<u32>]),
     Rel64(&'a [Rel<u64>]),
+    Rel128(&'a [Rel<u64>]),
     Dynamic32(&'a [Dynamic<u32>]),
     Dynamic64(&'a [Dynamic<u64>]),
+    Dynamic128(&'a [Dynamic<u64>]),
     HashTable(&'a HashTable),
 }
 
@@ -946,6 +957,7 @@ impl<'a> fmt::Display for SectionData<'a> {
             SectionData::Dynamic32(_) => writeln!(f, "SectionData::Dynamic32")?,
             SectionData::Dynamic64(_) => writeln!(f, "SectionData::Dynamic64")?,
             SectionData::HashTable(_) => writeln!(f, "SectionData::HashTable")?,
+            _ => writeln!(f, "SectionData::Unknown")?,
         }
         Ok(())
     }
@@ -1047,8 +1059,20 @@ struct Entry64_ {
     size: u64,
 }
 
+#[derive(Debug)]
+#[repr(C)]
+struct Entry128_ {
+    name: u32,
+    info: u8,
+    other: u8,
+    shndx: u16,
+    value: u128,
+    size: u128,
+}
+
 unsafe impl Pod for Entry32_ {}
 unsafe impl Pod for Entry64_ {}
+unsafe impl Pod for Entry128_ {}
 
 #[derive(Debug)]
 #[repr(C)]
@@ -1058,8 +1082,13 @@ pub struct Entry32(Entry32_);
 #[repr(C)]
 pub struct Entry64(Entry64_);
 
+#[derive(Debug)]
+#[repr(C)]
+pub struct Entry128(Entry128_);
+
 unsafe impl Pod for Entry32 {}
 unsafe impl Pod for Entry64 {}
+unsafe impl Pod for Entry128 {}
 
 #[derive(Debug)]
 #[repr(C)]
@@ -1069,8 +1098,13 @@ pub struct DynEntry32(Entry32_);
 #[repr(C)]
 pub struct DynEntry64(Entry64_);
 
+#[derive(Debug)]
+#[repr(C)]
+pub struct DynEntry128(Entry128_);
+
 unsafe impl Pod for DynEntry32 {}
 unsafe impl Pod for DynEntry64 {}
+unsafe impl Pod for DynEntry128 {}
 
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
@@ -1193,6 +1227,7 @@ impl ProgramHeader32 {
                 match elf.header_part1.get_class() {
                     Class::ThirtyTwo => SegmentData::Dynamic32(read_array(data)),
                     Class::SixtyFour => SegmentData::Dynamic64(read_array(data)),
+                    Class::OneTwentyEight => SegmentData::Dynamic128(read_array(data)),
                     Class::None | Class::Other(_) => unreachable!(),
                 }
             }
@@ -1244,6 +1279,7 @@ impl ProgramHeader64 {
                 match elf.header_part1.get_class() {
                     Class::ThirtyTwo => SegmentData::Dynamic32(read_array(data)),
                     Class::SixtyFour => SegmentData::Dynamic64(read_array(data)),
+                    Class::OneTwentyEight => SegmentData::Dynamic128(read_array(data)),
                     Class::None | Class::Other(_) => unreachable!(),
                 }
             }
@@ -1344,7 +1380,8 @@ pub enum SegmentData<'a> {
     Undefined(&'a [u8]),
     Dynamic32(&'a [Dynamic<u32>]),
     Dynamic64(&'a [Dynamic<u64>]),
-    /// Note32 uses 4-byte words, which I'm not sure how to manage.
+    Dynamic128(&'a [Dynamic<u128>]),
+    /// 1 uses 4-byte words, which I'm not sure how to manage.
     /// The pointer is to the start of the name field in the note.
     Note64(&'a NoteHeader, &'a [u8]), /* TODO Interp and Phdr should probably be defined some how, but I can't find the details. */
 }

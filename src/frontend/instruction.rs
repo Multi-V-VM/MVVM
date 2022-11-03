@@ -1,13 +1,5 @@
 use super::page::{Page, PageIndexOfs};
 use std::ops::RangeInclusive;
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ISABase {
-    RV32,
-    RV64,
-    RV128,
-}
 /// Rd
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rd(pub Reg);
@@ -59,34 +51,9 @@ pub enum Reg {
     V(Xx<32>),
     PC,
     FCSR,
+    ZERO,
 }
 
-// impl Into<i32> for Reg{
-//     fn into(self) -> i32{
-//         match self {
-//             Reg::X(x) => x.0 as i32,
-//             Reg::F(x) => x.0 as i32,
-//             Reg::V(x) => x.0 as i32,
-//             Reg::PC => 0,
-//             Reg::FCSR => 0,
-//         }
-// }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ISAExtension {
-    I,
-    M,
-    A,
-    F,
-    E,
-    D,
-    Q,
-    C,
-    V,
-    B,
-    Zifencei,
-    Zicsr,
-}
 /// Floating-point rounding mode
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
@@ -128,39 +95,6 @@ impl<const HIGH_BIT: usize, const LOW_BIT: usize> Imm32<HIGH_BIT, LOW_BIT> {
         ((self.decode() << (31 - HIGH_BIT)) as i32) >> (31 - HIGH_BIT)
     }
 }
-#[derive(Debug, Clone)]
-pub struct ISA {
-    base: ISABase,
-    ext: ISAExtension,
-}
-
-impl ISABase {
-    fn get_name(self) -> &'static str {
-        match self {
-            Self::RV32 => "RV32",
-            Self::RV64 => "RV64",
-            Self::RV128 => "RV128",
-        }
-    }
-}
-impl ISAExtension {
-    fn get_name(self) -> &'static str {
-        match self {
-            Self::I => "I",
-            Self::M => "M",
-            Self::A => "A",
-            Self::F => "F",
-            Self::E => "E",
-            Self::D => "D",
-            Self::Q => "Q",
-            Self::V => "V",
-            Self::B => "B",
-            Self::C => "C",
-            Self::Zifencei => "Zifencei",
-            Self::Zicsr => "Zicsr",
-        }
-    }
-}
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct RType(pub u32);
 impl RType {
@@ -174,51 +108,440 @@ impl RType {
         (self.0 >> 7) & 0x1f
     }
 }
-#[derive(Debug, Clone)]
-#[allow(non_camel_case_types)]
-pub enum OpCode {
-    LOAD = 0b00000,
-    LOAD_FP = 0b00001,
-    _custom_0 = 0b00010,
-    MISC_MEM = 0b00011,
-    OP_IMM = 0b00100,
-    AUIPC = 0b00101,
-    OP_IMM_32 = 0b00110,
-
-    STORE = 0b01000,
-    STORE_FP = 0b01001,
-    _custom_1 = 0b01010,
-    AMO = 0b01011,
-    OP = 0b01100,
-    LUI = 0b01101,
-    OP_32 = 0b01110,
-
-    MADD = 0b10000,
-    MSUB = 0b10001,
-    NMSUB = 0b10010,
-    NMADD = 0b10011,
-    OP_FP = 0b10100,
-    _reversed_0 = 0b10101,
-    _custom_2_or_rv128 = 0b10110,
-
-    BRANCH = 0b11000,
-    JALR = 0b11001,
-    _reversed_1 = 0b11010,
-    JAL = 0b11011,
-    SYSTEM = 0b11100,
-    _reversed_2 = 0b11101,
-    _custom_3_or_rv128 = 0b11110,
+#[allow(non_snake_case)]
+#[allow(non_upper_case_globals)]
+mod OpCode {
+    // IMC
+    pub const OP_UNLOADED: u16 = 0x00;
+    pub const OP_ADD: u16 = 0x01;
+    pub const OP_ADDI: u16 = 0x02;
+    pub const OP_ADDIW: u16 = 0x03;
+    pub const OP_ADDW: u16 = 0x04;
+    pub const OP_AND: u16 = 0x05;
+    pub const OP_ANDI: u16 = 0x06;
+    pub const OP_DIV: u16 = 0x07;
+    pub const OP_DIVU: u16 = 0x08;
+    pub const OP_DIVUW: u16 = 0x09;
+    pub const OP_DIVW: u16 = 0x0a;
+    pub const OP_FENCE: u16 = 0x0b;
+    pub const OP_FENCEI: u16 = 0x0c;
+    pub const OP_LB: u16 = 0x0d;
+    pub const OP_LBU: u16 = 0x0e;
+    pub const OP_LD: u16 = 0x0f;
+    pub const OP_LH: u16 = 0x10;
+    pub const OP_LHU: u16 = 0x11;
+    pub const OP_LUI: u16 = 0x12;
+    pub const OP_LW: u16 = 0x13;
+    pub const OP_LWU: u16 = 0x14;
+    pub const OP_MUL: u16 = 0x15;
+    pub const OP_MULH: u16 = 0x16;
+    pub const OP_MULHSU: u16 = 0x17;
+    pub const OP_MULHU: u16 = 0x18;
+    pub const OP_MULW: u16 = 0x19;
+    pub const OP_OR: u16 = 0x1a;
+    pub const OP_ORI: u16 = 0x1b;
+    pub const OP_REM: u16 = 0x1c;
+    pub const OP_REMU: u16 = 0x1d;
+    pub const OP_REMUW: u16 = 0x1e;
+    pub const OP_REMW: u16 = 0x1f;
+    pub const OP_SB: u16 = 0x20;
+    pub const OP_SD: u16 = 0x21;
+    pub const OP_SH: u16 = 0x22;
+    pub const OP_SLL: u16 = 0x23;
+    pub const OP_SLLI: u16 = 0x24;
+    pub const OP_SLLIW: u16 = 0x25;
+    pub const OP_SLLW: u16 = 0x26;
+    pub const OP_SLT: u16 = 0x27;
+    pub const OP_SLTI: u16 = 0x28;
+    pub const OP_SLTIU: u16 = 0x29;
+    pub const OP_SLTU: u16 = 0x2a;
+    pub const OP_SRA: u16 = 0x2b;
+    pub const OP_SRAI: u16 = 0x2c;
+    pub const OP_SRAIW: u16 = 0x2d;
+    pub const OP_SRAW: u16 = 0x2e;
+    pub const OP_SRL: u16 = 0x2f;
+    pub const OP_SRLI: u16 = 0x30;
+    pub const OP_SRLIW: u16 = 0x31;
+    pub const OP_SRLW: u16 = 0x32;
+    pub const OP_SUB: u16 = 0x33;
+    pub const OP_SUBW: u16 = 0x34;
+    pub const OP_SW: u16 = 0x35;
+    pub const OP_XOR: u16 = 0x36;
+    pub const OP_XORI: u16 = 0x37;
+    // B
+    pub const OP_ADDUW: u16 = 0x38;
+    pub const OP_ANDN: u16 = 0x39;
+    pub const OP_BCLR: u16 = 0x3a;
+    pub const OP_BCLRI: u16 = 0x3b;
+    pub const OP_BEXT: u16 = 0x3c;
+    pub const OP_BEXTI: u16 = 0x3d;
+    pub const OP_BINV: u16 = 0x3e;
+    pub const OP_BINVI: u16 = 0x3f;
+    pub const OP_BSET: u16 = 0x40;
+    pub const OP_BSETI: u16 = 0x41;
+    pub const OP_CLMUL: u16 = 0x42;
+    pub const OP_CLMULH: u16 = 0x43;
+    pub const OP_CLMULR: u16 = 0x44;
+    pub const OP_CLZ: u16 = 0x45;
+    pub const OP_CLZW: u16 = 0x46;
+    pub const OP_CPOP: u16 = 0x47;
+    pub const OP_CPOPW: u16 = 0x48;
+    pub const OP_CTZ: u16 = 0x49;
+    pub const OP_CTZW: u16 = 0x4a;
+    pub const OP_MAX: u16 = 0x4b;
+    pub const OP_MAXU: u16 = 0x4c;
+    pub const OP_MIN: u16 = 0x4d;
+    pub const OP_MINU: u16 = 0x4e;
+    pub const OP_ORCB: u16 = 0x4f;
+    pub const OP_ORN: u16 = 0x50;
+    pub const OP_REV8: u16 = 0x51;
+    pub const OP_ROL: u16 = 0x52;
+    pub const OP_ROLW: u16 = 0x53;
+    pub const OP_ROR: u16 = 0x54;
+    pub const OP_RORI: u16 = 0x55;
+    pub const OP_RORIW: u16 = 0x56;
+    pub const OP_RORW: u16 = 0x57;
+    pub const OP_SEXTB: u16 = 0x58;
+    pub const OP_SEXTH: u16 = 0x59;
+    pub const OP_SH1ADD: u16 = 0x5a;
+    pub const OP_SH1ADDUW: u16 = 0x5b;
+    pub const OP_SH2ADD: u16 = 0x5c;
+    pub const OP_SH2ADDUW: u16 = 0x5d;
+    pub const OP_SH3ADD: u16 = 0x5e;
+    pub const OP_SH3ADDUW: u16 = 0x5f;
+    pub const OP_SLLIUW: u16 = 0x60;
+    pub const OP_XNOR: u16 = 0x61;
+    pub const OP_ZEXTH: u16 = 0x62;
+    // Mop
+    pub const OP_WIDE_MUL: u16 = 0x63;
+    pub const OP_WIDE_MULU: u16 = 0x64;
+    pub const OP_WIDE_MULSU: u16 = 0x65;
+    pub const OP_WIDE_DIV: u16 = 0x66;
+    pub const OP_WIDE_DIVU: u16 = 0x67;
+    pub const OP_ADC: u16 = 0x68;
+    pub const OP_SBB: u16 = 0x69;
+    pub const OP_CUSTOM_LOAD_UIMM: u16 = 0x6a;
+    pub const OP_CUSTOM_LOAD_IMM: u16 = 0x6b;
+    // Basic block ends
+    pub const OP_AUIPC: u16 = 0x6c;
+    pub const OP_BEQ: u16 = 0x6d;
+    pub const OP_BGE: u16 = 0x6e;
+    pub const OP_BGEU: u16 = 0x6f;
+    pub const OP_BLT: u16 = 0x70;
+    pub const OP_BLTU: u16 = 0x71;
+    pub const OP_BNE: u16 = 0x72;
+    pub const OP_EBREAK: u16 = 0x73;
+    pub const OP_ECALL: u16 = 0x74;
+    pub const OP_JAL: u16 = 0x75;
+    pub const OP_JALR: u16 = 0x76;
+    pub const OP_FAR_JUMP_REL: u16 = 0x77;
+    pub const OP_FAR_JUMP_ABS: u16 = 0x78;
+    pub const OP_CUSTOM_TRACE_END: u16 = 0x79;
+    // V
+    pub const OP_VSETVLI: u16 = 0x007a;
+    pub const OP_VSETIVLI: u16 = 0x007b;
+    pub const OP_VSETVL: u16 = 0x007c;
+    pub const OP_VLM_V: u16 = 0x007d;
+    pub const OP_VLE8_V: u16 = 0x007e;
+    pub const OP_VLE16_V: u16 = 0x007f;
+    pub const OP_VLE32_V: u16 = 0x0080;
+    pub const OP_VLE64_V: u16 = 0x0081;
+    pub const OP_VLE128_V: u16 = 0x0082;
+    pub const OP_VLE256_V: u16 = 0x0083;
+    pub const OP_VLE512_V: u16 = 0x0084;
+    pub const OP_VLE1024_V: u16 = 0x0085;
+    pub const OP_VSM_V: u16 = 0x0086;
+    pub const OP_VSE8_V: u16 = 0x0087;
+    pub const OP_VSE16_V: u16 = 0x0088;
+    pub const OP_VSE32_V: u16 = 0x0089;
+    pub const OP_VSE64_V: u16 = 0x008a;
+    pub const OP_VSE128_V: u16 = 0x008b;
+    pub const OP_VSE256_V: u16 = 0x008c;
+    pub const OP_VSE512_V: u16 = 0x008d;
+    pub const OP_VSE1024_V: u16 = 0x008e;
+    pub const OP_VADD_VV: u16 = 0x008f;
+    pub const OP_VADD_VX: u16 = 0x0090;
+    pub const OP_VADD_VI: u16 = 0x0091;
+    pub const OP_VSUB_VV: u16 = 0x0092;
+    pub const OP_VSUB_VX: u16 = 0x0093;
+    pub const OP_VRSUB_VX: u16 = 0x0094;
+    pub const OP_VRSUB_VI: u16 = 0x0095;
+    pub const OP_VMUL_VV: u16 = 0x0096;
+    pub const OP_VMUL_VX: u16 = 0x0097;
+    pub const OP_VDIV_VV: u16 = 0x0098;
+    pub const OP_VDIV_VX: u16 = 0x0099;
+    pub const OP_VDIVU_VV: u16 = 0x009a;
+    pub const OP_VDIVU_VX: u16 = 0x009b;
+    pub const OP_VREM_VV: u16 = 0x009c;
+    pub const OP_VREM_VX: u16 = 0x009d;
+    pub const OP_VREMU_VV: u16 = 0x009e;
+    pub const OP_VREMU_VX: u16 = 0x009f;
+    pub const OP_VSLL_VV: u16 = 0x00a0;
+    pub const OP_VSLL_VX: u16 = 0x00a1;
+    pub const OP_VSLL_VI: u16 = 0x00a2;
+    pub const OP_VSRL_VV: u16 = 0x00a3;
+    pub const OP_VSRL_VX: u16 = 0x00a4;
+    pub const OP_VSRL_VI: u16 = 0x00a5;
+    pub const OP_VSRA_VV: u16 = 0x00a6;
+    pub const OP_VSRA_VX: u16 = 0x00a7;
+    pub const OP_VSRA_VI: u16 = 0x00a8;
+    pub const OP_VMSEQ_VV: u16 = 0x00a9;
+    pub const OP_VMSEQ_VX: u16 = 0x00aa;
+    pub const OP_VMSEQ_VI: u16 = 0x00ab;
+    pub const OP_VMSNE_VV: u16 = 0x00ac;
+    pub const OP_VMSNE_VX: u16 = 0x00ad;
+    pub const OP_VMSNE_VI: u16 = 0x00ae;
+    pub const OP_VMSLTU_VV: u16 = 0x00af;
+    pub const OP_VMSLTU_VX: u16 = 0x00b0;
+    pub const OP_VMSLT_VV: u16 = 0x00b1;
+    pub const OP_VMSLT_VX: u16 = 0x00b2;
+    pub const OP_VMSLEU_VV: u16 = 0x00b3;
+    pub const OP_VMSLEU_VX: u16 = 0x00b4;
+    pub const OP_VMSLEU_VI: u16 = 0x00b5;
+    pub const OP_VMSLE_VV: u16 = 0x00b6;
+    pub const OP_VMSLE_VX: u16 = 0x00b7;
+    pub const OP_VMSLE_VI: u16 = 0x00b8;
+    pub const OP_VMSGTU_VX: u16 = 0x00b9;
+    pub const OP_VMSGTU_VI: u16 = 0x00ba;
+    pub const OP_VMSGT_VX: u16 = 0x00bb;
+    pub const OP_VMSGT_VI: u16 = 0x00bc;
+    pub const OP_VMINU_VV: u16 = 0x00bd;
+    pub const OP_VMINU_VX: u16 = 0x00be;
+    pub const OP_VMIN_VV: u16 = 0x00bf;
+    pub const OP_VMIN_VX: u16 = 0x00c0;
+    pub const OP_VMAXU_VV: u16 = 0x00c1;
+    pub const OP_VMAXU_VX: u16 = 0x00c2;
+    pub const OP_VMAX_VV: u16 = 0x00c3;
+    pub const OP_VMAX_VX: u16 = 0x00c4;
+    pub const OP_VWADDU_VV: u16 = 0x00c5;
+    pub const OP_VWADDU_VX: u16 = 0x00c6;
+    pub const OP_VWSUBU_VV: u16 = 0x00c7;
+    pub const OP_VWSUBU_VX: u16 = 0x00c8;
+    pub const OP_VWADD_VV: u16 = 0x00c9;
+    pub const OP_VWADD_VX: u16 = 0x00ca;
+    pub const OP_VWSUB_VV: u16 = 0x00cb;
+    pub const OP_VWSUB_VX: u16 = 0x00cc;
+    pub const OP_VWADDU_WV: u16 = 0x00cd;
+    pub const OP_VWADDU_WX: u16 = 0x00ce;
+    pub const OP_VWSUBU_WV: u16 = 0x00cf;
+    pub const OP_VWSUBU_WX: u16 = 0x00d0;
+    pub const OP_VWADD_WV: u16 = 0x00d1;
+    pub const OP_VWADD_WX: u16 = 0x00d2;
+    pub const OP_VWSUB_WV: u16 = 0x00d3;
+    pub const OP_VWSUB_WX: u16 = 0x00d4;
+    pub const OP_VZEXT_VF8: u16 = 0x00d5;
+    pub const OP_VSEXT_VF8: u16 = 0x00d6;
+    pub const OP_VZEXT_VF4: u16 = 0x00d7;
+    pub const OP_VSEXT_VF4: u16 = 0x00d8;
+    pub const OP_VZEXT_VF2: u16 = 0x00d9;
+    pub const OP_VSEXT_VF2: u16 = 0x00da;
+    pub const OP_VADC_VVM: u16 = 0x00db;
+    pub const OP_VADC_VXM: u16 = 0x00dc;
+    pub const OP_VADC_VIM: u16 = 0x00dd;
+    pub const OP_VMADC_VVM: u16 = 0x00de;
+    pub const OP_VMADC_VXM: u16 = 0x00df;
+    pub const OP_VMADC_VIM: u16 = 0x00e0;
+    pub const OP_VMADC_VV: u16 = 0x00e1;
+    pub const OP_VMADC_VX: u16 = 0x00e2;
+    pub const OP_VMADC_VI: u16 = 0x00e3;
+    pub const OP_VSBC_VVM: u16 = 0x00e4;
+    pub const OP_VSBC_VXM: u16 = 0x00e5;
+    pub const OP_VMSBC_VVM: u16 = 0x00e6;
+    pub const OP_VMSBC_VXM: u16 = 0x00e7;
+    pub const OP_VMSBC_VV: u16 = 0x00e8;
+    pub const OP_VMSBC_VX: u16 = 0x00e9;
+    pub const OP_VAND_VV: u16 = 0x00ea;
+    pub const OP_VAND_VI: u16 = 0x00eb;
+    pub const OP_VAND_VX: u16 = 0x00ec;
+    pub const OP_VOR_VV: u16 = 0x00ed;
+    pub const OP_VOR_VX: u16 = 0x00ee;
+    pub const OP_VOR_VI: u16 = 0x00ef;
+    pub const OP_VXOR_VV: u16 = 0x00f0;
+    pub const OP_VXOR_VX: u16 = 0x00f1;
+    pub const OP_VXOR_VI: u16 = 0x00f2;
+    pub const OP_VNSRL_WV: u16 = 0x00f3;
+    pub const OP_VNSRL_WX: u16 = 0x00f4;
+    pub const OP_VNSRL_WI: u16 = 0x00f5;
+    pub const OP_VNSRA_WV: u16 = 0x00f6;
+    pub const OP_VNSRA_WX: u16 = 0x00f7;
+    pub const OP_VNSRA_WI: u16 = 0x00f8;
+    pub const OP_VMULH_VV: u16 = 0x00f9;
+    pub const OP_VMULH_VX: u16 = 0x00fa;
+    pub const OP_VMULHU_VV: u16 = 0x00fb;
+    pub const OP_VMULHU_VX: u16 = 0x00fc;
+    pub const OP_VMULHSU_VV: u16 = 0x00fd;
+    pub const OP_VMULHSU_VX: u16 = 0x00fe;
+    pub const OP_VWMULU_VV: u16 = 0x00ff;
+    pub const OP_VWMULU_VX: u16 = 0x0100;
+    pub const OP_VWMULSU_VV: u16 = 0x0101;
+    pub const OP_VWMULSU_VX: u16 = 0x0102;
+    pub const OP_VWMUL_VV: u16 = 0x0103;
+    pub const OP_VWMUL_VX: u16 = 0x0104;
+    pub const OP_VMV_V_V: u16 = 0x0105;
+    pub const OP_VMV_V_X: u16 = 0x0106;
+    pub const OP_VMV_V_I: u16 = 0x0107;
+    pub const OP_VSADDU_VV: u16 = 0x0108;
+    pub const OP_VSADDU_VX: u16 = 0x0109;
+    pub const OP_VSADDU_VI: u16 = 0x010a;
+    pub const OP_VSADD_VV: u16 = 0x010b;
+    pub const OP_VSADD_VX: u16 = 0x010c;
+    pub const OP_VSADD_VI: u16 = 0x010d;
+    pub const OP_VSSUBU_VV: u16 = 0x010e;
+    pub const OP_VSSUBU_VX: u16 = 0x010f;
+    pub const OP_VSSUB_VV: u16 = 0x0110;
+    pub const OP_VSSUB_VX: u16 = 0x0111;
+    pub const OP_VAADDU_VV: u16 = 0x0112;
+    pub const OP_VAADDU_VX: u16 = 0x0113;
+    pub const OP_VAADD_VV: u16 = 0x0114;
+    pub const OP_VAADD_VX: u16 = 0x0115;
+    pub const OP_VASUBU_VV: u16 = 0x0116;
+    pub const OP_VASUBU_VX: u16 = 0x0117;
+    pub const OP_VASUB_VV: u16 = 0x0118;
+    pub const OP_VASUB_VX: u16 = 0x0119;
+    pub const OP_VMV1R_V: u16 = 0x011a;
+    pub const OP_VMV2R_V: u16 = 0x011b;
+    pub const OP_VMV4R_V: u16 = 0x011c;
+    pub const OP_VMV8R_V: u16 = 0x011d;
+    pub const OP_VFIRST_M: u16 = 0x011e;
+    pub const OP_VMAND_MM: u16 = 0x011f;
+    pub const OP_VMNAND_MM: u16 = 0x0120;
+    pub const OP_VMANDNOT_MM: u16 = 0x0121;
+    pub const OP_VMXOR_MM: u16 = 0x0122;
+    pub const OP_VMOR_MM: u16 = 0x0123;
+    pub const OP_VMNOR_MM: u16 = 0x0124;
+    pub const OP_VMORNOT_MM: u16 = 0x0125;
+    pub const OP_VMXNOR_MM: u16 = 0x0126;
+    pub const OP_VLSE8_V: u16 = 0x0127;
+    pub const OP_VLSE16_V: u16 = 0x0128;
+    pub const OP_VLSE32_V: u16 = 0x0129;
+    pub const OP_VLSE64_V: u16 = 0x012a;
+    pub const OP_VLSE128_V: u16 = 0x012b;
+    pub const OP_VLSE256_V: u16 = 0x012c;
+    pub const OP_VLSE512_V: u16 = 0x012d;
+    pub const OP_VLSE1024_V: u16 = 0x012e;
+    pub const OP_VSSE8_V: u16 = 0x012f;
+    pub const OP_VSSE16_V: u16 = 0x0130;
+    pub const OP_VSSE32_V: u16 = 0x0131;
+    pub const OP_VSSE64_V: u16 = 0x0132;
+    pub const OP_VSSE128_V: u16 = 0x0133;
+    pub const OP_VSSE256_V: u16 = 0x0134;
+    pub const OP_VSSE512_V: u16 = 0x0135;
+    pub const OP_VSSE1024_V: u16 = 0x0136;
+    pub const OP_VLUXEI8_V: u16 = 0x0137;
+    pub const OP_VLUXEI16_V: u16 = 0x0138;
+    pub const OP_VLUXEI32_V: u16 = 0x0139;
+    pub const OP_VLUXEI64_V: u16 = 0x013a;
+    pub const OP_VLUXEI128_V: u16 = 0x013b;
+    pub const OP_VLUXEI256_V: u16 = 0x013c;
+    pub const OP_VLUXEI512_V: u16 = 0x013d;
+    pub const OP_VLUXEI1024_V: u16 = 0x013e;
+    pub const OP_VLOXEI8_V: u16 = 0x013f;
+    pub const OP_VLOXEI16_V: u16 = 0x0140;
+    pub const OP_VLOXEI32_V: u16 = 0x0141;
+    pub const OP_VLOXEI64_V: u16 = 0x0142;
+    pub const OP_VLOXEI128_V: u16 = 0x0143;
+    pub const OP_VLOXEI256_V: u16 = 0x0144;
+    pub const OP_VLOXEI512_V: u16 = 0x0145;
+    pub const OP_VLOXEI1024_V: u16 = 0x0146;
+    pub const OP_VSUXEI8_V: u16 = 0x0147;
+    pub const OP_VSUXEI16_V: u16 = 0x0148;
+    pub const OP_VSUXEI32_V: u16 = 0x0149;
+    pub const OP_VSUXEI64_V: u16 = 0x014a;
+    pub const OP_VSUXEI128_V: u16 = 0x014b;
+    pub const OP_VSUXEI256_V: u16 = 0x014c;
+    pub const OP_VSUXEI512_V: u16 = 0x014d;
+    pub const OP_VSUXEI1024_V: u16 = 0x014e;
+    pub const OP_VSOXEI8_V: u16 = 0x014f;
+    pub const OP_VSOXEI16_V: u16 = 0x0150;
+    pub const OP_VSOXEI32_V: u16 = 0x0151;
+    pub const OP_VSOXEI64_V: u16 = 0x0152;
+    pub const OP_VSOXEI128_V: u16 = 0x0153;
+    pub const OP_VSOXEI256_V: u16 = 0x0154;
+    pub const OP_VSOXEI512_V: u16 = 0x0155;
+    pub const OP_VSOXEI1024_V: u16 = 0x0156;
+    pub const OP_VL1RE8_V: u16 = 0x0157;
+    pub const OP_VL1RE16_V: u16 = 0x0158;
+    pub const OP_VL1RE32_V: u16 = 0x0159;
+    pub const OP_VL1RE64_V: u16 = 0x015a;
+    pub const OP_VL2RE8_V: u16 = 0x015b;
+    pub const OP_VL2RE16_V: u16 = 0x015c;
+    pub const OP_VL2RE32_V: u16 = 0x015d;
+    pub const OP_VL2RE64_V: u16 = 0x015e;
+    pub const OP_VL4RE8_V: u16 = 0x015f;
+    pub const OP_VL4RE16_V: u16 = 0x0160;
+    pub const OP_VL4RE32_V: u16 = 0x0161;
+    pub const OP_VL4RE64_V: u16 = 0x0162;
+    pub const OP_VL8RE8_V: u16 = 0x0163;
+    pub const OP_VL8RE16_V: u16 = 0x0164;
+    pub const OP_VL8RE32_V: u16 = 0x0165;
+    pub const OP_VL8RE64_V: u16 = 0x0166;
+    pub const OP_VS1R_V: u16 = 0x0167;
+    pub const OP_VS2R_V: u16 = 0x0168;
+    pub const OP_VS4R_V: u16 = 0x0169;
+    pub const OP_VS8R_V: u16 = 0x016a;
+    pub const OP_VMACC_VV: u16 = 0x016b;
+    pub const OP_VMACC_VX: u16 = 0x016c;
+    pub const OP_VNMSAC_VV: u16 = 0x016d;
+    pub const OP_VNMSAC_VX: u16 = 0x016e;
+    pub const OP_VMADD_VV: u16 = 0x016f;
+    pub const OP_VMADD_VX: u16 = 0x0170;
+    pub const OP_VNMSUB_VV: u16 = 0x0171;
+    pub const OP_VNMSUB_VX: u16 = 0x0172;
+    pub const OP_VSSRL_VV: u16 = 0x0173;
+    pub const OP_VSSRL_VX: u16 = 0x0174;
+    pub const OP_VSSRL_VI: u16 = 0x0175;
+    pub const OP_VSSRA_VV: u16 = 0x0176;
+    pub const OP_VSSRA_VX: u16 = 0x0177;
+    pub const OP_VSSRA_VI: u16 = 0x0178;
+    pub const OP_VSMUL_VV: u16 = 0x0179;
+    pub const OP_VSMUL_VX: u16 = 0x017a;
+    pub const OP_VWMACCU_VV: u16 = 0x017b;
+    pub const OP_VWMACCU_VX: u16 = 0x017c;
+    pub const OP_VWMACC_VV: u16 = 0x017d;
+    pub const OP_VWMACC_VX: u16 = 0x017e;
+    pub const OP_VWMACCSU_VV: u16 = 0x017f;
+    pub const OP_VWMACCSU_VX: u16 = 0x0180;
+    pub const OP_VWMACCUS_VX: u16 = 0x0181;
+    pub const OP_VMERGE_VVM: u16 = 0x0182;
+    pub const OP_VMERGE_VXM: u16 = 0x0183;
+    pub const OP_VMERGE_VIM: u16 = 0x0184;
+    pub const OP_VNCLIPU_WV: u16 = 0x0185;
+    pub const OP_VNCLIPU_WX: u16 = 0x0186;
+    pub const OP_VNCLIPU_WI: u16 = 0x0187;
+    pub const OP_VNCLIP_WV: u16 = 0x0188;
+    pub const OP_VNCLIP_WX: u16 = 0x0189;
+    pub const OP_VNCLIP_WI: u16 = 0x018a;
+    pub const OP_VREDSUM_VS: u16 = 0x018b;
+    pub const OP_VREDAND_VS: u16 = 0x018c;
+    pub const OP_VREDOR_VS: u16 = 0x018d;
+    pub const OP_VREDXOR_VS: u16 = 0x018e;
+    pub const OP_VREDMINU_VS: u16 = 0x018f;
+    pub const OP_VREDMIN_VS: u16 = 0x0190;
+    pub const OP_VREDMAXU_VS: u16 = 0x0191;
+    pub const OP_VREDMAX_VS: u16 = 0x0192;
+    pub const OP_VWREDSUMU_VS: u16 = 0x0193;
+    pub const OP_VWREDSUM_VS: u16 = 0x0194;
+    pub const OP_VCPOP_M: u16 = 0x0195;
+    pub const OP_VMSBF_M: u16 = 0x0196;
+    pub const OP_VMSOF_M: u16 = 0x0197;
+    pub const OP_VMSIF_M: u16 = 0x0198;
+    pub const OP_VIOTA_M: u16 = 0x0199;
+    pub const OP_VID_V: u16 = 0x019a;
+    pub const OP_VMV_X_S: u16 = 0x019b;
+    pub const OP_VMV_S_X: u16 = 0x019c;
+    pub const OP_VCOMPRESS_VM: u16 = 0x019d;
+    pub const OP_VSLIDE1UP_VX: u16 = 0x019e;
+    pub const OP_VSLIDEUP_VX: u16 = 0x019f;
+    pub const OP_VSLIDEUP_VI: u16 = 0x01a0;
+    pub const OP_VSLIDE1DOWN_VX: u16 = 0x01a1;
+    pub const OP_VSLIDEDOWN_VX: u16 = 0x01a2;
+    pub const OP_VSLIDEDOWN_VI: u16 = 0x01a3;
+    pub const OP_VRGATHER_VX: u16 = 0x01a4;
+    pub const OP_VRGATHER_VV: u16 = 0x01a5;
+    pub const OP_VRGATHEREI16_VV: u16 = 0x01a6;
+    pub const OP_VRGATHER_VI: u16 = 0x01a7;
 }
-impl Into<i32> for OpCode {
-    fn into(self) -> i32 {
-        self as i32
-    }
-}
-#[derive(Debug, Clone)]
-pub struct InstructionName {
-    pub pos: usize,
-    pub name: String,
-}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum RV32I {
@@ -847,22 +1170,31 @@ pub struct FencePred(pub Xx<16>);
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct FenceSucc(pub Xx<16>);
 
-#[derive(Debug, Clone)]
-pub struct InstructionField {
-    pub instruction_bit_range: InstBitRange,
-}
-#[derive(Debug, Clone)]
-pub struct InstBitRange {
-    pub bits: RangeInclusive<u8>,
-    pub end_bit_pos: usize,
-    pub start_bit_pos: usize,
-}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Instr {
     RV32(RV32Instr),
     RV64(RV64Instr),
     RV128(RV128Instr),
     NOP,
+}
+
+impl Instr {
+    pub fn get_arch(self) -> u32 {
+        match self {
+            Instr::NOP => 0,
+            Instr::RV32(_) => 32,
+            Instr::RV64(_) => 64,
+            Instr::RV128(_) => 128,
+        }
+    }
+    pub fn get_type(self) -> String {
+        match self {
+            Instr::NOP => "NOP".to_owned(),
+            Instr::RV32(inst) => inst.to_string(),
+            Instr::RV64(inst) => inst.to_string(),
+            Instr::RV128(inst) => inst.to_string(),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -885,36 +1217,154 @@ impl UImm {
 
 #[derive(Debug, Clone)]
 pub struct Instruction {
-    pub name: InstructionName,
-    pub field: InstructionField,
-    pub Instr: Instr,
+    pub instr: Instr,
+}
+
+#[inline(always)]
+pub fn slice(bits: u32, lo: usize, len: usize, s: usize) -> u32 {
+    ((bits >> (31 - lo - len)) & ((1 << len) - 1)) << s
 }
 #[inline(always)]
-pub fn x(instruction_bits: u32, lower: usize, length: usize, shifts: usize) -> u32 {
-    ((instruction_bits >> lower) & ((1 << length) - 1)) << shifts
+pub fn slice_back(bit: u32, lo: usize, len: usize, s: usize) -> u32 {
+    ((bit >> lo) & ((1 << len) - 1)) << s
 }
+#[inline(always)]
+pub fn funct3(bit: u32) -> u32 {
+    slice(bit, 12, 3, 0)
+}
+#[inline(always)]
+pub fn funct7(bit: u32) -> u32 {
+    slice(bit, 25, 7, 0)
+}
+#[inline(always)]
+pub fn rd(bit: u32) -> usize {
+    slice(bit, 7, 5, 0) as usize
+}
+
+#[inline(always)]
+pub fn rs1(bit: u32) -> usize {
+    slice(bit, 15, 5, 0) as usize
+}
+
+#[inline(always)]
+pub fn rs2(bit: u32) -> usize {
+    slice(bit, 20, 5, 0) as usize
+}
+
+#[inline(always)]
+pub fn btype_immediate(bit: u32) -> u32 {
+    (slice(bit, 8, 4, 1) | slice(bit, 25, 6, 5) | slice(bit, 7, 1, 11) | slice_back(bit, 31, 1, 12))
+        as u32
+}
+
+#[inline(always)]
+pub fn jtype_immediate(bit: u32) -> u32 {
+    (slice(bit, 21, 10, 1)
+        | slice(bit, 20, 1, 11)
+        | slice(bit, 12, 8, 12)
+        | slice_back(bit, 31, 1, 20)) as u32
+}
+
+#[inline(always)]
+pub fn itype_immediate(bit: u32) -> u32 {
+    slice_back(bit, 20, 12, 0) as u32
+}
+
+#[inline(always)]
+pub fn stype_immediate(bit: u32) -> u32 {
+    (slice(bit, 7, 5, 0) | slice_back(bit, 25, 7, 5)) as u32
+}
+
+#[inline(always)]
+pub fn utype_immediate(bit: u32) -> u32 {
+    slice_back(bit, 12, 20, 12) as u32
+}
+#[inline(always)]
+fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
+    None
+}
+pub fn fp(reg: u8) -> Reg {
+    let encoding = reg as u8;
+    if encoding <= 31 {
+        Reg::F(Xx::new(encoding as u32, 'f'))
+    } else {
+        panic!("Inaccessible register encoding: {:b}", encoding)
+    }
+}
+
+pub fn gp(reg: u8) -> Reg {
+    let encoding = reg as u8;
+    if encoding == 0 {
+        Reg::ZERO
+    } else if encoding > 0 && encoding <= 31 {
+        Reg::X(Xx::new(encoding as u32, 'a'))
+    } else {
+        panic!("Inaccessible register encoding: {:b}", encoding)
+    }
+}
+#[macro_export]
+macro_rules! rv32 {
+    ($ident1:ident) => { Instr::RV32(RV32Instr::$ident) };
+    ($ident1:ident,$ident2:ident, $($t:expr),*) => { Instr::RV32(RV32Instr::$ident($( $t, )*)) };
+  }
+#[macro_export]
+macro_rules! rv64 {
+    ($ident:ident) => { Instr::RV64(RV64Instr::$ident) };
+    ($ident:ident, $($t:expr),*) => { Instr::RV64(RV64Instr::$ident($( $t, )*)) };
+  }
+#[macro_export]
+macro_rules! rv128 {
+    ($ident:ident) => { Instr::RV128(RV128Instr::$ident) };
+    ($ident:ident, $($t:expr),*) => { Instr::RV128(RV128Instr::$ident($( $t, )*)) };
+  }
+#[macro_export]
+macro_rules! i {
+    ($type:ident, $opcode:ident, $opcode_cat:ident, $bit_u32:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit_u32).try_into().unwrap()));
+        let rs1 = Rs1($reg(rs1($bit_u32).try_into().unwrap()));
+        let imm = Imm32::<11, 0>::from(itype_immediate($bit_u32) as u32);
+        $type!($opcode_cat::$opcode, rd, rs1, imm)
+    }};
+}
+
 impl Instruction {
     fn parse(bit: &[u8]) -> Instruction {
-        Instruction {
-            name: InstructionName {
-                pos: 0,
-                name: "".to_string(),
-            },
-            field: todo!(),
-            Instr: todo!(),
+        if let Some(Instr) = try_from_compressed(bit) {
+            todo!()
+        } else {
+            let bit_u32 = u32::from_be_bytes(bit.split_at(4).0.try_into().unwrap());
+
+            let opcode = slice(bit_u32, 0, 7, 0) as u16;
+            let instr = match opcode {
+                0b_0010011 => {
+                    let funct3_val = funct3(bit_u32);
+                    match funct3_val {
+                        // I-type ALU instructions
+                        0b_000 => Some(i!(rv32, RV32I, ADDI, bit_u32, gp)),
+                        0b_010 => Some(i!(rv32, RV32I, SLTI, bit_u32, gp)),
+                        0b_011 => Some(i!(rv32, RV32I, SLTIU, bit_u32, gp)),
+                        0b_100 => Some(i!(rv32, RV32I, XORI, bit_u32, gp)),
+                        0b_110 => Some(i!(rv32, RV32I, ORI, bit_u32, gp)),
+                        0b_111 => Some(i!(rv32, RV32I, ANDI, bit_u32, gp)),
+                        // I-type special ALU instructions
+                        0b_001 | 0b_101 => {
+                            let top6_val = funct7(instruction_bits) >> 1;
+                            match (funct3_val, top6_val) {
+                                (0b_001, 0b_000000) => Some(i!(rv32, RV32I, SLLI, bit_u32, gp)),
+                                (0b_101, 0b_000000) => Some(i!(rv32, RV32I, SRLI, bit_u32, gp)),
+                                (0b_101, 0b_010000) => Some(i!(rv32, RV32I, SRAI, bit_u32, gp)),
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    }
+                }
+                _ => None,
+            };
+
+            dbg!(opcode);
+            Instruction { instr }
         }
-    }
-    fn opcode(self) -> OpCode {
-        todo!()
-    }
-    fn rd(self) -> Reg {
-        todo!()
-    }
-    fn rs1(self) -> Reg {
-        todo!()
-    }
-    fn imm<const HIGH_BIT: usize, const LOW_BIT: usize>(self) -> Imm32<HIGH_BIT, LOW_BIT> {
-        todo!()
     }
 }
 
@@ -967,18 +1417,16 @@ impl Iterator for InstructionIter<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::frontend::instruction::Instruction;
+    use crate::frontend::instruction::*;
 
     #[test]
     fn test_layout() {
         // jal x0, -6*4
-        let instr_asm: u32 = 0b_1_1111110100_1_11111111_00000_1101111;
+        let instr_asm: u32 = 0b11101101100000011000000110010011;
         let instr = Instruction::parse(&instr_asm.to_le_bytes());
-        // assert_eq!(instr.opcode(), OpCode(0b_1101111));
-        // assert_eq!(instr.rd(), Reg(0b0));
-        // assert_eq!(instr.imm(), 0b11111111);
-        // assert_eq!(instr.imm11(), 0b1);
-        // assert_eq!(instr.imm10_1(), 0b1111110100);
-        // assert_eq!(instr.imm20(), 0b1);
+        assert_eq!(
+            instr.instr,
+            Instr::RV32(RV32Instr::RV32I(RV64I::LWU(Rd(), Rs1(), Imm32(()))))
+        );
     }
 }
