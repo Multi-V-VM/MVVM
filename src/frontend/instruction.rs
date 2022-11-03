@@ -1,5 +1,8 @@
+use crate::frontend::{BIT_LENGTH, IS_E};
+
 use super::page::{Page, PageIndexOfs};
-use std::ops::RangeInclusive;
+use core::panic;
+use std::fmt;
 /// Rd
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rd(pub Reg);
@@ -29,22 +32,17 @@ pub struct RL(pub bool);
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Shamt(pub u8);
 
-/// Xx From X0-X31 or X63
+/// Xx From X0-X15 or X31 or X63
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Xx<const MAX: u32>(u32, char);
+pub struct Xx<const MAX: u32>(u32);
 
 impl<const MAX: u32> Xx<MAX> {
-    pub fn new(value: u32, prefix: char) -> Self {
-        Self(value, prefix)
-    }
-}
-impl<const MAX: u32> Into<String> for Xx<MAX> {
-    fn into(self) -> String {
-        format!("{}{}", self.0, self.1)
+    pub fn new(value: u32) -> Self {
+        Self(value)
     }
 }
 /// Reg
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Reg {
     X(Xx<32>),
     F(Xx<32>),
@@ -52,6 +50,18 @@ pub enum Reg {
     PC,
     FCSR,
     ZERO,
+}
+impl fmt::Debug for Reg {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Reg::X(ref x) => write!(f, "a{}", x.0),
+            Reg::F(ref x) => write!(f, "f{}", x.0),
+            Reg::V(ref x) => write!(f, "v{}", x.0),
+            Reg::PC => write!(f, "pc"),
+            Reg::FCSR => write!(f, "fcsr"),
+            Reg::ZERO => write!(f, "0"),
+        }
+    }
 }
 
 /// Floating-point rounding mode
@@ -1178,6 +1188,22 @@ pub enum Instr {
     NOP,
 }
 
+impl fmt::Display for RV32Instr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Ok(())
+    }
+} // TODO: implement the rv32
+impl fmt::Display for RV64Instr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Ok(())
+    }
+} // TODO: implement the rv64
+impl fmt::Display for RV128Instr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Ok(())
+    }
+} // TODO: implement the rv128
+
 impl Instr {
     pub fn get_arch(self) -> u32 {
         match self {
@@ -1221,12 +1247,12 @@ pub struct Instruction {
 }
 
 #[inline(always)]
-pub fn slice(bits: u32, lo: usize, len: usize, s: usize) -> u32 {
-    ((bits >> (31 - lo - len)) & ((1 << len) - 1)) << s
+pub fn slice(bit: u32, lo: usize, len: usize, s: usize) -> u32 {
+    ((bit >> lo) & ((1 << len) - 1)) << s
 }
 #[inline(always)]
 pub fn slice_back(bit: u32, lo: usize, len: usize, s: usize) -> u32 {
-    ((bit >> lo) & ((1 << len) - 1)) << s
+    ((bit as i32) << (32 - lo - len) >> (32 - len) << s) as u32
 }
 #[inline(always)]
 pub fn funct3(bit: u32) -> u32 {
@@ -1248,6 +1274,14 @@ pub fn rs1(bit: u32) -> usize {
 
 #[inline(always)]
 pub fn rs2(bit: u32) -> usize {
+    slice(bit, 20, 5, 0) as usize
+}
+#[inline(always)]
+pub fn rs3(bit: u32) -> usize {
+    slice(bit, 27, 5, 0) as usize
+}
+#[inline(always)]
+pub fn shamt(bit: u32) -> usize {
     slice(bit, 20, 5, 0) as usize
 }
 
@@ -1281,12 +1315,409 @@ pub fn utype_immediate(bit: u32) -> u32 {
 }
 #[inline(always)]
 fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
-    None
+    match instruction_bits & 0b_111_00000000000_11 {
+        // == Quadrant 0
+        0b_000_00000000000_00 => {
+            let nzuimm = x(instruction_bits, 6, 1, 2)
+                | x(instruction_bits, 5, 1, 3)
+                | x(instruction_bits, 11, 2, 4)
+                | x(instruction_bits, 7, 4, 6);
+            if nzuimm != 0 {
+                // C.ADDI4SPN
+                Some(
+                    Itype::new_u(
+                        insts::OP_ADDI,
+                        compact_register_number(instruction_bits, 2),
+                        SP,
+                        nzuimm,
+                    )
+                    .0,
+                )
+            } else {
+                // Illegal instruction
+                None
+            }
+        }
+        0b_010_00000000000_00 => Some(
+            // C.LW
+            Itype::new_u(
+                insts::OP_LW,
+                compact_register_number(instruction_bits, 2),
+                compact_register_number(instruction_bits, 7),
+                sw_uimmediate(instruction_bits),
+            )
+            .0,
+        ),
+        0b_011_00000000000_00 => {
+            if rv32 {
+                None
+            } else {
+                // C.LD
+                Some(
+                    Itype::new_u(
+                        insts::OP_LD,
+                        compact_register_number(instruction_bits, 2),
+                        compact_register_number(instruction_bits, 7),
+                        fld_uimmediate(instruction_bits),
+                    )
+                    .0,
+                )
+            }
+        }
+        // Reserved
+        0b_100_00000000000_00 => None,
+        0b_110_00000000000_00 => Some(
+            // C.SW
+            Stype::new_u(
+                insts::OP_SW,
+                sw_uimmediate(instruction_bits),
+                compact_register_number(instruction_bits, 7),
+                compact_register_number(instruction_bits, 2),
+            )
+            .0,
+        ),
+        0b_111_00000000000_00 => {
+            if rv32 {
+                None
+            } else {
+                // C.SD
+                Some(
+                    Stype::new_u(
+                        insts::OP_SD,
+                        fld_uimmediate(instruction_bits),
+                        compact_register_number(instruction_bits, 7),
+                        compact_register_number(instruction_bits, 2),
+                    )
+                    .0,
+                )
+            }
+        }
+        // == Quadrant 1
+        0b_000_00000000000_01 => {
+            let nzimm = immediate(instruction_bits);
+            let rd = rd(instruction_bits);
+            if rd != 0 {
+                // C.ADDI
+                if nzimm != 0 {
+                    Some(Itype::new_s(insts::OP_ADDI, rd, rd, nzimm).0)
+                } else if version >= 1 {
+                    // HINTs
+                    Some(nop())
+                } else {
+                    None
+                }
+            } else {
+                // C.NOP
+                if nzimm == 0 {
+                    Some(nop())
+                } else if version >= 1 {
+                    // HINTs
+                    Some(nop())
+                } else {
+                    None
+                }
+            }
+        }
+        0b_001_00000000000_01 => {
+            if rv32 {
+                // C.JAL
+                Some(Utype::new_s(insts::OP_JAL, 1, j_immediate(instruction_bits)).0)
+            } else {
+                let rd = rd(instruction_bits);
+                if rd != 0 {
+                    // C.ADDIW
+                    Some(Itype::new_s(insts::OP_ADDIW, rd, rd, immediate(instruction_bits)).0)
+                } else {
+                    None
+                }
+            }
+        }
+        0b_010_00000000000_01 => {
+            let rd = rd(instruction_bits);
+            if rd != 0 {
+                // C.LI
+                Some(Itype::new_s(insts::OP_ADDI, rd, 0, immediate(instruction_bits)).0)
+            } else if version >= 1 {
+                // HINTs
+                Some(nop())
+            } else {
+                None
+            }
+        }
+        0b_011_00000000000_01 => {
+            let imm = immediate(instruction_bits) << 12;
+            if imm != 0 {
+                let rd = rd(instruction_bits);
+                if rd == SP {
+                    // C.ADDI16SP
+                    Some(
+                        Itype::new_s(
+                            insts::OP_ADDI,
+                            SP,
+                            SP,
+                            (x(instruction_bits, 6, 1, 4)
+                                | x(instruction_bits, 2, 1, 5)
+                                | x(instruction_bits, 5, 1, 6)
+                                | x(instruction_bits, 3, 2, 7)
+                                | xs(instruction_bits, 12, 1, 9))
+                                as i32,
+                        )
+                        .0,
+                    )
+                } else {
+                    // C.LUI
+                    if rd != 0 {
+                        Some(Utype::new_s(insts::OP_LUI, rd, imm).0)
+                    } else if version >= 1 {
+                        // HINTs
+                        Some(nop())
+                    } else {
+                        None
+                    }
+                }
+            } else {
+                None
+            }
+        }
+        0b_100_00000000000_01 => {
+            let rd = compact_register_number(instruction_bits, 7);
+            match instruction_bits & 0b_1_11_000_11000_00 {
+                // C.SRLI64
+                0b_0_00_000_00000_00 if instruction_bits & 0b_111_00 == 0 => Some(nop()),
+                // C.SRAI64
+                0b_0_01_000_00000_00 if instruction_bits & 0b_111_00 == 0 => Some(nop()),
+                // C.SUB
+                0b_0_11_000_00000_00 => Some(
+                    Rtype::new(
+                        insts::OP_SUB,
+                        rd,
+                        rd,
+                        compact_register_number(instruction_bits, 2),
+                    )
+                    .0,
+                ),
+                // C.XOR
+                0b_0_11_000_01000_00 => Some(
+                    Rtype::new(
+                        insts::OP_XOR,
+                        rd,
+                        rd,
+                        compact_register_number(instruction_bits, 2),
+                    )
+                    .0,
+                ),
+                // C.OR
+                0b_0_11_000_10000_00 => Some(
+                    Rtype::new(
+                        insts::OP_OR,
+                        rd,
+                        rd,
+                        compact_register_number(instruction_bits, 2),
+                    )
+                    .0,
+                ),
+                // C.AND
+                0b_0_11_000_11000_00 => Some(
+                    Rtype::new(
+                        insts::OP_AND,
+                        rd,
+                        rd,
+                        compact_register_number(instruction_bits, 2),
+                    )
+                    .0,
+                ),
+                // C.SUBW
+                0b_1_11_000_00000_00 if rv64 => Some(
+                    Rtype::new(
+                        insts::OP_SUBW,
+                        rd,
+                        rd,
+                        compact_register_number(instruction_bits, 2),
+                    )
+                    .0,
+                ),
+                // C.ADDW
+                0b_1_11_000_01000_00 if rv64 => Some(
+                    Rtype::new(
+                        insts::OP_ADDW,
+                        rd,
+                        rd,
+                        compact_register_number(instruction_bits, 2),
+                    )
+                    .0,
+                ),
+                // Reserved
+                0b_1_11_000_10000_00 => None,
+                // Reserved
+                0b_1_11_000_11000_00 => None,
+                _ => {
+                    let uimm = uimmediate(instruction_bits);
+                    match (instruction_bits & 0b_11_000_00000_00, uimm) {
+                        // Invalid instruction
+                        (0b_00_000_00000_00, 0) => None,
+                        // C.SRLI
+                        (0b_00_000_00000_00, uimm) => Some(
+                            Itype::new_u(insts::OP_SRLI, rd, rd, uimm & u32::from(R::SHIFT_MASK)).0,
+                        ),
+                        // Invalid instruction
+                        (0b_01_000_00000_00, 0) => None,
+                        // C.SRAI
+                        (0b_01_000_00000_00, uimm) => Some(
+                            Itype::new_u(insts::OP_SRAI, rd, rd, uimm & u32::from(R::SHIFT_MASK)).0,
+                        ),
+                        // C.ANDI
+                        (0b_10_000_00000_00, _) => Some(
+                            Itype::new_s(insts::OP_ANDI, rd, rd, immediate(instruction_bits)).0,
+                        ),
+                        _ => None,
+                    }
+                }
+            }
+        }
+        // C.J
+        0b_101_00000000000_01 => {
+            Some(Utype::new_s(insts::OP_JAL, 0, j_immediate(instruction_bits)).0)
+        }
+        // C.BEQZ
+        0b_110_00000000000_01 => Some(
+            Stype::new_s(
+                insts::OP_BEQ,
+                b_immediate(instruction_bits),
+                compact_register_number(instruction_bits, 7),
+                0,
+            )
+            .0,
+        ),
+        // C.BNEZ
+        0b_111_00000000000_01 => Some(
+            Stype::new_s(
+                insts::OP_BNE,
+                b_immediate(instruction_bits),
+                compact_register_number(instruction_bits, 7),
+                0,
+            )
+            .0,
+        ),
+        // == Quadrant 2
+        0b_000_00000000000_10 => {
+            let uimm = uimmediate(instruction_bits);
+            let rd = rd(instruction_bits);
+            if rd != 0 && uimm != 0 {
+                // C.SLLI
+                Some(Itype::new_u(insts::OP_SLLI, rd, rd, uimm & u32::from(R::SHIFT_MASK)).0)
+            } else if version >= 1 {
+                // HINTs
+                Some(nop())
+            } else {
+                None
+            }
+        }
+        0b_010_00000000000_10 => {
+            let rd = rd(instruction_bits);
+            if rd != 0 {
+                // C.LWSP
+                Some(Itype::new_u(insts::OP_LW, rd, SP, lwsp_uimmediate(instruction_bits)).0)
+            } else {
+                // Reserved
+                None
+            }
+        }
+        0b_011_00000000000_10 => {
+            if rv32 {
+                None
+            } else {
+                let rd = rd(instruction_bits);
+                if rd != 0 {
+                    // C.LDSP
+                    Some(Itype::new_u(insts::OP_LD, rd, SP, fldsp_uimmediate(instruction_bits)).0)
+                } else {
+                    // Reserved
+                    None
+                }
+            }
+        }
+        0b_100_00000000000_10 => {
+            match instruction_bits & 0b_1_00000_00000_00 {
+                0b_0_00000_00000_00 => {
+                    let rd = rd(instruction_bits);
+                    let rs2 = c_rs2(instruction_bits);
+                    if rs2 == 0 {
+                        if rd != 0 {
+                            // C.JR
+                            Some(Itype::new_s(insts::OP_JALR, 0, rd, 0).0)
+                        } else {
+                            // Reserved
+                            None
+                        }
+                    } else {
+                        if rd != 0 {
+                            // C.MV
+                            Some(Rtype::new(insts::OP_ADD, rd, 0, rs2).0)
+                        } else if version >= 1 {
+                            // HINTs
+                            Some(nop())
+                        } else {
+                            None
+                        }
+                    }
+                }
+                0b_1_00000_00000_00 => {
+                    let rd = rd(instruction_bits);
+                    let rs2 = c_rs2(instruction_bits);
+                    match (rd, rs2) {
+                        // C.EBREAK
+                        (0, 0) => Some(blank_instruction(insts::OP_EBREAK)),
+                        // C.JALR
+                        (rs1, 0) => Some(Itype::new_s(insts::OP_JALR, 1, rs1, 0).0),
+                        // C.ADD
+                        (rd, rs2) => {
+                            if rd != 0 {
+                                Some(Rtype::new(insts::OP_ADD, rd, rd, rs2).0)
+                            } else if version >= 1 {
+                                // HINTs
+                                Some(nop())
+                            } else {
+                                None
+                            }
+                        }
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+        0b_110_00000000000_10 => Some(
+            // C.SWSP
+            Stype::new_u(
+                insts::OP_SW,
+                swsp_uimmediate(instruction_bits),
+                SP,
+                c_rs2(instruction_bits),
+            )
+            .0,
+        ),
+        0b_111_00000000000_10 => {
+            if rv32 {
+                None
+            } else {
+                // C.SDSP
+                Some(
+                    Stype::new_u(
+                        insts::OP_SD,
+                        fsdsp_uimmediate(instruction_bits),
+                        2,
+                        c_rs2(instruction_bits),
+                    )
+                    .0,
+                )
+            }
+        }
+        _ => None,
+    }
 }
 pub fn fp(reg: u8) -> Reg {
     let encoding = reg as u8;
     if encoding <= 31 {
-        Reg::F(Xx::new(encoding as u32, 'f'))
+        Reg::F(Xx::new(encoding as u32))
     } else {
         panic!("Inaccessible register encoding: {:b}", encoding)
     }
@@ -1297,47 +1728,96 @@ pub fn gp(reg: u8) -> Reg {
     if encoding == 0 {
         Reg::ZERO
     } else if encoding > 0 && encoding <= 31 {
-        Reg::X(Xx::new(encoding as u32, 'a'))
+        Reg::X(Xx::new(encoding as u32))
     } else {
         panic!("Inaccessible register encoding: {:b}", encoding)
     }
 }
+
+// TODO: require a smarter impl to decide RVI or RVE
 #[macro_export]
 macro_rules! rv32 {
-    ($ident1:ident) => { Instr::RV32(RV32Instr::$ident) };
-    ($ident1:ident,$ident2:ident, $($t:expr),*) => { Instr::RV32(RV32Instr::$ident($( $t, )*)) };
-  }
+    ($ident1:ident,$ident2:ident) => { Instr::RV32(RV32Instr::$ident1($ident1::$ident2)) };
+    ($ident1:ident,$ident2:ident, $($t:expr),*) => { Instr::RV32(RV32Instr::$ident1($ident1::$ident2($( $t, )*))) };
+}
 #[macro_export]
 macro_rules! rv64 {
-    ($ident:ident) => { Instr::RV64(RV64Instr::$ident) };
-    ($ident:ident, $($t:expr),*) => { Instr::RV64(RV64Instr::$ident($( $t, )*)) };
-  }
+    ($ident1:ident,$ident2:ident) => { Instr::RV64(RV64Instr::$ident1($ident1::$ident2)) };
+    ($ident1:ident,$ident2:ident, $($t:expr),*) => { Instr::RV64(RV64Instr::$ident1($ident1::$ident2($( $t, )*))) };
+}
 #[macro_export]
 macro_rules! rv128 {
-    ($ident:ident) => { Instr::RV128(RV128Instr::$ident) };
-    ($ident:ident, $($t:expr),*) => { Instr::RV128(RV128Instr::$ident($( $t, )*)) };
-  }
+    ($ident1:ident,$ident2:ident) => { Instr::RV128(RV128Instr::$ident1($ident1::$ident2)) };
+    ($ident1:ident,$ident2:ident, $($t:expr),*) => { Instr::RV128(RV128Instr::$ident1($ident1::$ident2($( $t, )*))) };
+}
 #[macro_export]
 macro_rules! i {
-    ($type:ident, $opcode:ident, $opcode_cat:ident, $bit_u32:expr, $reg:ident) => {{
-        let rd = Rd($reg(rd($bit_u32).try_into().unwrap()));
-        let rs1 = Rs1($reg(rs1($bit_u32).try_into().unwrap()));
-        let imm = Imm32::<11, 0>::from(itype_immediate($bit_u32) as u32);
-        $type!($opcode_cat::$opcode, rd, rs1, imm)
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
+        let imm = Imm32::<11, 0>::from(itype_immediate($bit) as u32);
+        $type!($opcode1, $opcode2, rd, rs1, imm)
+    }};
+}
+macro_rules! j {
+    ($type:ident,  $opcode1:ident, $opcode2:ident,  $bit:expr, $reg:ident) => {{
+    let rd = Rd($reg(rd($bit).try_into().unwrap()));
+    let imm = Imm32::<20, 1>:::from(jtype_immediate($bit) as u32);
+    $type!($opcode1, $opcode2, rd, imm)
+  }};
+}
+macro_rules! u {
+    ($type:ident,  $opcode1:ident, $opcode2:ident,  $bit:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        let imm = Imm32::<31, 12>::from(itype_immediate($bit) as u32);
+        $type!($opcode1, $opcode2, rd, imm)
+    }};
+}
+macro_rules! r_shamt64 {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
+        let shamt = Shamt(shamt($bit).try_into().unwrap());
+        $type!($opcode1, $opcode2, rd, rs1, shamt)
     }};
 }
 
 impl Instruction {
     fn parse(bit: &[u8]) -> Instruction {
-        if let Some(Instr) = try_from_compressed(bit) {
-            todo!()
+        if let Some(instr) = try_from_compressed(bit) {
+            instr
         } else {
-            let bit_u32 = u32::from_be_bytes(bit.split_at(4).0.try_into().unwrap());
+            let bit_u32 = u32::from_le_bytes(bit.split_at(4).0.try_into().unwrap());
 
             let opcode = slice(bit_u32, 0, 7, 0) as u16;
+
             let instr = match opcode {
+                0b_0110111 => Some(u!(rv32, RV32I, LUI, bit_u32, gp)),
+                0b_0010111 => Some(u!(rv32, RV32I, AUIPC, bit_u32, gp)),
+                0b_1101111 => Some(j!(rv32, RV32I, JAL, bit_u32, gp)),
+                0b_1100111 => {
+                    match funct3(bit_u32) {
+                        // I-type jump instructions
+                        0b_000 => Some(i!(rv32, RV32I, JALR, bit_u32, gp)),
+                        _ => None,
+                    }
+                }
+                0b_0000011 => {
+                    // I-type load instructions
+                    match funct3(bit_u32) {
+                        0b_000 => Some(i!(rv32, RV32I, LB, bit_u32, gp)),
+                        0b_001 => Some(i!(rv32, RV32I, LH, bit_u32, gp)),
+                        0b_010 => Some(i!(rv32, RV32I, LW, bit_u32, gp)),
+                        0b_100 => Some(i!(rv32, RV32I, LBU, bit_u32, gp)),
+                        0b_101 => Some(i!(rv32, RV32I, LHU, bit_u32, gp)),
+                        0b_110 => Some(i!(rv64, RV64I, LWU, bit_u32, gp)),
+                        0b_011 => Some(i!(rv64, RV64I, LD, bit_u32, gp)),
+                        _ => None,
+                    }
+                }
                 0b_0010011 => {
                     let funct3_val = funct3(bit_u32);
+
                     match funct3_val {
                         // I-type ALU instructions
                         0b_000 => Some(i!(rv32, RV32I, ADDI, bit_u32, gp)),
@@ -1348,22 +1828,308 @@ impl Instruction {
                         0b_111 => Some(i!(rv32, RV32I, ANDI, bit_u32, gp)),
                         // I-type special ALU instructions
                         0b_001 | 0b_101 => {
-                            let top6_val = funct7(instruction_bits) >> 1;
+                            let top6_val = funct7(bit_u32) >> 1;
                             match (funct3_val, top6_val) {
-                                (0b_001, 0b_000000) => Some(i!(rv32, RV32I, SLLI, bit_u32, gp)),
-                                (0b_101, 0b_000000) => Some(i!(rv32, RV32I, SRLI, bit_u32, gp)),
-                                (0b_101, 0b_010000) => Some(i!(rv32, RV32I, SRAI, bit_u32, gp)),
+                                (0b_001, 0b_000000) => {
+                                    Some(r_shamt64!(rv64, RV64I, SLLI, bit_u32, gp))
+                                }
+                                (0b_101, 0b_000000) => {
+                                    Some(r_shamt64!(rv64, RV64I, SRLI, bit_u32, gp))
+                                }
+                                (0b_101, 0b_010000) => {
+                                    Some(r_shamt64!(rv64, RV64I, SRAI, bit_u32, gp))
+                                }
                                 _ => None,
                             }
+                        }
+                        0b_1100011 => {
+                            let inst_opt = match funct3(bit_u32) {
+                                0b_000 => Some(insts::OP_BEQ),
+                                0b_001 => Some(insts::OP_BNE),
+                                0b_100 => Some(insts::OP_BLT),
+                                0b_101 => Some(insts::OP_BGE),
+                                0b_110 => Some(insts::OP_BLTU),
+                                0b_111 => Some(insts::OP_BGEU),
+                                _ => None,
+                            };
+                            inst_opt.map(|inst| {
+                                Stype::new_s(
+                                    inst,
+                                    btype_immediate(bit_u32),
+                                    rs1(bit_u32),
+                                    rs2(bit_u32),
+                                )
+                                .0
+                            })
+                        }
+                        0b_0100011 => {
+                            let inst_opt = match funct3(bit_u32) {
+                                0b_000 => Some(insts::OP_SB),
+                                0b_001 => Some(insts::OP_SH),
+                                0b_010 => Some(insts::OP_SW),
+                                0b_011 if rv64 => Some(insts::OP_SD),
+                                _ => None,
+                            };
+                            inst_opt.map(|inst| {
+                                Stype::new_s(
+                                    inst,
+                                    stype_immediate(bit_u32),
+                                    rs1(bit_u32),
+                                    rs2(bit_u32),
+                                )
+                                .0
+                            })
+                        }
+                        0b_0110011 => {
+                            let inst_opt = match (funct3(bit_u32), funct7(bit_u32)) {
+                                (0b_000, 0b_0000000) => Some(insts::OP_ADD),
+                                (0b_000, 0b_0100000) => Some(insts::OP_SUB),
+                                (0b_001, 0b_0000000) => Some(insts::OP_SLL),
+                                (0b_010, 0b_0000000) => Some(insts::OP_SLT),
+                                (0b_011, 0b_0000000) => Some(insts::OP_SLTU),
+                                (0b_100, 0b_0000000) => Some(insts::OP_XOR),
+                                (0b_101, 0b_0000000) => Some(insts::OP_SRL),
+                                (0b_101, 0b_0100000) => Some(insts::OP_SRA),
+                                (0b_110, 0b_0000000) => Some(insts::OP_OR),
+                                (0b_111, 0b_0000000) => Some(insts::OP_AND),
+                                _ => None,
+                            };
+                            inst_opt.map(|inst| {
+                                Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0
+                            })
+                        }
+                        0b_0001111 => {
+                            const FENCE_LOW_BITS: u32 = 0b_00000_000_00000_0001111;
+                            const FENCEI_VALUE: u32 = 0b_0000_0000_0000_00000_001_00000_0001111;
+                            if bit_u32 == FENCEI_VALUE {
+                                Some(blank_instruction(insts::OP_FENCEI))
+                            } else if bit_u32 & 0x000_FFFFF == FENCE_LOW_BITS {
+                                Some(
+                                    FenceType::new(
+                                        ((bit_u32 & 0xF00_00000) >> 28) as u8,
+                                        ((bit_u32 & 0x0F0_00000) >> 24) as u8,
+                                        ((bit_u32 & 0x00F_00000) >> 20) as u8,
+                                    )
+                                    .0,
+                                )
+                            } else {
+                                None
+                            }
+                        }
+                        0b_1110011 => match bit_u32 {
+                            0b_000000000000_00000_000_00000_1110011 => {
+                                Some(blank_instruction(insts::OP_ECALL))
+                            }
+                            0b_000000000001_00000_000_00000_1110011 => {
+                                Some(blank_instruction(insts::OP_EBREAK))
+                            }
+                            _ => None,
+                        },
+                        0b_0011011 if rv64 => {
+                            let funct3_value = funct3(bit_u32);
+                            match funct3_value {
+                                0b_000 => Some(
+                                    Itype::new_s(
+                                        insts::OP_ADDIW,
+                                        rd(bit_u32),
+                                        rs1(bit_u32),
+                                        itype_immediate(bit_u32),
+                                    )
+                                    .0,
+                                ),
+                                0b_001 | 0b_101 => {
+                                    let funct7_value = funct7(bit_u32);
+                                    let inst_opt = match (funct3_value, funct7_value) {
+                                        (0b_001, 0b_0000000) => Some(insts::OP_SLLIW),
+                                        (0b_101, 0b_0000000) => Some(insts::OP_SRLIW),
+                                        (0b_101, 0b_0100000) => Some(insts::OP_SRAIW),
+                                        _ => None,
+                                    };
+                                    inst_opt.map(|inst| {
+                                        Itype::new_s(
+                                            inst,
+                                            rd(bit_u32),
+                                            rs1(bit_u32),
+                                            itype_immediate(bit_u32) & 0x1F,
+                                        )
+                                        .0
+                                    })
+                                }
+                                _ => None,
+                            }
+                        }
+                        0b_0111011 if rv64 => {
+                            let inst_opt = match (funct3(bit_u32), funct7(bit_u32)) {
+                                (0b_000, 0b_0000000) => Some(insts::OP_ADDW),
+                                (0b_000, 0b_0100000) => Some(insts::OP_SUBW),
+                                (0b_001, 0b_0000000) => Some(insts::OP_SLLW),
+                                (0b_101, 0b_0000000) => Some(insts::OP_SRLW),
+                                (0b_101, 0b_0100000) => Some(insts::OP_SRAW),
+                                _ => None,
+                            };
+                            inst_opt.map(|inst| {
+                                Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0
+                            })
                         }
                         _ => None,
                     }
                 }
+                0b_0111011 => {
+                    let funct3_value = funct3(bit_u32);
+                    let funct7_value = funct7(bit_u32);
+                    let inst_opt = match (funct3_value, funct7_value) {
+                        (0b_000, 0b_0000100) => Some(insts::OP_ADDUW),
+                        (0b_001, 0b_0110000) => Some(insts::OP_ROLW),
+                        (0b_010, 0b_0010000) => Some(insts::OP_SH1ADDUW),
+                        (0b_100, 0b_0000100) => {
+                            if rv64 && rs2(bit_u32) == 0 {
+                                Some(insts::OP_ZEXTH)
+                            } else {
+                                None
+                            }
+                        }
+                        (0b_100, 0b_0010000) => Some(insts::OP_SH2ADDUW),
+                        (0b_101, 0b_0110000) => Some(insts::OP_RORW),
+                        (0b_110, 0b_0010000) => Some(insts::OP_SH3ADDUW),
+                        _ => None,
+                    };
+                    inst_opt.map(|inst| Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0)
+                }
+                0b_0110011 => {
+                    let funct3_value = funct3(bit_u32);
+                    let funct7_value = funct7(bit_u32);
+                    let inst_opt = match (funct3_value, funct7_value) {
+                        (0b_111, 0b_0100000) => Some(insts::OP_ANDN),
+                        (0b_110, 0b_0100000) => Some(insts::OP_ORN),
+                        (0b_100, 0b_0100000) => Some(insts::OP_XNOR),
+                        (0b_001, 0b_0110000) => Some(insts::OP_ROL),
+                        (0b_101, 0b_0110000) => Some(insts::OP_ROR),
+                        (0b_001, 0b_0110100) => Some(insts::OP_BINV),
+                        (0b_001, 0b_0010100) => Some(insts::OP_BSET),
+                        (0b_001, 0b_0100100) => Some(insts::OP_BCLR),
+                        (0b_101, 0b_0100100) => Some(insts::OP_BEXT),
+                        (0b_010, 0b_0010000) => Some(insts::OP_SH1ADD),
+                        (0b_100, 0b_0010000) => Some(insts::OP_SH2ADD),
+                        (0b_110, 0b_0010000) => Some(insts::OP_SH3ADD),
+                        (0b_001, 0b_0000101) => Some(insts::OP_CLMUL),
+                        (0b_011, 0b_0000101) => Some(insts::OP_CLMULH),
+                        (0b_010, 0b_0000101) => Some(insts::OP_CLMULR),
+                        (0b_100, 0b_0000101) => Some(insts::OP_MIN),
+                        (0b_101, 0b_0000101) => Some(insts::OP_MINU),
+                        (0b_110, 0b_0000101) => Some(insts::OP_MAX),
+                        (0b_111, 0b_0000101) => Some(insts::OP_MAXU),
+                        _ => None,
+                    };
+                    inst_opt.map(|inst| Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0)
+                }
+                0b_0010011 => {
+                    let funct3_value = funct3(bit_u32);
+                    let funct7_value = funct7(bit_u32);
+                    let rs2_value = rs2(bit_u32);
+                    let inst_opt = match (funct7_value, funct3_value, rs2_value) {
+                        (0b_0010100, 0b_101, 0b_00111) => Some(insts::OP_ORCB),
+                        (0b_0110101, 0b_101, 0b_11000) => Some(insts::OP_REV8),
+                        (0b_0110000, 0b_001, 0b_00000) => Some(insts::OP_CLZ),
+                        (0b_0110000, 0b_001, 0b_00010) => Some(insts::OP_CPOP),
+                        (0b_0110000, 0b_001, 0b_00001) => Some(insts::OP_CTZ),
+                        (0b_0110000, 0b_001, 0b_00100) => Some(insts::OP_SEXTB),
+                        (0b_0110000, 0b_001, 0b_00101) => Some(insts::OP_SEXTH),
+                        _ => None,
+                    };
+                    if let Some(inst) = inst_opt {
+                        Some(Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0)
+                    } else {
+                        let inst_opt = match (funct7_value >> 1, funct3_value) {
+                            (0b_010010, 0b_001) => Some(insts::OP_BCLRI),
+                            (0b_010010, 0b_101) => Some(insts::OP_BEXTI),
+                            (0b_011010, 0b_001) => Some(insts::OP_BINVI),
+                            (0b_001010, 0b_001) => Some(insts::OP_BSETI),
+                            (0b_011000, 0b_101) => Some(insts::OP_RORI),
+                            _ => None,
+                        };
+                        inst_opt.map(|inst| {
+                            Itype::new_u(
+                                inst,
+                                rd(bit_u32),
+                                rs1(bit_u32),
+                                utils::x(bit_u32, 20, 6, 0),
+                            )
+                            .0
+                        })
+                    }
+                }
+                0b_0011011 => {
+                    let funct3_value = funct3(bit_u32);
+                    let funct7_value = funct7(bit_u32);
+                    let rs2_value = rs2(bit_u32);
+
+                    match funct7_value {
+                        0b_0110000 => match funct3_value {
+                            0b_001 => {
+                                let inst_opt = match rs2_value {
+                                    0b_00000 => Some(insts::OP_CLZW),
+                                    0b_00010 => Some(insts::OP_CPOPW),
+                                    0b_00001 => Some(insts::OP_CTZW),
+                                    _ => None,
+                                };
+                                inst_opt.map(|inst| {
+                                    Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2_value).0
+                                })
+                            }
+                            0b_101 => Some(
+                                Itype::new_u(
+                                    insts::OP_RORIW,
+                                    rd(bit_u32),
+                                    rs1(bit_u32),
+                                    utils::x(bit_u32, 20, 5, 0),
+                                )
+                                .0,
+                            ),
+                            _ => None,
+                        },
+                        _ => {
+                            if funct7_value >> 1 == 0b_000010 && funct3_value == 0b_001 {
+                                Some(
+                                    Itype::new_u(
+                                        insts::OP_SLLIUW,
+                                        rd(bit_u32),
+                                        rs1(bit_u32),
+                                        utils::x(bit_u32, 20, 6, 0),
+                                    )
+                                    .0,
+                                )
+                            } else {
+                                None
+                            }
+                        }
+                    }
+                }
+                0b_0110011 => match funct3(bit_u32) {
+                    0b_000 => Some(insts::OP_MUL),
+                    0b_001 => Some(insts::OP_MULH),
+                    0b_010 => Some(insts::OP_MULHSU),
+                    0b_011 => Some(insts::OP_MULHU),
+                    0b_100 => Some(insts::OP_DIV),
+                    0b_101 => Some(insts::OP_DIVU),
+                    0b_110 => Some(insts::OP_REM),
+                    0b_111 => Some(insts::OP_REMU),
+                    _ => None,
+                },
+                0b_0111011 if rv64 => match funct3(bit_u32) {
+                    0b_000 => Some(insts::OP_MULW),
+                    0b_100 => Some(insts::OP_DIVW),
+                    0b_101 => Some(insts::OP_DIVUW),
+                    0b_110 => Some(insts::OP_REMW),
+                    0b_111 => Some(insts::OP_REMUW),
+                    _ => None,
+                },
+
                 _ => None,
-            };
+            }
+            .unwrap();
 
             dbg!(opcode);
-            Instruction { instr }
+            Self { instr }
         }
     }
 }
@@ -1420,13 +2186,34 @@ mod tests {
     use crate::frontend::instruction::*;
 
     #[test]
-    fn test_layout() {
+    fn test_rvi_addi() {
         // jal x0, -6*4
         let instr_asm: u32 = 0b11101101100000011000000110010011;
+        // let instr_asm: u32 = 0b11011000010111;
         let instr = Instruction::parse(&instr_asm.to_le_bytes());
+        dbg!(instr.clone());
         assert_eq!(
             instr.instr,
-            Instr::RV32(RV32Instr::RV32I(RV64I::LWU(Rd(), Rs1(), Imm32(()))))
+            Instr::RV32(RV32Instr::RV32I(RV32I::ADDI(
+                Rd(Reg::X(Xx(3))),
+                Rs1(Reg::X(Xx(3))),
+                Imm32::<11, 0>::from(4294967000)
+            )))
+        );
+    }
+    #[test]
+    fn test_rvi() {
+        // jal x0, -6*4
+        let instr_asm: u32 = 0b11011000010111;
+        let instr = Instruction::parse(&instr_asm.to_le_bytes());
+        dbg!(instr.clone());
+        assert_eq!(
+            instr.instr,
+            Instr::RV32(RV32Instr::RV32I(RV32I::ADDI(
+                Rd(Reg::X(Xx(3))),
+                Rs1(Reg::X(Xx(3))),
+                Imm32::<11, 0>::from(4294967000)
+            )))
         );
     }
 }

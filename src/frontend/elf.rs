@@ -723,6 +723,7 @@ impl<'a> SectionHeader<'a> {
                 let data = self.raw_data(elf_file);
                 match elf_file.header_part1.get_class() {
                     Class::ThirtyTwo => {
+                        // TODO: NOTE32 is 4 byte ptr, which require further impl
                         let header: &'a NoteHeader = read(&data[0..12]);
                         let index = &data[12..];
                         SectionData::Note32(header, index)
@@ -732,7 +733,7 @@ impl<'a> SectionHeader<'a> {
                         let index = &data[12..];
                         SectionData::Note64(header, index)
                     }
-                    _ => unreachable!(),
+                    _ => todo!(),
                 }
             }
             SectionHeaderType::HashTable => {
