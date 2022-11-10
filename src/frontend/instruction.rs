@@ -1456,17 +1456,16 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
         0b_100_00000000000_00 => None,
         0b_110_00000000000_00 => Some(
             // C.SW
-            // Stype::new_u(
-            //     insts::OP_SW,
-            //     sw_uimmediate(bit_u32),
-            //     c_r(bit_u32, 7),
-            //     c_r(bit_u32, 2),
-            // )
-            // .0,
-            rv32!(),
+            rv32!(
+                RV32I,
+                SW,
+                Rs1(Reg::X(Xx::new(c_r(bit_u32, 7)))),
+                Rs2(Reg::X(Xx::new(c_r(bit_u32, 2)))),
+                Imm32::from(c_sw_uimmediate(bit_u32))
+            ),
         ),
         0b_111_00000000000_00 => {
-            if rv32 {
+            if unsafe { BIT_LENGTH == 0 } {
                 None
             } else {
                 // C.SD
