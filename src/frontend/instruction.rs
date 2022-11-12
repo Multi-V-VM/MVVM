@@ -1039,6 +1039,7 @@ pub enum RV32Instr {
     RV32F(RV32F),
     RV32E(RV32E),
     RV32D(RV32D),
+    RVB(RVB),
     RVV(RVV),
     RVZifencei(RVZifencei),
     RVZcsr(RVZcsr),
@@ -1142,7 +1143,53 @@ pub enum RV128I {
     SRLD(Rd, Rs1, Rs2),
     SRAD(Rd, Rs1, Rs2),
 }
-
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum RVB {
+    ADDUW(Rd, Rs1, Rs2),
+    ANDN(Rd, Rs1, Rs2),
+    BCLR(Rd, Rs1, Rs2),
+    BCLRI(Rd, Rs1, Imm32<11, 0>),
+    BEXT(Rd, Rs1, Rs2),
+    BEXTI(Rd, Rs1, Imm32<11, 0>),
+    BINV(Rd, Rs1, Rs2),
+    BINVI(Rd, Rs1, Imm32<11, 0>),
+    BSET(Rd, Rs1, Rs2),
+    BSETI(Rd, Rs1, Imm32<11, 0>),
+    CLMUL(Rd, Rs1, Rs2),
+    CLMULH(Rd, Rs1, Rs2),
+    CLMULR(Rd, Rs1, Rs2),
+    CLZ(Rd, Rs),
+    CLZW(Rd, Rs),
+    CPOP(Rd, Rs),
+    CPOPW(Rd, Rs),
+    CTZ(Rd, Rs),
+    CTZW(Rd, Rs),
+    MAX(Rd, Rs1, Rs2),
+    MAXU(Rd, Rs1, Rs2),
+    MIN(Rd, Rs1, Rs2),
+    MINU(Rd, Rs1, Rs2),
+    ORCB(Rd, Rs1, Rs2),
+    ORN(Rd, Rs1, Rs2),
+    REV8(Rd, Rs),
+    ROL(Rd, Rs1, Rs2),
+    ROLW(Rd, Rs1, Rs2),
+    ROR(Rd, Rs1, Rs2),
+    RORI(Rd, Rs1, Shamt),
+    RORIW(Rd, Rs1, Shamt),
+    RORW(Rd, Rs1, Rs2),
+    SEXTB(Rd, Rs),
+    SEXTH(Rd, Rs),
+    SH1ADD(Rd, Rs1, Rs2),
+    SH1ADDUW(Rd, Rs1, Rs2),
+    SH2ADD(Rd, Rs1, Rs2),
+    SH2ADDUW(Rd, Rs1, Rs2),
+    SH3ADD(Rd, Rs1, Rs2),
+    SH3ADDUW(Rd, Rs1, Rs2),
+    SLLIUW(Rd, Rs1, Rs2),
+    XNOR(Rd, Rs1, Rs2),
+    ZEXTH(Rd, Rs),
+}
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum RVZcsr {
@@ -1169,6 +1216,7 @@ pub enum RV64Instr {
     RV64F(RV64F),
     RV64E(RV64E),
     RV64D(RV64D),
+    RVB(RVB),
     RV64V(RVV),
     RVZifencei(RVZifencei),
     RVZcsr(RVZcsr),
@@ -1571,8 +1619,8 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                     Some(rv32!(
                         RV32I,
                         ADDI,
-                        Rd(Reg::X(XX::new(2))),
-                        Rs1(Reg::X(XX::new(2))),
+                        Rd(Reg::X(Xx::new(2))),
+                        Rs1(Reg::X(Xx::new(2))),
                         Imm32::from(
                             slice(bit_u32, 6, 1, 4)
                                 | slice(bit_u32, 2, 1, 5)
@@ -1910,9 +1958,8 @@ macro_rules! rv32 {
 }
 #[macro_export]
 macro_rules! rv64_no_e {
-    ($ident1:ident,$ident2:ident) => Instr::RV64(RV64Instr::$ident1($ident1::$ident2))
-    ($ident1:ident,$ident2:ident, $($t:expr),*) =>
-        Instr::RV64(RV64Instr::$ident1($ident1::$ident2($( $t, )*)))
+    ($ident1:ident,$ident2:ident) => { Instr::RV64(RV64Instr::$ident1($ident1::$ident2)) };
+    ($ident1:ident,$ident2:ident, $($t:expr),*) => { Instr::RV64(RV64Instr::$ident1($ident1::$ident2($( $t, )*))) };
 }
 #[macro_export]
 macro_rules! rv64 {
@@ -1957,6 +2004,22 @@ macro_rules! b {
         $type!($opcode1, $opcode2, rs1, rs2, imm)
     }};
 }
+macro_rules! r {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
+        let rs2 = Rs2($reg(rs2($bit).try_into().unwrap()));
+        $type!($opcode1, $opcode2, rd, rs1, rs2)
+    }};
+}
+macro_rules! s {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
+        let rs2 = Rs2($reg(rs2($bit).try_into().unwrap()));
+        let imm = Imm32::<11, 0>::from(stype_immediate($bit));
+        $type!($opcode1, $opcode2, rs1, rs2, imm)
+    }};
+}
 macro_rules! j {
     ($type:ident,  $opcode1:ident, $opcode2:ident,  $bit:expr, $reg:ident) => {{
         let rd = Rd($reg(rd($bit).try_into().unwrap()));
@@ -1977,6 +2040,16 @@ macro_rules! r_shamt {
         let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
         let shamt = Shamt(shamt($bit).try_into().unwrap());
         $type!($opcode1, $opcode2, rd, rs1, shamt)
+    }};
+}
+macro_rules! fence {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
+        let succ = FenceSucc(Xx::new(($bit & 0x00F_00000) >> 20));
+        let pred = FencePred(Xx::new(($bit & 0x0F0_00000) >> 24));
+        let fm = FenceFm(Xx::new(($bit & 0xF00_00000) >> 28));
+        $type!($opcode1, $opcode2, rd, rs1, succ, pred, fm)
     }};
 }
 
@@ -2040,163 +2113,168 @@ impl Instruction {
                                 _ => None,
                             }
                         }
-                        0b_1100011 => match funct3(bit_u32) {
-                            0b_000 => Some(b!(rv32, RV32I, BEQ, bit_u32, gp)),
-                            0b_001 => Some(b!(rv32, RV32I, BNE, bit_u32, gp)),
-                            0b_100 => Some(b!(rv32, RV32I, BLT, bit_u32, gp)),
-                            0b_101 => Some(b!(rv32, RV32I, BGE, bit_u32, gp)),
-                            0b_110 => Some(b!(rv32, RV32I, BLTU, bit_u32, gp)),
-                            0b_111 => Some(b!(rv32, RV32I, BGEU, bit_u32, gp)),
-                            _ => None,
+                    }
+                }
+                0b_1100011 => match funct3(bit_u32) {
+                    0b_000 => Some(b!(rv32, RV32I, BEQ, bit_u32, gp)),
+                    0b_001 => Some(b!(rv32, RV32I, BNE, bit_u32, gp)),
+                    0b_100 => Some(b!(rv32, RV32I, BLT, bit_u32, gp)),
+                    0b_101 => Some(b!(rv32, RV32I, BGE, bit_u32, gp)),
+                    0b_110 => Some(b!(rv32, RV32I, BLTU, bit_u32, gp)),
+                    0b_111 => Some(b!(rv32, RV32I, BGEU, bit_u32, gp)),
+                    _ => None,
+                },
+                0b_0100011 => match funct3(bit_u32) {
+                    0b_000 => Some(s!(rv32, RV32I, SB, bit_u32, gp)),
+                    0b_001 => Some(s!(rv32, RV32I, SH, bit_u32, gp)),
+                    0b_010 => Some(s!(rv32, RV32I, SW, bit_u32, gp)),
+                    0b_011 => Some(s!(rv64, RV64I, SD, bit_u32, gp)),
+                    _ => None,
+                },
+                0b_0110011 => match (funct3(bit_u32), funct7(bit_u32)) {
+                    (0b_000, 0b_0000000) => Some(r!(rv32, RV32I, ADD, bit_u32, gp)),
+                    (0b_000, 0b_0100000) => Some(r!(rv32, RV32I, SUB, bit_u32, gp)),
+                    (0b_001, 0b_0000000) => Some(r!(rv32, RV32I, SLL, bit_u32, gp)),
+                    (0b_010, 0b_0000000) => Some(r!(rv32, RV32I, SLT, bit_u32, gp)),
+                    (0b_011, 0b_0000000) => Some(r!(rv32, RV32I, SLTU, bit_u32, gp)),
+                    (0b_100, 0b_0000000) => Some(r!(rv32, RV32I, XOR, bit_u32, gp)),
+                    (0b_101, 0b_0000000) => Some(r!(rv32, RV32I, SRL, bit_u32, gp)),
+                    (0b_101, 0b_0100000) => Some(r!(rv32, RV32I, SRA, bit_u32, gp)),
+                    (0b_110, 0b_0000000) => Some(r!(rv32, RV32I, OR, bit_u32, gp)),
+                    (0b_111, 0b_0000000) => Some(r!(rv32, RV32I, AND, bit_u32, gp)),
+                    _ => None,
+                },
+                0b_0001111 => {
+                    const FENCE_TSO: u32 = 0b1000_0011_0011_00000_000_00000_0001111;
+                    const FENCE_PAUSE: u32 = 0b0000_0001_0000_00000_000_00000_0001111;
+                    const FENCE_I: u32 = 0b_0000_0000_0000_00000_001_00000_0001111;
+                    match funct3(bit_u32) {
+                        0b000 => match bit_u32 {
+                            FENCE_TSO => Some(rv32!(RV32I, FENCE_TSO)),
+                            FENCE_PAUSE => Some(rv32!(RV32I, PAUSE)),
+                            _fence => Some(fence!(rv32, RV32I, FENCE, bit_u32, gp)),
                         },
-                        0b_0100011 => match funct3(bit_u32) {
-                            0b_000 => Some(s!(rv32, RV32I, SB, bit_u32, gp)),
-                            0b_001 => Some(s!(rv32, RV32I, SH, bit_u32, gp)),
-                            0b_010 => Some(s!(rv32, RV32I, SW, bit_u32, gp)),
-                            0b_011 => Some(s!(rv32, RV32I, SD, bit_u32, gp)),
-                            _ => None,
-                        },
-                        0b_0110011 => match (funct3(bit_u32), funct7(bit_u32)) {
-                            (0b_000, 0b_0000000) => Some(r!(rv32, RV32I, ADD, bit_u32, gp)),
-                            (0b_000, 0b_0100000) => Some(r!(rv32, RV32I, SUB, bit_u32, gp)),
-                            (0b_001, 0b_0000000) => Some(r!(rv32, RV32I, SLL, bit_u32, gp)),
-                            (0b_010, 0b_0000000) => Some(r!(rv32, RV32I, SLT, bit_u32, gp)),
-                            (0b_011, 0b_0000000) => Some(r!(rv32, RV32I, SLTU, bit_u32, gp)),
-                            (0b_100, 0b_0000000) => Some(r!(rv32, RV32I, XOR, bit_u32, gp)),
-                            (0b_101, 0b_0000000) => Some(r!(rv32, RV32I, SRL, bit_u32, gp)),
-                            (0b_101, 0b_0100000) => Some(r!(rv32, RV32I, SRA, bit_u32, gp)),
-                            (0b_110, 0b_0000000) => Some(r!(rv32, RV32I, OR, bit_u32, gp)),
-                            (0b_111, 0b_0000000) => Some(r!(rv32, RV32I, AND, bit_u32, gp)),
-                            _ => None,
-                        },
-                        0b_0001111 => {
-                            const FENCE_TSO: u32 = 0b1000_0011_0011_00000_000_00000_0001111;
-                            const FENCE_PAUSE: u32 = 0b0000_0001_0000_00000_000_00000_0001111;
-                            const FENCE_I: u32 = 0b_0000_0000_0000_00000_001_00000_0001111;
-                            match funct3(bit_u32) {
-                                0b000 => match bit_u32 {
-                                    FENCE_TSO => Some(rv32!(RV32I, FENCE_TSO)),
-                                    FENCE_PAUSE => Some(rv32!(RV32I, PAUSE)),
-                                    _fence => fence!(rv32, RV32I, FENCE, bit_u32, gp),
-                                },
-                                0b001 => Some(i!(rv64_no_e, RVZifencei, FENCE_I, bit_u32, gp)),
-                                _ => None,
-                            }
-                        }
-                        0b_1110011 => match bit_u32 {
-                            0b_000000000000_00000_000_00000_1110011 => Some(rv32!(RV32I, ECALL)),
-                            0b_000000000001_00000_000_00000_1110011 => Some(rv32!(RV32I, EBREAK)),
-                            _ => None,
-                        },
-                        0b_0011011 => {
-                            let funct3_value = funct3(bit_u32);
-                            match funct3_value {
-                                0b_000 => Some(i!(rv64, RV64I, ADDIW, bit_u32, gp)),
-                                0b_001 | 0b_101 => {
-                                    let funct7_value = funct7(bit_u32);
-                                    match (funct3_value, funct7_value) {
-                                        (0b_001, 0b_0000000) => {
-                                            Some(r_shamt!(rv64, RV64I, SLLIW, bit_u32, gp))
-                                        }
-                                        (0b_101, 0b_0000000) => {
-                                            Some(r_shamt!(rv64, RV64I, SRLIW, bit_u32, gp))
-                                        }
-                                        (0b_101, 0b_0100000) => {
-                                            Some(r_shamt!(rv64, RV64I, SRAIW, bit_u32, gp))
-                                        }
-                                        _ => None,
-                                    }
+                        0b001 => Some(i!(rv64_no_e, RVZifencei, FENCE_I, bit_u32, gp)),
+                        _ => None,
+                    }
+                }
+                0b_1110011 => match bit_u32 {
+                    0b_000000000000_00000_000_00000_1110011 => Some(rv32!(RV32I, ECALL)),
+                    0b_000000000001_00000_000_00000_1110011 => Some(rv32!(RV32I, EBREAK)),
+                    _ => None,
+                },
+                0b_0011011 => {
+                    let funct3_value = funct3(bit_u32);
+                    match funct3_value {
+                        0b_000 => Some(i!(rv64, RV64I, ADDIW, bit_u32, gp)),
+                        0b_001 | 0b_101 => {
+                            let funct7_value = funct7(bit_u32);
+                            match (funct3_value, funct7_value) {
+                                (0b_001, 0b_0000000) => {
+                                    Some(r_shamt!(rv64, RV64I, SLLIW, bit_u32, gp))
+                                }
+                                (0b_101, 0b_0000000) => {
+                                    Some(r_shamt!(rv64, RV64I, SRLIW, bit_u32, gp))
+                                }
+                                (0b_101, 0b_0100000) => {
+                                    Some(r_shamt!(rv64, RV64I, SRAIW, bit_u32, gp))
                                 }
                                 _ => None,
                             }
                         }
-                        0b_0111011 => {
-                            let inst_opt = match (funct3(bit_u32), funct7(bit_u32)) {
-                                (0b_000, 0b_0000000) => Some(insts::OP_ADDW),
-                                (0b_000, 0b_0100000) => Some(insts::OP_SUBW),
-                                (0b_001, 0b_0000000) => Some(insts::OP_SLLW),
-                                (0b_101, 0b_0000000) => Some(insts::OP_SRLW),
-                                (0b_101, 0b_0100000) => Some(insts::OP_SRAW),
-                                _ => None,
-                            };
-                            inst_opt.map(|inst| {
-                                Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0
-                            })
-                        }
                         _ => None,
                     }
                 }
-                0b_0111011 => {
-                    let funct3_value = funct3(bit_u32);
-                    let funct7_value = funct7(bit_u32);
-                    let inst_opt = match (funct3_value, funct7_value) {
-                        (0b_000, 0b_0000100) => Some(insts::OP_ADDUW),
-                        (0b_001, 0b_0110000) => Some(insts::OP_ROLW),
-                        (0b_010, 0b_0010000) => Some(insts::OP_SH1ADDUW),
-                        (0b_100, 0b_0000100) => {
-                            if unsafe { BIT_LENGTH == 1 } && rs2(bit_u32) == 0 {
-                                Some(insts::OP_ZEXTH)
-                            } else {
-                                None
+                0b_0111011 => match (funct3(bit_u32), funct7(bit_u32)) {
+                    (0b_000, 0b_0000000) => Some(r!(rv64, RV64I, ADDW, bit_u32, gp)),
+                    (0b_000, 0b_0100000) => Some(r!(rv64, RV64I, SUBW, bit_u32, gp)),
+                    (0b_001, 0b_0000000) => Some(r!(rv64, RV64I, SLLW, bit_u32, gp)),
+                    (0b_101, 0b_0000000) => Some(r!(rv64, RV64I, SRLW, bit_u32, gp)),
+                    (0b_101, 0b_0100000) => Some(r!(rv64, RV64I, SRAW, bit_u32, gp)),
+                    _ => {
+                        let funct3_value = funct3(bit_u32);
+                        let funct7_value = funct7(bit_u32);
+                        match (funct3_value, funct7_value) {
+                            (0b_000, 0b_0000100) => Some(r!(rv64_no_e, RVB, ADDUW, bit_u32, gp)),
+                            (0b_001, 0b_0110000) => Some(r!(rv64_no_e, RVB, ROLW, bit_u32, gp)),
+                            (0b_010, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH1ADDUW, bit_u32, gp)),
+                            (0b_100, 0b_0000100) => {
+                                if unsafe { BIT_LENGTH == 1 } && rs2(bit_u32) == 0 {
+                                    Some(i!(rv64_no_e, RVB, ZEXTH, bit_u32, gp))
+                                } else {
+                                    None
+                                }
                             }
+                            (0b_100, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH2ADDUW, bit_u32, gp)),
+                            (0b_101, 0b_0110000) => Some(r!(rv64_no_e, RVB, RORW, bit_u32, gp)),
+                            (0b_110, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH3ADDUW, bit_u32, gp)),
+                            _ => None,
                         }
-                        (0b_100, 0b_0010000) => Some(insts::OP_SH2ADDUW),
-                        (0b_101, 0b_0110000) => Some(insts::OP_RORW),
-                        (0b_110, 0b_0010000) => Some(insts::OP_SH3ADDUW),
-                        _ => None,
-                    };
-                    inst_opt.map(|inst| Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0)
-                }
+                    }
+                },
                 0b_0110011 => {
                     let funct3_value = funct3(bit_u32);
                     let funct7_value = funct7(bit_u32);
-                    let inst_opt = match (funct3_value, funct7_value) {
-                        (0b_111, 0b_0100000) => Some(insts::OP_ANDN),
-                        (0b_110, 0b_0100000) => Some(insts::OP_ORN),
-                        (0b_100, 0b_0100000) => Some(insts::OP_XNOR),
-                        (0b_001, 0b_0110000) => Some(insts::OP_ROL),
-                        (0b_101, 0b_0110000) => Some(insts::OP_ROR),
-                        (0b_001, 0b_0110100) => Some(insts::OP_BINV),
-                        (0b_001, 0b_0010100) => Some(insts::OP_BSET),
-                        (0b_001, 0b_0100100) => Some(insts::OP_BCLR),
-                        (0b_101, 0b_0100100) => Some(insts::OP_BEXT),
-                        (0b_010, 0b_0010000) => Some(insts::OP_SH1ADD),
-                        (0b_100, 0b_0010000) => Some(insts::OP_SH2ADD),
-                        (0b_110, 0b_0010000) => Some(insts::OP_SH3ADD),
-                        (0b_001, 0b_0000101) => Some(insts::OP_CLMUL),
-                        (0b_011, 0b_0000101) => Some(insts::OP_CLMULH),
-                        (0b_010, 0b_0000101) => Some(insts::OP_CLMULR),
-                        (0b_100, 0b_0000101) => Some(insts::OP_MIN),
-                        (0b_101, 0b_0000101) => Some(insts::OP_MINU),
-                        (0b_110, 0b_0000101) => Some(insts::OP_MAX),
-                        (0b_111, 0b_0000101) => Some(insts::OP_MAXU),
+                    match (funct3_value, funct7_value) {
+                        (0b_111, 0b_0100000) => Some(r!(rv64_no_e, RVB, ANDN, bit_u32, gp)),
+                        (0b_110, 0b_0100000) => Some(r!(rv64_no_e, RVB, ORN, bit_u32, gp)),
+                        (0b_100, 0b_0100000) => Some(r!(rv64_no_e, RVB, XNOR, bit_u32, gp)),
+                        (0b_001, 0b_0110000) => Some(r!(rv64_no_e, RVB, ROL, bit_u32, gp)),
+                        (0b_101, 0b_0110000) => Some(r!(rv64_no_e, RVB, ROR, bit_u32, gp)),
+                        (0b_001, 0b_0110100) => Some(r!(rv64_no_e, RVB, BINV, bit_u32, gp)),
+                        (0b_001, 0b_0010100) => Some(r!(rv64_no_e, RVB, BSET, bit_u32, gp)),
+                        (0b_001, 0b_0100100) => Some(r!(rv64_no_e, RVB, BCLR, bit_u32, gp)),
+                        (0b_101, 0b_0100100) => Some(r!(rv64_no_e, RVB, BEXT, bit_u32, gp)),
+                        (0b_010, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH1ADD, bit_u32, gp)),
+                        (0b_100, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH2ADD, bit_u32, gp)),
+                        (0b_110, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH3ADD, bit_u32, gp)),
+                        (0b_001, 0b_0000101) => Some(r!(rv64_no_e, RVB, CLMUL, bit_u32, gp)),
+                        (0b_011, 0b_0000101) => Some(r!(rv64_no_e, RVB, CLMULH, bit_u32, gp)),
+                        (0b_010, 0b_0000101) => Some(r!(rv64_no_e, RVB, CLMULR, bit_u32, gp)),
+                        (0b_100, 0b_0000101) => Some(r!(rv64_no_e, RVB, MIN, bit_u32, gp)),
+                        (0b_101, 0b_0000101) => Some(r!(rv64_no_e, RVB, MINU, bit_u32, gp)),
+                        (0b_110, 0b_0000101) => Some(r!(rv64_no_e, RVB, MAX, bit_u32, gp)),
+                        (0b_111, 0b_0000101) => Some(r!(rv64_no_e, RVB, MAXU, bit_u32, gp)),
                         _ => None,
-                    };
-                    inst_opt.map(|inst| Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0)
+                    }
                 }
                 0b_0010011 => {
                     let funct3_value = funct3(bit_u32);
                     let funct7_value = funct7(bit_u32);
                     let rs2_value = rs2(bit_u32);
                     let inst_opt = match (funct7_value, funct3_value, rs2_value) {
-                        (0b_0010100, 0b_101, 0b_00111) => Some(insts::OP_ORCB),
-                        (0b_0110101, 0b_101, 0b_11000) => Some(insts::OP_REV8),
-                        (0b_0110000, 0b_001, 0b_00000) => Some(insts::OP_CLZ),
-                        (0b_0110000, 0b_001, 0b_00010) => Some(insts::OP_CPOP),
-                        (0b_0110000, 0b_001, 0b_00001) => Some(insts::OP_CTZ),
-                        (0b_0110000, 0b_001, 0b_00100) => Some(insts::OP_SEXTB),
-                        (0b_0110000, 0b_001, 0b_00101) => Some(insts::OP_SEXTH),
+                        (0b_0010100, 0b_101, 0b_00111) => {
+                            Some(r!(rv64_no_e, RVB, ORCB, bit_u32, gp))
+                        }
+                        (0b_0110101, 0b_101, 0b_11000) => {
+                            Some(r!(rv64_no_e, RVB, REV8, bit_u32, gp))
+                        }
+                        (0b_0110000, 0b_001, 0b_00000) => {
+                            Some(r!(rv64_no_e, RVB, CLZ, bit_u32, gp))
+                        }
+                        (0b_0110000, 0b_001, 0b_00010) => {
+                            Some(r!(rv64_no_e, RVB, CPOP, bit_u32, gp))
+                        }
+                        (0b_0110000, 0b_001, 0b_00001) => {
+                            Some(r!(rv64_no_e, RVB, CTZ, bit_u32, gp))
+                        }
+                        (0b_0110000, 0b_001, 0b_00100) => {
+                            Some(r!(rv64_no_e, RVB, SEXTB, bit_u32, gp))
+                        }
+                        (0b_0110000, 0b_001, 0b_00101) => {
+                            Some(r!(rv64_no_e, RVB, SEXTH, bit_u32, gp))
+                        }
                         _ => None,
                     };
                     if let Some(inst) = inst_opt {
                         Some(Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0)
                     } else {
                         let inst_opt = match (funct7_value >> 1, funct3_value) {
-                            (0b_010010, 0b_001) => Some(insts::OP_BCLRI),
-                            (0b_010010, 0b_101) => Some(insts::OP_BEXTI),
-                            (0b_011010, 0b_001) => Some(insts::OP_BINVI),
-                            (0b_001010, 0b_001) => Some(insts::OP_BSETI),
-                            (0b_011000, 0b_101) => Some(insts::OP_RORI),
+                            (0b_010010, 0b_001) => Some(r!(rv64_no_e, RVB, BCLRI, bit_u32, gp)),
+                            (0b_010010, 0b_101) => Some(r!(rv64_no_e, RVB, BEXTI, bit_u32, gp)),
+                            (0b_011010, 0b_001) => Some(r!(rv64_no_e, RVB, BINVI, bit_u32, gp)),
+                            (0b_001010, 0b_001) => Some(r!(rv64_no_e, RVB, BSETI, bit_u32, gp)),
+                            (0b_011000, 0b_101) => Some(r!(rv64_no_e, RVB, RORI, bit_u32, gp)),
                             _ => None,
                         };
                         inst_opt.map(|inst| {
@@ -2252,22 +2330,22 @@ impl Instruction {
                     }
                 }
                 0b_0110011 => match funct3(bit_u32) {
-                    0b_000 => Some(insts::OP_MUL),
-                    0b_001 => Some(insts::OP_MULH),
-                    0b_010 => Some(insts::OP_MULHSU),
-                    0b_011 => Some(insts::OP_MULHU),
-                    0b_100 => Some(insts::OP_DIV),
-                    0b_101 => Some(insts::OP_DIVU),
-                    0b_110 => Some(insts::OP_REM),
-                    0b_111 => Some(insts::OP_REMU),
+                    0b_000 => Some(r!(rv32, RV32M, MUL, bit_u32, gp)),
+                    0b_001 => Some(r!(rv32, RV32M, MULH, bit_u32, gp)),
+                    0b_010 => Some(r!(rv32, RV32M, MULHSU, bit_u32, gp)),
+                    0b_011 => Some(r!(rv32, RV32M, MULHU, bit_u32, gp)),
+                    0b_100 => Some(r!(rv32, RV32M, DIV, bit_u32, gp)),
+                    0b_101 => Some(r!(rv32, RV32M, DIVU, bit_u32, gp)),
+                    0b_110 => Some(r!(rv32, RV32M, REM, bit_u32, gp)),
+                    0b_111 => Some(r!(rv32, RV32M, REMU, bit_u32, gp)),
                     _ => None,
                 },
                 0b_0111011 => match funct3(bit_u32) {
-                    0b_000 => Some(insts::OP_MULW),
-                    0b_100 => Some(insts::OP_DIVW),
-                    0b_101 => Some(insts::OP_DIVUW),
-                    0b_110 => Some(insts::OP_REMW),
-                    0b_111 => Some(insts::OP_REMUW),
+                    0b_000 => Some(r!(rv64, RV64M, MULW, bit_u32, gp)),
+                    0b_100 => Some(r!(rv64, RV64M, DIVW, bit_u32, gp)),
+                    0b_101 => Some(r!(rv64, RV64M, DIVUW, bit_u32, gp)),
+                    0b_110 => Some(r!(rv64, RV64M, REMW, bit_u32, gp)),
+                    0b_111 => Some(r!(rv64, RV64M, REMUW, bit_u32, gp)),
                     _ => None,
                 },
 
