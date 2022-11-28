@@ -2267,20 +2267,16 @@ impl Instruction {
                         _ => None,
                     };
                     if let Some(inst) = inst_opt {
-                        Some(Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2(bit_u32)).0)
+                        Some(inst)
                     } else {
-                        let inst_opt = match (funct7_value >> 1, funct3_value) {
+                        match (funct7_value >> 1, funct3_value) {
                             (0b_010010, 0b_001) => Some(r!(rv64_no_e, RVB, BCLRI, bit_u32, gp)),
                             (0b_010010, 0b_101) => Some(r!(rv64_no_e, RVB, BEXTI, bit_u32, gp)),
                             (0b_011010, 0b_001) => Some(r!(rv64_no_e, RVB, BINVI, bit_u32, gp)),
                             (0b_001010, 0b_001) => Some(r!(rv64_no_e, RVB, BSETI, bit_u32, gp)),
                             (0b_011000, 0b_101) => Some(r!(rv64_no_e, RVB, RORI, bit_u32, gp)),
                             _ => None,
-                        };
-                        inst_opt.map(|inst| {
-                            Itype::new_u(inst, rd(bit_u32), rs1(bit_u32), slice(bit_u32, 20, 6, 0))
-                                .0
-                        })
+                        }
                     }
                 }
                 0b_0011011 => {
