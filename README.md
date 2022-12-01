@@ -1,6 +1,12 @@
 # Multi V Virtual Machine
 MVVM is a double JIT VM from RiscV assembly or elf to wasm, with all linux implemented. Here 'V' can be translated into multiple meanings: RiscV, Variable Level, etc. 
-
+## Design Doc`
+### Frontend 
+Parse the elf, map the page to a linear memory defined in WebAssembly, interpret code with code cache. Refer a lot from [ria-jit](https://github.com/ria-jit/ria-jit), [riscv-jit-emulator](https://github.com/programmerjake/riscv-jit-emulator), [ckb-vm](https://github.com/nervosnetwork/ckb-vm/) and [valheim](https://github.com/imkiva/valheim/)
+### Middleend
+From riscv to WebAssembly. use the wasmtime currently, implement a LLVMOpaqueExecutionEngine like JIT interface and apply the runtime using wasi. map the register to WebAssembly Model. Refer a lot from [v86]()
+## Backend
+From WebAssembly to riscv. register guided optimzer and code cache optimzation.
 ## Comparison of WebAssembly and RISC-V
 1. Code/Data Separation
 

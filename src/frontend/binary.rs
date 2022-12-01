@@ -55,7 +55,7 @@ impl<'a> Binary<'a> {
         let program_iter = elf.program_iter();
         // iterate the program and iterate the bytes
         for ph in program_iter {
-            dbg!(" {}", ph);
+            dbg!(ph);
             if ph.get_type() != ProgramHeaderType::Load {
                 continue;
             }

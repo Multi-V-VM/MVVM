@@ -58,7 +58,7 @@ pub enum Reg {
 impl fmt::Debug for Reg {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Reg::X(ref x) => write!(f, "a{}", x.0),
+            Reg::X(ref x) => write!(f, "x{}", x.0),
             Reg::F(ref x) => write!(f, "f{}", x.0),
             Reg::V(ref x) => write!(f, "v{}", x.0),
             Reg::PC => write!(f, "pc"),
@@ -107,440 +107,6 @@ impl<const HIGH_BIT: usize, const LOW_BIT: usize> Imm32<HIGH_BIT, LOW_BIT> {
     pub fn decode_sext(self) -> i32 {
         ((self.decode() << (31 - HIGH_BIT)) as i32) >> (31 - HIGH_BIT)
     }
-}
-
-#[allow(non_snake_case)]
-#[allow(non_upper_case_globals)]
-mod OpCode {
-    // IMC
-    pub const OP_UNLOADED: u16 = 0x00;
-    pub const OP_ADD: u16 = 0x01;
-    pub const OP_ADDI: u16 = 0x02;
-    pub const OP_ADDIW: u16 = 0x03;
-    pub const OP_ADDW: u16 = 0x04;
-    pub const OP_AND: u16 = 0x05;
-    pub const OP_ANDI: u16 = 0x06;
-    pub const OP_DIV: u16 = 0x07;
-    pub const OP_DIVU: u16 = 0x08;
-    pub const OP_DIVUW: u16 = 0x09;
-    pub const OP_DIVW: u16 = 0x0a;
-    pub const OP_FENCE: u16 = 0x0b;
-    pub const OP_FENCEI: u16 = 0x0c;
-    pub const OP_LB: u16 = 0x0d;
-    pub const OP_LBU: u16 = 0x0e;
-    pub const OP_LD: u16 = 0x0f;
-    pub const OP_LH: u16 = 0x10;
-    pub const OP_LHU: u16 = 0x11;
-    pub const OP_LUI: u16 = 0x12;
-    pub const OP_LW: u16 = 0x13;
-    pub const OP_LWU: u16 = 0x14;
-    pub const OP_MUL: u16 = 0x15;
-    pub const OP_MULH: u16 = 0x16;
-    pub const OP_MULHSU: u16 = 0x17;
-    pub const OP_MULHU: u16 = 0x18;
-    pub const OP_MULW: u16 = 0x19;
-    pub const OP_OR: u16 = 0x1a;
-    pub const OP_ORI: u16 = 0x1b;
-    pub const OP_REM: u16 = 0x1c;
-    pub const OP_REMU: u16 = 0x1d;
-    pub const OP_REMUW: u16 = 0x1e;
-    pub const OP_REMW: u16 = 0x1f;
-    pub const OP_SB: u16 = 0x20;
-    pub const OP_SD: u16 = 0x21;
-    pub const OP_SH: u16 = 0x22;
-    pub const OP_SLL: u16 = 0x23;
-    pub const OP_SLLI: u16 = 0x24;
-    pub const OP_SLLIW: u16 = 0x25;
-    pub const OP_SLLW: u16 = 0x26;
-    pub const OP_SLT: u16 = 0x27;
-    pub const OP_SLTI: u16 = 0x28;
-    pub const OP_SLTIU: u16 = 0x29;
-    pub const OP_SLTU: u16 = 0x2a;
-    pub const OP_SRA: u16 = 0x2b;
-    pub const OP_SRAI: u16 = 0x2c;
-    pub const OP_SRAIW: u16 = 0x2d;
-    pub const OP_SRAW: u16 = 0x2e;
-    pub const OP_SRL: u16 = 0x2f;
-    pub const OP_SRLI: u16 = 0x30;
-    pub const OP_SRLIW: u16 = 0x31;
-    pub const OP_SRLW: u16 = 0x32;
-    pub const OP_SUB: u16 = 0x33;
-    pub const OP_SUBW: u16 = 0x34;
-    pub const OP_SW: u16 = 0x35;
-    pub const OP_XOR: u16 = 0x36;
-    pub const OP_XORI: u16 = 0x37;
-    // B
-    pub const OP_ADDUW: u16 = 0x38;
-    pub const OP_ANDN: u16 = 0x39;
-    pub const OP_BCLR: u16 = 0x3a;
-    pub const OP_BCLRI: u16 = 0x3b;
-    pub const OP_BEXT: u16 = 0x3c;
-    pub const OP_BEXTI: u16 = 0x3d;
-    pub const OP_BINV: u16 = 0x3e;
-    pub const OP_BINVI: u16 = 0x3f;
-    pub const OP_BSET: u16 = 0x40;
-    pub const OP_BSETI: u16 = 0x41;
-    pub const OP_CLMUL: u16 = 0x42;
-    pub const OP_CLMULH: u16 = 0x43;
-    pub const OP_CLMULR: u16 = 0x44;
-    pub const OP_CLZ: u16 = 0x45;
-    pub const OP_CLZW: u16 = 0x46;
-    pub const OP_CPOP: u16 = 0x47;
-    pub const OP_CPOPW: u16 = 0x48;
-    pub const OP_CTZ: u16 = 0x49;
-    pub const OP_CTZW: u16 = 0x4a;
-    pub const OP_MAX: u16 = 0x4b;
-    pub const OP_MAXU: u16 = 0x4c;
-    pub const OP_MIN: u16 = 0x4d;
-    pub const OP_MINU: u16 = 0x4e;
-    pub const OP_ORCB: u16 = 0x4f;
-    pub const OP_ORN: u16 = 0x50;
-    pub const OP_REV8: u16 = 0x51;
-    pub const OP_ROL: u16 = 0x52;
-    pub const OP_ROLW: u16 = 0x53;
-    pub const OP_ROR: u16 = 0x54;
-    pub const OP_RORI: u16 = 0x55;
-    pub const OP_RORIW: u16 = 0x56;
-    pub const OP_RORW: u16 = 0x57;
-    pub const OP_SEXTB: u16 = 0x58;
-    pub const OP_SEXTH: u16 = 0x59;
-    pub const OP_SH1ADD: u16 = 0x5a;
-    pub const OP_SH1ADDUW: u16 = 0x5b;
-    pub const OP_SH2ADD: u16 = 0x5c;
-    pub const OP_SH2ADDUW: u16 = 0x5d;
-    pub const OP_SH3ADD: u16 = 0x5e;
-    pub const OP_SH3ADDUW: u16 = 0x5f;
-    pub const OP_SLLIUW: u16 = 0x60;
-    pub const OP_XNOR: u16 = 0x61;
-    pub const OP_ZEXTH: u16 = 0x62;
-    // Mop
-    pub const OP_WIDE_MUL: u16 = 0x63;
-    pub const OP_WIDE_MULU: u16 = 0x64;
-    pub const OP_WIDE_MULSU: u16 = 0x65;
-    pub const OP_WIDE_DIV: u16 = 0x66;
-    pub const OP_WIDE_DIVU: u16 = 0x67;
-    pub const OP_ADC: u16 = 0x68;
-    pub const OP_SBB: u16 = 0x69;
-    pub const OP_CUSTOM_LOAD_UIMM: u16 = 0x6a;
-    pub const OP_CUSTOM_LOAD_IMM: u16 = 0x6b;
-    // Basic block ends
-    pub const OP_AUIPC: u16 = 0x6c;
-    pub const OP_BEQ: u16 = 0x6d;
-    pub const OP_BGE: u16 = 0x6e;
-    pub const OP_BGEU: u16 = 0x6f;
-    pub const OP_BLT: u16 = 0x70;
-    pub const OP_BLTU: u16 = 0x71;
-    pub const OP_BNE: u16 = 0x72;
-    pub const OP_EBREAK: u16 = 0x73;
-    pub const OP_ECALL: u16 = 0x74;
-    pub const OP_JAL: u16 = 0x75;
-    pub const OP_JALR: u16 = 0x76;
-    pub const OP_FAR_JUMP_REL: u16 = 0x77;
-    pub const OP_FAR_JUMP_ABS: u16 = 0x78;
-    pub const OP_CUSTOM_TRACE_END: u16 = 0x79;
-    // V
-    pub const OP_VSETVLI: u16 = 0x007a;
-    pub const OP_VSETIVLI: u16 = 0x007b;
-    pub const OP_VSETVL: u16 = 0x007c;
-    pub const OP_VLM_V: u16 = 0x007d;
-    pub const OP_VLE8_V: u16 = 0x007e;
-    pub const OP_VLE16_V: u16 = 0x007f;
-    pub const OP_VLE32_V: u16 = 0x0080;
-    pub const OP_VLE64_V: u16 = 0x0081;
-    pub const OP_VLE128_V: u16 = 0x0082;
-    pub const OP_VLE256_V: u16 = 0x0083;
-    pub const OP_VLE512_V: u16 = 0x0084;
-    pub const OP_VLE1024_V: u16 = 0x0085;
-    pub const OP_VSM_V: u16 = 0x0086;
-    pub const OP_VSE8_V: u16 = 0x0087;
-    pub const OP_VSE16_V: u16 = 0x0088;
-    pub const OP_VSE32_V: u16 = 0x0089;
-    pub const OP_VSE64_V: u16 = 0x008a;
-    pub const OP_VSE128_V: u16 = 0x008b;
-    pub const OP_VSE256_V: u16 = 0x008c;
-    pub const OP_VSE512_V: u16 = 0x008d;
-    pub const OP_VSE1024_V: u16 = 0x008e;
-    pub const OP_VADD_VV: u16 = 0x008f;
-    pub const OP_VADD_VX: u16 = 0x0090;
-    pub const OP_VADD_VI: u16 = 0x0091;
-    pub const OP_VSUB_VV: u16 = 0x0092;
-    pub const OP_VSUB_VX: u16 = 0x0093;
-    pub const OP_VRSUB_VX: u16 = 0x0094;
-    pub const OP_VRSUB_VI: u16 = 0x0095;
-    pub const OP_VMUL_VV: u16 = 0x0096;
-    pub const OP_VMUL_VX: u16 = 0x0097;
-    pub const OP_VDIV_VV: u16 = 0x0098;
-    pub const OP_VDIV_VX: u16 = 0x0099;
-    pub const OP_VDIVU_VV: u16 = 0x009a;
-    pub const OP_VDIVU_VX: u16 = 0x009b;
-    pub const OP_VREM_VV: u16 = 0x009c;
-    pub const OP_VREM_VX: u16 = 0x009d;
-    pub const OP_VREMU_VV: u16 = 0x009e;
-    pub const OP_VREMU_VX: u16 = 0x009f;
-    pub const OP_VSLL_VV: u16 = 0x00a0;
-    pub const OP_VSLL_VX: u16 = 0x00a1;
-    pub const OP_VSLL_VI: u16 = 0x00a2;
-    pub const OP_VSRL_VV: u16 = 0x00a3;
-    pub const OP_VSRL_VX: u16 = 0x00a4;
-    pub const OP_VSRL_VI: u16 = 0x00a5;
-    pub const OP_VSRA_VV: u16 = 0x00a6;
-    pub const OP_VSRA_VX: u16 = 0x00a7;
-    pub const OP_VSRA_VI: u16 = 0x00a8;
-    pub const OP_VMSEQ_VV: u16 = 0x00a9;
-    pub const OP_VMSEQ_VX: u16 = 0x00aa;
-    pub const OP_VMSEQ_VI: u16 = 0x00ab;
-    pub const OP_VMSNE_VV: u16 = 0x00ac;
-    pub const OP_VMSNE_VX: u16 = 0x00ad;
-    pub const OP_VMSNE_VI: u16 = 0x00ae;
-    pub const OP_VMSLTU_VV: u16 = 0x00af;
-    pub const OP_VMSLTU_VX: u16 = 0x00b0;
-    pub const OP_VMSLT_VV: u16 = 0x00b1;
-    pub const OP_VMSLT_VX: u16 = 0x00b2;
-    pub const OP_VMSLEU_VV: u16 = 0x00b3;
-    pub const OP_VMSLEU_VX: u16 = 0x00b4;
-    pub const OP_VMSLEU_VI: u16 = 0x00b5;
-    pub const OP_VMSLE_VV: u16 = 0x00b6;
-    pub const OP_VMSLE_VX: u16 = 0x00b7;
-    pub const OP_VMSLE_VI: u16 = 0x00b8;
-    pub const OP_VMSGTU_VX: u16 = 0x00b9;
-    pub const OP_VMSGTU_VI: u16 = 0x00ba;
-    pub const OP_VMSGT_VX: u16 = 0x00bb;
-    pub const OP_VMSGT_VI: u16 = 0x00bc;
-    pub const OP_VMINU_VV: u16 = 0x00bd;
-    pub const OP_VMINU_VX: u16 = 0x00be;
-    pub const OP_VMIN_VV: u16 = 0x00bf;
-    pub const OP_VMIN_VX: u16 = 0x00c0;
-    pub const OP_VMAXU_VV: u16 = 0x00c1;
-    pub const OP_VMAXU_VX: u16 = 0x00c2;
-    pub const OP_VMAX_VV: u16 = 0x00c3;
-    pub const OP_VMAX_VX: u16 = 0x00c4;
-    pub const OP_VWADDU_VV: u16 = 0x00c5;
-    pub const OP_VWADDU_VX: u16 = 0x00c6;
-    pub const OP_VWSUBU_VV: u16 = 0x00c7;
-    pub const OP_VWSUBU_VX: u16 = 0x00c8;
-    pub const OP_VWADD_VV: u16 = 0x00c9;
-    pub const OP_VWADD_VX: u16 = 0x00ca;
-    pub const OP_VWSUB_VV: u16 = 0x00cb;
-    pub const OP_VWSUB_VX: u16 = 0x00cc;
-    pub const OP_VWADDU_WV: u16 = 0x00cd;
-    pub const OP_VWADDU_WX: u16 = 0x00ce;
-    pub const OP_VWSUBU_WV: u16 = 0x00cf;
-    pub const OP_VWSUBU_WX: u16 = 0x00d0;
-    pub const OP_VWADD_WV: u16 = 0x00d1;
-    pub const OP_VWADD_WX: u16 = 0x00d2;
-    pub const OP_VWSUB_WV: u16 = 0x00d3;
-    pub const OP_VWSUB_WX: u16 = 0x00d4;
-    pub const OP_VZEXT_VF8: u16 = 0x00d5;
-    pub const OP_VSEXT_VF8: u16 = 0x00d6;
-    pub const OP_VZEXT_VF4: u16 = 0x00d7;
-    pub const OP_VSEXT_VF4: u16 = 0x00d8;
-    pub const OP_VZEXT_VF2: u16 = 0x00d9;
-    pub const OP_VSEXT_VF2: u16 = 0x00da;
-    pub const OP_VADC_VVM: u16 = 0x00db;
-    pub const OP_VADC_VXM: u16 = 0x00dc;
-    pub const OP_VADC_VIM: u16 = 0x00dd;
-    pub const OP_VMADC_VVM: u16 = 0x00de;
-    pub const OP_VMADC_VXM: u16 = 0x00df;
-    pub const OP_VMADC_VIM: u16 = 0x00e0;
-    pub const OP_VMADC_VV: u16 = 0x00e1;
-    pub const OP_VMADC_VX: u16 = 0x00e2;
-    pub const OP_VMADC_VI: u16 = 0x00e3;
-    pub const OP_VSBC_VVM: u16 = 0x00e4;
-    pub const OP_VSBC_VXM: u16 = 0x00e5;
-    pub const OP_VMSBC_VVM: u16 = 0x00e6;
-    pub const OP_VMSBC_VXM: u16 = 0x00e7;
-    pub const OP_VMSBC_VV: u16 = 0x00e8;
-    pub const OP_VMSBC_VX: u16 = 0x00e9;
-    pub const OP_VAND_VV: u16 = 0x00ea;
-    pub const OP_VAND_VI: u16 = 0x00eb;
-    pub const OP_VAND_VX: u16 = 0x00ec;
-    pub const OP_VOR_VV: u16 = 0x00ed;
-    pub const OP_VOR_VX: u16 = 0x00ee;
-    pub const OP_VOR_VI: u16 = 0x00ef;
-    pub const OP_VXOR_VV: u16 = 0x00f0;
-    pub const OP_VXOR_VX: u16 = 0x00f1;
-    pub const OP_VXOR_VI: u16 = 0x00f2;
-    pub const OP_VNSRL_WV: u16 = 0x00f3;
-    pub const OP_VNSRL_WX: u16 = 0x00f4;
-    pub const OP_VNSRL_WI: u16 = 0x00f5;
-    pub const OP_VNSRA_WV: u16 = 0x00f6;
-    pub const OP_VNSRA_WX: u16 = 0x00f7;
-    pub const OP_VNSRA_WI: u16 = 0x00f8;
-    pub const OP_VMULH_VV: u16 = 0x00f9;
-    pub const OP_VMULH_VX: u16 = 0x00fa;
-    pub const OP_VMULHU_VV: u16 = 0x00fb;
-    pub const OP_VMULHU_VX: u16 = 0x00fc;
-    pub const OP_VMULHSU_VV: u16 = 0x00fd;
-    pub const OP_VMULHSU_VX: u16 = 0x00fe;
-    pub const OP_VWMULU_VV: u16 = 0x00ff;
-    pub const OP_VWMULU_VX: u16 = 0x0100;
-    pub const OP_VWMULSU_VV: u16 = 0x0101;
-    pub const OP_VWMULSU_VX: u16 = 0x0102;
-    pub const OP_VWMUL_VV: u16 = 0x0103;
-    pub const OP_VWMUL_VX: u16 = 0x0104;
-    pub const OP_VMV_V_V: u16 = 0x0105;
-    pub const OP_VMV_V_X: u16 = 0x0106;
-    pub const OP_VMV_V_I: u16 = 0x0107;
-    pub const OP_VSADDU_VV: u16 = 0x0108;
-    pub const OP_VSADDU_VX: u16 = 0x0109;
-    pub const OP_VSADDU_VI: u16 = 0x010a;
-    pub const OP_VSADD_VV: u16 = 0x010b;
-    pub const OP_VSADD_VX: u16 = 0x010c;
-    pub const OP_VSADD_VI: u16 = 0x010d;
-    pub const OP_VSSUBU_VV: u16 = 0x010e;
-    pub const OP_VSSUBU_VX: u16 = 0x010f;
-    pub const OP_VSSUB_VV: u16 = 0x0110;
-    pub const OP_VSSUB_VX: u16 = 0x0111;
-    pub const OP_VAADDU_VV: u16 = 0x0112;
-    pub const OP_VAADDU_VX: u16 = 0x0113;
-    pub const OP_VAADD_VV: u16 = 0x0114;
-    pub const OP_VAADD_VX: u16 = 0x0115;
-    pub const OP_VASUBU_VV: u16 = 0x0116;
-    pub const OP_VASUBU_VX: u16 = 0x0117;
-    pub const OP_VASUB_VV: u16 = 0x0118;
-    pub const OP_VASUB_VX: u16 = 0x0119;
-    pub const OP_VMV1R_V: u16 = 0x011a;
-    pub const OP_VMV2R_V: u16 = 0x011b;
-    pub const OP_VMV4R_V: u16 = 0x011c;
-    pub const OP_VMV8R_V: u16 = 0x011d;
-    pub const OP_VFIRST_M: u16 = 0x011e;
-    pub const OP_VMAND_MM: u16 = 0x011f;
-    pub const OP_VMNAND_MM: u16 = 0x0120;
-    pub const OP_VMANDNOT_MM: u16 = 0x0121;
-    pub const OP_VMXOR_MM: u16 = 0x0122;
-    pub const OP_VMOR_MM: u16 = 0x0123;
-    pub const OP_VMNOR_MM: u16 = 0x0124;
-    pub const OP_VMORNOT_MM: u16 = 0x0125;
-    pub const OP_VMXNOR_MM: u16 = 0x0126;
-    pub const OP_VLSE8_V: u16 = 0x0127;
-    pub const OP_VLSE16_V: u16 = 0x0128;
-    pub const OP_VLSE32_V: u16 = 0x0129;
-    pub const OP_VLSE64_V: u16 = 0x012a;
-    pub const OP_VLSE128_V: u16 = 0x012b;
-    pub const OP_VLSE256_V: u16 = 0x012c;
-    pub const OP_VLSE512_V: u16 = 0x012d;
-    pub const OP_VLSE1024_V: u16 = 0x012e;
-    pub const OP_VSSE8_V: u16 = 0x012f;
-    pub const OP_VSSE16_V: u16 = 0x0130;
-    pub const OP_VSSE32_V: u16 = 0x0131;
-    pub const OP_VSSE64_V: u16 = 0x0132;
-    pub const OP_VSSE128_V: u16 = 0x0133;
-    pub const OP_VSSE256_V: u16 = 0x0134;
-    pub const OP_VSSE512_V: u16 = 0x0135;
-    pub const OP_VSSE1024_V: u16 = 0x0136;
-    pub const OP_VLUXEI8_V: u16 = 0x0137;
-    pub const OP_VLUXEI16_V: u16 = 0x0138;
-    pub const OP_VLUXEI32_V: u16 = 0x0139;
-    pub const OP_VLUXEI64_V: u16 = 0x013a;
-    pub const OP_VLUXEI128_V: u16 = 0x013b;
-    pub const OP_VLUXEI256_V: u16 = 0x013c;
-    pub const OP_VLUXEI512_V: u16 = 0x013d;
-    pub const OP_VLUXEI1024_V: u16 = 0x013e;
-    pub const OP_VLOXEI8_V: u16 = 0x013f;
-    pub const OP_VLOXEI16_V: u16 = 0x0140;
-    pub const OP_VLOXEI32_V: u16 = 0x0141;
-    pub const OP_VLOXEI64_V: u16 = 0x0142;
-    pub const OP_VLOXEI128_V: u16 = 0x0143;
-    pub const OP_VLOXEI256_V: u16 = 0x0144;
-    pub const OP_VLOXEI512_V: u16 = 0x0145;
-    pub const OP_VLOXEI1024_V: u16 = 0x0146;
-    pub const OP_VSUXEI8_V: u16 = 0x0147;
-    pub const OP_VSUXEI16_V: u16 = 0x0148;
-    pub const OP_VSUXEI32_V: u16 = 0x0149;
-    pub const OP_VSUXEI64_V: u16 = 0x014a;
-    pub const OP_VSUXEI128_V: u16 = 0x014b;
-    pub const OP_VSUXEI256_V: u16 = 0x014c;
-    pub const OP_VSUXEI512_V: u16 = 0x014d;
-    pub const OP_VSUXEI1024_V: u16 = 0x014e;
-    pub const OP_VSOXEI8_V: u16 = 0x014f;
-    pub const OP_VSOXEI16_V: u16 = 0x0150;
-    pub const OP_VSOXEI32_V: u16 = 0x0151;
-    pub const OP_VSOXEI64_V: u16 = 0x0152;
-    pub const OP_VSOXEI128_V: u16 = 0x0153;
-    pub const OP_VSOXEI256_V: u16 = 0x0154;
-    pub const OP_VSOXEI512_V: u16 = 0x0155;
-    pub const OP_VSOXEI1024_V: u16 = 0x0156;
-    pub const OP_VL1RE8_V: u16 = 0x0157;
-    pub const OP_VL1RE16_V: u16 = 0x0158;
-    pub const OP_VL1RE32_V: u16 = 0x0159;
-    pub const OP_VL1RE64_V: u16 = 0x015a;
-    pub const OP_VL2RE8_V: u16 = 0x015b;
-    pub const OP_VL2RE16_V: u16 = 0x015c;
-    pub const OP_VL2RE32_V: u16 = 0x015d;
-    pub const OP_VL2RE64_V: u16 = 0x015e;
-    pub const OP_VL4RE8_V: u16 = 0x015f;
-    pub const OP_VL4RE16_V: u16 = 0x0160;
-    pub const OP_VL4RE32_V: u16 = 0x0161;
-    pub const OP_VL4RE64_V: u16 = 0x0162;
-    pub const OP_VL8RE8_V: u16 = 0x0163;
-    pub const OP_VL8RE16_V: u16 = 0x0164;
-    pub const OP_VL8RE32_V: u16 = 0x0165;
-    pub const OP_VL8RE64_V: u16 = 0x0166;
-    pub const OP_VS1R_V: u16 = 0x0167;
-    pub const OP_VS2R_V: u16 = 0x0168;
-    pub const OP_VS4R_V: u16 = 0x0169;
-    pub const OP_VS8R_V: u16 = 0x016a;
-    pub const OP_VMACC_VV: u16 = 0x016b;
-    pub const OP_VMACC_VX: u16 = 0x016c;
-    pub const OP_VNMSAC_VV: u16 = 0x016d;
-    pub const OP_VNMSAC_VX: u16 = 0x016e;
-    pub const OP_VMADD_VV: u16 = 0x016f;
-    pub const OP_VMADD_VX: u16 = 0x0170;
-    pub const OP_VNMSUB_VV: u16 = 0x0171;
-    pub const OP_VNMSUB_VX: u16 = 0x0172;
-    pub const OP_VSSRL_VV: u16 = 0x0173;
-    pub const OP_VSSRL_VX: u16 = 0x0174;
-    pub const OP_VSSRL_VI: u16 = 0x0175;
-    pub const OP_VSSRA_VV: u16 = 0x0176;
-    pub const OP_VSSRA_VX: u16 = 0x0177;
-    pub const OP_VSSRA_VI: u16 = 0x0178;
-    pub const OP_VSMUL_VV: u16 = 0x0179;
-    pub const OP_VSMUL_VX: u16 = 0x017a;
-    pub const OP_VWMACCU_VV: u16 = 0x017b;
-    pub const OP_VWMACCU_VX: u16 = 0x017c;
-    pub const OP_VWMACC_VV: u16 = 0x017d;
-    pub const OP_VWMACC_VX: u16 = 0x017e;
-    pub const OP_VWMACCSU_VV: u16 = 0x017f;
-    pub const OP_VWMACCSU_VX: u16 = 0x0180;
-    pub const OP_VWMACCUS_VX: u16 = 0x0181;
-    pub const OP_VMERGE_VVM: u16 = 0x0182;
-    pub const OP_VMERGE_VXM: u16 = 0x0183;
-    pub const OP_VMERGE_VIM: u16 = 0x0184;
-    pub const OP_VNCLIPU_WV: u16 = 0x0185;
-    pub const OP_VNCLIPU_WX: u16 = 0x0186;
-    pub const OP_VNCLIPU_WI: u16 = 0x0187;
-    pub const OP_VNCLIP_WV: u16 = 0x0188;
-    pub const OP_VNCLIP_WX: u16 = 0x0189;
-    pub const OP_VNCLIP_WI: u16 = 0x018a;
-    pub const OP_VREDSUM_VS: u16 = 0x018b;
-    pub const OP_VREDAND_VS: u16 = 0x018c;
-    pub const OP_VREDOR_VS: u16 = 0x018d;
-    pub const OP_VREDXOR_VS: u16 = 0x018e;
-    pub const OP_VREDMINU_VS: u16 = 0x018f;
-    pub const OP_VREDMIN_VS: u16 = 0x0190;
-    pub const OP_VREDMAXU_VS: u16 = 0x0191;
-    pub const OP_VREDMAX_VS: u16 = 0x0192;
-    pub const OP_VWREDSUMU_VS: u16 = 0x0193;
-    pub const OP_VWREDSUM_VS: u16 = 0x0194;
-    pub const OP_VCPOP_M: u16 = 0x0195;
-    pub const OP_VMSBF_M: u16 = 0x0196;
-    pub const OP_VMSOF_M: u16 = 0x0197;
-    pub const OP_VMSIF_M: u16 = 0x0198;
-    pub const OP_VIOTA_M: u16 = 0x0199;
-    pub const OP_VID_V: u16 = 0x019a;
-    pub const OP_VMV_X_S: u16 = 0x019b;
-    pub const OP_VMV_S_X: u16 = 0x019c;
-    pub const OP_VCOMPRESS_VM: u16 = 0x019d;
-    pub const OP_VSLIDE1UP_VX: u16 = 0x019e;
-    pub const OP_VSLIDEUP_VX: u16 = 0x019f;
-    pub const OP_VSLIDEUP_VI: u16 = 0x01a0;
-    pub const OP_VSLIDE1DOWN_VX: u16 = 0x01a1;
-    pub const OP_VSLIDEDOWN_VX: u16 = 0x01a2;
-    pub const OP_VSLIDEDOWN_VI: u16 = 0x01a3;
-    pub const OP_VRGATHER_VX: u16 = 0x01a4;
-    pub const OP_VRGATHER_VV: u16 = 0x01a5;
-    pub const OP_VRGATHEREI16_VV: u16 = 0x01a6;
-    pub const OP_VRGATHER_VI: u16 = 0x01a7;
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -1145,6 +711,17 @@ pub enum RV128I {
 }
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
+pub enum RVPreviledge {
+    SRET,
+    MRET,
+    WFI,
+    SFENCE_VMA(Rs1, Rs2),
+    SINVAL_VMA(Rs1, Rs2),
+    SFENCE_W_INVAL,
+    SFENCE_INVAL_IR,
+}
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum RVB {
     ADDUW(Rd, Rs1, Rs2),
     ANDN(Rd, Rs1, Rs2),
@@ -1220,6 +797,7 @@ pub enum RV64Instr {
     RV64V(RVV),
     RVZifencei(RVZifencei),
     RVZcsr(RVZcsr),
+    RVPreviledge(RVPreviledge),
 }
 
 /// typed RV64 instructions
@@ -1318,8 +896,20 @@ pub fn funct3(bit: u32) -> u32 {
     slice(bit, 12, 3, 0)
 }
 #[inline(always)]
+pub fn funct5(bit: u32) -> u32 {
+    slice(bit, 27, 5, 0)
+}
+#[inline(always)]
 pub fn funct7(bit: u32) -> u32 {
     slice(bit, 25, 7, 0)
+}
+#[inline(always)]
+pub fn aq(bit: u32) -> bool {
+    slice(bit, 26, 1, 0) != 0
+}
+#[inline(always)]
+pub fn rl(bit: u32) -> bool {
+    slice(bit, 25, 1, 0) != 0
 }
 #[inline(always)]
 pub fn rd(bit: u32) -> u32 {
@@ -1457,9 +1047,9 @@ fn c_b_immediate(bit_u32: u32) -> u32 {
 #[inline(always)]
 fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
     let bit_u32 = u32::from_le_bytes(bit.split_at(4).0.try_into().unwrap());
-    match bit_u32 & 0b_111_00000000000_11 {
+    match bit_u32 & 0b111_00000000000_11 {
         // == Quadrant 0
-        0b_000_00000000000_00 => {
+        0b000_00000000000_00 => {
             let nzuimm = slice(bit_u32, 6, 1, 2)
                 | slice(bit_u32, 5, 1, 3)
                 | slice(bit_u32, 11, 2, 4)
@@ -1478,14 +1068,14 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 None
             }
         }
-        0b_010_00000000000_00 => Some(rv32!(
+        0b010_00000000000_00 => Some(rv32!(
             RV32I,
             LW,
             Rd(Reg::X(Xx::new(c_r(bit_u32, 2)))),
             Rs1(Reg::X(Xx::new(c_r(bit_u32, 7)))),
             Imm32::from(c_sw_uimmediate(bit_u32))
         )),
-        0b_011_00000000000_00 => {
+        0b011_00000000000_00 => {
             // C.FLD
             if unsafe { BIT_LENGTH == 1 } {
                 Some(rv64!(
@@ -1508,8 +1098,8 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
             }
         }
         // Reserved
-        0b_100_00000000000_00 => None,
-        0b_110_00000000000_00 => Some(
+        0b100_00000000000_00 => None,
+        0b110_00000000000_00 => Some(
             // C.SW
             rv32!(
                 RV32I,
@@ -1519,7 +1109,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 Imm32::from(c_sw_uimmediate(bit_u32))
             ),
         ),
-        0b_111_00000000000_00 => {
+        0b111_00000000000_00 => {
             // C.SD
             if unsafe { BIT_LENGTH == 1 } {
                 Some(rv64!(
@@ -1542,7 +1132,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
             }
         }
         // == Quadrant 1
-        0b_000_00000000000_01 => {
+        0b000_00000000000_01 => {
             let nzimm = c_immediate(bit_u32);
             let rd = rd(bit_u32);
             if rd != 0 {
@@ -1569,7 +1159,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 }
             }
         }
-        0b_001_00000000000_01 => {
+        0b001_00000000000_01 => {
             if unsafe { BIT_LENGTH == 0 } {
                 // C.JAL
                 Some(rv32!(
@@ -1594,7 +1184,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 }
             }
         }
-        0b_010_00000000000_01 => {
+        0b010_00000000000_01 => {
             let rd = rd(bit_u32);
             if rd != 0 {
                 // C.LI
@@ -1610,7 +1200,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 Some(Instr::NOP)
             }
         }
-        0b_011_00000000000_01 => {
+        0b011_00000000000_01 => {
             let imm = c_immediate(bit_u32) << 12;
             if imm != 0 {
                 let rd = rd(bit_u32);
@@ -1642,15 +1232,15 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 None
             }
         }
-        0b_100_00000000000_01 => {
+        0b100_00000000000_01 => {
             let rd = c_r(bit_u32, 7);
-            match bit_u32 & 0b_1_11_000_11000_00 {
+            match bit_u32 & 0b1_11_000_11000_00 {
                 // C.SRLI64
-                0b_0_00_000_00000_00 if bit_u32 & 0b_111_00 == 0 => Some(Instr::NOP),
+                0b0_00_000_00000_00 if bit_u32 & 0b111_00 == 0 => Some(Instr::NOP),
                 // C.SRAI64
-                0b_0_01_000_00000_00 if bit_u32 & 0b_111_00 == 0 => Some(Instr::NOP),
+                0b0_01_000_00000_00 if bit_u32 & 0b111_00 == 0 => Some(Instr::NOP),
                 // C.SUB
-                0b_0_11_000_00000_00 => Some(rv32!(
+                0b0_11_000_00000_00 => Some(rv32!(
                     RV32I,
                     SUB,
                     Rd(Reg::X(Xx::new(rd))),
@@ -1658,7 +1248,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                     Rs2(Reg::X(Xx::new(c_r(bit_u32, 2))))
                 )),
                 // C.XOR
-                0b_0_11_000_01000_00 => Some(rv32!(
+                0b0_11_000_01000_00 => Some(rv32!(
                     RV32I,
                     XOR,
                     Rd(Reg::X(Xx::new(rd))),
@@ -1666,7 +1256,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                     Rs2(Reg::X(Xx::new(c_r(bit_u32, 2))))
                 )),
                 // C.OR
-                0b_0_11_000_10000_00 => Some(rv32!(
+                0b0_11_000_10000_00 => Some(rv32!(
                     RV32I,
                     OR,
                     Rd(Reg::X(Xx::new(rd))),
@@ -1674,7 +1264,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                     Rs2(Reg::X(Xx::new(c_r(bit_u32, 2))))
                 )),
                 // C.AND
-                0b_0_11_000_11000_00 => Some(rv32!(
+                0b0_11_000_11000_00 => Some(rv32!(
                     RV32I,
                     AND,
                     Rd(Reg::X(Xx::new(rd))),
@@ -1682,7 +1272,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                     Rs2(Reg::X(Xx::new(c_r(bit_u32, 2))))
                 )),
                 // C.SUBW
-                0b_1_11_000_00000_00 => Some(rv64!(
+                0b1_11_000_00000_00 => Some(rv64!(
                     RV64I,
                     SUBW,
                     Rd(Reg::X(Xx::new(rd))),
@@ -1690,7 +1280,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                     Rs2(Reg::X(Xx::new(c_r(bit_u32, 2))))
                 )),
                 // C.ADDW
-                0b_1_11_000_01000_00 => Some(rv64!(
+                0b1_11_000_01000_00 => Some(rv64!(
                     RV64I,
                     ADDW,
                     Rd(Reg::X(Xx::new(rd))),
@@ -1698,16 +1288,16 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                     Rs2(Reg::X(Xx::new(c_r(bit_u32, 2))))
                 )),
                 // Reserved
-                0b_1_11_000_10000_00 => None,
+                0b1_11_000_10000_00 => None,
                 // Reserved
-                0b_1_11_000_11000_00 => None,
+                0b1_11_000_11000_00 => None,
                 _ => {
                     let uimm = c_uimmediate(bit_u32);
-                    match (bit_u32 & 0b_11_000_00000_00, uimm) {
+                    match (bit_u32 & 0b11_000_00000_00, uimm) {
                         // Invalid instruction
-                        (0b_00_000_00000_00, 0) => None,
+                        (0b00_000_00000_00, 0) => None,
                         // C.SRLI
-                        (0b_00_000_00000_00, uimm) => Some(rv64!(
+                        (0b00_000_00000_00, uimm) => Some(rv64!(
                             RV64I,
                             SRLI,
                             Rd(Reg::X(Xx::new(rd))),
@@ -1715,22 +1305,17 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                             Shamt((((bit_u32 >> 7) & 0x20) | ((bit_u32 >> 2) & 0x1f)) as u8)
                         )),
                         // Invalid instruction
-                        (0b_01_000_00000_00, 0) => None,
+                        (0b01_000_00000_00, 0) => None,
                         // C.SRAI
-                        (0b_01_000_00000_00, uimm) => Some(
-                            // Itype::new_u(insts::OP_SRAI, rd, rd, uimm & u32::from(R::SHIFT_MASK)).0,
-                            rv64!(
-                                RV64I,
-                                SRAI,
-                                Rd(Reg::X(Xx::new(rd))),
-                                Rs1(Reg::X(Xx::new(rd))),
-                                Shamt(
-                                    ((bit_u32 >> 7) & 0x20) as u8 | ((bit_u32 >> 2) & 0x1f) as u8
-                                )
-                            ),
-                        ),
+                        (0b01_000_00000_00, uimm) => Some(rv64!(
+                            RV64I,
+                            SRAI,
+                            Rd(Reg::X(Xx::new(rd))),
+                            Rs1(Reg::X(Xx::new(rd))),
+                            Shamt(((bit_u32 >> 7) & 0x20) as u8 | ((bit_u32 >> 2) & 0x1f) as u8)
+                        )),
                         // C.ANDI
-                        (0b_10_000_00000_00, _) => Some(rv32!(
+                        (0b10_000_00000_00, _) => Some(rv32!(
                             RV32I,
                             ANDI,
                             Rd(Reg::X(Xx::new(rd))),
@@ -1743,14 +1328,14 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
             }
         }
         // C.J
-        0b_101_00000000000_01 => Some(rv32!(
+        0b101_00000000000_01 => Some(rv32!(
             RV32I,
             JAL,
             Rd(Reg::X(Xx::new(0))),
             Imm32::from(c_j_immediate(bit_u32))
         )),
         // C.BEQZ
-        0b_110_00000000000_01 => Some(rv32!(
+        0b110_00000000000_01 => Some(rv32!(
             RV32I,
             BEQ,
             Rs1(Reg::X(Xx::new(c_r(bit_u32, 7)))),
@@ -1758,7 +1343,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
             Imm32::from(c_b_immediate(bit_u32))
         )),
         // C.BNEZ
-        0b_111_00000000000_01 => Some(rv32!(
+        0b111_00000000000_01 => Some(rv32!(
             RV32I,
             BEQ,
             Rs1(Reg::X(Xx::new(c_r(bit_u32, 7)))),
@@ -1766,7 +1351,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
             Imm32::from(c_b_immediate(bit_u32))
         )),
         // == Quadrant 2
-        0b_000_00000000000_10 => {
+        0b000_00000000000_10 => {
             let uimm = c_uimmediate(bit_u32);
             let rd = rd(bit_u32);
             if rd != 0 && uimm != 0 {
@@ -1783,7 +1368,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 Some(Instr::NOP)
             }
         }
-        0b_010_00000000000_10 => {
+        0b010_00000000000_10 => {
             let rd = rd(bit_u32);
             if rd != 0 {
                 // C.LWSP
@@ -1799,7 +1384,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 None
             }
         }
-        0b_011_00000000000_10 => {
+        0b011_00000000000_10 => {
             if unsafe { BIT_LENGTH == 0 } {
                 None
             } else {
@@ -1819,9 +1404,9 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 }
             }
         }
-        0b_100_00000000000_10 => {
-            match bit_u32 & 0b_1_00000_00000_00 {
-                0b_0_00000_00000_00 => {
+        0b100_00000000000_10 => {
+            match bit_u32 & 0b1_00000_00000_00 {
+                0b0_00000_00000_00 => {
                     let rd = rd(bit_u32);
                     let rs2 = c_rs2(bit_u32);
                     if rs2 == 0 {
@@ -1854,7 +1439,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                         }
                     }
                 }
-                0b_1_00000_00000_00 => {
+                0b1_00000_00000_00 => {
                     let rd = rd(bit_u32);
                     let rs2 = c_rs2(bit_u32);
                     match (rd, rs2) {
@@ -1888,7 +1473,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 _ => unreachable!(),
             }
         }
-        0b_110_00000000000_10 => Some(
+        0b110_00000000000_10 => Some(
             // C.SWSP
             rv32!(
                 RV32I,
@@ -1898,7 +1483,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
                 Imm32::from(c_swsp_uimmediate(bit_u32))
             ),
         ),
-        0b_111_00000000000_10 => {
+        0b111_00000000000_10 => {
             if unsafe { BIT_LENGTH == 0 } {
                 None
             } else {
@@ -1914,7 +1499,7 @@ fn try_from_compressed(bit: &[u8]) -> Option<Instruction> {
         }
         _ => None,
     }
-    .map_or(|x| Instruction { instr: x }, None)
+    .map_or(None, |x| Some(Instruction { instr: x }))
 }
 pub fn fp(reg: u8) -> Reg {
     let encoding = reg as u8;
@@ -1927,14 +1512,18 @@ pub fn fp(reg: u8) -> Reg {
 
 pub fn gp(reg: u8) -> Reg {
     let encoding = reg as u8;
-    if encoding >= 0 && encoding <= 31 {
+    if encoding <= 31 {
         Reg::X(Xx::new(encoding as u32))
     } else {
         panic!("Inaccessible register encoding: {:b}", encoding)
     }
 }
 
-// TODO: require a smarter impl to decide RVI or RVE
+#[macro_export]
+macro_rules! rv32_no_e {
+    ($ident1:ident,$ident2:ident) => { Instr::RV32(RV32Instr::$ident1($ident1::$ident2)) };
+    ($ident1:ident,$ident2:ident, $($t:expr),*) => { Instr::RV32(RV32Instr::$ident1($ident1::$ident2($( $t, )*))) };
+}
 #[macro_export]
 macro_rules! rv32 {
     ($ident1:ident,$ident2:ident) => {
@@ -2004,6 +1593,20 @@ macro_rules! b {
         $type!($opcode1, $opcode2, rs1, rs2, imm)
     }};
 }
+macro_rules! rd_rs {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rs = Rs($reg(rs1($bit).try_into().unwrap()));
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        $type!($opcode1, $opcode2, rd, rs)
+    }};
+}
+macro_rules! rs1_rs2 {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
+        let rs2 = Rs2($reg(rs2($bit).try_into().unwrap()));
+        $type!($opcode1, $opcode2, rs1, rs2)
+    }};
+}
 macro_rules! r {
     ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
         let rd = Rd($reg(rd($bit).try_into().unwrap()));
@@ -2052,7 +1655,94 @@ macro_rules! fence {
         $type!($opcode1, $opcode2, rd, rs1, succ, pred, fm)
     }};
 }
-
+macro_rules! zicsr_rs1 {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
+        let imm = Imm32::<11, 0>::from(itype_immediate($bit) as u32);
+        let csr = CSRAddr(imm);
+        $type!($opcode1, $opcode2, rd, rs1, csr)
+    }};
+}
+macro_rules! zicsr_uimm {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        let rs1 = Imm32::<4, 0>::from(rs1($bit) as u32);
+        let uimm = UImm(rs1);
+        let imm = Imm32::<11, 0>::from(itype_immediate($bit) as u32);
+        let csr = CSRAddr(imm);
+        $type!($opcode1, $opcode2, rd, uimm, csr)
+    }};
+}
+macro_rules! ra {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
+        let rs2 = Rs2($reg(rs2($bit).try_into().unwrap()));
+        let aq = AQ(aq($bit));
+        let rl = RL(rl($bit));
+        $type!($opcode1, $opcode2, rd, rs1, rs2, aq, rl)
+    }};
+}
+macro_rules! ra_only_rs1 {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $reg:ident) => {{
+        let rd = Rd($reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($reg(rs1($bit).try_into().unwrap()));
+        let aq = AQ(aq($bit));
+        let rl = RL(rl($bit));
+        $type!($opcode1, $opcode2, rd, rs1, aq, rl)
+    }};
+}
+macro_rules! rrm {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr, $rd_reg:ident, $rs_reg: ident) => {{
+        let rd = Rd($rd_reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($rs_reg(rs1($bit).try_into().unwrap()));
+        let rs2 = Rs2($rs_reg(rs2($bit).try_into().unwrap()));
+        let rm = funct3($bit) as u8;
+        let rm = match rm {
+            0b000 => RoundingMode::RNE,
+            0b001 => RoundingMode::RTZ,
+            0b010 => RoundingMode::RDN,
+            0b011 => RoundingMode::RUP,
+            0b100 => RoundingMode::RMM,
+            0b111 => RoundingMode::DYN,
+            _ => panic!("wrong RoundingMode"),
+        };
+        $type!($opcode1, $opcode2, rd, rs1, rs2, rm)
+    }};
+}
+macro_rules! rrm_no_rs2 {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr,$rd_reg:ident, $rs_reg: ident) => {{
+        let rd = Rd($rd_reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($rs_reg(rs1($bit).try_into().unwrap()));
+        let rm = funct3($bit) as u8;
+        let rm = match rm {
+            0b000 => RoundingMode::RNE,
+            0b001 => RoundingMode::RTZ,
+            0b010 => RoundingMode::RDN,
+            0b011 => RoundingMode::RUP,
+            0b100 => RoundingMode::RMM,
+            0b111 => RoundingMode::DYN,
+            _ => panic!("wrong RoundingMode"),
+        };
+        $type!($opcode1, $opcode2, rd, rs1, rm)
+    }};
+}
+macro_rules! rrm_no_rm {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr,$rd_reg:ident, $rs_reg: ident) => {{
+        let rd = Rd($rd_reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($rs_reg(rs1($bit).try_into().unwrap()));
+        let rs2 = Rs2($rs_reg(rs2($bit).try_into().unwrap()));
+        $type!($opcode1, $opcode2, rd, rs1, rs2)
+    }};
+}
+macro_rules! rrm_no_rs2_rm {
+    ($type:ident, $opcode1:ident, $opcode2:ident, $bit:expr,$rd_reg:ident, $rs_reg: ident) => {{
+        let rd = Rd($rd_reg(rd($bit).try_into().unwrap()));
+        let rs1 = Rs1($rs_reg(rs1($bit).try_into().unwrap()));
+        $type!($opcode1, $opcode2, rd, rs1)
+    }};
+}
 impl Instruction {
     fn parse(bit: &[u8]) -> Instruction {
         if let Some(instr) = try_from_compressed(bit) {
@@ -2063,91 +1753,167 @@ impl Instruction {
             let opcode = slice(bit_u32, 0, 7, 0) as u16;
 
             let instr = match opcode {
-                0b_0110111 => Some(u!(rv32, RV32I, LUI, bit_u32, gp)),
-                0b_0010111 => Some(u!(rv32, RV32I, AUIPC, bit_u32, gp)),
-                0b_1101111 => Some(j!(rv32, RV32I, JAL, bit_u32, gp)),
-                0b_1100111 => {
+                0b0110111 => Some(u!(rv32, RV32I, LUI, bit_u32, gp)),
+                0b0010111 => Some(u!(rv32, RV32I, AUIPC, bit_u32, gp)),
+                0b1101111 => Some(j!(rv32, RV32I, JAL, bit_u32, gp)),
+                0b1100111 => {
                     match funct3(bit_u32) {
                         // I-type jump instructions
-                        0b_000 => Some(i!(rv32, RV32I, JALR, bit_u32, gp)),
+                        0b000 => Some(i!(rv32, RV32I, JALR, bit_u32, gp)),
                         _ => None,
                     }
                 }
-                0b_0000011 => {
+                0b0000011 => {
                     // I-type load instructions
                     match funct3(bit_u32) {
-                        0b_000 => Some(i!(rv32, RV32I, LB, bit_u32, gp)),
-                        0b_001 => Some(i!(rv32, RV32I, LH, bit_u32, gp)),
-                        0b_010 => Some(i!(rv32, RV32I, LW, bit_u32, gp)),
-                        0b_100 => Some(i!(rv32, RV32I, LBU, bit_u32, gp)),
-                        0b_101 => Some(i!(rv32, RV32I, LHU, bit_u32, gp)),
-                        0b_110 => Some(i!(rv64, RV64I, LWU, bit_u32, gp)),
-                        0b_011 => Some(i!(rv64, RV64I, LD, bit_u32, gp)),
+                        0b000 => Some(i!(rv32, RV32I, LB, bit_u32, gp)),
+                        0b001 => Some(i!(rv32, RV32I, LH, bit_u32, gp)),
+                        0b010 => Some(i!(rv32, RV32I, LW, bit_u32, gp)),
+                        0b100 => Some(i!(rv32, RV32I, LBU, bit_u32, gp)),
+                        0b101 => Some(i!(rv32, RV32I, LHU, bit_u32, gp)),
+                        0b110 => Some(i!(rv64, RV64I, LWU, bit_u32, gp)),
+                        0b011 => Some(i!(rv64, RV64I, LD, bit_u32, gp)),
                         _ => None,
                     }
                 }
-                0b_0010011 => {
+                0b0010011 => {
                     let funct3_val = funct3(bit_u32);
 
-                    match funct3_val {
+                    let inst = match funct3_val {
                         // I-type ALU instructions
-                        0b_000 => Some(i!(rv32, RV32I, ADDI, bit_u32, gp)),
-                        0b_010 => Some(i!(rv32, RV32I, SLTI, bit_u32, gp)),
-                        0b_011 => Some(i!(rv32, RV32I, SLTIU, bit_u32, gp)),
-                        0b_100 => Some(i!(rv32, RV32I, XORI, bit_u32, gp)),
-                        0b_110 => Some(i!(rv32, RV32I, ORI, bit_u32, gp)),
-                        0b_111 => Some(i!(rv32, RV32I, ANDI, bit_u32, gp)),
+                        0b000 => Some(i!(rv32, RV32I, ADDI, bit_u32, gp)),
+                        0b010 => Some(i!(rv32, RV32I, SLTI, bit_u32, gp)),
+                        0b011 => Some(i!(rv32, RV32I, SLTIU, bit_u32, gp)),
+                        0b100 => Some(i!(rv32, RV32I, XORI, bit_u32, gp)),
+                        0b110 => Some(i!(rv32, RV32I, ORI, bit_u32, gp)),
+                        0b111 => Some(i!(rv32, RV32I, ANDI, bit_u32, gp)),
                         // I-type special ALU instructions
-                        0b_001 | 0b_101 => {
+                        0b001 | 0b101 => {
                             let top6_val = funct7(bit_u32) >> 1;
                             match (funct3_val, top6_val) {
-                                (0b_001, 0b_000000) => {
-                                    Some(r_shamt!(rv64, RV64I, SLLI, bit_u32, gp))
-                                }
-                                (0b_101, 0b_000000) => {
-                                    Some(r_shamt!(rv64, RV64I, SRLI, bit_u32, gp))
-                                }
-                                (0b_101, 0b_010000) => {
-                                    Some(r_shamt!(rv64, RV64I, SRAI, bit_u32, gp))
+                                (0b001, 0b000000) => Some(r_shamt!(rv64, RV64I, SLLI, bit_u32, gp)),
+                                (0b101, 0b000000) => Some(r_shamt!(rv64, RV64I, SRLI, bit_u32, gp)),
+                                (0b101, 0b010000) => Some(r_shamt!(rv64, RV64I, SRAI, bit_u32, gp)),
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    };
+                    if let Some(inst) = inst {
+                        Some(inst)
+                    } else {
+                        let funct3_value = funct3(bit_u32);
+                        let funct7_value = funct7(bit_u32);
+                        let rs2_value = rs2(bit_u32);
+                        let inst = match (funct7_value, funct3_value, rs2_value) {
+                            (0b0010100, 0b101, 0b00111) => {
+                                Some(r!(rv64_no_e, RVB, ORCB, bit_u32, gp))
+                            }
+                            (0b0110101, 0b101, 0b11000) => {
+                                Some(rd_rs!(rv64_no_e, RVB, REV8, bit_u32, gp))
+                            }
+                            (0b0110000, 0b001, 0b00000) => {
+                                Some(rd_rs!(rv64_no_e, RVB, CLZ, bit_u32, gp))
+                            }
+                            (0b0110000, 0b001, 0b00010) => {
+                                Some(rd_rs!(rv64_no_e, RVB, CPOP, bit_u32, gp))
+                            }
+                            (0b0110000, 0b001, 0b00001) => {
+                                Some(rd_rs!(rv64_no_e, RVB, CTZ, bit_u32, gp))
+                            }
+                            (0b0110000, 0b001, 0b00100) => {
+                                Some(rd_rs!(rv64_no_e, RVB, SEXTB, bit_u32, gp))
+                            }
+                            (0b0110000, 0b001, 0b00101) => {
+                                Some(rd_rs!(rv64_no_e, RVB, SEXTH, bit_u32, gp))
+                            }
+                            _ => None,
+                        };
+                        if let Some(inst) = inst {
+                            Some(inst)
+                        } else {
+                            match (funct7_value >> 1, funct3_value) {
+                                (0b010010, 0b001) => Some(i!(rv64_no_e, RVB, BCLRI, bit_u32, gp)),
+                                (0b010010, 0b101) => Some(i!(rv64_no_e, RVB, BEXTI, bit_u32, gp)),
+                                (0b011010, 0b001) => Some(i!(rv64_no_e, RVB, BINVI, bit_u32, gp)),
+                                (0b001010, 0b001) => Some(i!(rv64_no_e, RVB, BSETI, bit_u32, gp)),
+                                (0b011000, 0b101) => {
+                                    Some(r_shamt!(rv64_no_e, RVB, RORI, bit_u32, gp))
                                 }
                                 _ => None,
                             }
                         }
                     }
                 }
-                0b_1100011 => match funct3(bit_u32) {
-                    0b_000 => Some(b!(rv32, RV32I, BEQ, bit_u32, gp)),
-                    0b_001 => Some(b!(rv32, RV32I, BNE, bit_u32, gp)),
-                    0b_100 => Some(b!(rv32, RV32I, BLT, bit_u32, gp)),
-                    0b_101 => Some(b!(rv32, RV32I, BGE, bit_u32, gp)),
-                    0b_110 => Some(b!(rv32, RV32I, BLTU, bit_u32, gp)),
-                    0b_111 => Some(b!(rv32, RV32I, BGEU, bit_u32, gp)),
+                0b1100011 => match funct3(bit_u32) {
+                    0b000 => Some(b!(rv32, RV32I, BEQ, bit_u32, gp)),
+                    0b001 => Some(b!(rv32, RV32I, BNE, bit_u32, gp)),
+                    0b100 => Some(b!(rv32, RV32I, BLT, bit_u32, gp)),
+                    0b101 => Some(b!(rv32, RV32I, BGE, bit_u32, gp)),
+                    0b110 => Some(b!(rv32, RV32I, BLTU, bit_u32, gp)),
+                    0b111 => Some(b!(rv32, RV32I, BGEU, bit_u32, gp)),
                     _ => None,
                 },
-                0b_0100011 => match funct3(bit_u32) {
-                    0b_000 => Some(s!(rv32, RV32I, SB, bit_u32, gp)),
-                    0b_001 => Some(s!(rv32, RV32I, SH, bit_u32, gp)),
-                    0b_010 => Some(s!(rv32, RV32I, SW, bit_u32, gp)),
-                    0b_011 => Some(s!(rv64, RV64I, SD, bit_u32, gp)),
+                0b0100011 => match funct3(bit_u32) {
+                    0b000 => Some(s!(rv32, RV32I, SB, bit_u32, gp)),
+                    0b001 => Some(s!(rv32, RV32I, SH, bit_u32, gp)),
+                    0b010 => Some(s!(rv32, RV32I, SW, bit_u32, gp)),
+                    0b011 => Some(s!(rv64, RV64I, SD, bit_u32, gp)),
                     _ => None,
                 },
-                0b_0110011 => match (funct3(bit_u32), funct7(bit_u32)) {
-                    (0b_000, 0b_0000000) => Some(r!(rv32, RV32I, ADD, bit_u32, gp)),
-                    (0b_000, 0b_0100000) => Some(r!(rv32, RV32I, SUB, bit_u32, gp)),
-                    (0b_001, 0b_0000000) => Some(r!(rv32, RV32I, SLL, bit_u32, gp)),
-                    (0b_010, 0b_0000000) => Some(r!(rv32, RV32I, SLT, bit_u32, gp)),
-                    (0b_011, 0b_0000000) => Some(r!(rv32, RV32I, SLTU, bit_u32, gp)),
-                    (0b_100, 0b_0000000) => Some(r!(rv32, RV32I, XOR, bit_u32, gp)),
-                    (0b_101, 0b_0000000) => Some(r!(rv32, RV32I, SRL, bit_u32, gp)),
-                    (0b_101, 0b_0100000) => Some(r!(rv32, RV32I, SRA, bit_u32, gp)),
-                    (0b_110, 0b_0000000) => Some(r!(rv32, RV32I, OR, bit_u32, gp)),
-                    (0b_111, 0b_0000000) => Some(r!(rv32, RV32I, AND, bit_u32, gp)),
-                    _ => None,
-                },
-                0b_0001111 => {
+                0b0110011 => {
+                    let inst = match (funct3(bit_u32), funct7(bit_u32)) {
+                        (0b000, 0b0000000) => Some(r!(rv32, RV32I, ADD, bit_u32, gp)),
+                        (0b000, 0b0100000) => Some(r!(rv32, RV32I, SUB, bit_u32, gp)),
+                        (0b001, 0b0000000) => Some(r!(rv32, RV32I, SLL, bit_u32, gp)),
+                        (0b010, 0b0000000) => Some(r!(rv32, RV32I, SLT, bit_u32, gp)),
+                        (0b011, 0b0000000) => Some(r!(rv32, RV32I, SLTU, bit_u32, gp)),
+                        (0b100, 0b0000000) => Some(r!(rv32, RV32I, XOR, bit_u32, gp)),
+                        (0b101, 0b0000000) => Some(r!(rv32, RV32I, SRL, bit_u32, gp)),
+                        (0b101, 0b0100000) => Some(r!(rv32, RV32I, SRA, bit_u32, gp)),
+                        (0b110, 0b0000000) => Some(r!(rv32, RV32I, OR, bit_u32, gp)),
+                        (0b111, 0b0000000) => Some(r!(rv32, RV32I, AND, bit_u32, gp)),
+                        (0b111, 0b0100000) => Some(r!(rv64_no_e, RVB, ANDN, bit_u32, gp)),
+                        (0b110, 0b0100000) => Some(r!(rv64_no_e, RVB, ORN, bit_u32, gp)),
+                        (0b100, 0b0100000) => Some(r!(rv64_no_e, RVB, XNOR, bit_u32, gp)),
+                        (0b001, 0b0110000) => Some(r!(rv64_no_e, RVB, ROL, bit_u32, gp)),
+                        (0b101, 0b0110000) => Some(r!(rv64_no_e, RVB, ROR, bit_u32, gp)),
+                        (0b001, 0b0110100) => Some(r!(rv64_no_e, RVB, BINV, bit_u32, gp)),
+                        (0b001, 0b0010100) => Some(r!(rv64_no_e, RVB, BSET, bit_u32, gp)),
+                        (0b001, 0b0100100) => Some(r!(rv64_no_e, RVB, BCLR, bit_u32, gp)),
+                        (0b101, 0b0100100) => Some(r!(rv64_no_e, RVB, BEXT, bit_u32, gp)),
+                        (0b010, 0b0010000) => Some(r!(rv64_no_e, RVB, SH1ADD, bit_u32, gp)),
+                        (0b100, 0b0010000) => Some(r!(rv64_no_e, RVB, SH2ADD, bit_u32, gp)),
+                        (0b110, 0b0010000) => Some(r!(rv64_no_e, RVB, SH3ADD, bit_u32, gp)),
+                        (0b001, 0b0000101) => Some(r!(rv64_no_e, RVB, CLMUL, bit_u32, gp)),
+                        (0b011, 0b0000101) => Some(r!(rv64_no_e, RVB, CLMULH, bit_u32, gp)),
+                        (0b010, 0b0000101) => Some(r!(rv64_no_e, RVB, CLMULR, bit_u32, gp)),
+                        (0b100, 0b0000101) => Some(r!(rv64_no_e, RVB, MIN, bit_u32, gp)),
+                        (0b101, 0b0000101) => Some(r!(rv64_no_e, RVB, MINU, bit_u32, gp)),
+                        (0b110, 0b0000101) => Some(r!(rv64_no_e, RVB, MAX, bit_u32, gp)),
+                        (0b111, 0b0000101) => Some(r!(rv64_no_e, RVB, MAXU, bit_u32, gp)),
+                        _ => None,
+                    };
+                    if let Some(inst) = inst {
+                        Some(inst)
+                    } else {
+                        match funct3(bit_u32) {
+                            0b000 => Some(r!(rv32_no_e, RV32M, MUL, bit_u32, gp)),
+                            0b001 => Some(r!(rv32_no_e, RV32M, MULH, bit_u32, gp)),
+                            0b010 => Some(r!(rv32_no_e, RV32M, MULHSU, bit_u32, gp)),
+                            0b011 => Some(r!(rv32_no_e, RV32M, MULHU, bit_u32, gp)),
+                            0b100 => Some(r!(rv32_no_e, RV32M, DIV, bit_u32, gp)),
+                            0b101 => Some(r!(rv32_no_e, RV32M, DIVU, bit_u32, gp)),
+                            0b110 => Some(r!(rv32_no_e, RV32M, REM, bit_u32, gp)),
+                            0b111 => Some(r!(rv32_no_e, RV32M, REMU, bit_u32, gp)),
+                            _ => None,
+                        }
+                    }
+                }
+                0b0001111 => {
                     const FENCE_TSO: u32 = 0b1000_0011_0011_00000_000_00000_0001111;
                     const FENCE_PAUSE: u32 = 0b0000_0001_0000_00000_000_00000_0001111;
-                    const FENCE_I: u32 = 0b_0000_0000_0000_00000_001_00000_0001111;
+                    const FENCE_I: u32 = 0b0000_0000_0000_00000_001_00000_0001111;
                     match funct3(bit_u32) {
                         0b000 => match bit_u32 {
                             FENCE_TSO => Some(rv32!(RV32I, FENCE_TSO)),
@@ -2158,190 +1924,281 @@ impl Instruction {
                         _ => None,
                     }
                 }
-                0b_1110011 => match bit_u32 {
-                    0b_000000000000_00000_000_00000_1110011 => Some(rv32!(RV32I, ECALL)),
-                    0b_000000000001_00000_000_00000_1110011 => Some(rv32!(RV32I, EBREAK)),
+                0b1110011 => match funct3(bit_u32) {
+                    0b000 => match itype_immediate(bit_u32) {
+                        0b0 => Some(rv32!(RV32I, ECALL)),
+                        0b1 => Some(rv32!(RV32I, EBREAK)),
+                        _ => match funct7(bit_u32) {
+                            0b0001000 => match rs2(bit_u32) as u8 {
+                                0b00010 => Some(rv64_no_e!(RVPreviledge, SRET)),
+                                0b00101 => Some(rv64_no_e!(RVPreviledge, WFI)),
+                                _ => None,
+                            },
+                            0b0011000 => Some(rv64_no_e!(RVPreviledge, MRET)),
+                            0b0001001 => {
+                                Some(rs1_rs2!(rv64_no_e, RVPreviledge, SFENCE_VMA, bit_u32, gp))
+                            }
+                            0b0001011 => {
+                                Some(rs1_rs2!(rv64_no_e, RVPreviledge, SINVAL_VMA, bit_u32, gp))
+                            }
+                            0b0001100 => match rs2(bit_u32) as u8 {
+                                0b0 => Some(rv64_no_e!(RVPreviledge, SFENCE_W_INVAL)),
+                                0b1 => Some(rv64_no_e!(RVPreviledge, SFENCE_INVAL_IR)),
+                                _ => None,
+                            },
+                            _ => None,
+                        },
+                        _ => None,
+                    },
+                    0b001 => Some(zicsr_rs1!(rv64_no_e, RVZcsr, CSRRW, bit_u32, gp)),
+                    0b010 => Some(zicsr_rs1!(rv64_no_e, RVZcsr, CSRRS, bit_u32, gp)),
+                    0b011 => Some(zicsr_rs1!(rv64_no_e, RVZcsr, CSRRC, bit_u32, gp)),
+                    0b101 => Some(zicsr_uimm!(rv64_no_e, RVZcsr, CSRRWI, bit_u32, gp)),
+                    0b110 => Some(zicsr_uimm!(rv64_no_e, RVZcsr, CSRRSI, bit_u32, gp)),
+                    0b111 => Some(zicsr_uimm!(rv64_no_e, RVZcsr, CSRRCI, bit_u32, gp)),
                     _ => None,
                 },
-                0b_0011011 => {
-                    let funct3_value = funct3(bit_u32);
-                    match funct3_value {
-                        0b_000 => Some(i!(rv64, RV64I, ADDIW, bit_u32, gp)),
-                        0b_001 | 0b_101 => {
+                0b0101111 => match funct3(bit_u32) as u8 {
+                    0b010 => match funct5(bit_u32) as u8 {
+                        0b00010 => Some(ra_only_rs1!(rv32_no_e, RV32A, LR_W, bit_u32, gp)),
+                        0b00011 => Some(ra!(rv32_no_e, RV32A, SC_W, bit_u32, gp)),
+                        0b00001 => Some(ra!(rv32_no_e, RV32A, AMOSWAP_W, bit_u32, gp)),
+                        0b00000 => Some(ra!(rv32_no_e, RV32A, AMOADD_W, bit_u32, gp)),
+                        0b00100 => Some(ra!(rv32_no_e, RV32A, AMOXOR_W, bit_u32, gp)),
+                        0b01100 => Some(ra!(rv32_no_e, RV32A, AMOAND_W, bit_u32, gp)),
+                        0b01000 => Some(ra!(rv32_no_e, RV32A, AMOOR_W, bit_u32, gp)),
+                        0b10000 => Some(ra!(rv32_no_e, RV32A, AMOMIN_W, bit_u32, gp)),
+                        0b10100 => Some(ra!(rv32_no_e, RV32A, AMOMAX_W, bit_u32, gp)),
+                        0b11000 => Some(ra!(rv32_no_e, RV32A, AMOMINU_W, bit_u32, gp)),
+                        0b11100 => Some(ra!(rv32_no_e, RV32A, AMOMAXU_W, bit_u32, gp)),
+                        _ => None,
+                    },
+                    0b011 => match funct5(bit_u32) as u8 {
+                        0b00010 => Some(ra_only_rs1!(rv64_no_e, RV64A, LR_D, bit_u32, gp)),
+                        0b00011 => Some(ra!(rv64_no_e, RV64A, SC_D, bit_u32, gp)),
+                        0b00001 => Some(ra!(rv64_no_e, RV64A, AMOSWAP_D, bit_u32, gp)),
+                        0b00000 => Some(ra!(rv64_no_e, RV64A, AMOADD_D, bit_u32, gp)),
+                        0b00100 => Some(ra!(rv64_no_e, RV64A, AMOXOR_D, bit_u32, gp)),
+                        0b01100 => Some(ra!(rv64_no_e, RV64A, AMOAND_D, bit_u32, gp)),
+                        0b01000 => Some(ra!(rv64_no_e, RV64A, AMOOR_D, bit_u32, gp)),
+                        0b10000 => Some(ra!(rv64_no_e, RV64A, AMOMIN_D, bit_u32, gp)),
+                        0b10100 => Some(ra!(rv64_no_e, RV64A, AMOMAX_D, bit_u32, gp)),
+                        0b11000 => Some(ra!(rv64_no_e, RV64A, AMOMINU_D, bit_u32, gp)),
+                        0b11100 => Some(ra!(rv64_no_e, RV64A, AMOMAXU_D, bit_u32, gp)),
+                        _ => None,
+                    },
+                    _ => None,
+                },
+
+                0b0111011 => {
+                    let inst = match (funct3(bit_u32), funct7(bit_u32)) {
+                        (0b000, 0b0000000) => Some(r!(rv64, RV64I, ADDW, bit_u32, gp)),
+                        (0b000, 0b0100000) => Some(r!(rv64, RV64I, SUBW, bit_u32, gp)),
+                        (0b001, 0b0000000) => Some(r!(rv64, RV64I, SLLW, bit_u32, gp)),
+                        (0b101, 0b0000000) => Some(r!(rv64, RV64I, SRLW, bit_u32, gp)),
+                        (0b101, 0b0100000) => Some(r!(rv64, RV64I, SRAW, bit_u32, gp)),
+                        _ => {
+                            let funct3_value = funct3(bit_u32);
                             let funct7_value = funct7(bit_u32);
                             match (funct3_value, funct7_value) {
-                                (0b_001, 0b_0000000) => {
+                                (0b000, 0b0000100) => Some(r!(rv64_no_e, RVB, ADDUW, bit_u32, gp)),
+                                (0b001, 0b0110000) => Some(r!(rv64_no_e, RVB, ROLW, bit_u32, gp)),
+                                (0b010, 0b0010000) => {
+                                    Some(r!(rv64_no_e, RVB, SH1ADDUW, bit_u32, gp))
+                                }
+                                (0b100, 0b0000100) => {
+                                    if unsafe { BIT_LENGTH == 1 } && rs2(bit_u32) == 0 {
+                                        Some(rd_rs!(rv64_no_e, RVB, ZEXTH, bit_u32, gp))
+                                    } else {
+                                        None
+                                    }
+                                }
+                                (0b100, 0b0010000) => {
+                                    Some(r!(rv64_no_e, RVB, SH2ADDUW, bit_u32, gp))
+                                }
+                                (0b101, 0b0110000) => Some(r!(rv64_no_e, RVB, RORW, bit_u32, gp)),
+                                (0b110, 0b0010000) => {
+                                    Some(r!(rv64_no_e, RVB, SH3ADDUW, bit_u32, gp))
+                                }
+                                _ => None,
+                            }
+                        }
+                    };
+                    if let Some(inst) = inst {
+                        Some(inst)
+                    } else {
+                        match funct3(bit_u32) {
+                            0b000 => Some(r!(rv64_no_e, RV64M, MULW, bit_u32, gp)),
+                            0b100 => Some(r!(rv64_no_e, RV64M, DIVW, bit_u32, gp)),
+                            0b101 => Some(r!(rv64_no_e, RV64M, DIVUW, bit_u32, gp)),
+                            0b110 => Some(r!(rv64_no_e, RV64M, REMW, bit_u32, gp)),
+                            0b111 => Some(r!(rv64_no_e, RV64M, REMUW, bit_u32, gp)),
+                            _ => None,
+                        }
+                    }
+                }
+
+                0b0011011 => {
+                    let funct3_value = funct3(bit_u32);
+                    let funct7_value = funct7(bit_u32);
+                    let rs2_value = rs2(bit_u32);
+                    let inst = match funct3_value {
+                        0b000 => Some(i!(rv64, RV64I, ADDIW, bit_u32, gp)),
+                        0b001 | 0b101 => {
+                            let funct7_value = funct7(bit_u32);
+                            match (funct3_value, funct7_value) {
+                                (0b001, 0b0000000) => {
                                     Some(r_shamt!(rv64, RV64I, SLLIW, bit_u32, gp))
                                 }
-                                (0b_101, 0b_0000000) => {
+                                (0b101, 0b0000000) => {
                                     Some(r_shamt!(rv64, RV64I, SRLIW, bit_u32, gp))
                                 }
-                                (0b_101, 0b_0100000) => {
+                                (0b101, 0b0100000) => {
                                     Some(r_shamt!(rv64, RV64I, SRAIW, bit_u32, gp))
                                 }
                                 _ => None,
                             }
                         }
                         _ => None,
-                    }
-                }
-                0b_0111011 => match (funct3(bit_u32), funct7(bit_u32)) {
-                    (0b_000, 0b_0000000) => Some(r!(rv64, RV64I, ADDW, bit_u32, gp)),
-                    (0b_000, 0b_0100000) => Some(r!(rv64, RV64I, SUBW, bit_u32, gp)),
-                    (0b_001, 0b_0000000) => Some(r!(rv64, RV64I, SLLW, bit_u32, gp)),
-                    (0b_101, 0b_0000000) => Some(r!(rv64, RV64I, SRLW, bit_u32, gp)),
-                    (0b_101, 0b_0100000) => Some(r!(rv64, RV64I, SRAW, bit_u32, gp)),
-                    _ => {
-                        let funct3_value = funct3(bit_u32);
-                        let funct7_value = funct7(bit_u32);
-                        match (funct3_value, funct7_value) {
-                            (0b_000, 0b_0000100) => Some(r!(rv64_no_e, RVB, ADDUW, bit_u32, gp)),
-                            (0b_001, 0b_0110000) => Some(r!(rv64_no_e, RVB, ROLW, bit_u32, gp)),
-                            (0b_010, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH1ADDUW, bit_u32, gp)),
-                            (0b_100, 0b_0000100) => {
-                                if unsafe { BIT_LENGTH == 1 } && rs2(bit_u32) == 0 {
-                                    Some(i!(rv64_no_e, RVB, ZEXTH, bit_u32, gp))
+                    };
+                    if let Some(inst) = inst {
+                        Some(inst)
+                    } else {
+                        match funct7_value {
+                            0b0110000 => match funct3_value {
+                                0b001 => match rs2_value {
+                                    0b00000 => Some(rd_rs!(rv64_no_e, RVB, CLZW, bit_u32, gp)),
+                                    0b00010 => Some(rd_rs!(rv64_no_e, RVB, CPOPW, bit_u32, gp)),
+                                    0b00001 => Some(rd_rs!(rv64_no_e, RVB, CTZW, bit_u32, gp)),
+                                    _ => None,
+                                },
+                                0b101 => Some(r_shamt!(rv64_no_e, RVB, RORIW, bit_u32, gp)),
+                                _ => None,
+                            },
+                            _ => {
+                                if funct7_value >> 1 == 0b000010 && funct3_value == 0b001 {
+                                    Some(r!(rv64_no_e, RVB, SLLIUW, bit_u32, gp))
                                 } else {
                                     None
                                 }
                             }
-                            (0b_100, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH2ADDUW, bit_u32, gp)),
-                            (0b_101, 0b_0110000) => Some(r!(rv64_no_e, RVB, RORW, bit_u32, gp)),
-                            (0b_110, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH3ADDUW, bit_u32, gp)),
-                            _ => None,
-                        }
-                    }
-                },
-                0b_0110011 => {
-                    let funct3_value = funct3(bit_u32);
-                    let funct7_value = funct7(bit_u32);
-                    match (funct3_value, funct7_value) {
-                        (0b_111, 0b_0100000) => Some(r!(rv64_no_e, RVB, ANDN, bit_u32, gp)),
-                        (0b_110, 0b_0100000) => Some(r!(rv64_no_e, RVB, ORN, bit_u32, gp)),
-                        (0b_100, 0b_0100000) => Some(r!(rv64_no_e, RVB, XNOR, bit_u32, gp)),
-                        (0b_001, 0b_0110000) => Some(r!(rv64_no_e, RVB, ROL, bit_u32, gp)),
-                        (0b_101, 0b_0110000) => Some(r!(rv64_no_e, RVB, ROR, bit_u32, gp)),
-                        (0b_001, 0b_0110100) => Some(r!(rv64_no_e, RVB, BINV, bit_u32, gp)),
-                        (0b_001, 0b_0010100) => Some(r!(rv64_no_e, RVB, BSET, bit_u32, gp)),
-                        (0b_001, 0b_0100100) => Some(r!(rv64_no_e, RVB, BCLR, bit_u32, gp)),
-                        (0b_101, 0b_0100100) => Some(r!(rv64_no_e, RVB, BEXT, bit_u32, gp)),
-                        (0b_010, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH1ADD, bit_u32, gp)),
-                        (0b_100, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH2ADD, bit_u32, gp)),
-                        (0b_110, 0b_0010000) => Some(r!(rv64_no_e, RVB, SH3ADD, bit_u32, gp)),
-                        (0b_001, 0b_0000101) => Some(r!(rv64_no_e, RVB, CLMUL, bit_u32, gp)),
-                        (0b_011, 0b_0000101) => Some(r!(rv64_no_e, RVB, CLMULH, bit_u32, gp)),
-                        (0b_010, 0b_0000101) => Some(r!(rv64_no_e, RVB, CLMULR, bit_u32, gp)),
-                        (0b_100, 0b_0000101) => Some(r!(rv64_no_e, RVB, MIN, bit_u32, gp)),
-                        (0b_101, 0b_0000101) => Some(r!(rv64_no_e, RVB, MINU, bit_u32, gp)),
-                        (0b_110, 0b_0000101) => Some(r!(rv64_no_e, RVB, MAX, bit_u32, gp)),
-                        (0b_111, 0b_0000101) => Some(r!(rv64_no_e, RVB, MAXU, bit_u32, gp)),
-                        _ => None,
-                    }
-                }
-                0b_0010011 => {
-                    let funct3_value = funct3(bit_u32);
-                    let funct7_value = funct7(bit_u32);
-                    let rs2_value = rs2(bit_u32);
-                    let inst_opt = match (funct7_value, funct3_value, rs2_value) {
-                        (0b_0010100, 0b_101, 0b_00111) => {
-                            Some(r!(rv64_no_e, RVB, ORCB, bit_u32, gp))
-                        }
-                        (0b_0110101, 0b_101, 0b_11000) => {
-                            Some(r!(rv64_no_e, RVB, REV8, bit_u32, gp))
-                        }
-                        (0b_0110000, 0b_001, 0b_00000) => {
-                            Some(r!(rv64_no_e, RVB, CLZ, bit_u32, gp))
-                        }
-                        (0b_0110000, 0b_001, 0b_00010) => {
-                            Some(r!(rv64_no_e, RVB, CPOP, bit_u32, gp))
-                        }
-                        (0b_0110000, 0b_001, 0b_00001) => {
-                            Some(r!(rv64_no_e, RVB, CTZ, bit_u32, gp))
-                        }
-                        (0b_0110000, 0b_001, 0b_00100) => {
-                            Some(r!(rv64_no_e, RVB, SEXTB, bit_u32, gp))
-                        }
-                        (0b_0110000, 0b_001, 0b_00101) => {
-                            Some(r!(rv64_no_e, RVB, SEXTH, bit_u32, gp))
-                        }
-                        _ => None,
-                    };
-                    if let Some(inst) = inst_opt {
-                        Some(inst)
-                    } else {
-                        match (funct7_value >> 1, funct3_value) {
-                            (0b_010010, 0b_001) => Some(r!(rv64_no_e, RVB, BCLRI, bit_u32, gp)),
-                            (0b_010010, 0b_101) => Some(r!(rv64_no_e, RVB, BEXTI, bit_u32, gp)),
-                            (0b_011010, 0b_001) => Some(r!(rv64_no_e, RVB, BINVI, bit_u32, gp)),
-                            (0b_001010, 0b_001) => Some(r!(rv64_no_e, RVB, BSETI, bit_u32, gp)),
-                            (0b_011000, 0b_101) => Some(r!(rv64_no_e, RVB, RORI, bit_u32, gp)),
-                            _ => None,
                         }
                     }
                 }
-                0b_0011011 => {
-                    let funct3_value = funct3(bit_u32);
-                    let funct7_value = funct7(bit_u32);
-                    let rs2_value = rs2(bit_u32);
-
-                    match funct7_value {
-                        0b_0110000 => match funct3_value {
-                            0b_001 => {
-                                let inst_opt = match rs2_value {
-                                    0b_00000 => Some(insts::OP_CLZW),
-                                    0b_00010 => Some(insts::OP_CPOPW),
-                                    0b_00001 => Some(insts::OP_CTZW),
-                                    _ => None,
-                                };
-                                inst_opt.map(|inst| {
-                                    Rtype::new(inst, rd(bit_u32), rs1(bit_u32), rs2_value).0
-                                })
+                0b1010011 => match funct7(bit_u32) as u8 {
+                    0b0000000 => Some(rrm!(rv32_no_e, RV32F, FADD_S, bit_u32, fp, fp)),
+                    0b0000001 => Some(rrm!(rv32_no_e, RV32D, FADD_D, bit_u32, fp, fp)),
+                    0b0000100 => Some(rrm!(rv32_no_e, RV32F, FSUB_S, bit_u32, fp, fp)),
+                    0b0000101 => Some(rrm!(rv32_no_e, RV32D, FSUB_D, bit_u32, fp, fp)),
+                    0b0001000 => Some(rrm!(rv32_no_e, RV32F, FMUL_S, bit_u32, fp, fp)),
+                    0b0001001 => Some(rrm!(rv32_no_e, RV32D, FMUL_D, bit_u32, fp, fp)),
+                    0b0001100 => Some(rrm!(rv32_no_e, RV32F, FDIV_S, bit_u32, fp, fp)),
+                    0b0001101 => Some(rrm!(rv32_no_e, RV32D, FDIV_D, bit_u32, fp, fp)),
+                    0b0101100 => Some(rrm_no_rs2!(rv32_no_e, RV32F, FSQRT_S, bit_u32, fp, fp)),
+                    0b0101101 => Some(rrm_no_rs2!(rv32_no_e, RV32D, FSQRT_D, bit_u32, fp, fp)),
+                    0b0010000 => match funct3(bit_u32) as u8 {
+                        0b000 => Some(rrm_no_rm!(rv32_no_e, RV32F, FSGNJ_S, bit_u32, fp, fp)),
+                        0b001 => Some(rrm_no_rm!(rv32_no_e, RV32F, FSGNJN_S, bit_u32, fp, fp)),
+                        0b010 => Some(rrm_no_rm!(rv32_no_e, RV32F, FSGNJX_S, bit_u32, fp, fp)),
+                        _ => None,
+                    },
+                    0b0010001 => match funct3(bit_u32) as u8 {
+                        0b000 => Some(rrm_no_rm!(rv32_no_e, RV32D, FSGNJ_D, bit_u32, fp, fp)),
+                        0b001 => Some(rrm_no_rm!(rv32_no_e, RV32D, FSGNJN_D, bit_u32, fp, fp)),
+                        0b010 => Some(rrm_no_rm!(rv32_no_e, RV32D, FSGNJX_D, bit_u32, fp, fp)),
+                        _ => None,
+                    },
+                    0b0010100 => match funct3(bit_u32) as u8 {
+                        0b000 => Some(rrm_no_rm!(rv32_no_e, RV32F, FMIN_S, bit_u32, fp, fp)),
+                        0b001 => Some(rrm_no_rm!(rv32_no_e, RV32F, FMAX_S, bit_u32, fp, fp)),
+                        _ => None,
+                    },
+                    0b0010101 => match funct3(bit_u32) as u8 {
+                        0b000 => Some(rrm_no_rm!(rv32_no_e, RV32D, FMIN_D, bit_u32, fp, fp)),
+                        0b001 => Some(rrm_no_rm!(rv32_no_e, RV32D, FMAX_D, bit_u32, fp, fp)),
+                        _ => None,
+                    },
+                    0b1100000 => match rs2(bit_u32) as u8 {
+                        0b00000 => Some(rrm_no_rs2!(rv32_no_e, RV32F, FCVT_W_S, bit_u32, gp, fp)),
+                        0b00001 => Some(rrm_no_rs2!(rv32_no_e, RV32F, FCVT_WU_S, bit_u32, gp, fp)),
+                        0b00010 => Some(rrm_no_rs2!(rv64_no_e, RV64F, FCVT_L_S, bit_u32, gp, fp)),
+                        0b00011 => Some(rrm_no_rs2!(rv64_no_e, RV64F, FCVT_LU_S, bit_u32, gp, fp)),
+                        _ => None,
+                    },
+                    0b1110000 => match rs2(bit_u32) as u8 {
+                        0b00000 => match funct3(bit_u32) as u8 {
+                            0b000 => {
+                                Some(rrm_no_rs2_rm!(rv32_no_e, RV32F, FMV_X_W, bit_u32, gp, fp))
                             }
-                            0b_101 => Some(
-                                Itype::new_u(
-                                    insts::OP_RORIW,
-                                    rd(bit_u32),
-                                    rs1(bit_u32),
-                                    slice(bit_u32, 20, 5, 0),
-                                )
-                                .0,
-                            ),
+                            0b001 => {
+                                Some(rrm_no_rs2_rm!(rv32_no_e, RV32F, FCLASS_S, bit_u32, gp, fp))
+                            }
                             _ => None,
                         },
-                        _ => {
-                            if funct7_value >> 1 == 0b_000010 && funct3_value == 0b_001 {
-                                Some(
-                                    Itype::new_u(
-                                        insts::OP_SLLIUW,
-                                        rd(bit_u32),
-                                        rs1(bit_u32),
-                                        slice(bit_u32, 20, 6, 0),
-                                    )
-                                    .0,
-                                )
-                            } else {
-                                None
-                            }
+                        _ => None,
+                    },
+                    0b0100000 => match rs2(bit_u32) as u8 {
+                        0b00001 => Some(rrm_no_rs2!(rv32_no_e, RV32D, FCVT_S_D, bit_u32, fp, fp)),
+                        _ => None,
+                    },
+                    0b0100001 => match rs2(bit_u32) as u8 {
+                        0b00000 => Some(rrm_no_rs2!(rv32_no_e, RV32D, FCVT_D_S, bit_u32, fp, fp)),
+                        _ => None,
+                    },
+                    0b1010000 => match funct3(bit_u32) as u8 {
+                        0b010 => Some(rrm_no_rm!(rv32_no_e, RV32F, FEQ_S, bit_u32, gp, fp)),
+                        0b001 => Some(rrm_no_rm!(rv32_no_e, RV32F, FLT_S, bit_u32, gp, fp)),
+                        0b000 => Some(rrm_no_rm!(rv32_no_e, RV32F, FLE_S, bit_u32, gp, fp)),
+                        _ => None,
+                    },
+                    0b1010001 => match funct3(bit_u32) as u8 {
+                        0b010 => Some(rrm_no_rm!(rv32_no_e, RV32D, FEQ_D, bit_u32, gp, fp)),
+                        0b001 => Some(rrm_no_rm!(rv32_no_e, RV32D, FLT_D, bit_u32, gp, fp)),
+                        0b000 => Some(rrm_no_rm!(rv32_no_e, RV32D, FLE_D, bit_u32, gp, fp)),
+                        _ => None,
+                    },
+                    0b1101000 => match rs2(bit_u32) as u8 {
+                        0b00000 => Some(rrm_no_rs2!(rv32_no_e, RV32F, FCVT_S_W, bit_u32, fp, gp)),
+                        0b00001 => Some(rrm_no_rs2!(rv32_no_e, RV32F, FCVT_S_WU, bit_u32, fp, gp)),
+                        0b00010 => Some(rrm_no_rs2!(rv64_no_e, RV64F, FCVT_S_L, bit_u32, fp, gp)),
+                        0b00011 => Some(rrm_no_rs2!(rv64_no_e, RV64F, FCVT_S_LU, bit_u32, fp, gp)),
+                        _ => None,
+                    },
+                    0b1111000 => match (rs2(bit_u32) as u8, funct3(bit_u32) as u8) {
+                        (0b00000, 0b000) => {
+                            Some(rrm_no_rs2_rm!(rv32_no_e, RV32F, FMV_W_X, bit_u32, fp, gp))
                         }
-                    }
-                }
-                0b_0110011 => match funct3(bit_u32) {
-                    0b_000 => Some(r!(rv32, RV32M, MUL, bit_u32, gp)),
-                    0b_001 => Some(r!(rv32, RV32M, MULH, bit_u32, gp)),
-                    0b_010 => Some(r!(rv32, RV32M, MULHSU, bit_u32, gp)),
-                    0b_011 => Some(r!(rv32, RV32M, MULHU, bit_u32, gp)),
-                    0b_100 => Some(r!(rv32, RV32M, DIV, bit_u32, gp)),
-                    0b_101 => Some(r!(rv32, RV32M, DIVU, bit_u32, gp)),
-                    0b_110 => Some(r!(rv32, RV32M, REM, bit_u32, gp)),
-                    0b_111 => Some(r!(rv32, RV32M, REMU, bit_u32, gp)),
-                    _ => None,
-                },
-                0b_0111011 => match funct3(bit_u32) {
-                    0b_000 => Some(r!(rv64, RV64M, MULW, bit_u32, gp)),
-                    0b_100 => Some(r!(rv64, RV64M, DIVW, bit_u32, gp)),
-                    0b_101 => Some(r!(rv64, RV64M, DIVUW, bit_u32, gp)),
-                    0b_110 => Some(r!(rv64, RV64M, REMW, bit_u32, gp)),
-                    0b_111 => Some(r!(rv64, RV64M, REMUW, bit_u32, gp)),
+                        _ => None,
+                    },
+                    0b1111001 => match (rs2(bit_u32) as u8, funct3(bit_u32) as u8) {
+                        (0b00000, 0b000) => {
+                            Some(rrm_no_rs2_rm!(rv64_no_e, RV64D, FMV_D_X, bit_u32, fp, gp))
+                        }
+                        _ => None,
+                    },
+                    0b1110001 => match (rs2(bit_u32) as u8, funct3(bit_u32) as u8) {
+                        (0b00000, 0b000) => {
+                            Some(rrm_no_rs2_rm!(rv64_no_e, RV64D, FMV_X_D, bit_u32, gp, fp))
+                        }
+                        (0b00000, 0b001) => {
+                            Some(rrm_no_rs2_rm!(rv32_no_e, RV32D, FCLASS_D, bit_u32, gp, fp))
+                        }
+                        _ => None,
+                    },
+                    0b1100001 => match rs2(bit_u32) as u8 {
+                        0b00000 => Some(rrm_no_rs2!(rv32_no_e, RV32D, FCVT_W_D, bit_u32, gp, fp)),
+                        0b00001 => Some(rrm_no_rs2!(rv32_no_e, RV32D, FCVT_WU_D, bit_u32, gp, fp)),
+                        0b00010 => Some(rrm_no_rs2!(rv64_no_e, RV64D, FCVT_L_D, bit_u32, gp, fp)),
+                        0b00011 => Some(rrm_no_rs2!(rv64_no_e, RV64D, FCVT_LU_D, bit_u32, gp, fp)),
+                        _ => None,
+                    },
+                    0b1101001 => match rs2(bit_u32) as u8 {
+                        0b00000 => Some(rrm_no_rs2!(rv32_no_e, RV32D, FCVT_D_W, bit_u32, fp, gp)),
+                        0b00001 => Some(rrm_no_rs2!(rv32_no_e, RV32D, FCVT_D_WU, bit_u32, fp, gp)),
+                        0b00010 => Some(rrm_no_rs2!(rv64_no_e, RV64D, FCVT_D_L, bit_u32, fp, gp)),
+                        0b00011 => Some(rrm_no_rs2!(rv64_no_e, RV64D, FCVT_D_LU, bit_u32, fp, gp)),
+                        _ => None,
+                    },
                     _ => None,
                 },
 
@@ -2399,12 +2256,12 @@ impl Iterator for InstructionIter<'_> {
 
         let instruction = Instruction::parse(&bytes[..read_len]);
         // Add assertion for incorect machine
-        match instruction.instr {
-            Instr::RV32(_) => unsafe { assert_eq!(BIT_LENGTH, 0) },
-            Instr::RV64(_) => unsafe { assert_eq!(BIT_LENGTH, 1) },
-            Instr::RV128(_) => unsafe { assert_eq!(BIT_LENGTH, 2) },
-            Instr::NOP => {}
-        }
+        // match instruction.instr {
+        //     Instr::RV32(_) => unsafe { assert_eq!(BIT_LENGTH, 0) },
+        //     Instr::RV64(_) => unsafe { assert_eq!(BIT_LENGTH, 1) },
+        //     Instr::RV128(_) => unsafe { assert_eq!(BIT_LENGTH, 2) },
+        //     Instr::NOP => {}
+        // }
         Some((address, instruction))
     }
 }
@@ -2415,7 +2272,6 @@ mod tests {
 
     #[test]
     fn test_rvi_addi() {
-        // jal x0, -6*4
         let instr_asm: u32 = 0b11101101100000011000000110010011;
         // let instr_asm: u32 = 0b11011000010111;
         let instr = Instruction::parse(&instr_asm.to_le_bytes());
@@ -2430,17 +2286,92 @@ mod tests {
         );
     }
     #[test]
-    fn test_rvi() {
-        // jal x0, -6*4
+    fn test_rvi_auipc() {
         let instr_asm: u32 = 0b11011000010111;
         let instr = Instruction::parse(&instr_asm.to_le_bytes());
         dbg!(instr.clone());
         assert_eq!(
             instr.instr,
-            Instr::RV32(RV32Instr::RV32I(RV32I::ADDI(
-                Rd(Reg::X(Xx(3))),
-                Rs1(Reg::X(Xx(3))),
-                Imm32::<11, 0>::from(4294967000)
+            Instr::RV32(RV32Instr::RV32I(RV32I::AUIPC(
+                Rd(Reg::X(Xx(12))),
+                Imm32::<31, 12>::from(0)
+            )))
+        );
+    }
+    #[test]
+    fn test_rvb_clzw() {
+        let instr_asm: u32 = 0b1100000000001010001110000011011;
+        let instr = Instruction::parse(&instr_asm.to_le_bytes());
+        dbg!(instr.clone());
+        assert_eq!(
+            instr.instr,
+            Instr::RV64(RV64Instr::RVB(RVB::CLZW(
+                Rd(Reg::X(Xx(24))),
+                Rs(Reg::X(Xx(10))),
+            )))
+        );
+    }
+    #[test]
+    fn test_rvs_sd() {
+        let instr_asm: u32 = 0b100010111100010011110000100011;
+        let instr = Instruction::parse(&instr_asm.to_le_bytes());
+        dbg!(instr.clone());
+        assert_eq!(
+            instr.instr,
+            Instr::RV64(RV64Instr::RV64I(RV64I::SD(
+                Rs1(Reg::X(Xx(2))),
+                Rs2(Reg::X(Xx(15))),
+                Imm32::<11, 0>::from(568),
+            )))
+        );
+    }
+    #[test]
+    fn test_pause() {
+        let instr_asm: u32 = 0b00000001000000000000000000001111;
+        let instr = Instruction::parse(&instr_asm.to_le_bytes());
+        dbg!(instr.clone());
+        assert_eq!(instr.instr, Instr::RV32(RV32Instr::RV32I(RV32I::PAUSE)));
+    }
+    #[test]
+    fn test_rva_amoadd() {
+        let instr_asm: u32 = 0b101001000011010010101111;
+        let instr = Instruction::parse(&instr_asm.to_le_bytes());
+        dbg!(instr.clone());
+        assert_eq!(
+            instr.instr,
+            Instr::RV64(RV64Instr::RV64A(RV64A::AMOADD_D(
+                Rd(Reg::X(Xx::new(9))),
+                Rs1(Reg::X(Xx::new(8))),
+                Rs2(Reg::X(Xx::new(10))),
+                AQ(false),
+                RL(false)
+            )))
+        );
+    }
+    #[test]
+    fn test_rvi_shamt_srai() {
+        let instr_asm: u32 = 0b1000011100001111101010010010011;
+        let instr = Instruction::parse(&instr_asm.to_le_bytes());
+        dbg!(instr.clone());
+        assert_eq!(
+            instr.instr,
+            Instr::RV64(RV64Instr::RV64I(RV64I::SRAI(
+                Rd(Reg::X(Xx::new(9))),
+                Rs1(Reg::X(Xx::new(15))),
+                Shamt(24)
+            )))
+        );
+    }
+    #[test]
+    fn test_rvp_sfence() {
+        let instr_asm: u32 = 0b10010000000000000000001110011;
+        let instr = Instruction::parse(&instr_asm.to_le_bytes());
+        dbg!(instr.clone());
+        assert_eq!(
+            instr.instr,
+            Instr::RV64(RV64Instr::RVPreviledge(RVPreviledge::SFENCE_VMA(
+                Rs1(Reg::X(Xx::new(0))),
+                Rs2(Reg::X(Xx::new(0)))
             )))
         );
     }
