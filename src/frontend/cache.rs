@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::frontend::instruction::Instruction;
+use std::collections::HashMap;
 
 pub struct CodeCache {
     cache: HashMap<u64, Instruction>,
