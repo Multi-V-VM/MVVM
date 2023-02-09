@@ -17,3 +17,6 @@ Cargo.lock
 /pkg
 /.ipynb_checkpoints
 /.vscode
+build
+.idea
+cmake-*

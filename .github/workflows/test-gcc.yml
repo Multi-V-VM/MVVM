@@ -1,0 +1,32 @@
+name: test-gcc
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [Debug, Release]
+        standard: [cxx23]
+
+    defaults:
+      run:
+        shell: bash
+
+    name: "${{matrix.standard}}-${{matrix.build}}"
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: configure cmake
+      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}}
+
+    - name: build
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config ${{matrix.build}} --target test-${{matrix.standard}}
+
+    - name: test
+      working-directory: ${{runner.workspace}}/build
+      run: ./test-${{matrix.standard}} -V
