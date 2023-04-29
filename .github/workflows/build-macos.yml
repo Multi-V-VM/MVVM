@@ -27,7 +27,7 @@ jobs:
       run: git submodule update --init
 
     - name: configure cmake
-      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl/
+      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3/
 
     - name: build
       working-directory: ${{runner.workspace}}/build
