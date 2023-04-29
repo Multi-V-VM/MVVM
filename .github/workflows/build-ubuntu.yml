@@ -1,4 +1,4 @@
-name: test-gcc
+name: build-ubuntu
 
 on: push
 
@@ -20,6 +20,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install Dependency
+      run: sudo apt install libssl-dev libprotobuf-c-dev libprotobuf-dev libgrpc-dev
+
+    - name: Checkout
+      run: git submodule update --init
+      
     - name: configure cmake
       run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}}
 

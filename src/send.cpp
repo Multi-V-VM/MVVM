@@ -17,19 +17,11 @@ using grpc::ServerContext;
 using grpc::Status;
 
 class WAMRServiceImpl final : public WAMRService::Service {
-    Status WAMRMethod(ServerContext *context, const WAMRRequest *request, Student *response) override {
+    Status WAMRMethod(ServerContext *context, const WAMRRequest *request, WAMRMemoryInstance *response) override {
         response->set_name("Test");
         response->set_id(123);
         response->set_age(24);
 
-        response->mutable_phone()->set_type(Student_PhoneType_DESK);
-        response->mutable_phone()->set_number("+00 123 1234567");
-
-        response->mutable_address()->set_address1("House # 1, Street # 1");
-        response->mutable_address()->set_address2("House # 2, Street # 2");
-
-        response->mutable_college()->set_name("XYZ College");
-        response->mutable_college()->set_address("College Address Here");
         return Status::OK;
     }
 };

@@ -4,6 +4,7 @@
 
 #include "wamr.grpc.pb.h"
 #include "wamr.pb.h"
+#include "wasm_runtime.h"
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
 #include <iostream>
