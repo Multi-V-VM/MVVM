@@ -2,59 +2,53 @@
 // Created by victoryang00 on 4/29/23.
 //
 
-#include <iostream>
-#include <string>
+#include "wamr.grpc.pb.h"
+#include "wamr.pb.h"
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
-#include "wamr.pb.h"
+#include <iostream>
+#include <string>
 
+using namespace test;
+using grpc::Channel;
+using grpc::ClientContext;
+using grpc::Status;
 
 class WAMRClient {
 public:
     WAMRClient(std::shared_ptr<grpc::Channel> channel) : _stub{WAMRService::NewStub(channel)} {}
 
-    std::string SampleMethod(const std::string& request_sample_field) {
+    struct Student WAMRMethod(int id) {
         // Prepare request
         WAMRRequest request;
-        request.set_id(request_sample_field);
+        request.set_id(id);
 
         // Send request
-        SampleResponse response;
+        Student response;
         ClientContext context;
         Status status;
-        status = _stub->SampleMethod(&context, request, &response);
+        status = _stub->WAMRMethod(&context, request, &response);
 
         // Handle response
         if (status.ok()) {
-            return response.response_sample_field();
+            return response;
         } else {
             std::cerr << status.error_code() << ": " << status.error_message() << std::endl;
-            return "RPC failed";
+            return Student{};
         }
     }
 
 private:
-    std::unique_ptr<SampleService::Stub> _stub;
+    std::unique_ptr<WAMRService::Stub> _stub;
 };
 
+int main() {
+    std::string server_address{"localhost:2510"};
+    WAMRClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials())};
+    auto deserialized = client.WAMRMethod(0);
 
-int main()
-{
-    
-    Student deserialized;
-    if ( !deserialized.ParseFromString( serialized ) )
-    {
-        std::cerr << "ERROR: Unable to deserialize!\n";
-        return -1;
-    }
+    std::cout << deserialized.name() << deserialized.id() << deserialized.phone().type()
+              << deserialized.phone().number();
 
-    std::cout << "Deserialization:\n\n";
-    deserialized.PrintDebugString();
-
-    deserialized.name();
-    deserialized.id();
-    deserialized.phone().type();
-    deserialized.phone().number();
-    
     return 0;
 }
