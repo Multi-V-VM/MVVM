@@ -2,46 +2,35 @@
 // Created by victoryang00 on 2/8/23.
 //
 
-#include "wamr.grpc.pb.h"
-#include "wamr.pb.h"
-#include <grpc/support/log.h>
-#include <grpcpp/grpcpp.h>
+#include "struct_pack/struct_pack.hpp"
+#include "wasm_memory_instance.h"
 #include <iostream>
+#include <signal.h>
+#include <stdio.h>
 #include <string>
-
-using namespace test;
-
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::Status;
-
-class WAMRServiceImpl final : public WAMRService::Service {
-    Status WAMRMethod(ServerContext *context, const WAMRRequest *request, WAMRMemoryInstance *response) override {
-        response->set_name("Test");
-        response->set_id(123);
-        response->set_age(24);
-
-        return Status::OK;
-    }
+#include <unistd.h>
+struct fwrite_stream {
+    FILE *file;
+    bool write(const char *data, std::size_t sz) { return fwrite(data, sz, 1, file) == 1; }
+    fwrite_stream(const char *file_name) : file(fopen(file_name, "wb")) {}
+    ~fwrite_stream() { fclose(file); }
 };
 
-void RunServer() {
-    std::string server_address{"localhost:2510"};
-    WAMRServiceImpl service;
-
-    // Build server
-    ServerBuilder builder;
-    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service);
-    std::unique_ptr<Server> server{builder.BuildAndStart()};
-
-    // Run server
-    std::cout << "Server listening on " << server_address << std::endl;
-    server->Wait();
+auto writer = fwrite_stream("test.bin");
+void sig_handler(int signo) {
+    if (signo == SIGINT) // start serializing the struct
+    {
+        auto a= WAMREXE
+        struct_pack::serialize_to(writer,a);
+    };
 }
 
 int main() {
-    RunServer();
+    if (signal(SIGINT, sig_handler) == SIG_ERR)
+        printf("\ncan't catch SIGINT\n");
+    // A long long wait so that we can easily issue a signal to this process
+    while (1)
+        sleep(1);
+
     return 0;
 }
