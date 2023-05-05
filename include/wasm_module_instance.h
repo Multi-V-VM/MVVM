@@ -15,7 +15,7 @@ struct WAMRModuleInstance {
     uint32 module_type;
 
     uint32 memory_count;
-    DefPointer(WASMMemoryInstance **, memories);
+    std::unique_ptr<WAMRMemoryInstance> memories;
 
     /* global and table info */
     uint32 global_data_size;

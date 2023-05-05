@@ -5,9 +5,10 @@
 #ifndef MVVM_WASM_EXEC_ENV_H
 #define MVVM_WASM_EXEC_ENV_H
 #include "wasm_runtime.h"
+#include "wasm_interp_frame.h"
 #include <memory>
 struct WAMRExecEnv { // multiple
-    /* Next thread's exec env of a WASM module instance. */
+    /* Next thread's exec env of a WASM module instance. we can get the previous exec env outside layer */
     //    struct WASMExecEnv *next;
     //
     //    /* Previous thread's exec env of a WASM module instance. */
@@ -19,7 +20,7 @@ struct WAMRExecEnv { // multiple
        places of them */
 
     /* The WASM module instance of current thread */
-    struct WASMModuleInstanceCommon *module_inst;
+    std::unique_ptr<struct WASMModuleInstanceCommon> module_inst;
 
     //#if WASM_ENABLE_AOT != 0
     //    uint32 *argv_buf;
@@ -105,7 +106,7 @@ struct WAMRExecEnv { // multiple
     //    void *user_data;
 
     /* Current interpreter frame of current thread */
-    struct WASMInterpFrame cur_frame;
+    struct WAMRInterpFrame cur_frame;
 
     /* The native thread handle of current thread */
     //    korp_tid handle;
@@ -144,6 +145,6 @@ struct WAMRExecEnv { // multiple
     //    } wasm_stack;
     uint64_t stack_size;
     std::unique_ptr<uint8_t> stack;
-} WASMExecEnv;
+} WAMRExecEnv;
 
 #endif // MVVM_WASM_EXEC_ENV_H

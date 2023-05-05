@@ -1,12 +1,12 @@
 //
-// Created by victoryang00 on 2/8/23.
+// Created by victoryang00 on 4/8/23.
 //
 
 #include "struct_pack/struct_pack.hpp"
-#include "wasm_memory_instance.h"
+#include "wasm_exec_env.h"
+#include <csignal>
+#include <cstdio>
 #include <iostream>
-#include <signal.h>
-#include <stdio.h>
 #include <string>
 #include <unistd.h>
 struct fwrite_stream {
@@ -18,10 +18,9 @@ struct fwrite_stream {
 
 auto writer = fwrite_stream("test.bin");
 void sig_handler(int signo) {
-    if (signo == SIGINT) // start serializing the struct
-    {
-        auto a= WAMREXE
-        struct_pack::serialize_to(writer,a);
+    if (signo == SIGINT) { // start serializing the struct
+        struct WAMRExecEnv a[10];
+        struct_pack::serialize_to(writer, a);
     };
 }
 
