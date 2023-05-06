@@ -6,6 +6,7 @@
 #define MVVM_WAMR_BRANCH_BLOCK_H
 #include "wasm_interp_frame.h"
 #include "wasm_runtime.h"
+#include "wamr_serializer.h"
 #include <memory>
 struct WAMRBranchBlock {
     std::unique_ptr<uint8> begin_addr;

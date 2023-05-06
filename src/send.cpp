@@ -1,14 +1,14 @@
-//
-// Created by victoryang00 on 4/8/23.
-//
+////
+//// Created by victoryang00 on 4/8/23.
+////
 
 #include "struct_pack/struct_pack.hpp"
 #include "wasm_exec_env.h"
+#include "wasm_module_instance.h"
 #include <csignal>
 #include <cstdio>
-#include <iostream>
-#include <string>
 #include <unistd.h>
+
 struct fwrite_stream {
     FILE *file;
     bool write(const char *data, std::size_t sz) { return fwrite(data, sz, 1, file) == 1; }
@@ -17,19 +17,44 @@ struct fwrite_stream {
 };
 
 auto writer = fwrite_stream("test.bin");
-void sig_handler(int signo) {
-    if (signo == SIGINT) { // start serializing the struct
-        struct WAMRExecEnv a[10];
-        struct_pack::serialize_to(writer, a);
-    };
+auto writer1 = fwrite_stream("test1.bin");
+
+// Signal handler function for SIGINT
+void sigint_handler(int sig) {
+    // Your logic here
+    printf("Caught signal %d, performing custom logic...\n", sig);
+    // You can exit the program here, if desired
+    struct WAMRExecEnv a[10];
+    struct WAMRModuleInstance b[10];
+    struct_pack::serialize_to(writer, a);
+    struct_pack::serialize_to(writer1, b);
+    exit(0);
 }
 
 int main() {
-    if (signal(SIGINT, sig_handler) == SIG_ERR)
-        printf("\ncan't catch SIGINT\n");
-    // A long long wait so that we can easily issue a signal to this process
-    while (1)
+    // Define the sigaction structure
+    struct sigaction sa;
+
+    // Clear the structure
+    sigemptyset(&sa.sa_mask);
+
+    // Set the signal handler function
+    sa.sa_handler = sigint_handler;
+
+    // Set the flags
+    sa.sa_flags = SA_RESTART;
+
+    // Register the signal handler for SIGINT
+    if (sigaction(SIGINT, &sa, NULL) == -1) {
+        perror("Error: cannot handle SIGINT");
+        return 1;
+    }
+
+    // Main program loop
+    while (1) {
+        printf("Running... (Press Ctrl+C to trigger the signal handler)\n");
         sleep(1);
+    }
 
     return 0;
 }

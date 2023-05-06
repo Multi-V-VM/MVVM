@@ -6,6 +6,11 @@
 #include <string>
 
 #include "struct_pack/struct_pack.hpp"
+#include "wasm_exec_env.h"
+#include "wasm_module_instance.h"
+#include <csignal>
+#include <cstdio>
+#include <unistd.h>
 
 struct fread_stream {
     FILE *file;
@@ -18,9 +23,10 @@ struct fread_stream {
     fread_stream(const char *file_name) : file(fopen(file_name, "rb")) {}
     ~fread_stream() { fclose(file); }
 };
-
+auto reader = fread_stream("test.bin");
+auto reader1 = fread_stream("test1.bin");
 int main() {
-
-
+    auto a = struct_pack::deserialize<WAMRExecEnv[10]>(reader);
+    auto b = struct_pack::deserialize<WAMRModuleInstance[10]>(reader1);
     return 0;
 }

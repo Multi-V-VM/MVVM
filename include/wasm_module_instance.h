@@ -35,13 +35,13 @@ struct WAMRModuleInstance {
     uint32 export_memory_count;
     uint32 export_table_count;
     /* For AOTModuleInstance, it denotes `AOTFunctionInstance *` */
-    std::unique_ptr<WASMExportFuncInstance> export_functions;
-    std::unique_ptr<WASMExportGlobInstance> export_globals;
-    std::unique_ptr<WASMExportMemInstance> export_memories;
-    std::unique_ptr<WASMExportTabInstance> export_tables;
+//    std::unique_ptr<WASMExportFuncInstance> export_functions;
+//    std::unique_ptr<WASMExportGlobInstance> export_globals;
+//    std::unique_ptr<WASMExportMemInstance> export_memories;
+//    std::unique_ptr<WASMExportTabInstance> export_tables;
 
     /* The exception buffer of wasm interpreter for current thread. */
-    char cur_exception[EXCEPTION_BUF_LEN];
+//    char cur_exception[EXCEPTION_BUF_LEN];
 
     /* The WASM module or AOT module, for AOTModuleInstance,
        it denotes `AOTModule *` */

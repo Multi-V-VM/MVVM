@@ -7,7 +7,7 @@
 #include "wasm_runtime.h"
 #include "wamr_serializer.h"
 #include <memory>
-class WAMRMemoryInstance : public std::enable_shared_from_this<WAMRSerializer> {
+struct WAMRMemoryInstance {
     /* Module type */
     uint32 module_type;
     /* Shared memory flag */
@@ -31,8 +31,5 @@ class WAMRMemoryInstance : public std::enable_shared_from_this<WAMRSerializer> {
     uint32 heap_data_size;
     /* Heap data base address */
     std::unique_ptr<uint8> heap_data;
-
-    void dump() override;
-    void restore() override;
 };
 #endif // MVVM_WASM_MEMORY_INSTANCE_H

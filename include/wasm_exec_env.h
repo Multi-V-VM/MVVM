@@ -4,8 +4,8 @@
 
 #ifndef MVVM_WASM_EXEC_ENV_H
 #define MVVM_WASM_EXEC_ENV_H
-#include "wasm_runtime.h"
 #include "wasm_interp_frame.h"
+#include "wasm_runtime.h"
 #include <memory>
 struct WAMRExecEnv { // multiple
     /* Next thread's exec env of a WASM module instance. we can get the previous exec env outside layer */
@@ -36,22 +36,14 @@ struct WAMRExecEnv { // multiple
         bit 1: need to suspend
         bit 2: need to go into breakpoint
         bit 3: return from pthread_exit */
-    union {
-        uint32 flags;
-        uintptr_t __padding__;
-    } suspend_flags;
+
+    uint32 flags;
 
     /* Auxiliary stack boundary */
-    union {
-        uint32 boundary;
-        uintptr_t __padding__;
-    } aux_stack_boundary;
+    uint32 boundary;
 
     /* Auxiliary stack bottom */
-    union {
-        uint32 bottom;
-        uintptr_t __padding__;
-    } aux_stack_bottom;
+    uint32 bottom;
 
     //#if WASM_ENABLE_AOT != 0
     //    /* Native symbol list, reserved */
@@ -112,7 +104,7 @@ struct WAMRExecEnv { // multiple
     //    korp_tid handle;
 
     //#if WASM_ENABLE_INTERP != 0 && WASM_ENABLE_FAST_INTERP == 0
-    BlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
+//    BlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
     //#endif
 
     //#ifdef OS_ENABLE_HW_BOUND_CHECK
