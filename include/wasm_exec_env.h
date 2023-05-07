@@ -138,7 +138,8 @@ struct WAMRExecEnv { // multiple
     uint64_t stack_size;
     std::unique_ptr<uint8_t> stack;
 
-    void method_impl();
+    void dump_impl();
+    void restore_impl();
 };
 
 #endif // MVVM_WASM_EXEC_ENV_H

@@ -1,16 +1,23 @@
 cmake_minimum_required(VERSION 3.22)
 project(MVVM LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
+
+find_package(FMT REQUIRED)
+
 include_directories(lib/wasm-micro-runtime/core/iwasm/interpreter)
 include_directories(lib/wasm-micro-runtime/core/shared/utils/)
 include_directories(/usr/local/include/yalantinglibs/)
 include_directories(./include)
+include_directories(/opt/homebrew/opt/fmt/include/)
+
 set(WAMR_BUILD_JIT 1)
 if(APPLE)
 include_directories(lib/wasm-micro-runtime/core/shared/platform/darwin)
 else()
 include_directories(lib/wasm-micro-runtime/core/shared/platform/linux)
 endif()
-
-add_executable(MVVM_restore src/restore.cpp)
-add_executable(MVVM_checkpoint src/checkpoint.cpp)
+file(GLOB_RECURSE SOURCE_FILES src/wamr.cpp src/logging.cpp)
+add_executable(MVVM_restore src/restore.cpp ${SOURCE_FILES})
+add_executable(MVVM_checkpoint src/checkpoint.cpp ${SOURCE_FILES})
+target_link_libraries(MVVM_restore fmt::fmt)
+target_link_libraries(MVVM_checkpoint fmt::fmt)

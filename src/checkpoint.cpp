@@ -51,10 +51,6 @@ int main() {
     }
 
     // Main program loop
-    while (1) {
-        printf("Running... (Press Ctrl+C to trigger the signal handler)\n");
-        sleep(1);
-    }
 
     return 0;
 }
