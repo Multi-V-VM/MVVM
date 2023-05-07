@@ -4,9 +4,15 @@
 
 #ifndef MVVM_WAMR_SERIALIZER_H
 #define MVVM_WAMR_SERIALIZER_H
-class WAMRSerializer {
+template <typename Derived> class WAMRSerializer {
 public:
-    virtual void dump() = 0;
-    virtual void restore() = 0;
+    void dump() { static_cast<Derived *>(this)->dump(); };
+    void restore() { static_cast<Derived *>(this)->restore(); };
 };
-#endif //MVVM_WAMR_SERIALIZER_H
+
+template <typename T>
+concept SerializerTrait = requires(T t) {
+    { t.dump() } -> std::same_as<void>;
+    { t.restore() } -> std::same_as<void>;
+};
+#endif // MVVM_WAMR_SERIALIZER_H

@@ -12,5 +12,5 @@ else()
 include_directories(lib/wasm-micro-runtime/core/shared/platform/linux)
 endif()
 
-add_executable(MVVM_recv src/restore.cpp)
-add_executable(MVVM_send src/send.cpp)
+add_executable(MVVM_restore src/restore.cpp)
+add_executable(MVVM_checkpoint src/checkpoint.cpp)
