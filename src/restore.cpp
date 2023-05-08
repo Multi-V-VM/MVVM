@@ -6,8 +6,9 @@
 #include <string>
 
 #include "struct_pack/struct_pack.hpp"
-#include "wasm_exec_env.h"
+#include "wamr_exec_env.h"
 #include "wasm_module_instance.h"
+#include "wamr.h"
 #include <cstdio>
 #include <unistd.h>
 
@@ -27,5 +28,6 @@ auto reader1 = fread_stream("test1.bin");
 int main() {
     auto a = struct_pack::deserialize<WAMRExecEnv>(reader);
     auto b = struct_pack::deserialize<WAMRModuleInstance>(reader1);
+    auto wamr = new WAMRInstance(&b, &a);
     return 0;
 }

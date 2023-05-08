@@ -2,8 +2,8 @@
 // Created by yiwei yang on 5/1/23.
 //
 
-#ifndef MVVM_WASM_EXEC_ENV_H
-#define MVVM_WASM_EXEC_ENV_H
+#ifndef MVVM_WAMR_EXEC_ENV_H
+#define MVVM_WAMR_EXEC_ENV_H
 #include "wasm_interp_frame.h"
 #include "wasm_runtime.h"
 #include <memory>
@@ -142,4 +142,4 @@ struct WAMRExecEnv { // multiple
     void restore_impl();
 };
 
-#endif // MVVM_WASM_EXEC_ENV_H
+#endif // MVVM_WAMR_EXEC_ENV_H
