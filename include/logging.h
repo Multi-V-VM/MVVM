@@ -17,10 +17,10 @@
 #include <list>
 #include <sstream>
 #include <string>
+#include "wasm_runtime.h"
 
 using std::list;
 using std::string;
-enum LogLevel { DEBUG = 0, INFO, WARNING, ERROR };
 struct LocationInfo {
     LocationInfo(string file, int line, const char *func) : file_(std::move(file)), line_(line), func_(func) {}
     ~LocationInfo() = default;
@@ -72,12 +72,12 @@ private:
 string level2string(LogLevel level);
 fmt::color level2color(LogLevel level);
 
-#define __FILESHORTNAME__ get_short_name(__FILE__)
-#define LOG_IF(level) LogWriter(LocationInfo(__FILESHORTNAME__, __LINE__, __FUNCTION__), level) < LogStream()
-#define LOG(level) LOG_##level
-#define LOG_DEBUG LOG_IF(DEBUG)
-#define LOG_INFO LOG_IF(INFO)
-#define LOG_WARNING LOG_IF(WARNING)
-#define LOG_ERROR LOG_IF(ERROR)
+#define LOG_IF(level) LogWriter(LocationInfo(__FILE__, __LINE__, __FUNCTION__), level) < LogStream()
+#define LOGV(level) LOGV_##level
+#define LOGV_DEBUG LOG_IF(BH_LOG_LEVEL_DEBUG)
+#define LOGV_INFO LOG_IF(BH_LOG_LEVEL_VERBOSE)
+#define LOGV_WARNING LOG_IF(BH_LOG_LEVEL_WARNING)
+#define LOGV_ERROR LOG_IF(BH_LOG_LEVEL_ERROR)
+#define LOGV_FATAL LOG_IF(BH_LOG_LEVEL_FATAL)
 
 #endif //MVVM_LOGGING_H

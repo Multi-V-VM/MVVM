@@ -5,6 +5,7 @@
 #include "struct_pack/struct_pack.hpp"
 #include "wasm_exec_env.h"
 #include "wasm_module_instance.h"
+#include "wamr.h"
 #include <csignal>
 #include <cstdio>
 #include <unistd.h>
@@ -51,6 +52,6 @@ int main() {
     }
 
     // Main program loop
-
+    auto wamr = new WAMRInstance("test.wasm");
     return 0;
 }

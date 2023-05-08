@@ -24,13 +24,15 @@ void LogWriter::output_log(const std::ostringstream &msg) {
 }
 std::string level2string(LogLevel level) {
     switch (level) {
-        case DEBUG:
+        case BH_LOG_LEVEL_DEBUG:
             return "DEBUG";
-        case INFO:
+        case BH_LOG_LEVEL_VERBOSE:
             return "INFO";
-        case WARNING:
+        case BH_LOG_LEVEL_FATAL:
+            return "FATAL";
+        case BH_LOG_LEVEL_WARNING:
             return "WARNING";
-        case ERROR:
+        case BH_LOG_LEVEL_ERROR:
             return "ERROR";
         default:
             return "";
@@ -38,13 +40,15 @@ std::string level2string(LogLevel level) {
 }
 fmt::color level2color(LogLevel level) {
     switch (level) {
-        case DEBUG:
+        case BH_LOG_LEVEL_DEBUG:
             return fmt::color::alice_blue;
-        case INFO:
+        case BH_LOG_LEVEL_VERBOSE:
             return fmt::color::magenta;
-        case WARNING:
+        case BH_LOG_LEVEL_FATAL:
+            return fmt::color::rebecca_purple;
+        case BH_LOG_LEVEL_WARNING:
             return fmt::color::yellow;
-        case ERROR:
+        case BH_LOG_LEVEL_ERROR:
             return fmt::color::red;
         default:
             return fmt::color::white;
