@@ -68,7 +68,8 @@ include(${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 
 include(${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include)
+
 file(GLOB_RECURSE SOURCE_FILES src/wamr.cpp src/logging.cpp)
 add_executable(MVVM_restore src/restore.cpp ${SOURCE_FILES} ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_checkpoint src/checkpoint.cpp ${SOURCE_FILES} ${UNCOMMON_SHARED_SOURCE})

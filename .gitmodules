@@ -1,3 +1,6 @@
 [submodule "lib/wasm-micro-runtime"]
 	path = lib/wasm-micro-runtime
 	url = https://github.com/Multi-V-VM/wasm-micro-runtime/
+[submodule "lib/yalantinglibs"]
+	path = lib/yalantinglibs
+	url = https://github.com/alibaba/yalantinglibs

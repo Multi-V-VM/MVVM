@@ -34,14 +34,14 @@ struct WAMRInterpFrame {
     uint32 csp_size;
     std::unique_ptr<WAMRBranchBlock> csp;
 
-    /**
+    /*
      * Frame data, the layout is:
      *  lp: parameters and local variables
      *  sp_bottom to sp_boundary: wasm operand stack
      *  csp_bottom to csp_boundary: wasm label stack
      *  jit spill cache: only available for fast jit
      */
-    uint32 lp[1];
+    uint32 lp;
     //#endif
 };
 #endif // MVVM_WASM_INTERP_FRAME_H

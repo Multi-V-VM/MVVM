@@ -17,7 +17,6 @@ class WAMRInstance {
     WASMModuleCommon *module;
     WASMFunctionInstanceCommon *func;
     char *buffer;
-    //     char global_heap_buf[512 *1024];
     char error_buf[128];
     uint32 buf_size, stack_size = 8092, heap_size = 8092;
 

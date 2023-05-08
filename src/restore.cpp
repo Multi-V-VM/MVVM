@@ -29,5 +29,6 @@ int main() {
     auto a = struct_pack::deserialize<WAMRExecEnv>(reader);
     auto b = struct_pack::deserialize<WAMRModuleInstance>(reader1);
     auto wamr = new WAMRInstance(&b, &a);
+    wamr->invoke_main();
     return 0;
 }

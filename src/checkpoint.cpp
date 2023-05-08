@@ -25,8 +25,8 @@ void sigint_handler(int sig) {
     // Your logic here
     printf("Caught signal %d, performing custom logic...\n", sig);
     // You can exit the program here, if desired
-    struct WAMRExecEnv a[10];
-    struct WAMRModuleInstance b[10];
+    struct WAMRExecEnv a;
+    struct WAMRModuleInstance b;
     struct_pack::serialize_to(writer, a);
     struct_pack::serialize_to(writer1, b);
     exit(0);
@@ -53,5 +53,6 @@ int main() {
 
     // Main program loop
     auto wamr = new WAMRInstance("test.wasm");
+    wamr->invoke_main();
     return 0;
 }
