@@ -21,13 +21,13 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install Dependency
-      run: sudo apt install libssl-dev libprotobuf-c-dev libprotobuf-dev libgrpc-dev libfmt-dev llvm-dev
+      run: sudo apt install libssl-dev libprotobuf-c-dev libprotobuf-dev libgrpc-dev libfmt-dev llvm-14-dev
 
     - name: Checkout
       run: git submodule update --init
 
     - name: configure cmake
-      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}}
+      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm/
 
     - name: build
       working-directory: ${{runner.workspace}}/build
