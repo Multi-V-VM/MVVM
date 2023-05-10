@@ -13,5 +13,11 @@ struct WAMRBranchBlock {
     std::unique_ptr<uint8> target_addr;
     std::unique_ptr<uint32> frame_sp;
     uint32 cell_num;
+
+    void dump(WASMBranchBlock *env);
+    void restore(WASMBranchBlock *env);
 };
+template <SerializerTrait<WASMBranchBlock *> T> void dump(T &t, WASMBranchBlock *env) { t->dump(env); }
+
+template <SerializerTrait<WASMBranchBlock *> T> void restore(T &t, WASMBranchBlock *env) { t->restore(env); }
 #endif // MVVM_WAMR_BRANCH_BLOCK_H

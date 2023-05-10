@@ -41,7 +41,10 @@ struct WAMRInterpFrame {
      *  csp_bottom to csp_boundary: wasm label stack
      *  jit spill cache: only available for fast jit
      */
-    uint32 lp;
-    //#endif
+        uint32 lp;
+        //#endif
+
+    void dump(WASMInterpFrame *env);
+    void restore(WASMInterpFrame *env);
 };
 #endif // MVVM_WASM_INTERP_FRAME_H

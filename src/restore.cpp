@@ -26,8 +26,8 @@ struct fread_stream {
 auto reader = fread_stream("test.bin");
 auto reader1 = fread_stream("test1.bin");
 int main() {
-    auto a = struct_pack::deserialize<WAMRExecEnv>(reader);
-    auto b = struct_pack::deserialize<WAMRModuleInstance>(reader1);
+    auto a = struct_pack::deserialize<WAMRExecEnv>(reader).value();
+    auto b = struct_pack::deserialize<WAMRModuleInstance>(reader1).value();
     auto wamr = new WAMRInstance(&b, &a);
     wamr->invoke_main();
     return 0;

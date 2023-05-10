@@ -3,9 +3,9 @@
 //
 
 #include "struct_pack/struct_pack.hpp"
+#include "wamr.h"
 #include "wasm_exec_env.h"
 #include "wasm_module_instance.h"
-#include "wamr.h"
 #include <csignal>
 #include <cstdio>
 #include <unistd.h>
@@ -18,17 +18,17 @@ struct fwrite_stream {
 };
 
 auto writer = fwrite_stream("test.bin");
-auto writer1 = fwrite_stream("test1.bin");
+auto wamr = new WAMRInstance("test.wasm");
 
 // Signal handler function for SIGINT
 void sigint_handler(int sig) {
     // Your logic here
     printf("Caught signal %d, performing custom logic...\n", sig);
+
     // You can exit the program here, if desired
     struct WAMRExecEnv a;
-    struct WAMRModuleInstance b;
+    dump(&a, wamr->get_exec_env());
     struct_pack::serialize_to(writer, a);
-    struct_pack::serialize_to(writer1, b);
     exit(0);
 }
 
@@ -52,7 +52,6 @@ int main() {
     }
 
     // Main program loop
-    auto wamr = new WAMRInstance("test.wasm");
     wamr->invoke_main();
     return 0;
 }

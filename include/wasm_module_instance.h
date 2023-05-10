@@ -4,9 +4,10 @@
 
 #ifndef MVVM_WASM_MODULE_INSTANCE_H
 #define MVVM_WASM_MODULE_INSTANCE_H
+#include "wamr_wasi_context.h"
 #include "wasm_memory_instance.h"
 #include "wasm_runtime.h"
-struct WAMRModuleInstance {
+template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> struct WAMRModuleInstance {
     /* Module instance type, for module instance loaded from
        WASM bytecode binary, this field is Wasm_Module_Bytecode;
        for module instance loaded from AOT file, this field is
@@ -14,8 +15,7 @@ struct WAMRModuleInstance {
        AOTModuleInstance structure. */
     uint32 module_type;
 
-    uint32 memory_count;
-    std::unique_ptr<WAMRMemoryInstance> memories;
+    std::array<WAMRMemoryInstance<memory_data_size, heap_data_size>, memory_count> memories;
 
     /* global and table info */
     uint32 global_data_size;
@@ -35,13 +35,13 @@ struct WAMRModuleInstance {
     uint32 export_memory_count;
     uint32 export_table_count;
     /* For AOTModuleInstance, it denotes `AOTFunctionInstance *` */
-//    std::unique_ptr<WASMExportFuncInstance> export_functions;
-//    std::unique_ptr<WASMExportGlobInstance> export_globals;
-//    std::unique_ptr<WASMExportMemInstance> export_memories;
-//    std::unique_ptr<WASMExportTabInstance> export_tables;
+    //    std::unique_ptr<WASMExportFuncInstance> export_functions;
+    //    std::unique_ptr<WASMExportGlobInstance> export_globals;
+    //    std::unique_ptr<WASMExportMemInstance> export_memories;
+    //    std::unique_ptr<WASMExportTabInstance> export_tables;
 
     /* The exception buffer of wasm interpreter for current thread. */
-//    char cur_exception[EXCEPTION_BUF_LEN];
+    //    char cur_exception[EXCEPTION_BUF_LEN];
 
     /* The WASM module or AOT module, for AOTModuleInstance,
        it denotes `AOTModule *` */
@@ -49,7 +49,7 @@ struct WAMRModuleInstance {
 
     //#if WASM_ENABLE_LIBC_WASI
     //    /* WASI context */
-    //    DefPointer(WASIContext *, wasi_ctx);
+    std::unique_ptr<WAMRWASIContext> wasi_ctx;
     //#else
     //    DefPointer(void *, wasi_ctx);
     //#endif
@@ -76,7 +76,7 @@ struct WAMRModuleInstance {
     //    DefPointer(WASMModuleInstanceExtra *, e);
 
     /* Default WASM operand stack size */
-    //    uint32 default_wasm_stack_size;
+    uint32 default_wasm_stack_size;
     //    uint32 reserved[3];
 
     /*
@@ -92,9 +92,22 @@ struct WAMRModuleInstance {
      */
     //    union {
     //        uint64 _make_it_8_byte_aligned_;
-    //        WASMMemoryInstance memory_instances[1];
+    WAMRMemoryInstance<memory_data_size, heap_data_size> memory_instances;
     //        uint8 bytes[1];
     //    } global_table_data;
+
+    void dump(WASMModuleInstance *env);
+    void restore(WASMModuleInstance *env);
 };
+//template <uint64 memory_data_size, uint64 heap_data_size,
+//          SerializerTrait<WAMRModuleInstance<memory_data_size, heap_data_size>> T>
+//void dump(T &t, WASMModuleInstance *env) {
+//    t->dump(env);
+//}
+//template <uint64 memory_data_size, uint64 heap_data_size,
+//          SerializerTrait<WAMRModuleInstance<memory_data_size, heap_data_size>> T>
+//void restore(T &t, WASMModuleInstance *env) {
+//    t->restore(env);
+//}
 
 #endif // MVVM_WASM_MODULE_INSTANCE_H

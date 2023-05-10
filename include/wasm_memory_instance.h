@@ -4,9 +4,10 @@
 
 #ifndef MVVM_WASM_MEMORY_INSTANCE_H
 #define MVVM_WASM_MEMORY_INSTANCE_H
-#include "wasm_runtime.h"
 #include "wamr_serializer.h"
+#include "wasm_runtime.h"
 #include <memory>
+template<uint64 memory_data_size, uint64 heap_data_size>
 struct WAMRMemoryInstance {
     /* Module type */
     uint32 module_type;
@@ -18,18 +19,23 @@ struct WAMRMemoryInstance {
     uint32 cur_page_count;
     /* Maximum page count */
     uint32 max_page_count;
-    /* Memory data size */
-    uint32 memory_data_size;
-    /**
+    /*
      * Memory data begin address, Note:
      *   the app-heap might be inserted in to the linear memory,
      *   when memory is re-allocated, the heap data and memory data
      *   must be copied to new memory also
      */
-    std::unique_ptr<uint8> memory_data;
+    std::array<uint8,memory_data_size> memory_data;
 
-    uint32 heap_data_size;
     /* Heap data base address */
-    std::unique_ptr<uint8> heap_data;
+    std::array<uint8,heap_data_size> heap_data;
+
+    void dump(WASMMemoryInstance *env);
+    void restore(WASMMemoryInstance *env);
 };
+
+template <SerializerTrait<WASMMemoryInstance *> T> void dump(T &t, WASMMemoryInstance *env) { t->dump(env); }
+
+template <SerializerTrait<WASMMemoryInstance *> T> void restore(T &t, WASMMemoryInstance *env) { t->restore(env); }
+
 #endif // MVVM_WASM_MEMORY_INSTANCE_H

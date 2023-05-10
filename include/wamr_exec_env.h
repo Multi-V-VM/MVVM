@@ -5,8 +5,10 @@
 #ifndef MVVM_WAMR_EXEC_ENV_H
 #define MVVM_WAMR_EXEC_ENV_H
 #include "wasm_interp_frame.h"
+#include "wasm_module_instance.h"
 #include "wasm_runtime.h"
 #include <memory>
+template <>
 struct WAMRExecEnv { // multiple
     /* Next thread's exec env of a WASM module instance. we can get the previous exec env outside layer */
     //    struct WASMExecEnv *next;
@@ -20,7 +22,7 @@ struct WAMRExecEnv { // multiple
        places of them */
 
     /* The WASM module instance of current thread */
-    std::unique_ptr<struct WASMModuleInstanceCommon> module_inst;
+    std::unique_ptr<WAMRModuleInstance> module_inst;
 
     //#if WASM_ENABLE_AOT != 0
     //    uint32 *argv_buf;
@@ -98,13 +100,13 @@ struct WAMRExecEnv { // multiple
     //    void *user_data;
 
     /* Current interpreter frame of current thread */
-    struct WAMRInterpFrame cur_frame;
+    WAMRInterpFrame cur_frame;
 
     /* The native thread handle of current thread */
     //    korp_tid handle;
 
     //#if WASM_ENABLE_INTERP != 0 && WASM_ENABLE_FAST_INTERP == 0
-//    BlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
+    //    BlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
     //#endif
 
     //#ifdef OS_ENABLE_HW_BOUND_CHECK
@@ -135,11 +137,12 @@ struct WAMRExecEnv { // multiple
     //            uint8 bottom[1];
     //        } s;
     //    } wasm_stack;
-    uint64_t stack_size;
-    std::unique_ptr<uint8_t> stack;
+    std::array<uint8_t, 8192> wasm_stack; // not known in the compile time
 
-    void dump_impl();
-    void restore_impl();
+    void dump(WASMExecEnv *env);
+    void restore(WASMExecEnv *env);
 };
+template <SerializerTrait<WAMRExecEnv *> T> void dump(T t, WASMExecEnv *env) { t->dump(env); }
+template <SerializerTrait<WAMRExecEnv *> T> void restore(T t, WASMExecEnv *env) { t->restore(env); }
 
 #endif // MVVM_WAMR_EXEC_ENV_H

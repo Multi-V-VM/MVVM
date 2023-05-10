@@ -24,6 +24,9 @@ public:
     WAMRInstance(char *wasm_path);
     WAMRInstance(WAMRModuleInstance *moduleInstance, WAMRExecEnv *execEnv);
     bool load_wasm_binary(char *wasm_path);
+    WASMExecEnv *get_exec_env();
+    WASMModuleInstance *get_module_instance();
+    WASMModule *get_module();
     int invoke_main();
     ~WAMRInstance();
 };
