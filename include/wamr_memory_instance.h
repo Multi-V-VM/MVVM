@@ -2,8 +2,8 @@
 // Created by yiwei yang on 4/29/23.
 //
 
-#ifndef MVVM_WASM_MEMORY_INSTANCE_H
-#define MVVM_WASM_MEMORY_INSTANCE_H
+#ifndef MVVM_WAMR_MEMORY_INSTANCE_H
+#define MVVM_WAMR_MEMORY_INSTANCE_H
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <memory>
@@ -34,8 +34,8 @@ struct WAMRMemoryInstance {
     void restore(WASMMemoryInstance *env);
 };
 
-template <SerializerTrait<WASMMemoryInstance *> T> void dump(T &t, WASMMemoryInstance *env) { t->dump(env); }
+template <uint64 memory_data_size, uint64 heap_data_size,SerializerTrait<WAMRMemoryInstance<memory_data_size,heap_data_size> *> T> void dump_memory_instance(T &t, WASMMemoryInstance *env) { t->dump(env); }
 
-template <SerializerTrait<WASMMemoryInstance *> T> void restore(T &t, WASMMemoryInstance *env) { t->restore(env); }
+template <uint64 memory_data_size, uint64 heap_data_size,SerializerTrait<WAMRMemoryInstance<memory_data_size,heap_data_size> *> T> void restore_memory_instance(T &t, WASMMemoryInstance *env) { t->restore(env); }
 
-#endif // MVVM_WASM_MEMORY_INSTANCE_H
+#endif // MVVM_WAMR_MEMORY_INSTANCE_H

@@ -80,6 +80,6 @@ WAMRInstance::WAMRInstance(WAMRModuleInstance *moduleInstance, WAMRExecEnv *exec
 
 WASMExecEnv *WAMRInstance::get_exec_env() { return exec_env; }
 
-WASMModuleInstance *WAMRInstance::get_module_instance() { return reinterpret_cast<WASMModuleInstance *>(module_inst); }
+[[maybe_unused]] WASMModuleInstance *WAMRInstance::get_module_instance() { return reinterpret_cast<WASMModuleInstance *>(module_inst); }
 
 WASMModule *WAMRInstance::get_module() { return reinterpret_cast<WASMModule *>(module); }

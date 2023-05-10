@@ -3,10 +3,6 @@
 //
 #include "wamr_wasi_context.h"
 
-void WAMRWASIContext::dump(WASIContext *env) {
+void WAMRWASIContext::dump(WASIContext *env) {}
 
-}
-
-void WAMRWASIContext::restore(WASIContext *env) {
-
-}
+void WAMRWASIContext::restore(WASIContext *env) {}

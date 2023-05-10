@@ -4,11 +4,12 @@
 
 #ifndef MVVM_WAMR_EXEC_ENV_H
 #define MVVM_WAMR_EXEC_ENV_H
-#include "wasm_interp_frame.h"
-#include "wasm_module_instance.h"
+#include "wamr_interp_frame.h"
+#include "wamr_module_instance.h"
 #include "wasm_runtime.h"
 #include <memory>
-template <>
+template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size, uint32 stack_frame_size, uint32 csp_size,
+          uint64 stack_data_size>
 struct WAMRExecEnv { // multiple
     /* Next thread's exec env of a WASM module instance. we can get the previous exec env outside layer */
     //    struct WASMExecEnv *next;
@@ -22,11 +23,11 @@ struct WAMRExecEnv { // multiple
        places of them */
 
     /* The WASM module instance of current thread */
-    std::unique_ptr<WAMRModuleInstance> module_inst;
+    std::unique_ptr<WAMRModuleInstance<memory_count, memory_data_size, heap_data_size>> module_inst;
 
-    //#if WASM_ENABLE_AOT != 0
-    //    uint32 *argv_buf;
-    //#endif
+    // #if WASM_ENABLE_AOT != 0
+    //     uint32 *argv_buf;
+    // #endif
 
     /* The boundary of native stack. When runtime detects that native
        frame may overrun this boundary, it throws stack overflow
@@ -47,10 +48,10 @@ struct WAMRExecEnv { // multiple
     /* Auxiliary stack bottom */
     uint32 bottom;
 
-    //#if WASM_ENABLE_AOT != 0
-    //    /* Native symbol list, reserved */
-    //    void **native_symbol;
-    //#endif
+    // #if WASM_ENABLE_AOT != 0
+    //     /* Native symbol list, reserved */
+    //     void **native_symbol;
+    // #endif
 
     /*
      * The lowest stack pointer value observed.
@@ -58,41 +59,41 @@ struct WAMRExecEnv { // multiple
      */
     //    uint8 *native_stack_top_min;
 
-    //#if WASM_ENABLE_FAST_JIT != 0
-    //    /**
-    //     * Cache for
-    //     * - jit native operations in 32-bit target which hasn't 64-bit
-    //     *   int/float registers, mainly for the operations of double and int64,
-    //     *   such as F64TOI64, F32TOI64, I64 MUL/REM, and so on.
-    //     * - SSE instructions.
-    //     **/
-    //    uint64 jit_cache[2];
-    //#endif
+    // #if WASM_ENABLE_FAST_JIT != 0
+    //     /**
+    //      * Cache for
+    //      * - jit native operations in 32-bit target which hasn't 64-bit
+    //      *   int/float registers, mainly for the operations of double and int64,
+    //      *   such as F64TOI64, F32TOI64, I64 MUL/REM, and so on.
+    //      * - SSE instructions.
+    //      **/
+    //     uint64 jit_cache[2];
+    // #endif
 
-    //#if WASM_ENABLE_THREAD_MGR != 0
-    //    /* thread return value */
-    //    void *thread_ret_value;
+    // #if WASM_ENABLE_THREAD_MGR != 0
+    //     /* thread return value */
+    //     void *thread_ret_value;
     //
-    //    /* Must be provided by thread library */
-    //    void *(*thread_start_routine)(void *);
-    //    void *thread_arg;
+    //     /* Must be provided by thread library */
+    //     void *(*thread_start_routine)(void *);
+    //     void *thread_arg;
     //
-    //    /* pointer to the cluster */
-    //    WASMCluster *cluster;
+    //     /* pointer to the cluster */
+    //     WASMCluster *cluster;
     //
-    //    /* used to support debugger */
-    //    korp_mutex wait_lock;
-    //    korp_cond wait_cond;
-    //    /* the count of threads which are joining current thread */
-    //    uint32 wait_count;
+    //     /* used to support debugger */
+    //     korp_mutex wait_lock;
+    //     korp_cond wait_cond;
+    //     /* the count of threads which are joining current thread */
+    //     uint32 wait_count;
     //
-    //    /* whether current thread is detached */
-    //    bool thread_is_detached;
-    //#endif
+    //     /* whether current thread is detached */
+    //     bool thread_is_detached;
+    // #endif
 
-    //#if WASM_ENABLE_DEBUG_INTERP != 0
-    //    WASMCurrentEnvStatus *current_status;
-    //#endif
+    // #if WASM_ENABLE_DEBUG_INTERP != 0
+    //     WASMCurrentEnvStatus *current_status;
+    // #endif
 
     /* attachment for native function */
     //    void *attachment;
@@ -100,28 +101,27 @@ struct WAMRExecEnv { // multiple
     //    void *user_data;
 
     /* Current interpreter frame of current thread */
-    WAMRInterpFrame cur_frame;
+    WAMRInterpFrame<stack_frame_size, csp_size> cur_frame;
 
     /* The native thread handle of current thread */
     //    korp_tid handle;
 
-    //#if WASM_ENABLE_INTERP != 0 && WASM_ENABLE_FAST_INTERP == 0
-    //    BlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
-    //#endif
+    // #if WASM_ENABLE_INTERP != 0 && WASM_ENABLE_FAST_INTERP == 0
+    //     BlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
+    // #endif
 
-    //#ifdef OS_ENABLE_HW_BOUND_CHECK
-    //    WASMJmpBuf *jmpbuf_stack_top;
-    //    /* One guard page for the exception check */
-    //    uint8 *exce_check_guard_page;
-    //#endif
+    // #ifdef OS_ENABLE_HW_BOUND_CHECK
+    //     WASMJmpBuf *jmpbuf_stack_top;
+    //     /* One guard page for the exception check */
+    //     uint8 *exce_check_guard_page;
+    // #endif
 
-    //#if WASM_ENABLE_MEMORY_PROFILING != 0
-    //    uint32 max_wasm_stack_used;
-    //#endif
+    // #if WASM_ENABLE_MEMORY_PROFILING != 0
+    //     uint32 max_wasm_stack_used;
+    // #endif
 
     /* The WASM stack size */
-    uint32 wasm_stack_size;
-
+    //    uint32 wasm_stack_size;
     /* The WASM stack of current thread */
     //    union {
     //        uint64 __make_it_8_byte_aligned_;
@@ -137,12 +137,26 @@ struct WAMRExecEnv { // multiple
     //            uint8 bottom[1];
     //        } s;
     //    } wasm_stack;
-    std::array<uint8_t, 8192> wasm_stack; // not known in the compile time
+    std::array<uint8_t, stack_data_size> wasm_stack; // not known in the compile time
 
     void dump(WASMExecEnv *env);
     void restore(WASMExecEnv *env);
 };
-template <SerializerTrait<WAMRExecEnv *> T> void dump(T t, WASMExecEnv *env) { t->dump(env); }
-template <SerializerTrait<WAMRExecEnv *> T> void restore(T t, WASMExecEnv *env) { t->restore(env); }
+template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size, uint32 stack_frame_size, uint32 csp_size,
+          uint64 stack_data_size,
+          SerializerTrait<WAMRExecEnv<memory_count, memory_data_size, heap_data_size, stack_frame_size, csp_size,
+                                      stack_data_size> *>
+              T>
+void dump_exec_env(T t, WASMExecEnv *env) {
+    t->dump(env);
+}
+template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size, uint32 stack_frame_size, uint32 csp_size,
+          uint64 stack_data_size,
+          SerializerTrait<WAMRExecEnv<memory_count, memory_data_size, heap_data_size, stack_frame_size, csp_size,
+                                      stack_data_size> *>
+              T>
+void restore_exec_env(T t, WASMExecEnv *env) {
+    t->restore(env);
+}
 
 #endif // MVVM_WAMR_EXEC_ENV_H

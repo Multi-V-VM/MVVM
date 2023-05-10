@@ -2,10 +2,11 @@
 // Created by yiwei yang on 4/29/23.
 //
 
-#ifndef MVVM_WASM_MODULE_INSTANCE_H
-#define MVVM_WASM_MODULE_INSTANCE_H
+#ifndef MVVM_WAMR_MODULE_INSTANCE_H
+#define MVVM_WAMR_MODULE_INSTANCE_H
+#include "wamr_memory_instance.h"
+#include "wamr_module_instance_extra.h"
 #include "wamr_wasi_context.h"
-#include "wasm_memory_instance.h"
 #include "wasm_runtime.h"
 template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> struct WAMRModuleInstance {
     /* Module instance type, for module instance loaded from
@@ -47,36 +48,37 @@ template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> s
        it denotes `AOTModule *` */
     //    DefPointer(WASMModule *, module);
 
-    //#if WASM_ENABLE_LIBC_WASI
-    //    /* WASI context */
+    // #if WASM_ENABLE_LIBC_WASI
+    //     /* WASI context */
     std::unique_ptr<WAMRWASIContext> wasi_ctx;
-    //#else
-    //    DefPointer(void *, wasi_ctx);
-    //#endif
-    //    DefPointer(WASMExecEnv *, exec_env_singleton);
-    //    /* Array of function pointers to import functions,
-    //       not available in AOTModuleInstance */
-    //    DefPointer(void **, import_func_ptrs);
-    //    /* Array of function pointers to fast jit functions,
-    //       not available in AOTModuleInstance:
-    //       Only when the multi-tier JIT macros are all enabled and the running
-    //       mode of current module instance is set to Mode_Fast_JIT, runtime
-    //       will allocate new memory for it, otherwise it always points to the
-    //       module->fast_jit_func_ptrs */
-    //    DefPointer(void **, fast_jit_func_ptrs);
-    //    /* The custom data that can be set/get by wasm_{get|set}_custom_data */
-    //    DefPointer(void *, custom_data);
-    //    /* Stack frames, used in call stack dump and perf profiling */
-    //    DefPointer(Vector *, frames);
-    //    /* Function performance profiling info list, only available
-    //       in AOTModuleInstance */
-    //    DefPointer(struct AOTFuncPerfProfInfo *, func_perf_profilings);
-    //    /* WASM/AOT module extra info, for AOTModuleInstance,
-    //       it denotes `AOTModuleInstanceExtra *` */
-    //    DefPointer(WASMModuleInstanceExtra *, e);
+    // #else
+    //     DefPointer(void *, wasi_ctx);
+    // #endif
+    //     DefPointer(WASMExecEnv *, exec_env_singleton);
+    //     /* Array of function pointers to import functions,
+    //        not available in AOTModuleInstance */
+    //     DefPointer(void **, import_func_ptrs);
+    //     /* Array of function pointers to fast jit functions,
+    //        not available in AOTModuleInstance:
+    //        Only when the multi-tier JIT macros are all enabled and the running
+    //        mode of current module instance is set to Mode_Fast_JIT, runtime
+    //        will allocate new memory for it, otherwise it always points to the
+    //        module->fast_jit_func_ptrs */
+    //     DefPointer(void **, fast_jit_func_ptrs);
+    //     /* The custom data that can be set/get by wasm_{get|set}_custom_data */
+    //     DefPointer(void *, custom_data);
+    //     /* Stack frames, used in call stack dump and perf profiling */
+    //     DefPointer(Vector *, frames);
+    //     /* Function performance profiling info list, only available
+    //        in AOTModuleInstance */
+    //     DefPointer(struct AOTFuncPerfProfInfo *, func_perf_profilings);
+    //     /* WASM/AOT module extra info, for AOTModuleInstance,
+    //        it denotes `AOTModuleInstanceExtra *` */
+    //     DefPointer(WASMModuleInstanceExtra *, e);
+    std::unique_ptr<WAMRModuleInstanceExtra> extra;
 
     /* Default WASM operand stack size */
-    uint32 default_wasm_stack_size;
+    //    uint32 default_wasm_stack_size;
     //    uint32 reserved[3];
 
     /*
@@ -99,15 +101,16 @@ template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> s
     void dump(WASMModuleInstance *env);
     void restore(WASMModuleInstance *env);
 };
-//template <uint64 memory_data_size, uint64 heap_data_size,
-//          SerializerTrait<WAMRModuleInstance<memory_data_size, heap_data_size>> T>
-//void dump(T &t, WASMModuleInstance *env) {
-//    t->dump(env);
-//}
-//template <uint64 memory_data_size, uint64 heap_data_size,
-//          SerializerTrait<WAMRModuleInstance<memory_data_size, heap_data_size>> T>
-//void restore(T &t, WASMModuleInstance *env) {
-//    t->restore(env);
-//}
 
-#endif // MVVM_WASM_MODULE_INSTANCE_H
+template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size,
+          SerializerTrait<WAMRModuleInstance<memory_count, memory_data_size, heap_data_size>> T>
+void dump_module_instance(T &t, WASMModuleInstance *env) {
+    t->dump(env);
+}
+template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size,
+          SerializerTrait<WAMRModuleInstance<memory_count, memory_data_size, heap_data_size>> T>
+void restore_module_instance(T &t, WASMModuleInstance *env) {
+    t->restore(env);
+}
+
+#endif // MVVM_WAMR_MODULE_INSTANCE_H

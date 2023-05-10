@@ -4,16 +4,16 @@
 
 #include "struct_pack/struct_pack.hpp"
 #include "wamr.h"
+#include "wamr_module_instance.h"
 #include "wasm_exec_env.h"
-#include "wasm_module_instance.h"
 #include <csignal>
 #include <cstdio>
 #include <unistd.h>
 
 struct fwrite_stream {
     FILE *file;
-    bool write(const char *data, std::size_t sz) { return fwrite(data, sz, 1, file) == 1; }
-    fwrite_stream(const char *file_name) : file(fopen(file_name, "wb")) {}
+    bool write(const char *data, std::size_t sz) const { return fwrite(data, sz, 1, file) == 1; }
+    explicit fwrite_stream(const char *file_name) : file(fopen(file_name, "wb")) {}
     ~fwrite_stream() { fclose(file); }
 };
 
@@ -26,7 +26,7 @@ void sigint_handler(int sig) {
     printf("Caught signal %d, performing custom logic...\n", sig);
 
     // You can exit the program here, if desired
-    struct WAMRExecEnv a;
+    struct WAMRExecEnv<1,65534,8192,200,10,200> a;
     dump(&a, wamr->get_exec_env());
     struct_pack::serialize_to(writer, a);
     exit(0);
@@ -34,7 +34,7 @@ void sigint_handler(int sig) {
 
 int main() {
     // Define the sigaction structure
-    struct sigaction sa;
+    struct sigaction sa{};
 
     // Clear the structure
     sigemptyset(&sa.sa_mask);
@@ -46,7 +46,7 @@ int main() {
     sa.sa_flags = SA_RESTART;
 
     // Register the signal handler for SIGINT
-    if (sigaction(SIGINT, &sa, NULL) == -1) {
+    if (sigaction(SIGINT, &sa, nullptr) == -1) {
         perror("Error: cannot handle SIGINT");
         return 1;
     }
