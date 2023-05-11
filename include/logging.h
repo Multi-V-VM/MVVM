@@ -5,6 +5,7 @@
 #ifndef MVVM_LOGGING_H
 #define MVVM_LOGGING_H
 
+#include "wasm_runtime.h"
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
@@ -17,7 +18,6 @@
 #include <list>
 #include <sstream>
 #include <string>
-#include "wasm_runtime.h"
 
 using std::list;
 using std::string;
@@ -80,4 +80,4 @@ fmt::color level2color(LogLevel level);
 #define LOGV_ERROR LOG_IF(BH_LOG_LEVEL_ERROR)
 #define LOGV_FATAL LOG_IF(BH_LOG_LEVEL_FATAL)
 
-#endif //MVVM_LOGGING_H
+#endif // MVVM_LOGGING_H

@@ -5,7 +5,13 @@ set(CMAKE_CXX_STANDARD 23)
 find_package(FMT REQUIRED)
 find_package(LLVM REQUIRED)
 
-set(WAMR_BUILD_PLATFORM "darwin")
+set(WAMR_BUILD_PLATFORM "linux")
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+add_compile_options (-fdiagnostics-color=always)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+add_compile_options (-fcolor-diagnostics)
+endif ()
 
 # Reset default linker flags
 set(CMAKE_C_FLAGS "-Wno-implicit-function-declaration")
@@ -38,8 +44,10 @@ endif ()
 
 set(WAMR_BUILD_INTERP 1)
 set(WAMR_BUILD_AOT 1)
-set(WAMR_BUILD_JIT 0)
+set(WAMR_BUILD_JIT 1)
+set(WASM_ENABLE_DEBUG_AOT 1)
 set(WAMR_BUILD_FAST_JIT 0)
+set(WAMR_BUILD_WASI_NN 0)
 set(WAMR_BUILD_LIBC_BUILTIN 1)
 set(WAMR_BUILD_LIBC_WASI 1)
 set(WAMR_BUILD_FAST_INTERP 1)
@@ -70,9 +78,10 @@ add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 include(${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include)
 
-file(GLOB_RECURSE SOURCE_FILES src/wamr.cpp src/logging.cpp src/wamr*.cpp)
-add_executable(MVVM_restore src/restore.cpp ${SOURCE_FILES} ${UNCOMMON_SHARED_SOURCE})
-add_executable(MVVM_checkpoint src/checkpoint.cpp ${SOURCE_FILES} ${UNCOMMON_SHARED_SOURCE} src/wamr_module_instance_extra.cpp include/wamr_module_instance_extra.h)
+file(GLOB_RECURSE SOURCE_FILES src/logging.cpp src/wamr*.cpp)
+
+add_executable(MVVM_restore ${SOURCE_FILES} src/restore.cpp  ${UNCOMMON_SHARED_SOURCE})
+add_executable(MVVM_checkpoint ${SOURCE_FILES} src/checkpoint.cpp  ${UNCOMMON_SHARED_SOURCE})
 
 target_link_libraries(MVVM_restore fmt::fmt vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS})
 target_link_libraries(MVVM_checkpoint fmt::fmt vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS})

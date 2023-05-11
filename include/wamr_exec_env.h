@@ -139,24 +139,29 @@ struct WAMRExecEnv { // multiple
     //    } wasm_stack;
     std::array<uint8_t, stack_data_size> wasm_stack; // not known in the compile time
 
-    void dump(WASMExecEnv *env);
-    void restore(WASMExecEnv *env);
+    void dump(WASMExecEnv *env) {
+        ::dump(this->module_inst.get(), reinterpret_cast<WASMModuleInstance *>(env->module_inst));
+        flags = env->suspend_flags.flags;
+        boundary = env->aux_stack_boundary.boundary;
+        bottom = env->aux_stack_bottom.bottom;
+        ::dump(&this->cur_frame, env->cur_frame);
+        for (int i = 0; i < stack_data_size; ++i) {
+            wasm_stack[i] = *(env->wasm_stack.s.top + i);
+        }
+    };
+    void restore(WASMExecEnv *env) {
+        ::restore(this->module_inst.get(), reinterpret_cast<WASMModuleInstance *>(env->module_inst));
+        env->suspend_flags.flags = flags;
+        env->aux_stack_boundary.boundary = boundary;
+        env->aux_stack_bottom.bottom = bottom;
+        ::restore(&this->cur_frame, env->cur_frame);
+                for (int i = 0; i < stack_data_size; ++i) {
+            = *(env->wasm_stack.s.top + i);
+        }
+    };
 };
-template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size, uint32 stack_frame_size, uint32 csp_size,
-          uint64 stack_data_size,
-          SerializerTrait<WAMRExecEnv<memory_count, memory_data_size, heap_data_size, stack_frame_size, csp_size,
-                                      stack_data_size> *>
-              T>
-void dump_exec_env(T t, WASMExecEnv *env) {
-    t->dump(env);
-}
-template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size, uint32 stack_frame_size, uint32 csp_size,
-          uint64 stack_data_size,
-          SerializerTrait<WAMRExecEnv<memory_count, memory_data_size, heap_data_size, stack_frame_size, csp_size,
-                                      stack_data_size> *>
-              T>
-void restore_exec_env(T t, WASMExecEnv *env) {
-    t->restore(env);
-}
+template <SerializerTrait<WASMExecEnv *> T> void dump(T t, WASMExecEnv *env) { t->dump(env); }
+
+template <SerializerTrait<WASMExecEnv *> T> void restore(T t, WASMExecEnv *env) { t->restore(env); }
 
 #endif // MVVM_WAMR_EXEC_ENV_H

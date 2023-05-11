@@ -8,36 +8,65 @@
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <memory>
+// TODO: add more context
+struct WAMRFDObjectEntry {
+    __wasi_filetype_t type;
+    int number;
 
-struct WAMRFDTable {};
+    // Data associated with directory file descriptors.
+    //    struct {
+    //        DIR handle;               // Directory handle.
+    //        __wasi_dircookie_t offset; // Offset of the directory.
+    //    } directory;
+    // we need to migrate the fd in the dir handle and reinit the dir handle
+    __wasi_rights_t rights_base;
+    __wasi_rights_t rights_inheriting;
+};
+struct WAMRFDTable {
+    std::array<WAMRFDObjectEntry, 1> entries;
+    size_t size;
+    size_t used;
+};
 
-struct WAMRPreStats {};
+struct WAMRFDPrestat {
+    std::string dir; // the path link prestats for dir need to load target directory
+};
 
-struct WAMRArgvEnvironValues {};
+struct WAMRPreStats {
+    std::array<WAMRFDPrestat, 1> prestats;
+    size_t size{};
+    size_t used{};
+};
 
-struct WAMRAddrPool {};
-struct fd_table;
-struct fd_prestats;
-struct argv_environ_values;
-struct addr_pool;
+struct WAMRArgvEnvironValues {
+    std::string argv_buf;
+    std::array<std::string, 10> argv_list;
+    std::array<std::string, 10> env_list;
+};
+// need to serialize the opened file in the file descripter and the socket opened also.
+
+struct WAMRAddrPool {
+    uint16 ip46[8];
+    __wasi_addr_type_t type;
+    uint8 mask;
+};
 struct WAMRWASIContext {
     std::array<WAMRFDTable, 10> curfds;
     std::array<WAMRPreStats, 10> prestats;
     std::unique_ptr<WAMRArgvEnvironValues> argv_environ;
-    std::unique_ptr<WAMRAddrPool> addr_pool;
-    std::unique_ptr<char> ns_lookup_buf;
-    std::unique_ptr<std::string> ns_lookup_list;
-    std::array<char,100> argv_buf;
-    std::unique_ptr<std::string> argv_list;
-    std::array<char,100> env_buf;
-    std::unique_ptr<std::string> env_list;
+    std::array<WAMRAddrPool, 10> addr_pool;
+    std::array<std::string, 10> ns_lookup_list;
     uint32_t exit_code;
 
-    void dump(WASIContext *env);
-    void restore(WASIContext *env);
-};
-template <SerializerTrait<WAMRWASIContext *> T> void dump(T &t, WASIContext *env) { t->dump(env); }
+    void dump(WASIContext *env){
 
-template <SerializerTrait<WAMRWASIContext *> T> void restore(T &t, WASIContext *env) { t->restore(env); }
+    };
+    void restore(WASIContext *env){
+
+    };
+};
+template <SerializerTrait<WASIContext *> T> void dump(T t, WASIContext *env) { t->dump(env); }
+
+template <SerializerTrait<WASIContext *> T> void restore(T t, WASIContext *env) { t->restore(env); }
 
 #endif // MVVM_WAMR_WASI_CONTEXT_H

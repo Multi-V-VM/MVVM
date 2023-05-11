@@ -19,11 +19,9 @@ template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> s
     std::array<WAMRMemoryInstance<memory_data_size, heap_data_size>, memory_count> memories;
 
     /* global and table info */
-    uint32 global_data_size;
-    uint32 table_count;
-    std::unique_ptr<uint8> global_data;
+    // std::array<uint8, global_data_size> global_data;
     /* For AOTModuleInstance, it denotes `AOTTableInstance *` */
-    //        DefPointer(WASMTableInstance **, tables);
+    // std::array<WASMTableInstance,table_count> tables;
 
     /* import func ptrs + llvm jit func ptrs */
     //        DefPointer(void **, func_ptrs);
@@ -31,10 +29,10 @@ template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> s
     /* function type indexes */
     std::unique_ptr<uint32> func_type_indexes;
 
-    uint32 export_func_count;
-    uint32 export_global_count;
-    uint32 export_memory_count;
-    uint32 export_table_count;
+    // uint32 export_func_count;
+    // uint32 export_global_count;
+    // uint32 export_memory_count;
+    // uint32 export_table_count;
     /* For AOTModuleInstance, it denotes `AOTFunctionInstance *` */
     //    std::unique_ptr<WASMExportFuncInstance> export_functions;
     //    std::unique_ptr<WASMExportGlobInstance> export_globals;
@@ -50,7 +48,7 @@ template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> s
 
     // #if WASM_ENABLE_LIBC_WASI
     //     /* WASI context */
-    std::unique_ptr<WAMRWASIContext> wasi_ctx;
+    WAMRWASIContext wasi_ctx;
     // #else
     //     DefPointer(void *, wasi_ctx);
     // #endif
@@ -75,7 +73,7 @@ template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> s
     //     /* WASM/AOT module extra info, for AOTModuleInstance,
     //        it denotes `AOTModuleInstanceExtra *` */
     //     DefPointer(WASMModuleInstanceExtra *, e);
-    std::unique_ptr<WAMRModuleInstanceExtra> extra;
+    WAMRModuleInstanceExtra extra;
 
     /* Default WASM operand stack size */
     //    uint32 default_wasm_stack_size;
@@ -98,19 +96,14 @@ template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> s
     //        uint8 bytes[1];
     //    } global_table_data;
 
-    void dump(WASMModuleInstance *env);
-    void restore(WASMModuleInstance *env);
+    void dump(WASMModuleInstance *env) {
+        module_type = env->module_type;
+        // for (int i = 0
+    };
+    void restore(WASMModuleInstance *env){};
 };
 
-template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size,
-          SerializerTrait<WAMRModuleInstance<memory_count, memory_data_size, heap_data_size>> T>
-void dump_module_instance(T &t, WASMModuleInstance *env) {
-    t->dump(env);
-}
-template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size,
-          SerializerTrait<WAMRModuleInstance<memory_count, memory_data_size, heap_data_size>> T>
-void restore_module_instance(T &t, WASMModuleInstance *env) {
-    t->restore(env);
-}
+template <SerializerTrait<WASMModuleInstance *> T> void dump(T t, WASMModuleInstance *env) { t->dump(env); }
+template <SerializerTrait<WASMModuleInstance *> T> void restore(T t, WASMModuleInstance *env) { t->restore(env); }
 
 #endif // MVVM_WAMR_MODULE_INSTANCE_H

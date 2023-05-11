@@ -25,6 +25,7 @@ void sigint_handler(int sig) {
     // Your logic here
     printf("Caught signal %d, performing custom logic...\n", sig);
 
+//    *(char *)&x = '\0';
     // You can exit the program here, if desired
     struct WAMRExecEnv<1,65534,8192,200,10,200> a;
     dump(&a, wamr->get_exec_env());

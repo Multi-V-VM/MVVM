@@ -4,6 +4,3 @@
 [submodule "lib/yalantinglibs"]
 	path = lib/yalantinglibs
 	url = https://github.com/alibaba/yalantinglibs
-[submodule "lib/llvm-project"]
-	path = lib/llvm-project
-	url = https://github.com/llvm/llvm-project

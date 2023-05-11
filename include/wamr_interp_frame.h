@@ -41,16 +41,10 @@ template <uint32 stack_frame_size, uint32 csp_size> struct WAMRInterpFrame {
     uint32 lp;
     // #endif
 
-    void dump(WASMInterpFrame *env);
-    void restore(WASMInterpFrame *env);
+    void dump(WASMInterpFrame *env){};
+    void restore(WASMInterpFrame *env){};
 };
-template <uint32 stack_frame_size, uint32 csp_size, SerializerTrait<WAMRInterpFrame<stack_frame_size, csp_size> *> T>
-void dump_interp_frame(T &t, WASMInterpFrame *env) {
-    t->dump(env);
-}
-template <uint32 stack_frame_size, uint32 csp_size, SerializerTrait<WAMRInterpFrame<stack_frame_size, csp_size> *> T>
-void restore_interp_frame(T &t, WASMInterpFrame *env) {
-    t->restore(env);
-}
+template <SerializerTrait<WASMInterpFrame *> T> void dump(T t, WASMInterpFrame *env) { t->dump(env); }
+template <SerializerTrait<WASMInterpFrame *> T> void restore(T t, WASMInterpFrame *env) { t->restore(env); }
 
 #endif // MVVM_WAMR_INTERP_FRAME_H

@@ -28,6 +28,7 @@ int main() {
 //  first get the deserializer message, here just hard code
     auto a = struct_pack::deserialize<WAMRExecEnv<1,65534,8192,200,10,200>>(reader).value();
     auto wamr = new WAMRInstance( &a);
+
     wamr->invoke_main();
     return 0;
 }

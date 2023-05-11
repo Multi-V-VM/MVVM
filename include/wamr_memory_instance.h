@@ -7,8 +7,7 @@
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <memory>
-template<uint64 memory_data_size, uint64 heap_data_size>
-struct WAMRMemoryInstance {
+template <uint64 memory_data_size, uint64 heap_data_size> struct WAMRMemoryInstance {
     /* Module type */
     uint32 module_type;
     /* Shared memory flag */
@@ -25,17 +24,17 @@ struct WAMRMemoryInstance {
      *   when memory is re-allocated, the heap data and memory data
      *   must be copied to new memory also
      */
-    std::array<uint8,memory_data_size> memory_data;
+    std::array<uint8, memory_data_size> memory_data;
 
     /* Heap data base address */
-    std::array<uint8,heap_data_size> heap_data;
+    std::array<uint8, heap_data_size> heap_data;
 
-    void dump(WASMMemoryInstance *env);
-    void restore(WASMMemoryInstance *env);
+    void dump(WASMMemoryInstance *env){};
+    void restore(WASMMemoryInstance *env){};
 };
 
-template <uint64 memory_data_size, uint64 heap_data_size,SerializerTrait<WAMRMemoryInstance<memory_data_size,heap_data_size> *> T> void dump_memory_instance(T &t, WASMMemoryInstance *env) { t->dump(env); }
+template <SerializerTrait<WASMMemoryInstance *> T> void dump(T t, WASMMemoryInstance *env) { t->dump(env); }
 
-template <uint64 memory_data_size, uint64 heap_data_size,SerializerTrait<WAMRMemoryInstance<memory_data_size,heap_data_size> *> T> void restore_memory_instance(T &t, WASMMemoryInstance *env) { t->restore(env); }
+template <SerializerTrait<WASMMemoryInstance *> T> void restore(T t, WASMMemoryInstance *env) { t->restore(env); }
 
 #endif // MVVM_WAMR_MEMORY_INSTANCE_H
