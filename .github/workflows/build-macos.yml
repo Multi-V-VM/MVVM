@@ -27,7 +27,7 @@ jobs:
       run: git submodule update --init
 
     - name: configure cmake
-      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/local/opt/llvm@14/lib/cmake/
+      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/local/opt/llvm@14/lib/cmake/llvm/
 
     - name: build
       working-directory: ${{runner.workspace}}/build
