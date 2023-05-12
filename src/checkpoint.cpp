@@ -30,7 +30,7 @@ void sigint_handler(int sig) {
     struct WAMRExecEnv<1,65534,8192,200,10,200> a;
     dump(&a, wamr->get_exec_env());
     struct_pack::serialize_to(writer, a);
-    exit(0);
+    
 }
 
 int main() {

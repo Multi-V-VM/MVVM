@@ -155,8 +155,9 @@ struct WAMRExecEnv { // multiple
         env->aux_stack_boundary.boundary = boundary;
         env->aux_stack_bottom.bottom = bottom;
         ::restore(&this->cur_frame, env->cur_frame);
-                for (int i = 0; i < stack_data_size; ++i) {
-            = *(env->wasm_stack.s.top + i);
+        env->wasm_stack = stack_data_size;
+        for (int i = 0; i < stack_data_size; ++i) {
+             *(env->wasm_stack.s.top + i)= wasm_stack[i];
         }
     };
 };
