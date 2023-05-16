@@ -23,7 +23,7 @@ struct WAMRExecEnv { // multiple
        places of them */
 
     /* The WASM module instance of current thread */
-    std::unique_ptr<WAMRModuleInstance<memory_count, memory_data_size, heap_data_size>> module_inst;
+    WAMRModuleInstance<memory_count, memory_data_size, heap_data_size> module_inst;
 
     // #if WASM_ENABLE_AOT != 0
     //     uint32 *argv_buf;
@@ -140,7 +140,7 @@ struct WAMRExecEnv { // multiple
     std::array<uint8_t, stack_data_size> wasm_stack; // not known in the compile time
 
     void dump(WASMExecEnv *env) {
-        ::dump(this->module_inst.get(), reinterpret_cast<WASMModuleInstance *>(env->module_inst));
+        ::dump(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
         flags = env->suspend_flags.flags;
         boundary = env->aux_stack_boundary.boundary;
         bottom = env->aux_stack_bottom.bottom;
@@ -150,7 +150,7 @@ struct WAMRExecEnv { // multiple
         }
     };
     void restore(WASMExecEnv *env) {
-        ::restore(this->module_inst.get(), reinterpret_cast<WASMModuleInstance *>(env->module_inst));
+        ::restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
         env->suspend_flags.flags = flags;
         env->aux_stack_boundary.boundary = boundary;
         env->aux_stack_bottom.bottom = bottom;

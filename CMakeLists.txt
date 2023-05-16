@@ -80,9 +80,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_D
 
 file(GLOB_RECURSE SOURCE_FILES src/logging.cpp src/wamr*.cpp)
 
-add_executable(MVVM_restore ${SOURCE_FILES} src/restore.cpp  ${UNCOMMON_SHARED_SOURCE})
+# add_executable(MVVM_restore ${SOURCE_FILES} src/restore.cpp  ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_checkpoint ${SOURCE_FILES} src/checkpoint.cpp  ${UNCOMMON_SHARED_SOURCE})
 
-target_link_libraries(MVVM_restore fmt::fmt vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS})
+# target_link_libraries(MVVM_restore fmt::fmt vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS})
 target_link_libraries(MVVM_checkpoint fmt::fmt vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS})
 add_definitions(-DMVVM_INTERP=1)
+add_definitions(-DMVVM_DEBUG=1)

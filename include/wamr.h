@@ -8,6 +8,7 @@
 #include "bh_read_file.h"
 #include "logging.h"
 #include "wamr_exec_env.h"
+#include "wamr_read_write.h"
 #include "wasm_runtime.h"
 
 class WAMRInstance {
@@ -32,5 +33,5 @@ public:
     int invoke_main();
     ~WAMRInstance();
 };
-
+void serialize_to_file(WASMExecEnv *instance);
 #endif // MVVM_WAMR_H

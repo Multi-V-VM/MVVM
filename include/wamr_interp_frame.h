@@ -6,6 +6,7 @@
 #define MVVM_WAMR_INTERP_FRAME_H
 #include "wamr_branch_block.h"
 #include "wasm_runtime.h"
+#include "wasm_interp.h"
 #include <memory>
 template <uint32 stack_frame_size, uint32 csp_size> struct WAMRInterpFrame {
     /* Instruction pointer of the bytecode array.  */
@@ -41,8 +42,19 @@ template <uint32 stack_frame_size, uint32 csp_size> struct WAMRInterpFrame {
     uint32 lp;
     // #endif
 
-    void dump(WASMInterpFrame *env){};
-    void restore(WASMInterpFrame *env){};
+    void dump(WASMInterpFrame *env) {
+        // ip = env->ip;
+        // lp = env->lp;
+        // for (int i = 0; i < stack_frame_size; i++) {
+        //     sp[i] = env->sp[i];
+        // }
+        // for (int i = 0; i < csp_size; i++) {
+        //     ::dump(&csp[i], &env->csp[i]);
+        // }
+    };
+    void restore(WASMInterpFrame *env){
+
+    };
 };
 template <SerializerTrait<WASMInterpFrame *> T> void dump(T t, WASMInterpFrame *env) { t->dump(env); }
 template <SerializerTrait<WASMInterpFrame *> T> void restore(T t, WASMInterpFrame *env) { t->restore(env); }
