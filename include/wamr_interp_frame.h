@@ -9,7 +9,7 @@
 #include <memory>
 template <uint32 stack_frame_size, uint32 csp_size> struct WAMRInterpFrame {
     /* Instruction pointer of the bytecode array.  */
-    std::unique_ptr<uint8> ip;
+    uint32_t ip;
 
     // #if WASM_ENABLE_FAST_JIT != 0
     //     uint8 *jitted_return_addr;

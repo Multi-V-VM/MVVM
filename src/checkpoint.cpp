@@ -20,22 +20,42 @@ struct fwrite_stream {
 auto writer = fwrite_stream("test.bin");
 auto wamr = new WAMRInstance("test.wasm");
 
+void sigtrap_handler(int sig) {
+    printf("Caught signal %d, performing custom logic...\n", sig);
+
+    // You can exit the program here, if desired
+    struct WAMRExecEnv<1, 65534, 8192, 200, 10, 200> a;
+    dump(&a, wamr->get_exec_env());
+    struct_pack::serialize_to(writer, a);
+    exit(0);
+}
+
 // Signal handler function for SIGINT
 void sigint_handler(int sig) {
     // Your logic here
     printf("Caught signal %d, performing custom logic...\n", sig);
+    wamr->get_exec_env()->is_checkpoint = true;
+    struct sigaction sa {};
 
-//    *(char *)&x = '\0';
-    // You can exit the program here, if desired
-    struct WAMRExecEnv<1,65534,8192,200,10,200> a;
-    dump(&a, wamr->get_exec_env());
-    struct_pack::serialize_to(writer, a);
-    
+    // Clear the structure
+    sigemptyset(&sa.sa_mask);
+
+    // Set the signal handler function
+    sa.sa_handler = sigtrap_handler;
+
+    // Set the flags
+    sa.sa_flags = SA_RESTART;
+
+    // Register the signal handler for SIGTRAP
+    if (sigaction(SIGTRAP, &sa, nullptr) == -1) {
+        perror("Error: cannot handle SIGTRAP");
+        exit(-1);
+    }
 }
 
 int main() {
     // Define the sigaction structure
-    struct sigaction sa{};
+    struct sigaction sa {};
 
     // Clear the structure
     sigemptyset(&sa.sa_mask);

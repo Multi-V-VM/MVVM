@@ -12,6 +12,11 @@ WAMRInstance::WAMRInstance(char *wasm_path) {
     wasm_args.mem_alloc_option.allocator.malloc_func = ((void *)malloc);
     wasm_args.mem_alloc_option.allocator.realloc_func = ((void *)realloc);
     wasm_args.mem_alloc_option.allocator.free_func = ((void *)free);
+#ifdef MVVM_INTERP
+    wasm_args.running_mode = RunningMode::Mode_Interp;
+#elif defined(MVVM_JIT)
+    wasm_args.running_mode = RunningMode::Mode_LLVM_JIT;
+#endif
     //    wasm_args.mem_alloc_type = Alloc_With_Pool;
     //    wasm_args.mem_alloc_option.pool.heap_buf = global_heap_buf;
     //    wasm_args.mem_alloc_option.pool.heap_size = sizeof(global_heap_buf);
@@ -65,8 +70,6 @@ WAMRInstance::~WAMRInstance() {
 }
 
 int WAMRInstance::invoke_main() {
-    func = nullptr;
-
     if (!(func = wasm_runtime_lookup_wasi_start_function(module_inst))) {
         LOGV(ERROR) << "The wasi mode main function is not found.";
         return -1;
