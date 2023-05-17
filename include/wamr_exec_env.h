@@ -8,8 +8,8 @@
 #include "wamr_module_instance.h"
 #include "wasm_runtime.h"
 #include <memory>
-template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size, uint32 stack_frame_size, uint32 csp_size,
-          uint64 stack_data_size>
+#include <vector>
+
 struct WAMRExecEnv { // multiple
     /* Next thread's exec env of a WASM module instance. we can get the previous exec env outside layer */
     //    struct WASMExecEnv *next;
@@ -23,7 +23,7 @@ struct WAMRExecEnv { // multiple
        places of them */
 
     /* The WASM module instance of current thread */
-    WAMRModuleInstance<memory_count, memory_data_size, heap_data_size> module_inst;
+    std::vector<WAMRModuleInstance> module_inst;
 
     // #if WASM_ENABLE_AOT != 0
     //     uint32 *argv_buf;
@@ -43,10 +43,10 @@ struct WAMRExecEnv { // multiple
     uint32 flags;
 
     /* Auxiliary stack boundary */
-    uint32 boundary;
+    std::vector<uint8> axilary_stack;
 
     /* Auxiliary stack bottom */
-    uint32 bottom;
+    // uint32 bottom;
 
     // #if WASM_ENABLE_AOT != 0
     //     /* Native symbol list, reserved */
@@ -101,7 +101,7 @@ struct WAMRExecEnv { // multiple
     //    void *user_data;
 
     /* Current interpreter frame of current thread */
-    WAMRInterpFrame<stack_frame_size, csp_size> cur_frame;
+    std::vector<WAMRInterpFrame<stack_frame_size, csp_size>> frames;
 
     /* The native thread handle of current thread */
     //    korp_tid handle;
@@ -144,21 +144,28 @@ struct WAMRExecEnv { // multiple
         flags = env->suspend_flags.flags;
         boundary = env->aux_stack_boundary.boundary;
         bottom = env->aux_stack_bottom.bottom;
-        ::dump(&this->cur_frame, env->cur_frame);
+        auto cur_frame = env->cur_frame;
+        auto frame_index = 0;
+        while (cur_frame) {
+            auto dumped_frame = WAMRInterpFrame<stack_frame_size, csp_size>();
+            ::dump(&dumped_frame, cur_frame);
+            this->frames.push_back(dumped_frame);
+            cur_frame = cur_frame->prev_frame;
+        }
         for (int i = 0; i < stack_data_size; ++i) {
             wasm_stack[i] = *(env->wasm_stack.s.top + i);
         }
     };
     void restore(WASMExecEnv *env) {
-        ::restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
-        env->suspend_flags.flags = flags;
-        env->aux_stack_boundary.boundary = boundary;
-        env->aux_stack_bottom.bottom = bottom;
-        ::restore(&this->cur_frame, env->cur_frame);
-        env->wasm_stack = stack_data_size;
-        for (int i = 0; i < stack_data_size; ++i) {
-             *(env->wasm_stack.s.top + i)= wasm_stack[i];
-        }
+        // ::restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
+        // env->suspend_flags.flags = flags;
+        // env->aux_stack_boundary.boundary = boundary;
+        // env->aux_stack_bottom.bottom = bottom;
+        // ::restore(&, env->cur_frame);
+        // env->wasm_stack = stack_data_size;
+        // for (int i = 0; i < stack_data_size; ++i) {
+        //     *(env->wasm_stack.s.top + i) = wasm_stack[i];
+        // }
     };
 };
 template <SerializerTrait<WASMExecEnv *> T> void dump(T t, WASMExecEnv *env) { t->dump(env); }

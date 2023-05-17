@@ -30,8 +30,12 @@ void NotifyDebugger(jit_code_entry *JITCodeEntry) {
 struct WAMRJITContext {
 
     void notifyGDB(){};
-    void dump(LLVME *env){};
-    void restore(LLVM *env){};
+    void dump(LLVME *env){
+
+    };
+    void restore(LLVM *env){
+        
+    };
 };
 template <SerializerTrait<WAMRJITContext *> T> void dump(T t, JITCodeEntry *env) { t->dump(env); }
 

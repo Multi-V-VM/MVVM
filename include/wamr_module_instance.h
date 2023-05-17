@@ -8,7 +8,7 @@
 #include "wamr_module_instance_extra.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
-template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> struct WAMRModuleInstance {
+struct WAMRModuleInstance {
     /* Module instance type, for module instance loaded from
        WASM bytecode binary, this field is Wasm_Module_Bytecode;
        for module instance loaded from AOT file, this field is
@@ -16,7 +16,7 @@ template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size> s
        AOTModuleInstance structure. */
     uint32 module_type;
 
-    std::array<WAMRMemoryInstance<memory_data_size, heap_data_size>, memory_count> memories;
+std::vector<WAMRMemoryInstance> memories;
 
     /* global and table info */
     // std::array<uint8, global_data_size> global_data;

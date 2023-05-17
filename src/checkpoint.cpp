@@ -10,8 +10,15 @@ auto wamr = new WAMRInstance("test.wasm");
 auto writer = fwrite_stream("test.bin");
 
 void serialize_to_file(WASMExecEnv *instance) {
-    struct WAMRExecEnv<1, 65534, 8192, 200, 10, 200> a;
-    dump(&a, instance);
+    std::vector<WAMRExecEnv> as;
+    WAMRExecEnv a;
+    auto curr_instance = instance;
+    while (!curr_instance) {
+        dump(&a, curr_instance);
+        as.push_back(a);
+        curr_instance = curr_instance->next;
+    }
+
     struct_pack::serialize_to(writer, a);
     exit(0);
 }
@@ -21,7 +28,7 @@ void sigtrap_handler(int sig) {
     printf("Caught signal %d, performing custom logic...\n", sig);
 
     // You can exit the program here, if desired
-    struct WAMRExecEnv<1, 65534, 8192, 200, 10, 200> a;
+    std::vector<WAMRExecEnv> a;
     dump(&a, wamr->get_exec_env());
     struct_pack::serialize_to(writer, a);
     exit(0);

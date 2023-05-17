@@ -22,10 +22,7 @@ class WAMRInstance {
 
 public:
     explicit WAMRInstance(char *wasm_path);
-    template <uint32 memory_count, uint64 memory_data_size, uint64 heap_data_size, uint32 stack_frame_size,
-              uint32 csp_size, uint64 stack_data_size>
-    explicit WAMRInstance(WAMRExecEnv<memory_count, memory_data_size, heap_data_size, stack_frame_size, csp_size,
-                                      stack_data_size> *execEnv){};
+    explicit WAMRInstance(std::vector<WAMRExecEnv> execEnv);
     bool load_wasm_binary(char *wasm_path);
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();

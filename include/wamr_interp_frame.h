@@ -5,10 +5,10 @@
 #ifndef MVVM_WAMR_INTERP_FRAME_H
 #define MVVM_WAMR_INTERP_FRAME_H
 #include "wamr_branch_block.h"
-#include "wasm_runtime.h"
 #include "wasm_interp.h"
+#include "wasm_runtime.h"
 #include <memory>
-template <uint32 stack_frame_size, uint32 csp_size> struct WAMRInterpFrame {
+struct WAMRInterpFrame {
     /* Instruction pointer of the bytecode array.  */
     uint32_t ip;
 
@@ -29,8 +29,8 @@ template <uint32 stack_frame_size, uint32 csp_size> struct WAMRInterpFrame {
     // #else
     /* Operand stack top pointer of the current frame. The bottom of
        the stack is the next cell after the last local variable. */
-    std::array<uint32, stack_frame_size> sp; // all the sp that can be restart
-    std::array<WAMRBranchBlock, csp_size> csp;
+    std::vector<uint8> sp; // all the sp that can be restart
+    std::vector<WAMRBranchBlock> csp;
 
     /*
      * Frame data, the layout is:
@@ -42,7 +42,7 @@ template <uint32 stack_frame_size, uint32 csp_size> struct WAMRInterpFrame {
     uint32 lp;
     // #endif
 
-    void dump(WASMInterpFrame *env) {
+    void dump(WASMInterpFrame *env){
         // ip = env->ip;
         // lp = env->lp;
         // for (int i = 0; i < stack_frame_size; i++) {
