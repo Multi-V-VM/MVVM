@@ -23,7 +23,7 @@ struct WAMRExecEnv { // multiple
        places of them */
 
     /* The WASM module instance of current thread */
-    std::vector<WAMRModuleInstance> module_inst;
+    WAMRModuleInstance module_inst;
 
     // #if WASM_ENABLE_AOT != 0
     //     uint32 *argv_buf;
@@ -46,7 +46,7 @@ struct WAMRExecEnv { // multiple
     std::vector<uint8> axilary_stack;
 
     /* Auxiliary stack bottom */
-    // uint32 bottom;
+    uint32 bottom;
 
     // #if WASM_ENABLE_AOT != 0
     //     /* Native symbol list, reserved */
@@ -101,7 +101,7 @@ struct WAMRExecEnv { // multiple
     //    void *user_data;
 
     /* Current interpreter frame of current thread */
-    std::vector<WAMRInterpFrame<stack_frame_size, csp_size>> frames;
+    std::vector<WAMRInterpFrame> frames;
 
     /* The native thread handle of current thread */
     //    korp_tid handle;
@@ -137,7 +137,7 @@ struct WAMRExecEnv { // multiple
     //            uint8 bottom[1];
     //        } s;
     //    } wasm_stack;
-    std::array<uint8_t, stack_data_size> wasm_stack; // not known in the compile time
+    std::vector<uint8_t> wasm_stack; // not known in the compile time
 
     void dump(WASMExecEnv *env) {
         ::dump(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
@@ -147,7 +147,7 @@ struct WAMRExecEnv { // multiple
         auto cur_frame = env->cur_frame;
         auto frame_index = 0;
         while (cur_frame) {
-            auto dumped_frame = WAMRInterpFrame<stack_frame_size, csp_size>();
+            auto dumped_frame = WAMRInterpFrame();
             ::dump(&dumped_frame, cur_frame);
             this->frames.push_back(dumped_frame);
             cur_frame = cur_frame->prev_frame;

@@ -46,7 +46,7 @@ struct WAMRModuleInstanceExtra {
     WAMRWASINNContext wasi_nn_ctx{};
 #endif
     void dump(WASMModuleInstanceExtra *env){
-
+        
     };
     void restore(WASMModuleInstanceExtra *env){
 

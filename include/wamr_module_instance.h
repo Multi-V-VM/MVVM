@@ -16,10 +16,10 @@ struct WAMRModuleInstance {
        AOTModuleInstance structure. */
     uint32 module_type;
 
-std::vector<WAMRMemoryInstance> memories;
+    std::vector<WAMRMemoryInstance> memories;
 
     /* global and table info */
-    // std::array<uint8, global_data_size> global_data;
+    std::vector<uint8> global_data;
     /* For AOTModuleInstance, it denotes `AOTTableInstance *` */
     // std::array<WASMTableInstance,table_count> tables;
 
@@ -45,6 +45,8 @@ std::vector<WAMRMemoryInstance> memories;
     /* The WASM module or AOT module, for AOTModuleInstance,
        it denotes `AOTModule *` */
     //    DefPointer(WASMModule *, module);
+    std::vector<uint8> aux_data;
+
 
     // #if WASM_ENABLE_LIBC_WASI
     //     /* WASI context */
@@ -92,7 +94,7 @@ std::vector<WAMRMemoryInstance> memories;
      */
     //    union {
     //        uint64 _make_it_8_byte_aligned_;
-    WAMRMemoryInstance<memory_data_size, heap_data_size> memory_instances;
+    WAMRMemoryInstance memory_instances;
     //        uint8 bytes[1];
     //    } global_table_data;
 

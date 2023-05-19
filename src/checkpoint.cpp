@@ -11,12 +11,18 @@ auto writer = fwrite_stream("test.bin");
 
 void serialize_to_file(WASMExecEnv *instance) {
     std::vector<WAMRExecEnv> as;
-    WAMRExecEnv a;
     auto curr_instance = instance;
     while (!curr_instance) {
+        WAMRExecEnv a;
         dump(&a, curr_instance);
         as.push_back(a);
         curr_instance = curr_instance->next;
+    }
+    curr_instance = instance->prev;
+    while (!curr_instance) {
+        dump(&a, curr_instance);
+        as.push_back(a);
+        curr_instance = curr_instance->prev;
     }
 
     struct_pack::serialize_to(writer, a);
