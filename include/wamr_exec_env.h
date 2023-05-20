@@ -39,14 +39,12 @@ struct WAMRExecEnv { // multiple
         bit 1: need to suspend
         bit 2: need to go into breakpoint
         bit 3: return from pthread_exit */
-
     uint32 flags;
 
-    /* Auxiliary stack boundary */
-    std::vector<uint8> axilary_stack;
-
+    /* Auxiliary stack boundary */ 
+    uint32 aux_boundary;
     /* Auxiliary stack bottom */
-    uint32 bottom;
+    uint32 aux_bottom;
 
     // #if WASM_ENABLE_AOT != 0
     //     /* Native symbol list, reserved */
@@ -142,8 +140,8 @@ struct WAMRExecEnv { // multiple
     void dump(WASMExecEnv *env) {
         ::dump(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
         flags = env->suspend_flags.flags;
-        boundary = env->aux_stack_boundary.boundary;
-        bottom = env->aux_stack_bottom.bottom;
+        aux_boundary = env->aux_stack_boundary.boundary;
+        aux_bottom = env->aux_stack_bottom.bottom;
         auto cur_frame = env->cur_frame;
         auto frame_index = 0;
         while (cur_frame) {
@@ -152,9 +150,7 @@ struct WAMRExecEnv { // multiple
             this->frames.push_back(dumped_frame);
             cur_frame = cur_frame->prev_frame;
         }
-        for (int i = 0; i < stack_data_size; ++i) {
-            wasm_stack[i] = *(env->wasm_stack.s.top + i);
-        }
+        wasm_stack = std::vector(env->wasm_stack.s.top,wasm_stack_size) ;
     };
     void restore(WASMExecEnv *env) {
         // ::restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));

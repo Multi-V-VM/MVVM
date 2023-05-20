@@ -15,17 +15,18 @@ void serialize_to_file(WASMExecEnv *instance) {
     while (!curr_instance) {
         WAMRExecEnv a;
         dump(&a, curr_instance);
-        as.push_back(a);
+        as.push_back(&a);
         curr_instance = curr_instance->next;
     }
     curr_instance = instance->prev;
     while (!curr_instance) {
+        WAMRExecEnv a;
         dump(&a, curr_instance);
         as.push_back(a);
         curr_instance = curr_instance->prev;
     }
 
-    struct_pack::serialize_to(writer, a);
+    struct_pack::serialize_to(writer, as);
     exit(0);
 }
 

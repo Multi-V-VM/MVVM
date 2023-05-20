@@ -29,8 +29,8 @@ struct WAMRInterpFrame {
     // #else
     /* Operand stack top pointer of the current frame. The bottom of
        the stack is the next cell after the last local variable. */
-    std::vector<uint8> sp; // all the sp that can be restart
-    std::vector<WAMRBranchBlock> csp;
+    std::optional<std::vector<uint8>> sp; // all the sp that can be restart
+    std::optional<std::vector<WAMRBranchBlock>> csp;
 
     /*
      * Frame data, the layout is:
@@ -42,12 +42,14 @@ struct WAMRInterpFrame {
     uint32 lp;
     // #endif
 
-    void dump(WASMInterpFrame *env){
-        // ip = env->ip;
-        // lp = env->lp;
+    void dump(WASMInterpFrame *env) {
+        if (env->ip)
+            ip = env->ip - env->function->u.func->code; // here we need to get the offset from the code start.
+        lp = env->lp - ;
         // for (int i = 0; i < stack_frame_size; i++) {
         //     sp[i] = env->sp[i];
         // }
+
         // for (int i = 0; i < csp_size; i++) {
         //     ::dump(&csp[i], &env->csp[i]);
         // }

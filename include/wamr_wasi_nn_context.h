@@ -9,7 +9,7 @@
 struct WAMRWASINNContext{
     bool is_initialized;
     graph_encoding current_encoding;
-    // uint32_t current_models;
+    uint32_t current_models;
     // Model models[MAX_GRAPHS_PER_INST];
     // uint32_t current_interpreters;
     // Interpreter interpreters[MAX_GRAPH_EXEC_CONTEXTS_PER_INST];

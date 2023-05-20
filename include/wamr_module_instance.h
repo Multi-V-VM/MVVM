@@ -21,13 +21,13 @@ struct WAMRModuleInstance {
     /* global and table info */
     std::vector<uint8> global_data;
     /* For AOTModuleInstance, it denotes `AOTTableInstance *` */
-    // std::array<WASMTableInstance,table_count> tables;
+    std::vector<WASMTableInstance> tables;
 
     /* import func ptrs + llvm jit func ptrs */
     //        DefPointer(void **, func_ptrs);
 
     /* function type indexes */
-    std::unique_ptr<uint32> func_type_indexes;
+    // std::unique_ptr<uint32> func_type_indexes;
 
     // uint32 export_func_count;
     // uint32 export_global_count;
@@ -45,7 +45,7 @@ struct WAMRModuleInstance {
     /* The WASM module or AOT module, for AOTModuleInstance,
        it denotes `AOTModule *` */
     //    DefPointer(WASMModule *, module);
-    std::vector<uint8> aux_data;
+    std::vector<uint8> aux_stack;
 
 
     // #if WASM_ENABLE_LIBC_WASI
@@ -74,7 +74,6 @@ struct WAMRModuleInstance {
     //     DefPointer(struct AOTFuncPerfProfInfo *, func_perf_profilings);
     //     /* WASM/AOT module extra info, for AOTModuleInstance,
     //        it denotes `AOTModuleInstanceExtra *` */
-    //     DefPointer(WASMModuleInstanceExtra *, e);
     WAMRModuleInstanceExtra extra;
 
     /* Default WASM operand stack size */
