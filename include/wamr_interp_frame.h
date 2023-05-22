@@ -5,16 +5,19 @@
 #ifndef MVVM_WAMR_INTERP_FRAME_H
 #define MVVM_WAMR_INTERP_FRAME_H
 #include "wamr_branch_block.h"
+#include "wamr_function_instance.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"
 #include <memory>
+#include <optional>
 struct WAMRInterpFrame {
     /* Instruction pointer of the bytecode array.  */
-    uint32_t ip;
+    std::optional<uint32> ip;
 
     // #if WASM_ENABLE_FAST_JIT != 0
     //     uint8 *jitted_return_addr;
     // #endif
+    WAMRFunctionInstance function;
 
     // #if WASM_ENABLE_PERF_PROFILING != 0
     //     uint64 time_started;
@@ -29,7 +32,7 @@ struct WAMRInterpFrame {
     // #else
     /* Operand stack top pointer of the current frame. The bottom of
        the stack is the next cell after the last local variable. */
-    std::optional<std::vector<uint8>> sp; // all the sp that can be restart
+    std::optional<uint32> sp; // all the sp that can be restart
     std::optional<std::vector<WAMRBranchBlock>> csp;
 
     /*
@@ -39,21 +42,10 @@ struct WAMRInterpFrame {
      *  csp_bottom to csp_boundary: wasm label stack
      *  jit spill cache: only available for fast jit
      */
-    uint32 lp;
+    std::optional<uint32> lp; // this thing is dynamic allocated
     // #endif
 
-    void dump(WASMInterpFrame *env) {
-        if (env->ip)
-            ip = env->ip - env->function->u.func->code; // here we need to get the offset from the code start.
-        lp = env->lp - ;
-        // for (int i = 0; i < stack_frame_size; i++) {
-        //     sp[i] = env->sp[i];
-        // }
-
-        // for (int i = 0; i < csp_size; i++) {
-        //     ::dump(&csp[i], &env->csp[i]);
-        // }
-    };
+    void dump(WASMInterpFrame *env);
     void restore(WASMInterpFrame *env){
 
     };

@@ -1,5 +1,5 @@
 //
-// Created by root on 5/10/23.
+// Created by victoryang00 on 5/10/23.
 //
 
 #ifndef MVVM_WAMR_MODULE_INSTANCE_EXTRA_H
@@ -11,8 +11,8 @@
 #include "wasm_runtime.h"
 #include <memory>
 struct WAMRModuleInstanceExtra {
-    //        WASMGlobalInstance *globals;
-    //        WASMFunctionInstance *functions;
+//            WASMGlobalInstance *globals;
+//            WASMFunctionInstance *functions;
 
     uint32 global_count{};
     uint32 function_count{};
@@ -46,10 +46,15 @@ struct WAMRModuleInstanceExtra {
     WAMRWASINNContext wasi_nn_ctx{};
 #endif
     void dump(WASMModuleInstanceExtra *env){
-        
+        global_count = env->global_count;
+        function_count = env->function_count;
+#ifndef WASM_ENABLE_WASI_NN
+        ::dump(&wasi_nn_ctx, env->wasi_nn_ctx);
+#endif
     };
     void restore(WASMModuleInstanceExtra *env){
-
+        env->global_count = global_count;
+        env->function_count = function_count;
     };
 };
 

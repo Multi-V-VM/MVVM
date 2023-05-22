@@ -85,3 +85,6 @@ WASMExecEnv *WAMRInstance::get_exec_env() { return exec_env; }
 }
 
 WASMModule *WAMRInstance::get_module() { return reinterpret_cast<WASMModule *>(module); }
+WAMRInstance::WAMRInstance(std::vector<WAMRExecEnv> execEnv) {
+
+}

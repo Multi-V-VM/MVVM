@@ -4,25 +4,24 @@
 
 #include "wamr.h"
 
-#include <csignal>
-#include <cstdio>
 auto wamr = new WAMRInstance("test.wasm");
-auto writer = fwrite_stream("test.bin");
+auto writer = FwriteStream("test.bin");
 
 void serialize_to_file(WASMExecEnv *instance) {
-    std::vector<WAMRExecEnv> as;
+    std::vector<std::unique_ptr<WAMRExecEnv>> as;
     auto curr_instance = instance;
-    while (!curr_instance) {
-        WAMRExecEnv a;
-        dump(&a, curr_instance);
-        as.push_back(&a);
+    while (curr_instance!= nullptr) {
+        WAMRExecEnv* a = new WAMRExecEnv();
+        dump(a, curr_instance);
+
+        as.emplace_back(a);
         curr_instance = curr_instance->next;
     }
     curr_instance = instance->prev;
-    while (!curr_instance) {
-        WAMRExecEnv a;
-        dump(&a, curr_instance);
-        as.push_back(a);
+    while (curr_instance!= nullptr) {
+        WAMRExecEnv* a;
+        dump(a, curr_instance);
+        as.emplace_back(a);
         curr_instance = curr_instance->prev;
     }
 

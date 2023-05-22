@@ -44,8 +44,29 @@ struct WAMRModuleInstance {
 
     /* The WASM module or AOT module, for AOTModuleInstance,
        it denotes `AOTModule *` */
-    //    DefPointer(WASMModule *, module);
-    std::vector<uint8> aux_stack;
+    //    DefPointer(WASMModule *, module);// has a lot to do
+        /* total global variable size */
+    uint32 global_data_size;
+
+    /* the index of auxiliary __data_end global,
+       -1 means unexported */
+    uint32 aux_data_end_global_index;
+    /* auxiliary __data_end exported by wasm app */
+    uint32 aux_data_end;
+
+    /* the index of auxiliary __heap_base global,
+       -1 means unexported */
+    uint32 aux_heap_base_global_index;
+    /* auxiliary __heap_base exported by wasm app */
+    uint32 aux_heap_base;
+
+    /* the index of auxiliary stack top global,
+       -1 means unexported */
+    uint32 aux_stack_top_global_index;
+    /* auxiliary stack bottom resolved */
+    uint32 aux_stack_bottom;
+    /* auxiliary stack size resolved */
+    uint32 aux_stack_size;
 
 
     // #if WASM_ENABLE_LIBC_WASI

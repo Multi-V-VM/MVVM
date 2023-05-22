@@ -23,7 +23,7 @@ struct WAMRExecEnv { // multiple
        places of them */
 
     /* The WASM module instance of current thread */
-    WAMRModuleInstance module_inst;
+    WAMRModuleInstance module_inst{};
 
     // #if WASM_ENABLE_AOT != 0
     //     uint32 *argv_buf;
@@ -150,7 +150,7 @@ struct WAMRExecEnv { // multiple
             this->frames.push_back(dumped_frame);
             cur_frame = cur_frame->prev_frame;
         }
-        wasm_stack = std::vector(env->wasm_stack.s.top,wasm_stack_size) ;
+        wasm_stack = std::vector(env->wasm_stack.s.bottom, env->wasm_stack.s.top) ;
     };
     void restore(WASMExecEnv *env) {
         // ::restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));

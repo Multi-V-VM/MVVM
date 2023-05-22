@@ -12,15 +12,9 @@ void LogWriter::operator<(const LogStream &stream) {
 
 void LogWriter::output_log(const std::ostringstream &msg) {
     if (log_level_ >= env_log_level)
-#if defined(WIN32) || defined(_WIN32)
-        std::cout << fmt::format("[{}] ({}:{} L {}) \n", level2string(log_level_), location_.file_, location_.line_,
-                                 location_.func_)
-                  << fmt::format("{}", msg.str()) << std::endl;
-#else
         std::cout << fmt::format(fmt::emphasis::bold | fg(level2color(log_level_)), "[{}] ({}:{} L {}) \n",
                                  level2string(log_level_), location_.file_, location_.line_, location_.func_)
                   << fmt::format(fg(level2color(log_level_)), "{}", msg.str()) << std::endl;
-#endif
 }
 std::string level2string(LogLevel level) {
     switch (level) {

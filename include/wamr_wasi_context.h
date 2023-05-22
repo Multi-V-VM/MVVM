@@ -23,7 +23,7 @@ struct WAMRFDObjectEntry {
     __wasi_rights_t rights_inheriting;
 };
 struct WAMRFDTable {
-    std::array<WAMRFDObjectEntry, 1> entries;
+    std::vector<WAMRFDObjectEntry> entries;
     size_t size;
     size_t used;
 };
@@ -33,15 +33,15 @@ struct WAMRFDPrestat {
 };
 
 struct WAMRPreStats {
-    std::array<WAMRFDPrestat, 1> prestats;
+    std::vector<WAMRFDPrestat> prestats;
     size_t size{};
     size_t used{};
 };
 
 struct WAMRArgvEnvironValues {
     std::string argv_buf;
-    std::array<std::string, 10> argv_list;
-    std::array<std::string, 10> env_list;
+    std::vector<std::string> argv_list;
+    std::vector<std::string> env_list;
 };
 // need to serialize the opened file in the file descripter and the socket opened also.
 
@@ -51,11 +51,11 @@ struct WAMRAddrPool {
     uint8 mask;
 };
 struct WAMRWASIContext {
-    std::array<WAMRFDTable, 10> curfds;
-    std::array<WAMRPreStats, 10> prestats;
+    std::vector<WAMRFDTable> curfds;
+    std::vector<WAMRPreStats> prestats;
     std::unique_ptr<WAMRArgvEnvironValues> argv_environ;
-    std::array<WAMRAddrPool, 10> addr_pool;
-    std::array<std::string, 10> ns_lookup_list;
+    std::vector<WAMRAddrPool> addr_pool;
+    std::vector<std::string> ns_lookup_list;
     uint32_t exit_code;
 
     void dump(WASIContext *env){

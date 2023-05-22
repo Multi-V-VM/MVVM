@@ -1,15 +1,19 @@
-#ifndef A8D12233_B4B7_456E_8685_EAE8BC3C6CCD
-#define A8D12233_B4B7_456E_8685_EAE8BC3C6CCD
-#include <unistd.h>
+//
+// Created by victoryang00 on 5/19/23.
+//
+
+#ifndef MVVM_WAMR_READ_WRITE_H
+#define MVVM_WAMR_READ_WRITE_H
 #include "struct_pack/struct_pack.hpp"
-struct fwrite_stream {
+#include <unistd.h>
+struct FwriteStream {
     FILE *file;
     bool write(const char *data, std::size_t sz) const { return fwrite(data, sz, 1, file) == 1; }
-    explicit fwrite_stream(const char *file_name) : file(fopen(file_name, "wb")) {}
-    ~fwrite_stream() { fclose(file); }
+    explicit FwriteStream(const char *file_name) : file(fopen(file_name, "wb")) {}
+    ~FwriteStream() { fclose(file); }
 };
 
-struct fread_stream {
+struct FreadStream {
     FILE *file;
     bool read(char *data, std::size_t sz) const { return fread(data, sz, 1, file) == 1; }
     [[nodiscard]] bool ignore(std::size_t sz) const { return fseek(file, sz, SEEK_CUR) == 0; }
@@ -17,7 +21,7 @@ struct fread_stream {
         // if you worry about ftell performance, just use an variable to record it.
         return ftell(file);
     }
-    explicit fread_stream(const char *file_name) : file(fopen(file_name, "rb")) {}
-    ~fread_stream() { fclose(file); }
+    explicit FreadStream(const char *file_name) : file(fopen(file_name, "rb")) {}
+    ~FreadStream() { fclose(file); }
 };
-#endif /* A8D12233_B4B7_456E_8685_EAE8BC3C6CCD */
+#endif /* MVVM_WAMR_READ_WRITE_H */
