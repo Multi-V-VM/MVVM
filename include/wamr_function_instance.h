@@ -63,14 +63,13 @@ struct WAMRFunctionImport {
         field_name = env->field_name;
         LOGV(DEBUG) << "field_name:" << field_name;
     };
+    bool equal(WASMFunctionImport *env) { return field_name == env->field_name; };
 };
 
-template <SerializerTrait<WASMFunctionImport *> T> void dump(T t, WASMFunctionImport *env) { t->dump(env); }
+template <CheckerTrait<WASMFunctionImport *> T> void dump(T t, WASMFunctionImport *env) { t->dump(env); }
+template <CheckerTrait<WASMFunctionImport *> T> bool equal(T t, WASMFunctionImport *env) { t->equal(env); }
 
 struct WAMRFunctionInstance {
-#if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
-    std::string field_name;
-#else
     /* whether it is import function or WASM function */
     bool is_import_func;
     /* parameter count */
@@ -97,9 +96,7 @@ struct WAMRFunctionInstance {
     std::optional<WAMRFunction> func;
     std::optional<WAMRFunctionImport> func_import;
     //    } u;
-#endif
     void dump(WASMFunctionInstance *env) {
-
         is_import_func = env->is_import_func;
         LOGV(DEBUG) << "is_import_func:" << is_import_func;
         if (!is_import_func) {

@@ -3,49 +3,61 @@
 //
 
 #include "wamr_function_instance.h"
-extern WASMExecEnv* wamr;
+extern WASMExecEnv *wamr;
 void WAMRFunctionInstance::restore(WASMFunctionInstance *env) {
 
-        // iterate all the function instance and put to the function instance
-#if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
-        auto target_module = ((WASMModuleInstance*)wamr->module_inst)->module;
-        for (int i = 0; i < target_module->function_count; i++) {
-            auto cur_func = target_module->functions[i];
-            if (cur_func.field_name -> == env->u.func) {
-                field_name = wamr->wasm_module->function_names[i];
-                LOGV(DEBUG) << "field_name:" << field_name;
-                break;
+    // iterate all the function instance and put to the function instance
+    auto target_module = ((WASMModuleInstance *)wamr->module_inst)->e;
+    for (int i = 0; i < target_module->function_count; i++) {
+        auto cur_func = target_module->functions[i];
+        if (!is_import_func) {
+#if WASM_ENABLE_CUSTOM_NAME_SECTION == 0
+            if (param_count != cur_func.param_count) {
+                continue;
             }
-        }
-#else
-        auto target_module = ((WASMModuleInstance*)wamr->module_inst)->module;
-        for (int i = 0; i < target_module->function_count; i++) {
-            auto cur_func = target_module->functions[i];
-            if (this->func== cur_func) {
-                env =
-                break;
+            /* local variable count, 0 for import function */
+            if (local_count != env->local_count) {
+                continue;
+            } /* cell num of parameters */
+            if (param_cell_num != env->param_cell_num) {
+                continue;
             }
-        }
-//        is_import_func = env->is_import_func;
-//        LOGV(DEBUG) << "is_import_func:" << is_import_func;
-//        param_count= env->param_count;
-//        LOGV(DEBUG) <<"param_count:"<<param_count;
-//        /* local variable count, 0 for import function */
-//        local_count= env->local_count;
-//        LOGV(DEBUG) <<"local_count:"<<local_count;
-//        /* cell num of parameters */
-//        param_cell_num= env->param_cell_num;
-//        LOGV(DEBUG) <<"param_cell_num:"<<param_cell_num;
-//        /* cell num of return type */
-//        ret_cell_num= env->ret_cell_num;
-//        LOGV(DEBUG) <<"ret_cell_num:"<<ret_cell_num;
-//        /* cell num of local variables, 0 for import function */
-//        local_cell_num= env->local_cell_num;
-//        LOGV(DEBUG) <<"local_cell_num:"<<local_cell_num;
-//        local_offsets =std::vector(env->local_offsets, env->local_offsets+(param_count + local_count));
-//        /* parameter types */
-//        param_types = std::vector(env->param_types, env->param_types+param_count);
-//        /* local types, NULL for import function */
-//        local_types= std::vector(env->local_types, env->local_types+local_count);
+            /* cell num of return type */
+            if (ret_cell_num != env->ret_cell_num) {
+                continue;
+            }
+            /* cell num of local variables, 0 for import function */
+            if (local_cell_num != env->local_cell_num) {
+                continue;
+            }
+
+            for (int i = 0; i < param_count + local_count; i++) {
+                if (local_offsets[i] != env->local_offsets[i]) {
+                    continue;
+                }
+            }
+            for (int i = 0; i < param_count; i++) {
+                if (param_types[i] != env->param_types[i]) {
+                    continue;
+                }
+            }
+            /* local types, NULL for import function */
+            for (int i = 0; i < local_count; i++) {
+                if (local_types[i] != env->local_types[i]) {
+                    continue;
+                }
+            }
 #endif
+            if (::equal(this->func, cur_func.u.func)) {
+                *env = cur_func;
+                break;
+            }
+        } else {
+            if (::equal(this->func_import, cur_func.u.func_import)) {
+                *env = cur_func;
+                break;
+            }
+        }
+    }
+
 }

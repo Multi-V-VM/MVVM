@@ -8,6 +8,7 @@
 #include "wamr_module_instance_extra.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
+#include <algorithm>
 struct WAMRModuleInstance {
     /* Module instance type, for module instance loaded from
        WASM bytecode binary, this field is Wasm_Module_Bytecode;
@@ -46,7 +47,7 @@ struct WAMRModuleInstance {
        it denotes `AOTModule *` */
     //    DefPointer(WASMModule *, module);// has a lot to do
     /* total global variable size */
-    uint32 global_data_size;
+//    uint32 global_data_size;
 
     /* the index of auxiliary __data_end global,
        -1 means unexported */
@@ -119,7 +120,38 @@ struct WAMRModuleInstance {
 
     void dump(WASMModuleInstance *env) {
         module_type = env->module_type;
-        // for (int i = 0
+        for (int i=0;i<env->memory_count;i++){
+            auto local_mem = WAMRMemoryInstance();
+            ::dump(&local_mem, env->memories[i]);
+        }
+        global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
+//        tables = std::vector<WASMTableInstance>(envzhong>tables, env->tables + env->table_count);
+        tables.reserve(env->table_count);
+        std::generate_n(
+            std::back_inserter( tables ),
+            env->table_count,
+            [i=0,env]() mutable { return *(env->tables[i++]); } //or whatever your 'body' lambda would look like.
+        );
+        ::dump(&wasi_ctx, env->wasi_ctx);
+        ::dump(&extra, env->e);
+        aux_data_end_global_index=env->aux_data_end_global_index;
+        /* auxiliary __data_end exported by wasm app */
+        aux_data_end=env->aux_data_end;
+
+        /* the index of auxiliary __heap_base global,
+           -1 means unexported */
+        aux_heap_base_global_index=env->aux_heap_base_global_index;
+        /* auxiliary __heap_base exported by wasm app */
+        aux_heap_base=env->aux_heap_base;
+
+        /* the index of auxiliary stack top global,
+           -1 means unexported */
+        aux_stack_top_global_index=env->aux_stack_top_global_index;
+        /* auxiliary stack bottom resolved */
+        aux_stack_bottom=env->aux_stack_bottom;
+        /* auxiliary stack size resolved */
+        aux_stack_size=env->aux_stack_size;
+
     };
     void restore(WASMModuleInstance *env){};
 };

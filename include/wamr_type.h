@@ -26,7 +26,7 @@ struct WAMRType {
                ref_count == type->ref_count;
     };
 };
-template <CheckerTrait<WASMInterpFrame *> T> void dump(T t, WASMInterpFrame *env) { t->dump(env); }
-template <CheckerTrait<WASMInterpFrame *> T> bool equal(T t, WASMInterpFrame *env) { t->equal(env); }
+template <CheckerTrait<WASMType *> T> void dump(T t, WASMType *env) { t->dump(env); }
+template <CheckerTrait<WASMType *> T> bool equal(T t, WASMType *env) { t->equal(env); }
 
 #endif // MVVM_WAMR_TYPE_H
