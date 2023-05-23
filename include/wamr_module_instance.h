@@ -45,7 +45,7 @@ struct WAMRModuleInstance {
     /* The WASM module or AOT module, for AOTModuleInstance,
        it denotes `AOTModule *` */
     //    DefPointer(WASMModule *, module);// has a lot to do
-        /* total global variable size */
+    /* total global variable size */
     uint32 global_data_size;
 
     /* the index of auxiliary __data_end global,
@@ -67,7 +67,6 @@ struct WAMRModuleInstance {
     uint32 aux_stack_bottom;
     /* auxiliary stack size resolved */
     uint32 aux_stack_size;
-
 
     // #if WASM_ENABLE_LIBC_WASI
     //     /* WASI context */

@@ -7,13 +7,14 @@
 extern WAMRInstance *wamr;
 void WAMRBranchBlock::dump(WASMBranchBlock *env) {
     if (env->begin_addr)
-        begin_addr = env->begin_addr - wamr->get_exec_env()->wasm_stack.s.bottom; // here we need to get the offset from the code start.
+        begin_addr = env->begin_addr -
+                     wamr->get_exec_env()->wasm_stack.s.bottom; // here we need to get the offset from the code start.
 
-    if(env->target_addr) {
+    if (env->target_addr) {
         target_addr = env->target_addr - wamr->get_exec_env()->wasm_stack.s.bottom; // offset to the wasm_stack_top
     }
 
-    if (env->frame_sp){
+    if (env->frame_sp) {
         uint8 *local_sp = reinterpret_cast<uint8 *>(env->frame_sp);
         frame_sp = local_sp - wamr->get_exec_env()->wasm_stack.s.bottom; // offset to the wasm_stack_top
     }

@@ -25,8 +25,8 @@ public:
     explicit WAMRInstance(std::vector<WAMRExecEnv> execEnv);
     bool load_wasm_binary(char *wasm_path);
     WASMExecEnv *get_exec_env();
-    WASMModuleInstance *get_module_instance();
-    WASMModule *get_module();
+    [[maybe_unused]] WASMModuleInstance *get_module_instance();
+    [[maybe_unused]] WASMModule *get_module();
     int invoke_main();
     ~WAMRInstance();
 };

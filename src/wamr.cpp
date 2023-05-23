@@ -80,11 +80,9 @@ int WAMRInstance::invoke_main() {
 
 WASMExecEnv *WAMRInstance::get_exec_env() { return exec_env; }
 
-[[maybe_unused]] WASMModuleInstance *WAMRInstance::get_module_instance() {
+[[maybe_unused]] [[maybe_unused]] WASMModuleInstance *WAMRInstance::get_module_instance() {
     return reinterpret_cast<WASMModuleInstance *>(module_inst);
 }
 
-WASMModule *WAMRInstance::get_module() { return reinterpret_cast<WASMModule *>(module); }
-WAMRInstance::WAMRInstance(std::vector<WAMRExecEnv> execEnv) {
-
-}
+[[maybe_unused]] WASMModule *WAMRInstance::get_module() { return reinterpret_cast<WASMModule *>(module); }
+WAMRInstance::WAMRInstance(std::vector<WAMRExecEnv> execEnv) {}

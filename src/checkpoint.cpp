@@ -3,6 +3,7 @@
 //
 
 #include "wamr.h"
+//file map, direcotry handle
 
 auto wamr = new WAMRInstance("test.wasm");
 auto writer = FwriteStream("test.bin");
@@ -10,16 +11,16 @@ auto writer = FwriteStream("test.bin");
 void serialize_to_file(WASMExecEnv *instance) {
     std::vector<std::unique_ptr<WAMRExecEnv>> as;
     auto curr_instance = instance;
-    while (curr_instance!= nullptr) {
-        WAMRExecEnv* a = new WAMRExecEnv();
+    while (curr_instance != nullptr) {
+        WAMRExecEnv *a = new WAMRExecEnv();
         dump(a, curr_instance);
 
         as.emplace_back(a);
         curr_instance = curr_instance->next;
     }
     curr_instance = instance->prev;
-    while (curr_instance!= nullptr) {
-        WAMRExecEnv* a;
+    while (curr_instance != nullptr) {
+        WAMRExecEnv *a;
         dump(a, curr_instance);
         as.emplace_back(a);
         curr_instance = curr_instance->prev;

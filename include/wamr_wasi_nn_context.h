@@ -4,9 +4,9 @@
 
 #ifndef MVVM_WAMR_WASI_NN_CONTEXT_H
 #define MVVM_WAMR_WASI_NN_CONTEXT_H
-//#include "wasm_runtime.h"
+// #include "wasm_runtime.h"
 #include "wasi_nn.h"
-struct WAMRWASINNContext{
+struct WAMRWASINNContext {
     bool is_initialized;
     graph_encoding current_encoding;
     uint32_t current_models;

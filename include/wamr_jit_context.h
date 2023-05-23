@@ -34,7 +34,7 @@ struct WAMRJITContext {
 
     };
     void restore(LLVM *env){
-        
+
     };
 };
 template <SerializerTrait<WAMRJITContext *> T> void dump(T t, JITCodeEntry *env) { t->dump(env); }

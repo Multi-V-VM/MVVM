@@ -19,9 +19,7 @@ struct WAMRBranchBlock {
 
     };
 };
-template <SerializerTrait<WASMBranchBlock *> T> void dump(T &t, WASMBranchBlock *env) { t->dump(env); }
+template <SerializerTrait<WASMBranchBlock *> T> void dump(T t, WASMBranchBlock *env) { t->dump(env); }
 
-template <SerializerTrait<WASMBranchBlock *> T> void restore(T &t, WASMBranchBlock *env) {
-    t->restore(env);
-}
+template <SerializerTrait<WASMBranchBlock *> T> void restore(T t, WASMBranchBlock *env) { t->restore(env); }
 #endif // MVVM_WAMR_BRANCH_BLOCK_H

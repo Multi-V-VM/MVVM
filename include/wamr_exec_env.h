@@ -41,7 +41,7 @@ struct WAMRExecEnv { // multiple
         bit 3: return from pthread_exit */
     uint32 flags;
 
-    /* Auxiliary stack boundary */ 
+    /* Auxiliary stack boundary */
     uint32 aux_boundary;
     /* Auxiliary stack bottom */
     uint32 aux_bottom;
@@ -150,9 +150,9 @@ struct WAMRExecEnv { // multiple
             this->frames.push_back(dumped_frame);
             cur_frame = cur_frame->prev_frame;
         }
-        wasm_stack = std::vector(env->wasm_stack.s.bottom, env->wasm_stack.s.top) ;
+        wasm_stack = std::vector(env->wasm_stack.s.bottom, env->wasm_stack.s.top);
     };
-    void restore(WASMExecEnv *env) {
+    void restore(WASMExecEnv *env){
         // ::restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
         // env->suspend_flags.flags = flags;
         // env->aux_stack_boundary.boundary = boundary;
