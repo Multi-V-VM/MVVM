@@ -3,7 +3,7 @@
 //
 
 #include "wamr.h"
-//file map, direcotry handle
+// file map, direcotry handle
 
 auto wamr = new WAMRInstance("test.wasm");
 auto writer = FwriteStream("test.bin");
@@ -12,7 +12,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     std::vector<std::unique_ptr<WAMRExecEnv>> as;
     auto curr_instance = instance;
     while (curr_instance != nullptr) {
-        WAMRExecEnv *a = new WAMRExecEnv();
+        auto a = new WAMRExecEnv();
         dump(a, curr_instance);
 
         as.emplace_back(a);
@@ -20,7 +20,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     }
     curr_instance = instance->prev;
     while (curr_instance != nullptr) {
-        WAMRExecEnv *a;
+        auto a = new WAMRExecEnv();
         dump(a, curr_instance);
         as.emplace_back(a);
         curr_instance = curr_instance->prev;
@@ -35,7 +35,7 @@ void sigtrap_handler(int sig) {
     printf("Caught signal %d, performing custom logic...\n", sig);
 
     // You can exit the program here, if desired
-    std::vector<WAMRExecEnv> a;
+    std::vector<std::unique_ptr<WAMRExecEnv>> a;
     dump(&a, wamr->get_exec_env());
     struct_pack::serialize_to(writer, a);
     exit(0);

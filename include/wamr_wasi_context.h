@@ -50,6 +50,7 @@ struct WAMRAddrPool {
     __wasi_addr_type_t type;
     uint8 mask;
 };
+// TODO: add more context
 struct WAMRWASIContext {
     std::vector<WAMRFDTable> curfds;
     std::vector<WAMRPreStats> prestats;
@@ -65,8 +66,8 @@ struct WAMRWASIContext {
 
     };
 };
-template <SerializerTrait<WASIContext *> T> void dump(T t, WASIContext *env) { t->dump(env); }
 
+template <SerializerTrait<WASIContext *> T> void dump(T t, WASIContext *env) { t->dump(env); }
 template <SerializerTrait<WASIContext *> T> void restore(T t, WASIContext *env) { t->restore(env); }
 
 #endif // MVVM_WAMR_WASI_CONTEXT_H

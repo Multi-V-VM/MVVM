@@ -85,6 +85,9 @@ WASMExecEnv *WAMRInstance::get_exec_env() { return exec_env; }
 }
 
 [[maybe_unused]] WASMModule *WAMRInstance::get_module() { return reinterpret_cast<WASMModule *>(module); }
-void WAMRInstance::recover(std::vector<WAMRExecEnv> execEnv) {
-    
+void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
+    for(auto &&exec_ : *execEnv){
+        recover(exec_.get(), exec_env);
+    }
+    wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }

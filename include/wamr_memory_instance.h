@@ -50,13 +50,12 @@ struct WAMRMemoryInstance {
         env->memory_data = (uint8 *)malloc(env->memory_data_size);
         memcpy(env->memory_data, memory_data.data(), env->memory_data_size);
         // env->heap_data_size = heap_data.size();
-        // env->heap_data = (uint8 *)malloc(env->heap_data_size);
-        // memcpy(env->heap_data, heap_data.data(), env->heap_data_size);
+        env->heap_data = (uint8 *)malloc(heap_data.size());
+        memcpy(env->heap_data, heap_data.data(), heap_data.size());
     };
 };
 
 template <SerializerTrait<WASMMemoryInstance *> T> void dump(T t, WASMMemoryInstance *env) { t->dump(env); }
-
 template <SerializerTrait<WASMMemoryInstance *> T> void restore(T t, WASMMemoryInstance *env) { t->restore(env); }
 
 #endif // MVVM_WAMR_MEMORY_INSTANCE_H
