@@ -8,9 +8,9 @@
 #include "wamr_serializer.h"
 #include "wamr_type.h"
 #include "wasm_runtime.h"
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
 
 struct WAMRFunction {
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
@@ -40,7 +40,7 @@ struct WAMRFunction {
         field_name = env->u.func->field_name;
         LOGV(DEBUG) << "field_name:" << field_name;
 #else
-    ::dump(&func_type, env->func_type);
+        ::dump(&func_type, env->func_type);
 #endif
     };
     bool equal(WASMFunction *env) {
@@ -55,7 +55,7 @@ struct WAMRFunction {
 };
 
 template <CheckerTrait<WASMFunction *> T> void dump(T t, WASMFunction *env) { t->dump(env); }
-template <CheckerTrait<WASMFunction *> T> bool equal(T t, WASMFunction *env) { t->equal(env); }
+template <CheckerTrait<WASMFunction *> T> bool equal(T t, WASMFunction *env) { return t->equal(env); }
 
 struct WAMRFunctionImport {
     std::string field_name;
@@ -67,7 +67,7 @@ struct WAMRFunctionImport {
 };
 
 template <CheckerTrait<WASMFunctionImport *> T> void dump(T t, WASMFunctionImport *env) { t->dump(env); }
-template <CheckerTrait<WASMFunctionImport *> T> bool equal(T t, WASMFunctionImport *env) { t->equal(env); }
+template <CheckerTrait<WASMFunctionImport *> T> bool equal(T t, WASMFunctionImport *env) { return t->equal(env); }
 
 struct WAMRFunctionInstance {
     /* whether it is import function or WASM function */

@@ -10,13 +10,12 @@
 #include "wamr_exec_env.h"
 #include "wamr_read_write.h"
 
-auto reader = fread_stream("test.bin");
-
+auto reader = FreadStream("test.bin");
+auto wamr = new WAMRInstance("test.wasm");
 int main() {
     //  first get the deserializer message, here just hard code
     auto a = struct_pack::deserialize<std::vector<WAMRExecEnv>>(reader).value();
-    auto wamr = new WAMRInstance(a);
 
-    wamr->invoke_main();
+    wamr->recover(a);
     return 0;
 }

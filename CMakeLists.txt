@@ -80,9 +80,11 @@ add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 include(${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include)
 
+add_subdirectory(test)
+
 file(GLOB_RECURSE SOURCE_FILES src/logging.cpp src/wamr*.cpp)
 
-# add_executable(MVVM_restore ${SOURCE_FILES} src/restore.cpp  ${UNCOMMON_SHARED_SOURCE})
+add_executable(MVVM_restore ${SOURCE_FILES} src/restore.cpp  ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_checkpoint ${SOURCE_FILES} src/checkpoint.cpp  ${UNCOMMON_SHARED_SOURCE})
 
 # target_link_libraries(MVVM_restore fmt::fmt vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS})

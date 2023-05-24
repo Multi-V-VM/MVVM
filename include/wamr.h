@@ -22,7 +22,7 @@ class WAMRInstance {
 
 public:
     explicit WAMRInstance(char *wasm_path);
-    explicit WAMRInstance(std::vector<WAMRExecEnv> execEnv);
+    void recover(std::vector<WAMRExecEnv> execEnv);
     bool load_wasm_binary(char *wasm_path);
     WASMExecEnv *get_exec_env();
     [[maybe_unused]] WASMModuleInstance *get_module_instance();

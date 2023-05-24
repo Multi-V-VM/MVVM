@@ -20,3 +20,4 @@ void WAMRInterpFrame::dump(WASMInterpFrame *env) {
     if (env->function)
         ::dump(&function, env->function);
 }
+void WAMRInterpFrame::restore(WASMInterpFrame *env) {}
