@@ -114,17 +114,19 @@ struct WAMRModuleInstance {
      */
     //    union {
     //        uint64 _make_it_8_byte_aligned_;
-    WAMRMemoryInstance memory_instances;
+    WAMRMemoryInstance global_table_data;
     //        uint8 bytes[1];
     //    } global_table_data;
 
     void dump(WASMModuleInstance *env) {
         module_type = env->module_type;
         for (int i = 0; i < env->memory_count; i++) {
+            // TODO: if the referenced memory has been serialized, just skip.
             auto local_mem = WAMRMemoryInstance();
             ::dump(&local_mem, env->memories[i]);
+            memories.push_back(local_mem);
         }
-        global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
+        global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size+1 );
         //        tables = std::vector<WASMTableInstance>(envzhong>tables, env->tables + env->table_count);
         tables.reserve(env->table_count);
         std::generate_n(
@@ -134,25 +136,37 @@ struct WAMRModuleInstance {
         ::dump(&wasi_ctx, env->wasi_ctx);
         ::dump(&extra, env->e);
         aux_data_end_global_index = env->module->aux_data_end_global_index;
-        /* auxiliary __data_end exported by wasm app */
         aux_data_end = env->module->aux_data_end;
-
-        /* the index of auxiliary __heap_base global,
-           -1 means unexported */
         aux_heap_base_global_index = env->module->aux_heap_base_global_index;
-        /* auxiliary __heap_base exported by wasm app */
         aux_heap_base = env->module->aux_heap_base;
-
-        /* the index of auxiliary stack top global,
-           -1 means unexported */
         aux_stack_top_global_index = env->module->aux_stack_top_global_index;
-        /* auxiliary stack bottom resolved */
         aux_stack_bottom = env->module->aux_stack_bottom;
-        /* auxiliary stack size resolved */
         aux_stack_size = env->module->aux_stack_size;
-        ::dump(&memory_instances, env->global_table_data.memory_instances);
+        ::dump(&global_table_data, env->global_table_data.memory_instances);
     };
-    void restore(WASMModuleInstance *env){};
+    void restore(WASMModuleInstance *env){
+        env->module_type = module_type;
+        env->memory_count = memories.size();
+        for (int i = 0; i < env->memory_count; i++) {
+             ::restore(&memories[i],env->memories[i] );
+        }
+        env->global_data = global_data.data();
+        env->global_data_size = global_data.size()-1;
+        env->table_count = tables.size();
+        for (int i = 0; i < env->table_count; i++) {
+             *env->tables[i]=tables[i];
+        }
+        ::restore(&wasi_ctx, env->wasi_ctx);
+        ::restore(&extra, env->e);
+        env->module->aux_data_end_global_index = aux_data_end_global_index;
+        env->module->aux_data_end = aux_data_end;
+        env->module->aux_heap_base_global_index = aux_heap_base_global_index;
+        env->module->aux_heap_base = aux_heap_base;
+        env->module->aux_stack_top_global_index = aux_stack_top_global_index;
+        env->module->aux_stack_bottom = aux_stack_bottom;
+        env->module->aux_stack_size = aux_stack_size;
+        ::restore(&global_table_data, env->global_table_data.memory_instances);
+    };
 };
 
 template <SerializerTrait<WASMModuleInstance *> T> void dump(T t, WASMModuleInstance *env) { t->dump(env); }

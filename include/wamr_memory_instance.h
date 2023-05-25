@@ -38,7 +38,7 @@ struct WAMRMemoryInstance {
         max_page_count = env->max_page_count;
         memory_data.resize(env->memory_data_size);
         memcpy(memory_data.data(), env->memory_data, env->memory_data_size);
-        std::vector<int8> heap_data(env->heap_data, env->heap_data_end);
+        heap_data = std::vector<uint8>(env->heap_data, env->heap_data_end);
     };
     void restore(WASMMemoryInstance *env) {
         env->module_type = module_type;
@@ -49,9 +49,9 @@ struct WAMRMemoryInstance {
         env->memory_data_size = memory_data.size();
         env->memory_data = (uint8 *)malloc(env->memory_data_size);
         memcpy(env->memory_data, memory_data.data(), env->memory_data_size);
-        // env->heap_data_size = heap_data.size();
         env->heap_data = (uint8 *)malloc(heap_data.size());
         memcpy(env->heap_data, heap_data.data(), heap_data.size());
+        env->heap_data_end = env->heap_data +heap_data.size();
     };
 };
 

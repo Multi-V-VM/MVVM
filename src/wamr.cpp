@@ -12,6 +12,7 @@ WAMRInstance::WAMRInstance(char *wasm_path) {
     wasm_args.mem_alloc_option.allocator.malloc_func = ((void *)malloc);
     wasm_args.mem_alloc_option.allocator.realloc_func = ((void *)realloc);
     wasm_args.mem_alloc_option.allocator.free_func = ((void *)free);
+    wasm_args.max_thread_num = 16;
 #ifdef MVVM_INTERP
     wasm_args.running_mode = RunningMode::Mode_Interp;
 #elif defined(MVVM_JIT)
@@ -80,14 +81,15 @@ int WAMRInstance::invoke_main() {
 
 WASMExecEnv *WAMRInstance::get_exec_env() { return exec_env; }
 
-[[maybe_unused]] [[maybe_unused]] WASMModuleInstance *WAMRInstance::get_module_instance() {
+[[maybe_unused]] WASMModuleInstance *WAMRInstance::get_module_instance() {
     return reinterpret_cast<WASMModuleInstance *>(module_inst);
 }
 
 [[maybe_unused]] WASMModule *WAMRInstance::get_module() { return reinterpret_cast<WASMModule *>(module); }
-void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
+void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {// will call pthread create wrapper if needed?
     for(auto &&exec_ : *execEnv){
-        recover(exec_.get(), exec_env);
+        restore(exec_.get(), exec_env);
+        // at this point, the exec_env is allocated or not?
     }
     wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }

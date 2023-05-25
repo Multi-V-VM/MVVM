@@ -2,31 +2,61 @@
 // Created by victoryang00 on 4/8/23.
 //
 
+#include "thread_manager.h"
 #include "wamr.h"
 // file map, direcotry handle
 
-auto wamr = new WAMRInstance("test.wasm");
+auto wamr = new WAMRInstance("./test/multi-thread.wasm");
 auto writer = FwriteStream("test.bin");
+std::vector<std::unique_ptr<WAMRExecEnv>> as;
+std::mutex as_mtx;
 
 void serialize_to_file(WASMExecEnv *instance) {
-    std::vector<std::unique_ptr<WAMRExecEnv>> as;
-    auto curr_instance = instance;
-    while (curr_instance != nullptr) {
+    /** Sounds like AoT/JIT is in this?*/
+    //    auto curr_instance = instance;
+    //    int cur_count =0;
+    //    while (curr_instance != nullptr) {
+    //        auto a = new WAMRExecEnv();
+    //        dump(a, curr_instance);
+    //
+    //        as.emplace_back(a);
+    //        curr_instance = curr_instance->next;
+    //        cur_count++;
+    //    }
+    //    curr_instance = instance->prev;
+    //    while (curr_instance != nullptr) {
+    //        auto a = new WAMRExecEnv();
+    //        dump(a, curr_instance);
+    //        as.emplace_back(a);
+    //        curr_instance = curr_instance->prev;
+    //    }
+    auto cluster =wasm_exec_env_get_cluster(instance);
+    if (cluster) {
+        auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
+        int cur_count = 0;
+        while (elem) {
+            if (elem == instance) {
+                break;
+            }
+            cur_count++;
+            elem = (WASMExecEnv *)bh_list_elem_next(elem);
+        }
+        auto all_count = bh_list_length(&cluster->exec_env_list);
         auto a = new WAMRExecEnv();
-        dump(a, curr_instance);
+        dump(a, instance);
 
         as.emplace_back(a);
-        curr_instance = curr_instance->next;
-    }
-    curr_instance = instance->prev;
-    while (curr_instance != nullptr) {
+        as.back().get()->cur_count = cur_count;
+        if (as.size() == all_count - 1) {
+            struct_pack::serialize_to(writer, as);
+        }
+    }else{
         auto a = new WAMRExecEnv();
-        dump(a, curr_instance);
+        dump(a, instance);
         as.emplace_back(a);
-        curr_instance = curr_instance->prev;
+        as.back().get()->cur_count = 0;
+        struct_pack::serialize_to(writer, as);
     }
-
-    struct_pack::serialize_to(writer, as);
     exit(0);
 }
 

@@ -50,6 +50,7 @@ struct WAMRFunction {
         if (!(func_type.equal(env->func_type))) {
             return false;
         }
+        return true;
 #endif
     };
 };
@@ -126,6 +127,7 @@ struct WAMRFunctionInstance {
     };
     void restore(WASMFunctionInstance *env);
 };
+
 template <SerializerTrait<WASMFunctionInstance *> T> void dump(T t, WASMFunctionInstance *env) { t->dump(env); }
 template <SerializerTrait<WASMFunctionInstance *> T> void restore(T t, WASMFunctionInstance *env) { t->restore(env); }
 
