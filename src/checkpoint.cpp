@@ -31,7 +31,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     //        curr_instance = curr_instance->prev;
     //    }
     auto cluster =wasm_exec_env_get_cluster(instance);
-    if (cluster) {
+    if (bh_list_length(&cluster->exec_env_list)>1) {
         auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
         int cur_count = 0;
         while (elem) {
@@ -44,12 +44,14 @@ void serialize_to_file(WASMExecEnv *instance) {
         auto all_count = bh_list_length(&cluster->exec_env_list);
         auto a = new WAMRExecEnv();
         dump(a, instance);
-
+        as_mtx.lock();
         as.emplace_back(a);
         as.back().get()->cur_count = cur_count;
-        if (as.size() == all_count - 1) {
+        if (as.size() == all_count) {
             struct_pack::serialize_to(writer, as);
+            LOGV(INFO)<< "serialize to file" << cur_count << " " << all_count<<"\n";
         }
+        as_mtx.unlock();
     }else{
         auto a = new WAMRExecEnv();
         dump(a, instance);
