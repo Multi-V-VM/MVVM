@@ -3,8 +3,9 @@
 //
 
 #include "wamr.h"
+#include "thread_manager.h"
 
-WAMRInstance::WAMRInstance(char *wasm_path) {
+WAMRInstance::WAMRInstance(const char *wasm_path) {
 
     RuntimeInitArgs wasm_args;
     memset(&wasm_args, 0, sizeof(RuntimeInitArgs));
@@ -43,7 +44,7 @@ WAMRInstance::WAMRInstance(char *wasm_path) {
     exec_env = wasm_runtime_create_exec_env(module_inst, stack_size);
 }
 
-bool WAMRInstance::load_wasm_binary(char *wasm_path) {
+bool WAMRInstance::load_wasm_binary(const char *wasm_path) {
     buffer = bh_read_file_to_buffer(wasm_path, &buf_size);
     if (!buffer) {
         LOGV(ERROR) << "Open wasm app file failed.\n";
@@ -87,9 +88,13 @@ WASMExecEnv *WAMRInstance::get_exec_env() { return exec_env; }
 
 [[maybe_unused]] WASMModule *WAMRInstance::get_module() { return reinterpret_cast<WASMModule *>(module); }
 void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {// will call pthread create wrapper if needed?
+    std::sort (execEnv->begin(), execEnv->end(), [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
+        return a->cur_count > b->cur_count;
+    });
+    WASMExecEnv *cur_env=exec_env;
     for(auto &&exec_ : *execEnv){
-        restore(exec_.get(), exec_env);
-        // at this point, the exec_env is allocated or not?
-    }
-    wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
+        restore(exec_.get(),cur_env );
+        cur_env =  wasm_cluster_spawn_exec_env(exec_env);
+    } // every pthread has a semaphore for main thread to set all break point to start.
+
 }

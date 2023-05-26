@@ -21,9 +21,9 @@ class WAMRInstance {
     uint32 buf_size, stack_size = 8092, heap_size = 8092;
 
 public:
-    explicit WAMRInstance(char *wasm_path);
+    explicit WAMRInstance(const char *wasm_path);
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>>* execEnv);
-    bool load_wasm_binary(char *wasm_path);
+    bool load_wasm_binary(const char *wasm_path);
     WASMExecEnv *get_exec_env();
     [[maybe_unused]] WASMModuleInstance *get_module_instance();
     [[maybe_unused]] WASMModule *get_module();

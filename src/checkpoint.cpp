@@ -4,9 +4,10 @@
 
 #include "thread_manager.h"
 #include "wamr.h"
+#include <cxxopts.hpp>
 // file map, direcotry handle
 
-auto wamr = new WAMRInstance("./test/multi-thread.wasm");
+WAMRInstance *wamr = nullptr;
 auto writer = FwriteStream("test.bin");
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
@@ -99,7 +100,20 @@ void sigint_handler(int sig) {
     }
 }
 #endif
-int main() {
+int main(int argc, char *argv[]) {
+    cxxopts::Options options("MVVM_checkpoint", "Migratable Velocity Virtual Machine checkpoint part, to ship the VM state to another machine.");
+    options.add_options()("t,target", "The webassembly file to execute",
+                          cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
+        "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
+        "h,help", "The value for epoch value", cxxopts::value<bool>()->default_value("false"));
+
+    auto result = options.parse(argc, argv);
+    if (result["help"].as<bool>()) {
+        std::cout << options.help() << std::endl;
+        exit(0);
+    }
+    auto target = result["target"].as<std::string>();
+    wamr = new WAMRInstance(target.c_str());
 #ifndef MVVM_DEBUG
     // Define the sigaction structure
     struct sigaction sa {};
