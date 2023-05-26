@@ -15,9 +15,7 @@ struct WAMRBranchBlock {
     uint32 cell_num{};
 
     void dump(WASMBranchBlock *env);
-    void restore(WASMBranchBlock *env){
-
-    };
+    void restore(WASMBranchBlock *env);
 };
 
 template <SerializerTrait<WASMBranchBlock *> T> void dump(T t, WASMBranchBlock *env) { t->dump(env); }

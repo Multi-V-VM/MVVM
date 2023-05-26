@@ -48,6 +48,7 @@ struct WAMRInterpFrame {
     void dump(WASMInterpFrame *env);
     void restore(WASMInterpFrame *env);
 };
+
 template <SerializerTrait<WASMInterpFrame *> T> void dump(T t, WASMInterpFrame *env) { t->dump(env); }
 template <SerializerTrait<WASMInterpFrame *> T> void restore(T t, WASMInterpFrame *env) { t->restore(env); }
 

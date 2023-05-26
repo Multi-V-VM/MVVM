@@ -10,7 +10,8 @@ void WAMRInterpFrame::dump(WASMInterpFrame *env) {
         ip = env->ip - env->function->u.func->code; // here we need to get the offset from the code start.
     lp = reinterpret_cast<uint8 *>(env->lp) - wamr->get_exec_env()->wasm_stack.s.bottom; // offset to the wasm_stack_top
     if (env->sp) {
-        sp = reinterpret_cast<uint8 *>(env->sp) - wamr->get_exec_env()->wasm_stack.s.bottom; // offset to the wasm_stack_top
+        sp = reinterpret_cast<uint8 *>(env->sp) -
+             wamr->get_exec_env()->wasm_stack.s.bottom; // offset to the wasm_stack_top
     }
     auto csp_size = (env->csp - env->csp_bottom);
     for (int i = 0; i < csp_size; i++) {
@@ -21,5 +22,10 @@ void WAMRInterpFrame::dump(WASMInterpFrame *env) {
         ::dump(&function, env->function);
 }
 void WAMRInterpFrame::restore(WASMInterpFrame *env) {
-
+    ::restore(&function, env->function);
+    if (ip)
+        env->ip = env->function->u.func->code + ip.value();
+    env->lp = wamr->get_exec_env()->wasm_stack.s.bottom + lp.value();
+    if (sp)
+        env->sp = wamr->get_exec_env()->wasm_stack.s.bottom + sp.value();
 }

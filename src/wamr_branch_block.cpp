@@ -21,3 +21,17 @@ void WAMRBranchBlock::dump(WASMBranchBlock *env) {
 
     cell_num = env->cell_num;
 }
+void WAMRBranchBlock::restore(WASMBranchBlock *env) {
+    if (begin_addr)
+        env->begin_addr = wamr->get_exec_env()->wasm_stack.s.bottom + begin_addr;
+
+    if (target_addr)
+        env->target_addr = wamr->get_exec_env()->wasm_stack.s.bottom + target_addr;
+
+    if (frame_sp) {
+        uint8 *local_sp = wamr->get_exec_env()->wasm_stack.s.bottom + frame_sp;
+        env->frame_sp = reinterpret_cast<uint32>(local_sp);
+    }
+
+    env->cell_num = cell_num;
+}

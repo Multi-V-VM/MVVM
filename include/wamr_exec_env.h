@@ -152,26 +152,26 @@ struct WAMRExecEnv { // multiple
         }
         wasm_stack = std::vector(env->wasm_stack.s.bottom, env->wasm_stack.s.top);
     };
-    void restore(WASMExecEnv *env){
-         ::restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
-         env->suspend_flags.flags = flags;
-         env->aux_stack_boundary.boundary = aux_boundary;
-         env->aux_stack_bottom.bottom = aux_bottom;
-         /** Need to make sure up to this point wasm_stack is allocated */
-//         auto cur_frame = env->cur_frame;
-//         while (cur_frame) {
-//            auto dumped_frame = WAMRInterpFrame();
-//            ::dump(&dumped_frame, cur_frame);
-//            this->frames.push_back(dumped_frame);
-//            cur_frame = cur_frame->prev_frame;
-//         }
-//         ::restore(&, env->cur_frame);
-//     env->wasm_stack.s.top = wasm_stack.data();
-//     env->wasm_stack.s.bottom = wasm_stack.data() + wasm_stack.size();
+    void restore(WASMExecEnv *env) {
+        ::restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
+        env->suspend_flags.flags = flags;
+        env->aux_stack_boundary.boundary = aux_boundary;
+        env->aux_stack_bottom.bottom = aux_bottom;
+        /** Need to make sure up to this point wasm_stack is allocated */
+        auto cur_frame = env->cur_frame;
+        while (cur_frame) {
+            auto dumped_frame = WAMRInterpFrame();
+            ::restore(&dumped_frame, cur_frame);
+            this->frames.push_back(dumped_frame);
+            cur_frame = cur_frame->prev_frame;
+        }
+        //         ::restore(&, env->cur_frame);
+        env->wasm_stack.s.top = wasm_stack.data();
+        env->wasm_stack.s.bottom = wasm_stack.data() + wasm_stack.size();
     };
 };
-template <SerializerTrait<WASMExecEnv *> T> void dump(T t, WASMExecEnv *env) { t->dump(env); }
 
+template <SerializerTrait<WASMExecEnv *> T> void dump(T t, WASMExecEnv *env) { t->dump(env); }
 template <SerializerTrait<WASMExecEnv *> T> void restore(T t, WASMExecEnv *env) { t->restore(env); }
 
 #endif // MVVM_WAMR_EXEC_ENV_H

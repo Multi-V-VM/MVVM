@@ -101,7 +101,9 @@ void sigint_handler(int sig) {
 }
 #endif
 int main(int argc, char *argv[]) {
-    cxxopts::Options options("MVVM_checkpoint", "Migratable Velocity Virtual Machine checkpoint part, to ship the VM state to another machine.");
+    cxxopts::Options options(
+        "MVVM_checkpoint",
+        "Migratable Velocity Virtual Machine checkpoint part, to ship the VM state to another machine.");
     options.add_options()("t,target", "The webassembly file to execute",
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(

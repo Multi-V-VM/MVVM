@@ -4,7 +4,7 @@
 
 #include "wamr.h"
 #include "thread_manager.h"
-
+#include "wasm_interp.h"
 WAMRInstance::WAMRInstance(const char *wasm_path) {
 
     RuntimeInitArgs wasm_args;
@@ -80,21 +80,38 @@ int WAMRInstance::invoke_main() {
     return wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
 
-WASMExecEnv *WAMRInstance::get_exec_env() { return exec_env; }
-
-[[maybe_unused]] WASMModuleInstance *WAMRInstance::get_module_instance() {
-    return reinterpret_cast<WASMModuleInstance *>(module_inst);
+WASMExecEnv *WAMRInstance::get_exec_env() {
+    return cur_env; // should return the current thread's
 }
 
-[[maybe_unused]] WASMModule *WAMRInstance::get_module() { return reinterpret_cast<WASMModule *>(module); }
-void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {// will call pthread create wrapper if needed?
-    std::sort (execEnv->begin(), execEnv->end(), [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
-        return a->cur_count > b->cur_count;
-    });
-    WASMExecEnv *cur_env=exec_env;
-    for(auto &&exec_ : *execEnv){
-        restore(exec_.get(),cur_env );
-        cur_env =  wasm_cluster_spawn_exec_env(exec_env);
-    } // every pthread has a semaphore for main thread to set all break point to start.
+WASMModuleInstance *WAMRInstance::get_module_instance() {
+#ifdef MVVM_INTERP
+    return reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst);
+#endif
+}
 
+WASMModule *WAMRInstance::get_module() {
+#ifdef MVVM_INTERP
+    return reinterpret_cast<WASMModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
+#endif
+}
+void WAMRInstance::recover(
+    std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) { // will call pthread create wrapper if needed?
+    std::sort(execEnv->begin(), execEnv->end(),
+              [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
+                  return a->cur_count > b->cur_count;
+              });
+
+    cur_env = exec_env;
+    for (auto &&exec_ : *execEnv) {
+        if (exec_->cur_count != 0) {
+            cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
+        }
+        restore(exec_.get(), cur_env);
+        if (exec_->cur_count != 0) {
+                        auto thread_arg = ThreadArgs{cur_env,nullptr,nullptr}; // requires to record the args and callback for the pthread.
+        }
+        wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
+                                       get_exec_env()->cur_frame->prev_frame);
+    } // every pthread has a semaphore for main thread to set all break point to start.
 }
