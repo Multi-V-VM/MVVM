@@ -51,7 +51,7 @@ struct WAMRMemoryInstance {
         memcpy(env->memory_data, memory_data.data(), env->memory_data_size);
         env->heap_data = (uint8 *)malloc(heap_data.size());
         memcpy(env->heap_data, heap_data.data(), heap_data.size());
-        env->heap_data_end = env->heap_data +heap_data.size();
+        env->heap_data_end = env->heap_data + heap_data.size();
     };
 };
 

@@ -99,5 +99,5 @@ target_link_libraries(MVVM_restore fmt::fmt cxxopts::cxxopts vmlib -lm -ldl -lpt
 target_link_libraries(MVVM_checkpoint fmt::fmt cxxopts::cxxopts vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS})
 add_definitions(-DMVVM_INTERP=1)
 add_definitions(-DMVVM_DEBUG=1)
-#add_definitions(-DWASM_ENABLE_CUSTOM_NAME_SECTION=1)
+add_definitions(-DWASM_ENABLE_CUSTOM_NAME_SECTION=1)
 add_subdirectory(test)

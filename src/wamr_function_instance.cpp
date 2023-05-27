@@ -5,7 +5,6 @@
 #include "wamr_function_instance.h"
 extern WASMExecEnv *wamr;
 void WAMRFunctionInstance::restore(WASMFunctionInstance *env) {
-
     // iterate all the function instance and put to the function instance
     auto target_module = ((WASMModuleInstance *)wamr->module_inst)->e;
     for (int i = 0; i < target_module->function_count; i++) {
@@ -31,33 +30,32 @@ void WAMRFunctionInstance::restore(WASMFunctionInstance *env) {
                 continue;
             }
 
-            for (int i = 0; i < param_count + local_count; i++) {
+            for (i = 0; i < param_count + local_count; i++) {
                 if (local_offsets[i] != env->local_offsets[i]) {
                     continue;
                 }
             }
-            for (int i = 0; i < param_count; i++) {
+            for (i = 0; i < param_count; i++) {
                 if (param_types[i] != env->param_types[i]) {
                     continue;
                 }
             }
             /* local types, NULL for import function */
-            for (int i = 0; i < local_count; i++) {
+            for (i = 0; i < local_count; i++) {
                 if (local_types[i] != env->local_types[i]) {
                     continue;
                 }
             }
 #endif
-            if (::equal(this->func, cur_func.u.func)) {
+            if (::equal(&func, cur_func.u.func)) {
                 *env = cur_func;
                 break;
             }
         } else {
-            if (::equal(this->func_import, cur_func.u.func_import)) {
+            if (::equal(&func_import, cur_func.u.func_import)) {
                 *env = cur_func;
                 break;
             }
         }
     }
-
 }

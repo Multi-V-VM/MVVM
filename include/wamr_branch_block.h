@@ -7,11 +7,10 @@
 #include "wamr_module_instance.h"
 #include "wasm_runtime.h"
 #include <memory>
-#include <optional>
 struct WAMRBranchBlock {
     uint32 begin_addr{}; // real code section for native code?WASMBranchBlock
     uint32 target_addr{};
-    std::optional<uint32> frame_sp;
+    uint32 frame_sp{};
     uint32 cell_num{};
 
     void dump(WASMBranchBlock *env);

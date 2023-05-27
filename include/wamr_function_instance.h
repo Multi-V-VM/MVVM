@@ -8,7 +8,6 @@
 #include "wamr_serializer.h"
 #include "wamr_type.h"
 #include "wasm_runtime.h"
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -37,17 +36,48 @@ struct WAMRFunction {
     //    uint8 *code;
     void dump(WASMFunction *env) {
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
-        field_name = env->u.func->field_name;
+        field_name = env->field_name;
         LOGV(DEBUG) << "field_name:" << field_name;
 #else
         ::dump(&func_type, env->func_type);
+        local_count = env->local_count;
+        LOGV(DEBUG) << "local_count:" << local_count;
+        param_cell_num = env->param_cell_num;
+        LOGV(DEBUG) << "param_cell_num:" << param_cell_num;
+        ret_cell_num = env->ret_cell_num;
+        LOGV(DEBUG) << "ret_cell_num:" << ret_cell_num;
+        local_cell_num = env->local_cell_num;
+        LOGV(DEBUG) << "local_cell_num:" << local_cell_num;
+        max_stack_cell_num = env->max_stack_cell_num;
+        LOGV(DEBUG) << "max_stack_cell_num:" << max_stack_cell_num;
+        max_block_num = env->max_block_num;
+        LOGV(DEBUG) << "max_block_num:" << max_block_num;
+        code_size = env->code_size;
 #endif
     };
     bool equal(WASMFunction *env) {
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
-        return field_name == env->u.func->field_name;
+        return field_name == env->field_name;
 #else
         if (!(func_type.equal(env->func_type))) {
+            return false;
+        }
+        if (param_cell_num != env->param_cell_num) {
+            return false;
+        }
+        if (ret_cell_num != env->ret_cell_num) {
+            return false;
+        }
+        if (local_cell_num != env->local_cell_num) {
+            return false;
+        }
+        if (max_stack_cell_num != env->max_stack_cell_num) {
+            return false;
+        }
+        if (max_block_num != env->max_block_num) {
+            return false;
+        }
+        if (code_size != env->code_size) {
             return false;
         }
         return true;
@@ -94,16 +124,16 @@ struct WAMRFunctionInstance {
     std::vector<uint8> local_types;
     //    union {
     //        WASMFunctionImport *func_import;
-    std::optional<WAMRFunction> func;
-    std::optional<WAMRFunctionImport> func_import;
+    WAMRFunction func;
+    WAMRFunctionImport func_import;
     //    } u;
     void dump(WASMFunctionInstance *env) {
         is_import_func = env->is_import_func;
         LOGV(DEBUG) << "is_import_func:" << is_import_func;
         if (!is_import_func) {
-            ::dump(func, env->u.func);
+            ::dump(&func, env->u.func);
         } else {
-            ::dump(func_import, env->u.func_import);
+            ::dump(&func_import, env->u.func_import);
         }
         param_count = env->param_count;
         LOGV(DEBUG) << "param_count:" << param_count;

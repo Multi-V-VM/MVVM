@@ -126,7 +126,7 @@ struct WAMRModuleInstance {
             ::dump(&local_mem, env->memories[i]);
             memories.push_back(local_mem);
         }
-        global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size+1 );
+        global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size + 1);
         //        tables = std::vector<WASMTableInstance>(envzhong>tables, env->tables + env->table_count);
         tables.reserve(env->table_count);
         std::generate_n(
@@ -144,17 +144,17 @@ struct WAMRModuleInstance {
         aux_stack_size = env->module->aux_stack_size;
         ::dump(&global_table_data, env->global_table_data.memory_instances);
     };
-    void restore(WASMModuleInstance *env){
+    void restore(WASMModuleInstance *env) {
         env->module_type = module_type;
         env->memory_count = memories.size();
         for (int i = 0; i < env->memory_count; i++) {
-             ::restore(&memories[i],env->memories[i] );
+            ::restore(&memories[i], env->memories[i]);
         }
         env->global_data = global_data.data();
-        env->global_data_size = global_data.size()-1;
+        env->global_data_size = global_data.size() - 1;
         env->table_count = tables.size();
         for (int i = 0; i < env->table_count; i++) {
-             *env->tables[i]=tables[i];
+            *env->tables[i] = tables[i];
         }
         ::restore(&wasi_ctx, env->wasi_ctx);
         ::restore(&extra, env->e);

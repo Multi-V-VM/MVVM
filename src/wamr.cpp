@@ -41,7 +41,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path) {
         LOGV(ERROR) << fmt::format("Instantiate wasm module failed. error: {}", error_buf);
         throw;
     }
-    exec_env = wasm_runtime_create_exec_env(module_inst, stack_size);
+    cur_env = exec_env = wasm_runtime_create_exec_env(module_inst, stack_size);
 }
 
 bool WAMRInstance::load_wasm_binary(const char *wasm_path) {
@@ -102,14 +102,14 @@ void WAMRInstance::recover(
                   return a->cur_count > b->cur_count;
               });
 
-    cur_env = exec_env;
     for (auto &&exec_ : *execEnv) {
         if (exec_->cur_count != 0) {
             cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
         }
         restore(exec_.get(), cur_env);
         if (exec_->cur_count != 0) {
-                        auto thread_arg = ThreadArgs{cur_env,nullptr,nullptr}; // requires to record the args and callback for the pthread.
+            auto thread_arg = ThreadArgs{cur_env,nullptr,nullptr}; // requires to record the args and callback for the pthread.
+            // TODO
         }
         wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
                                        get_exec_env()->cur_frame->prev_frame);

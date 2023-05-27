@@ -100,7 +100,7 @@ struct WAMRExecEnv { // multiple
     //    void *user_data;
 
     /* Current interpreter frame of current thread */
-    std::vector<WAMRInterpFrame> frames;
+    std::vector<std::unique_ptr<WAMRInterpFrame>> frames;
 
     /* The native thread handle of current thread */
     //    korp_tid handle;
@@ -145,9 +145,9 @@ struct WAMRExecEnv { // multiple
         aux_bottom = env->aux_stack_bottom.bottom;
         auto cur_frame = env->cur_frame;
         while (cur_frame) {
-            auto dumped_frame = WAMRInterpFrame();
-            ::dump(&dumped_frame, cur_frame);
-            this->frames.push_back(dumped_frame);
+            auto dumped_frame = new WAMRInterpFrame();
+            ::dump(dumped_frame, cur_frame);
+            this->frames.emplace_back(dumped_frame);
             cur_frame = cur_frame->prev_frame;
         }
         wasm_stack = std::vector(env->wasm_stack.s.bottom, env->wasm_stack.s.top);
@@ -158,16 +158,18 @@ struct WAMRExecEnv { // multiple
         env->aux_stack_boundary.boundary = aux_boundary;
         env->aux_stack_bottom.bottom = aux_bottom;
         /** Need to make sure up to this point wasm_stack is allocated */
+        env->cur_frame =  (WASMInterpFrame *)malloc(sizeof(WASMInterpFrame));
         auto cur_frame = env->cur_frame;
-        while (cur_frame) {
-            auto dumped_frame = WAMRInterpFrame();
-            ::restore(&dumped_frame, cur_frame);
-            this->frames.push_back(dumped_frame);
-            cur_frame = cur_frame->prev_frame;
+
+        for (auto &&frame : this->frames) {
+            ::restore(frame.get(), cur_frame);
+            if(frame!=this->frames.back()){
+                cur_frame->prev_frame = (WASMInterpFrame *)malloc(sizeof(WASMInterpFrame));
+                cur_frame = cur_frame->prev_frame;
+            }
         }
-        //         ::restore(&, env->cur_frame);
-        env->wasm_stack.s.top = wasm_stack.data();
-        env->wasm_stack.s.bottom = wasm_stack.data() + wasm_stack.size();
+        env->wasm_stack.s.top = wasm_stack.data() + wasm_stack.size();
+        env->wasm_stack.s.bottom[0] = *wasm_stack.data();
     };
 };
 
