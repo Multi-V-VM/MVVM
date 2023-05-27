@@ -109,7 +109,7 @@ void WAMRInstance::recover(
         restore(exec_.get(), cur_env);
         if (exec_->cur_count != 0) {
             auto thread_arg = ThreadArgs{cur_env,nullptr,nullptr}; // requires to record the args and callback for the pthread.
-            // TODO
+            // TODO: thread not serialized.
         }
         wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
                                        get_exec_env()->cur_frame->prev_frame);
