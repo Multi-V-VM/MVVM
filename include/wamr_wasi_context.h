@@ -8,17 +8,12 @@
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <memory>
+#include <vector>
+#include <map>
 // TODO: add more context
 struct WAMRFDObjectEntry {
     __wasi_filetype_t type;
     int number;
-
-    // Data associated with directory file descriptors.
-    //    struct {
-    //        DIR handle;               // Directory handle.
-    //        __wasi_dircookie_t offset; // Offset of the directory.
-    //    } directory;
-    // we need to migrate the fd in the dir handle and reinit the dir handle
     __wasi_rights_t rights_base;
     __wasi_rights_t rights_inheriting;
 };
@@ -29,7 +24,7 @@ struct WAMRFDTable {
 };
 
 struct WAMRFDPrestat {
-    std::string dir; // the path link prestats for dir need to load target directory
+    std::string dir{}; // the path link prestats for dir need to load target directory
 };
 
 struct WAMRPreStats {
@@ -39,7 +34,7 @@ struct WAMRPreStats {
 };
 
 struct WAMRArgvEnvironValues {
-    std::string argv_buf;
+    std::string argv_buf{};
     std::vector<std::string> argv_list;
     std::vector<std::string> env_list;
 };
@@ -53,17 +48,17 @@ struct WAMRAddrPool {
 // TODO: add more context
 struct WAMRWASIContext {
     std::vector<WAMRFDTable> curfds;
+    std::map<uint32, std::string> fd_map;
     std::vector<WAMRPreStats> prestats;
     std::unique_ptr<WAMRArgvEnvironValues> argv_environ;
     std::vector<WAMRAddrPool> addr_pool;
     std::vector<std::string> ns_lookup_list;
     uint32_t exit_code;
-
     void dump(WASIContext *env){
 
     };
     void restore(WASIContext *env){
-
+        // Need to open the file and reinitialize the file descripter by map.
     };
 };
 

@@ -30,6 +30,12 @@ jobs:
         sudo tar -xzf wasi-sdk-*.tar.gz
         sudo mv wasi-sdk-20.0 wasi-sdk
 
+    - name: Make WASM LD no check features
+      run: |
+        sudo mv /opt/wasi-sdk/bin/wasm-ld /opt/wasi-sdk/bin/wasm-ld.bak
+        echo '#!/bin/bash 
+        /opt/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | sudo tee /opt/wasi-sdk/bin/wasm-ld
+
     - name: Checkout
       run: git submodule update --init
 
