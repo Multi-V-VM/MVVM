@@ -35,6 +35,7 @@ jobs:
         sudo mv /opt/wasi-sdk/bin/wasm-ld /opt/wasi-sdk/bin/wasm-ld.bak
         echo '#!/bin/bash 
         /opt/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | sudo tee /opt/wasi-sdk/bin/wasm-ld
+        sudo chmod +x /opt/wasi-sdk/bin/wasm-ld
 
     - name: Checkout
       run: git submodule update --init
