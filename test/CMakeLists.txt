@@ -1,7 +1,9 @@
 set(HOST_PREFIX /opt/wasi-sdk/bin/)
 set(WAMR_DIR ${PROJECT_SOURCE_DIR}/lib/wasm-micro-runtime/)
+enable_testing()
 function(wamr_app input)
   add_custom_target(${input}_wamr ALL COMMAND ${HOST_PREFIX}clang --target=wasm32-unknown-wasi -pthread -Wl,--allow-undefined-file=${WAMR_DIR}/wamr-sdk/app/libc-builtin-sysroot/share/defined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
+  add_test(NAME ${input}_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_checkpoint --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm && ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_restore --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
 endfunction()
 
 wamr_app(counter)

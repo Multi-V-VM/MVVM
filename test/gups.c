@@ -11,12 +11,10 @@
 #include <math.h>
 #include <string.h>
 #include <pthread.h>
-#include <sys/mman.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stdbool.h>
-
-#include "gups.h"
+#include <stdio.h>
 
 #define MAX_THREADS     64
 
@@ -35,6 +33,7 @@ uint64_t hot_start = 0;
 uint64_t hotsize = 0;
 uint64_t hot_offset_page = 0;
 bool move_hotset = false;
+#define tv_to_double(t) (t.tv_sec + (t.tv_usec / 1000000.0))
 
 struct gups_args {
     int tid;                      // thread id
@@ -47,17 +46,27 @@ struct gups_args {
     uint64_t hotsize;        // size of hot set
 };
 
-
-static inline uint64_t rdtscp(void)
+//uint64_t thread_gups[MAX_THREADS];
+/* Useful for doing arithmetic on struct timevals. M*/
+void timeDiff(struct timeval *d, struct timeval *a, struct timeval *b)
 {
-    uint32_t eax, edx;
-    // why is "ecx" in clobber list here, anyway? -SG&MH,2017-10-05
-    __asm volatile ("rdtscp" : "=a" (eax), "=d" (edx) :: "ecx", "memory");
-    return ((uint64_t)edx << 32) | eax;
+    d->tv_sec = a->tv_sec - b->tv_sec;
+    d->tv_usec = a->tv_usec - b->tv_usec;
+    if (d->tv_usec < 0) {
+        d->tv_sec -= 1;
+        d->tv_usec += 1000000;
+    }
 }
 
-//uint64_t thread_gups[MAX_THREADS];
 
+/* Return the no. of elapsed seconds between Starttime and Endtime. */
+double elapsed(struct timeval *starttime, struct timeval *endtime)
+{
+    struct timeval diff;
+
+    timeDiff(&diff, endtime, starttime);
+    return tv_to_double(diff);
+}
 static unsigned long updates, nelems;
 
 static void *print_instantaneous_gups()
@@ -146,7 +155,7 @@ static void *do_gups(void *arguments)
     uint64_t lfsr;
     uint64_t hot_num;
     uint64_t offset;
-    uint64_t start, end;
+    struct timeval start, end;
 
     srand(args->tid);
     lfsr = rand();
@@ -161,7 +170,7 @@ static void *do_gups(void *arguments)
         if (hot_num < 90) {
             lfsr = lfsr_fast(lfsr);
             index1 = args->hot_start + (lfsr % args->hotsize);
-            start = rdtscp();
+            gettimeofday(&start, NULL);
             if (elt_size == 8) {
                 uint64_t  tmp = field[index1];
                 tmp = tmp + i;
@@ -172,12 +181,12 @@ static void *do_gups(void *arguments)
                 memset(data, data[0] + i, elt_size);
                 memcpy(&field[index1 * elt_size], data, elt_size);
             }
-            end = rdtscp();
+            gettimeofday(&end, NULL);
         }
         else {
             lfsr = lfsr_fast(lfsr);
             index2 = lfsr % (args->size);
-            start = rdtscp();
+            gettimeofday(&start, NULL);
             if (elt_size == 8) {
                 uint64_t tmp = field[index2];
                 tmp = tmp + i;
@@ -188,7 +197,7 @@ static void *do_gups(void *arguments)
                 memset(data, data[0] + i, elt_size);
                 memcpy(&field[index2 * elt_size], data, elt_size);
             }
-            end = rdtscp();
+            gettimeofday(&end, NULL);
         }
     }
 
@@ -240,14 +249,10 @@ int main(int argc, char **argv)
     fprintf(stderr, "field of 2^%lu (%lu) bytes\n", expt, size);
     fprintf(stderr, "%ld byte element size (%ld elements total)\n", elt_size, size / elt_size);
 
-    p = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_HUGETLB | MAP_POPULATE, -1, 0);
-    if (p == MAP_FAILED) {
-        perror("mmap");
-        assert(0);
-    }
+    p = malloc(size);
 
     gettimeofday(&stoptime, NULL);
-    fprintf(stderr, "Init took %.4f seconds\n", elapsed(&starttime, &stoptime));
+    fprintf(stderr, "Init took %.4f seconds\n", elapsed(&starttime,&stoptime));
     fprintf(stderr, "Region address: %p - %p\t size: %ld\n", p, (p + size), size);
 
     nelems = (size / threads) / elt_size; // number of elements per thread
@@ -264,8 +269,6 @@ int main(int argc, char **argv)
     gettimeofday(&stoptime, NULL);
     secs = elapsed(&starttime, &stoptime);
     fprintf(stderr, "Initialization time: %.4f seconds.\n", secs);
-
-    //hemem_start_timing();
 
     //pthread_t print_thread;
     //int pt = pthread_create(&print_thread, NULL, print_instantaneous_gups, NULL);
@@ -349,9 +352,6 @@ int main(int argc, char **argv)
     gups = threads * ((double)updates) / (secs * 1.0e9);
     printf("GUPS = %.10f\n", gups);
 
-    //memset(thread_gups, 0, sizeof(thread_gups));
-#if 0
-#ifdef HOTSPOT
   move_hotset = true;
   hot_offset_page = hotsize / GUPS_PAGE_SIZE;
   //hot_start = (16UL * 1024UL * 1024UL * 1024UL) / elt_size;              // 16GB to the right;
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
 
   filename = "indices3.txt";
 
-  prinf("Timing.\n");
+  printf("Timing.\n");
   gettimeofday(&starttime, NULL);
 
   // spawn gups worker threads
@@ -386,22 +386,6 @@ int main(int argc, char **argv)
   gups = threads * ((double)updates) / (secs * 1.0e9);
   printf("GUPS = %.10f\n", gups);
 
-  //hemem_print_stats();
-#endif
-#endif
-
-    FILE* pebsfile = fopen("pebs.txt", "w+");
-    assert(pebsfile != NULL);
-    for (uint64_t addr = (uint64_t)p; addr < (uint64_t)p + size; addr += (2*1024*1024)) {
-        struct hemem_page *pg = get_hemem_page(addr);
-        assert(pg != NULL);
-        if (pg != NULL) {
-            fprintf(pebsfile, "0x%lx:\t%lu\t%lu\t%lu\n", pg->va, pg->tot_accesses[DRAMREAD], pg->tot_accesses[NVMREAD], pg->tot_accesses[WRITE]);
-        }
-    }
-
-    //hemem_stop_timing();
-
     for (i = 0; i < threads; i++) {
         //free(ga[i]->indices);
         free(ga[i]);
@@ -409,8 +393,7 @@ int main(int argc, char **argv)
     free(ga);
 
     //getchar();
-
-    munmap(p, size);
+    free(p);
 
     return 0;
 }

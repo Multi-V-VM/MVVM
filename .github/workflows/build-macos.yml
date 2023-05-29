@@ -21,7 +21,14 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install Dependency
-      run: brew install fmt llvm@14
+      run: brew install cxxopts fmt llvm@14
+
+    - name: Install WASI SDK
+      run: |
+        cd /opt
+        sudo wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-20/wasi-sdk-20.0-macos.tar.gz
+        sudo tar -xzf wasi-sdk-*.tar.gz
+        sudo mv wasi-sdk-20.0 wasi-sdk
 
     - name: Checkout
       run: git submodule update --init
@@ -35,4 +42,4 @@ jobs:
 
     - name: test
       working-directory: ${{runner.workspace}}/build
-      run: ./test-${{matrix.standard}} -V
+      run: ctest -V
