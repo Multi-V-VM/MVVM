@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <string>
 // TODO: add more context
 struct WAMRFDObjectEntry {
     __wasi_filetype_t type;
@@ -24,7 +25,7 @@ struct WAMRFDTable {
 };
 
 struct WAMRFDPrestat {
-    std::string dir{}; // the path link prestats for dir need to load target directory
+    std::string dir; // the path link prestats for dir need to load target directory
 };
 
 struct WAMRPreStats {
@@ -34,7 +35,7 @@ struct WAMRPreStats {
 };
 
 struct WAMRArgvEnvironValues {
-    std::string argv_buf{};
+    std::string argv_buf;
     std::vector<std::string> argv_list;
     std::vector<std::string> env_list;
 };
