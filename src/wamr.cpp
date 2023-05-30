@@ -116,3 +116,7 @@ void WAMRInstance::recover(
 
     } // every pthread has a semaphore for main thread to set all break point to start.
 }
+WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func); }
+void WAMRInstance::set_func(WASMFunction *f) {
+    func = static_cast<WASMFunction *>(f);
+}

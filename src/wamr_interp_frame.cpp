@@ -6,6 +6,8 @@
 #include "wamr.h"
 extern WAMRInstance *wamr;
 void WAMRInterpFrame::dump(WASMInterpFrame *env) {
+    if(env->function)
+        wamr->set_func(env->function->u.func);
     if (env->ip)
         ip = env->ip - env->function->u.func->code; // here we need to get the offset from the code start.
     lp = reinterpret_cast<uint8 *>(env->lp) -((uint8*) wamr->get_exec_env()->wasm_stack.s.bottom); // offset to the wasm_stack_top
@@ -25,6 +27,8 @@ void WAMRInterpFrame::dump(WASMInterpFrame *env) {
 void WAMRInterpFrame::restore(WASMInterpFrame *env) {
     env->function = reinterpret_cast<WASMFunctionInstance *>(malloc(sizeof(WASMFunctionInstance)));
     ::restore(&function, env->function);
+    if(env->function)
+        wamr->set_func(env->function->u.func);
     if (ip)
         env->ip = env->function->u.func->code + ip;
     if (sp)

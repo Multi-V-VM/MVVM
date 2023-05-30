@@ -34,6 +34,8 @@ public:
     explicit WAMRInstance(const char *wasm_path, bool is_jit);
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
     bool load_wasm_binary(const char *wasm_path);
+    WASMFunction *get_func();
+    void set_func(WASMFunction *);
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();
     WASMModule *get_module();
