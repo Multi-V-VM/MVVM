@@ -13,15 +13,15 @@
 #include <string>
 // TODO: add more context
 struct WAMRFDObjectEntry {
-    __wasi_filetype_t type;
+    uint8 type;
     int number;
-    __wasi_rights_t rights_base;
-    __wasi_rights_t rights_inheriting;
+    uint64 rights_base;
+    uint64 rights_inheriting;
 };
 struct WAMRFDTable {
     std::vector<WAMRFDObjectEntry> entries;
-    size_t size;
-    size_t used;
+    uint32 size;
+    uint32 used;
 };
 
 struct WAMRFDPrestat {
@@ -30,8 +30,8 @@ struct WAMRFDPrestat {
 
 struct WAMRPreStats {
     std::vector<WAMRFDPrestat> prestats;
-    size_t size{};
-    size_t used{};
+    uint32 size{};
+    uint32 used{};
 };
 
 struct WAMRArgvEnvironValues {
@@ -43,7 +43,7 @@ struct WAMRArgvEnvironValues {
 
 struct WAMRAddrPool {
     uint16 ip46[8];
-    __wasi_addr_type_t type;
+    bool is_4;
     uint8 mask;
 };
 // TODO: add more context
