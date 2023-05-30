@@ -8,7 +8,7 @@ find_package(cxxopts REQUIRED)
 include(CTest)
 
 if(APPLE)
-    set(WAMR_BUILD_PLATFORM "linux")
+    set(WAMR_BUILD_PLATFORM "darwin")
     set(LLVM_LLDB_LIB ${LLVM_INCLUDE_DIRS}/../lib/liblldb.dylib)
 else()
     set(WAMR_BUILD_PLATFORM "linux")
