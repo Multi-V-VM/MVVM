@@ -5,8 +5,7 @@
 #include "wamr.h"
 #include "thread_manager.h"
 #include "wasm_interp.h"
-WAMRInstance::WAMRInstance(const char *wasm_path) {
-
+WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) :is_jit(is_jit){
     RuntimeInitArgs wasm_args;
     memset(&wasm_args, 0, sizeof(RuntimeInitArgs));
     wasm_args.mem_alloc_type = Alloc_With_Allocator;
@@ -14,11 +13,10 @@ WAMRInstance::WAMRInstance(const char *wasm_path) {
     wasm_args.mem_alloc_option.allocator.realloc_func = ((void *)realloc);
     wasm_args.mem_alloc_option.allocator.free_func = ((void *)free);
     wasm_args.max_thread_num = 16;
-#ifdef MVVM_INTERP
-    wasm_args.running_mode = RunningMode::Mode_Interp;
-#elif defined(MVVM_JIT)
-    wasm_args.running_mode = RunningMode::Mode_LLVM_JIT;
-#endif
+    if(!is_jit)
+        wasm_args.running_mode = RunningMode::Mode_Interp;
+    else
+        wasm_args.running_mode = RunningMode::Mode_LLVM_JIT;
     //    wasm_args.mem_alloc_type = Alloc_With_Pool;
     //    wasm_args.mem_alloc_option.pool.heap_buf = global_heap_buf;
     //    wasm_args.mem_alloc_option.pool.heap_size = sizeof(global_heap_buf);
@@ -107,11 +105,14 @@ void WAMRInstance::recover(
             cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
         }
         restore(exec_.get(), cur_env);
+        cur_env->is_restore = true;
         if (exec_->cur_count != 0) {
             auto thread_arg = ThreadArgs{cur_env,nullptr,nullptr}; // requires to record the args and callback for the pthread.
             // TODO: thread not serialized.
         }
+        get_exec_env()->is_restore=true;
         wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
                                        get_exec_env()->cur_frame->prev_frame);
+
     } // every pthread has a semaphore for main thread to set all break point to start.
 }

@@ -55,6 +55,9 @@ struct WAMRModuleInstanceExtra {
     void restore(WASMModuleInstanceExtra *env) {
         env->global_count = global_count;
         env->function_count = function_count;
+#ifndef WASM_ENABLE_WASI_NN
+        ::restore(&wasi_nn_ctx, env->wasi_nn_ctx);
+#endif
     };
 };
 

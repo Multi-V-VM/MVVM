@@ -115,7 +115,8 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
     auto target = result["target"].as<std::string>();
-    wamr = new WAMRInstance(target.c_str());
+    auto is_jit = result["jit"].as<bool>();
+    wamr = new WAMRInstance(target.c_str(), is_jit);
 #ifndef MVVM_DEBUG
     // Define the sigaction structure
     struct sigaction sa {};

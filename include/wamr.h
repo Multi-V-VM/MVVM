@@ -17,6 +17,7 @@ class WAMRInstance {
     WASMModuleInstanceCommon *module_inst;
     WASMModuleCommon *module;
     WASMFunctionInstanceCommon *func;
+    bool is_jit;
     char *buffer;
     char error_buf[128];
     uint32 buf_size, stack_size = 8092, heap_size = 8092;
@@ -30,7 +31,7 @@ class WAMRInstance {
     void (*thread_callback)(wasm_exec_env_t, void *);
 
 public:
-    explicit WAMRInstance(const char *wasm_path);
+    explicit WAMRInstance(const char *wasm_path, bool is_jit);
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
     bool load_wasm_binary(const char *wasm_path);
     WASMExecEnv *get_exec_env();

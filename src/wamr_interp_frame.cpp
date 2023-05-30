@@ -29,10 +29,13 @@ void WAMRInterpFrame::restore(WASMInterpFrame *env) {
         env->ip = env->function->u.func->code + ip;
     if (sp)
         env->sp = reinterpret_cast<uint32 *>((uint8*)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
-
+    if (lp)
+        *env->lp = *reinterpret_cast<uint32 *>((uint8*)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
+    int i=0;
+    env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
     for (auto &&csp_item : csp) {
-        auto c = new WASMBranchBlock();
-        ::restore(csp_item.get(), c);
-        env->csp = c;
+        ::restore(csp_item.get(), env->csp_bottom+i);
+        i++;
     }
+    env->csp = env->csp_bottom + csp.size();
 }

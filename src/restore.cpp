@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
         exit(0);
     }
     auto target = result["target"].as<std::string>();
-    wamr = new WAMRInstance(target.c_str());
+    wamr = new WAMRInstance(target.c_str(), false);
     //  first get the deserializer message, here just hard code
 
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(reader).value();
