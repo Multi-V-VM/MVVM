@@ -4,6 +4,7 @@
 
 #ifndef MVVM_WAMR_EXEC_ENV_H
 #define MVVM_WAMR_EXEC_ENV_H
+#include "wamr_block_addr.h"
 #include "wamr_interp_frame.h"
 #include "wamr_module_instance.h"
 #include "wasm_runtime.h"
@@ -106,7 +107,7 @@ struct WAMRExecEnv { // multiple
     //    korp_tid handle;
 
     // #if WASM_ENABLE_INTERP != 0 && WASM_ENABLE_FAST_INTERP == 0
-    //     BlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
+    WAMRBlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
     // #endif
 
     // #ifdef OS_ENABLE_HW_BOUND_CHECK
@@ -144,6 +145,11 @@ struct WAMRExecEnv { // multiple
         aux_boundary = env->aux_stack_boundary.boundary;
         aux_bottom = env->aux_stack_bottom.bottom;
         auto cur_frame = env->cur_frame;
+        for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE;i++) {
+            for (int j = 0; j < 2;j++) {
+                ::dump(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
+            }
+        }
         while (cur_frame) {
             auto dumped_frame = new WAMRInterpFrame();
             ::dump(dumped_frame, cur_frame);
@@ -158,18 +164,23 @@ struct WAMRExecEnv { // multiple
         env->aux_stack_boundary.boundary = aux_boundary;
         env->aux_stack_bottom.bottom = aux_bottom;
         /** Need to make sure up to this point wasm_stack is allocated */
-        env->cur_frame =  (WASMInterpFrame *)malloc(sizeof(WASMInterpFrame));
+        memcpy(env->wasm_stack.s.bottom, wasm_stack.data(), wasm_stack.size());
+        env->wasm_stack.s.top = env->wasm_stack.s.bottom + wasm_stack.size();
+        env->cur_frame = (WASMInterpFrame *)malloc(sizeof(WASMInterpFrame));
         auto cur_frame = env->cur_frame;
-
         for (auto &&frame : this->frames) {
             ::restore(frame.get(), cur_frame);
-            if(frame!=this->frames.back()){
+            if (frame != this->frames.back()) {
                 cur_frame->prev_frame = (WASMInterpFrame *)malloc(sizeof(WASMInterpFrame));
                 cur_frame = cur_frame->prev_frame;
             }
         }
-        env->wasm_stack.s.top = wasm_stack.data() + wasm_stack.size();
-        env->wasm_stack.s.bottom[0] = *wasm_stack.data();
+
+        for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE;i++) {
+            for (int j = 0; j < BLOCK_ADDR_CONFLICT_SIZE;j++) {
+                ::restore(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
+            }
+        }
     };
 };
 

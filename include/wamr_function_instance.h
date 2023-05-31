@@ -55,7 +55,7 @@ struct WAMRFunction {
         code_size = env->code_size;
 #endif
     };
-    bool equal(WASMFunction *env) {
+    bool equal(WASMFunction *env) const {
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
         return field_name == env->field_name;
 #else
@@ -94,7 +94,7 @@ struct WAMRFunctionImport {
         field_name = env->field_name;
         LOGV(DEBUG) << "field_name:" << field_name;
     };
-    bool equal(WASMFunctionImport *env) { return field_name == env->field_name; };
+    bool equal(WASMFunctionImport *env) const { return field_name == env->field_name; };
 };
 
 template <CheckerTrait<WASMFunctionImport *> T> void dump(T t, WASMFunctionImport *env) { t->dump(env); }

@@ -6,6 +6,7 @@
 #define MVVM_WAMR_MEMORY_INSTANCE_H
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
+#include "logging.h"
 #include <memory>
 #include <vector>
 struct WAMRMemoryInstance {
@@ -38,6 +39,11 @@ struct WAMRMemoryInstance {
         max_page_count = env->max_page_count;
         memory_data.resize(env->memory_data_size);
         memcpy(memory_data.data(), env->memory_data, env->memory_data_size);
+        LOGV(DEBUG)<< "memory_data_size:" << env->memory_data_size;
+        for (int i = 0; i < 100; ++i) {
+            LOGV(DEBUG)<< "memory_data:" <<i << memory_data[i];
+            LOGV(DEBUG)<< "memory_data:" <<i << env->memory_data[i];
+        }
         heap_data = std::vector<uint8>(env->heap_data, env->heap_data_end);
     };
     void restore(WASMMemoryInstance *env) {
@@ -49,6 +55,11 @@ struct WAMRMemoryInstance {
         env->memory_data_size = memory_data.size();
         env->memory_data = (uint8 *)malloc(env->memory_data_size);
         memcpy(env->memory_data, memory_data.data(), env->memory_data_size);
+        LOGV(DEBUG)<< "memory_data_size:" << env->memory_data_size;
+        for (int i = 0; i < 100; ++i) {
+            LOGV(DEBUG)<< "memory_data:" <<i << memory_data[i];
+            LOGV(DEBUG)<< "memory_data:" <<i << env->memory_data[i];
+        }
         env->heap_data = (uint8 *)malloc(heap_data.size());
         memcpy(env->heap_data, heap_data.data(), heap_data.size());
         env->heap_data_end = env->heap_data + heap_data.size();
