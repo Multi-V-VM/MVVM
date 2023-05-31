@@ -6,14 +6,15 @@
 #include "wamr.h"
 extern WAMRInstance *wamr;
 void WAMRInterpFrame::dump(WASMInterpFrame *env) {
-    if(env->function)
+    if (env->function)
         wamr->set_func(env->function->u.func);
+
     if (env->ip)
         ip = env->ip - env->function->u.func->code; // here we need to get the offset from the code start.
-    lp = reinterpret_cast<uint8 *>(env->lp) -((uint8*) wamr->get_exec_env()->wasm_stack.s.bottom); // offset to the wasm_stack_top
+    lp = env->lp[0]; // offset to the wasm_stack_top
     if (env->sp) {
         sp = reinterpret_cast<uint8 *>(env->sp) -
-            ((uint8*) wamr->get_exec_env()->wasm_stack.s.bottom); // offset to the wasm_stack_top
+             ((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom); // offset to the wasm_stack_top
     }
     auto csp_size = (env->csp - env->csp_bottom);
     for (int i = 0; i < csp_size; i++) {
@@ -27,18 +28,18 @@ void WAMRInterpFrame::dump(WASMInterpFrame *env) {
 void WAMRInterpFrame::restore(WASMInterpFrame *env) {
     env->function = reinterpret_cast<WASMFunctionInstance *>(malloc(sizeof(WASMFunctionInstance)));
     ::restore(&function, env->function);
-    if(env->function)
+    if (env->function)
         wamr->set_func(env->function->u.func);
     if (ip)
         env->ip = env->function->u.func->code + ip;
     if (sp)
-        env->sp = reinterpret_cast<uint32 *>((uint8*)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
+        env->sp = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
     if (lp)
-        *env->lp = *reinterpret_cast<uint32 *>((uint8*)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
-    int i=0;
+        env->lp[0] = lp;
+    int i = 0;
     env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
     for (auto &&csp_item : csp) {
-        ::restore(csp_item.get(), env->csp_bottom+i);
+        ::restore(csp_item.get(), env->csp_bottom + i);
         i++;
     }
     env->csp = env->csp_bottom + csp.size();
