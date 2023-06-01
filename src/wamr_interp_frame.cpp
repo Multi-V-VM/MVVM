@@ -4,35 +4,6 @@
 
 #include "wamr_interp_frame.h"
 #include "wamr.h"
- struct WASMInterpFrame1 {
-    /* The frame of the caller that are calling the current function. */
-    struct WASMInterpFrame *prev_frame;
-
-    /* The current WASM function. */
-    struct WASMFunctionInstance *function;
-
-    /* Instruction pointer of the bytecode array.  */
-    uint8 *ip;
-
-    /* Operand stack top pointer of the current frame. The bottom of
-       the stack is the next cell after the last local variable. */
-    uint32 *sp_bottom;
-    uint32 *sp_boundary;
-    uint32 *sp;
-
-    WASMBranchBlock *csp_bottom;
-    WASMBranchBlock *csp_boundary;
-    WASMBranchBlock *csp;
-
-    /**
-     * Frame data, the layout is:
-     *  lp: parameters and local variables
-     *  sp_bottom to sp_boundary: wasm operand stack
-     *  csp_bottom to csp_boundary: wasm label stack
-     *  jit spill cache: only available for fast jit
-     */
-    uint32* lp;
-} ;
 extern WAMRInstance *wamr;
 void WAMRInterpFrame::dump(WASMInterpFrame *env) {
     if (env->function) {
@@ -41,10 +12,11 @@ void WAMRInterpFrame::dump(WASMInterpFrame *env) {
         if (env->ip)
             ip = env->ip - env->function->u.func->code; // here we need to get the offset from the code start.
 
-        lp = ((uint8 *) env->lp) - (uint8 *) wamr->get_exec_env()->wasm_stack.s.bottom; // offset to the wasm_stack_top
+        lp = ((uint8 *)env->lp) - (uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom; // offset to the wasm_stack_top
+        LOGV(DEBUG) << "lp" << env->lp[0];
         if (env->sp) {
             sp = reinterpret_cast<uint8 *>(env->sp) -
-                 ((uint8 *) wamr->get_exec_env()->wasm_stack.s.bottom); // offset to the wasm_stack_top
+                 ((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom); // offset to the wasm_stack_top
         }
         auto csp_size = (env->csp - env->csp_bottom);
         for (int i = 0; i < csp_size; i++) {
@@ -65,8 +37,13 @@ void WAMRInterpFrame::restore(WASMInterpFrame *env) {
         env->ip = env->function->u.func->code + ip;
     if (sp)
         env->sp = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
+
     if (lp) {
-        env->lp = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
+        memcpy(env->lp, reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp),
+               sizeof(uint32));
+        env->lp_bak = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
+        LOGV(DEBUG) << "lp" << env->lp[0];
+        LOGV(DEBUG) << "lp" << env->lp;
     }
     int i = 0;
     env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
@@ -75,5 +52,8 @@ void WAMRInterpFrame::restore(WASMInterpFrame *env) {
         ::restore(csp_item.get(), env->csp_bottom + i);
         i++;
     }
+    env->sp_bottom = env->lp_bak + env->function->param_cell_num + env->function->local_cell_num;
+    env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
+    env->sp_boundary = env->sp_bottom + env->function->u.func->max_stack_cell_num;
     env->csp = env->csp_bottom + csp.size() - 1;
 }

@@ -9,7 +9,7 @@ include(CTest)
 
 if(APPLE)
     set(WAMR_BUILD_PLATFORM "darwin")
-    set(LLVM_LLDB_LIB ${LLVM_INCLUDE_DIRS}/../lib/liblldb.dylib)
+    set(LLVM_LLDB_LIB /opt/homebrew/Cellar/llvm@14/14.0.6/lib/liblldb.dylib)
 else()
     set(WAMR_BUILD_PLATFORM "linux")
     set(LLVM_LLDB_LIB /home/victoryang00/Documents/asplos24/MVVM/lib/wasm-micro-runtime/core/deps/llvm/build/lib/liblldb.so)
@@ -87,8 +87,17 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_D
 file(GLOB_RECURSE SOURCE_FILES src/logging.cpp src/wamr*.cpp)
 
 add_executable(MVVM_restore ${SOURCE_FILES} src/restore.cpp  ${UNCOMMON_SHARED_SOURCE})
+set_target_properties(
+        MVVM_restore
+        PROPERTIES
+        COMPILE_DEFINITIONS MVVM_RESTORE=1
+)
 add_executable(MVVM_checkpoint ${SOURCE_FILES} src/checkpoint.cpp  ${UNCOMMON_SHARED_SOURCE})
-
+set_target_properties(
+        MVVM_checkpoint
+        PROPERTIES
+        COMPILE_DEFINITIONS MVVM_RESTORE=0
+)
 target_link_libraries(MVVM_restore fmt::fmt cxxopts::cxxopts vmlib -lm -ldl -lpthread ${LLVM_LLDB_LIB} ${LLVM_AVAILABLE_LIBS})
 target_link_libraries(MVVM_checkpoint fmt::fmt cxxopts::cxxopts vmlib -lm -ldl -lpthread ${LLVM_LLDB_LIB} ${LLVM_AVAILABLE_LIBS})
 add_definitions(-DMVVM_INTERP=1)
