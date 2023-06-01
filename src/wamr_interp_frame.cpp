@@ -18,7 +18,7 @@ void WAMRInterpFrame::dump(WASMInterpFrame *env) {
             sp = reinterpret_cast<uint8 *>(env->sp) -
                  ((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom); // offset to the wasm_stack_top
         }
-        auto csp_size = (env->csp - env->csp_bottom);
+        auto csp_size = (env->csp - env->csp_bottom) + 1;
         for (int i = 0; i < csp_size; i++) {
             auto *local_csp = new WAMRBranchBlock();
             ::dump(local_csp, env->csp - i);
@@ -46,14 +46,28 @@ void WAMRInterpFrame::restore(WASMInterpFrame *env) {
         LOGV(DEBUG) << "lp" << env->lp;
     }
     int i = 0;
-    env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
-    std::reverse(csp.begin(), csp.end());
-    for (auto &&csp_item : csp) {
-        ::restore(csp_item.get(), env->csp_bottom + i);
-        i++;
-    }
     env->sp_bottom = env->lp_bak + env->function->param_cell_num + env->function->local_cell_num;
-    env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
-    env->sp_boundary = env->sp_bottom + env->function->u.func->max_stack_cell_num;
-    env->csp = env->csp_bottom + csp.size() - 1;
+    // env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
+    // should memcpy
+    if (env->function->u.func && !env->function->is_import_func) {
+        env->sp_boundary = env->sp_bottom + env->function->u.func->max_stack_cell_num;
+        env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
+
+        std::reverse(csp.begin(), csp.end());
+        for (auto &&csp_item : csp) {
+            ::restore(csp_item.get(), env->csp_bottom + i);
+            i++;
+        }
+        env->csp = env->csp_bottom + csp.size() - 1;
+        env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
+        LOGV(DEBUG) << env->function->u.func->field_name << "csp_bottom" << env->csp_bottom << " sp_bottom"
+                    << env->sp_bottom;
+    } else  if (env->function->u.func && env->function->is_import_func){
+        env->sp_boundary = env->sp_bottom;
+        env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
+        env->csp_boundary = env->csp_bottom;
+
+        LOGV(ERROR) << env->function->u.func_import->field_name << "csp_bottom" << env->csp_bottom << " sp_bottom"
+                    << env->sp_bottom;
+    }
 }
