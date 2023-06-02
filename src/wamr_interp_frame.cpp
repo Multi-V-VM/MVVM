@@ -58,11 +58,12 @@ void WAMRInterpFrame::restore(WASMInterpFrame *env) {
             ::restore(csp_item.get(), env->csp_bottom + i);
             i++;
         }
-        env->csp = env->csp_bottom + csp.size()-1;
+        env->csp = env->csp_bottom + csp.size() - 1;
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
         LOGV(DEBUG) << env->function->u.func->field_name << "csp_bottom" << env->csp_bottom << " sp_bottom"
-                    << env->sp_bottom<< " sp" <<sp << ((uint8*)env->sp)-wamr->get_exec_env()->wasm_stack.s.bottom<<" lp"<< lp;
-    } else  if (env->function->u.func && env->function->is_import_func){
+                    << env->sp_bottom << " sp" << sp << ((uint8 *)env->sp) - wamr->get_exec_env()->wasm_stack.s.bottom
+                    << " lp" << lp;
+    } else if (env->function->u.func && env->function->is_import_func) {
         env->sp_boundary = env->sp_bottom;
         env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
         env->csp_boundary = env->csp_bottom;
