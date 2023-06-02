@@ -49,7 +49,7 @@ void WAMRInterpFrame::restore(WASMInterpFrame *env) {
     env->sp_bottom = env->lp_bak + env->function->param_cell_num + env->function->local_cell_num;
     // env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
     // should memcpy
-    if (env->function->u.func && !env->function->is_import_func) {
+    if (env->function->u.func && !env->function->is_import_func && env->sp_bottom) {
         env->sp_boundary = env->sp_bottom + env->function->u.func->max_stack_cell_num;
         env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
 
@@ -63,7 +63,7 @@ void WAMRInterpFrame::restore(WASMInterpFrame *env) {
         LOGV(DEBUG) << env->function->u.func->field_name << "csp_bottom" << env->csp_bottom << " sp_bottom"
                     << env->sp_bottom << " sp" << sp << ((uint8 *)env->sp) - wamr->get_exec_env()->wasm_stack.s.bottom
                     << " lp" << lp;
-    } else if (env->function->u.func && env->function->is_import_func) {
+    } else if (env->function->u.func && env->function->is_import_func && env->sp_bottom) {
         env->sp_boundary = env->sp_bottom;
         env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
         env->csp_boundary = env->csp_bottom;
