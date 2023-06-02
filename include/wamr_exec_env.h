@@ -172,6 +172,7 @@ struct WAMRExecEnv { // multiple
             ::restore(frame.get(), cur_frame);
             if (frame != this->frames.back()) {
                 cur_frame->prev_frame = (WASMInterpFrame *)malloc(sizeof(WASMInterpFrame));
+                LOGV(DEBUG)<<"cur_frame"<<(void*)cur_frame;
                 cur_frame = cur_frame->prev_frame;
             }
         }

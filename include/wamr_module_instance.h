@@ -126,7 +126,11 @@ struct WAMRModuleInstance {
             ::dump(&local_mem, env->memories[i]);
             memories.push_back(local_mem);
         }
-        global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size + 1);
+        global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
+        // LOGV(DEBUG) << env->global_data_size;
+        // for (int i = 0; i < env->global_data_size; i++) {
+        //     LOGV(DEBUG) << env->global_data[i];
+        // }
         //        tables = std::vector<WASMTableInstance>(envzhong>tables, env->tables + env->table_count);
         tables.reserve(env->table_count);
         std::generate_n(
@@ -150,8 +154,14 @@ struct WAMRModuleInstance {
         for (int i = 0; i < env->memory_count; i++) {
             ::restore(&memories[i], env->memories[i]);
         }
-        env->global_data = global_data.data();
-        env->global_data_size = global_data.size() - 1;
+        memcpy(env->global_data, global_data.data(), global_data.size());
+        env->global_data_size = global_data.size();
+        //        env->global_data = global_data.data();
+        //        env->global_data_size = global_data.size() - 1;
+        // LOGV(DEBUG) << env->global_data_size;
+        // for (int i = 0; i < env->global_data_size; i++) {
+        //     LOGV(DEBUG) << env->global_data[i];
+        // }
         env->table_count = tables.size();
         for (int i = 0; i < env->table_count; i++) {
             *env->tables[i] = tables[i];
