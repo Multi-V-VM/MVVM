@@ -14,23 +14,6 @@ std::mutex as_mtx;
 
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
-    //    auto curr_instance = instance;
-    //    int cur_count =0;
-    //    while (curr_instance != nullptr) {
-    //        auto a = new WAMRExecEnv();
-    //        dump(a, curr_instance);
-    //
-    //        as.emplace_back(a);
-    //        curr_instance = curr_instance->next;
-    //        cur_count++;
-    //    }
-    //    curr_instance = instance->prev;
-    //    while (curr_instance != nullptr) {
-    //        auto a = new WAMRExecEnv();
-    //        dump(a, curr_instance);
-    //        as.emplace_back(a);
-    //        curr_instance = curr_instance->prev;
-    //    }
     auto cluster = wasm_exec_env_get_cluster(instance);
     if (bh_list_length(&cluster->exec_env_list) > 1) {
         auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);

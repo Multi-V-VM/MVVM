@@ -83,15 +83,11 @@ WASMExecEnv *WAMRInstance::get_exec_env() {
 }
 
 WASMModuleInstance *WAMRInstance::get_module_instance() {
-#ifdef MVVM_INTERP
     return reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst);
-#endif
 }
 
 WASMModule *WAMRInstance::get_module() {
-#ifdef MVVM_INTERP
     return reinterpret_cast<WASMModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
-#endif
 }
 void WAMRInstance::recover(
     std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) { // will call pthread create wrapper if needed?
