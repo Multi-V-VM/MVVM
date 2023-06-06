@@ -92,7 +92,11 @@ int main(int argc, char *argv[]) {
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
         "d,dir", "The directory list exposed to WAMRe", cxxopts::value<std::vector<std::string>>()->default_value("./"))(
-        "e,env", "The evironment list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value("a=b"))(
+        "m,map_dir", "The mapped directory list exposed to WAMRe", cxxopts::value<std::vector<std::string>>()->default_value(""))(
+        "e,env", "The environment list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value("a=b"))(
+        "a,arg", "The arg list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
+        "p,addr", "The address exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
+        "n,ns_pool", "The ns lookup pool exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
         "h,help", "The value for epoch value", cxxopts::value<bool>()->default_value("false"));
 
     auto result = options.parse(argc, argv);
@@ -103,8 +107,14 @@ int main(int argc, char *argv[]) {
     auto target = result["target"].as<std::string>();
     auto is_jit = result["jit"].as<bool>();
     auto dir = result["dir"].as<std::vector<std::string>>();
+    auto map_dir = result["map_dir"].as<std::vector<std::string>>();
     auto env = result["env"].as<std::vector<std::string>>();
+    auto arg = result["arg"].as<std::vector<std::string>>();
+    auto addr = result["addr"].as<std::vector<std::string>>();
+    auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
     wamr = new WAMRInstance(target.c_str(), is_jit);
+    wamr->set_wasi_args(dir,map_dir,env,arg,addr,ns_pool);
+    wamr->instantiate();
 #ifndef MVVM_DEBUG
     // Define the sigaction structure
     struct sigaction sa {};

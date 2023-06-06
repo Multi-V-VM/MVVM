@@ -34,12 +34,6 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) :is_jit(is_jit){
         LOGV(ERROR) << fmt::format("Load wasm module failed. error: {}", error_buf);
         throw;
     }
-    module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
-    if (!module_inst) {
-        LOGV(ERROR) << fmt::format("Instantiate wasm module failed. error: {}", error_buf);
-        throw;
-    }
-    cur_env = exec_env = wasm_runtime_create_exec_env(module_inst, stack_size);
 }
 
 bool WAMRInstance::load_wasm_binary(const char *wasm_path) {
@@ -116,3 +110,35 @@ WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func
 void WAMRInstance::set_func(WASMFunction *f) {
     func = static_cast<WASMFunction *>(f);
 }
+void WAMRInstance::set_wasi_args(std::vector<std::string> dir_list, std::vector<std::string> map_dir_list,
+                                 std::vector<std::string> env_list,std::vector<std::string> arg_list,std::vector<std::string> addr_list, std::vector<std::string> ns_lookup_pool) {
+    auto string_vec_to_cstr_array = [](const std::vector<std::string>& vecStr) {
+        std::vector<const char*> cstrArray(vecStr.size());
+        if (vecStr[0]=="")
+            return std::vector<const char *>(NULL);
+        std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(), [](const std::string& str){ return str.c_str(); });
+        return cstrArray;
+    };
+
+     dir_ = string_vec_to_cstr_array(dir_list);
+     map_dir_ = string_vec_to_cstr_array(map_dir_list);
+     env_ = string_vec_to_cstr_array(env_list);
+     arg_ = string_vec_to_cstr_array(arg_list);
+     addr_ = string_vec_to_cstr_array(addr_list);
+     ns_pool_ = string_vec_to_cstr_array(ns_lookup_pool);
+
+    wasm_runtime_set_wasi_args_ex(this->module,dir_.data(),dir_.size(),map_dir_.data(),map_dir_.size(),env_.data(),env_.size(),const_cast<char**>(arg_.data()),arg_.size(),0,1,2);
+
+    wasm_runtime_set_wasi_addr_pool(module, addr_.data(), addr_.size());
+    wasm_runtime_set_wasi_ns_lookup_pool(module, ns_pool_.data(),
+                                         ns_pool_.size());
+}
+void WAMRInstance::instantiate() {
+    module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
+    if (!module_inst) {
+        LOGV(ERROR) << fmt::format("Instantiate wasm module failed. error: {}", error_buf);
+        throw;
+    }
+    cur_env = exec_env = wasm_runtime_create_exec_env(module_inst, stack_size);
+}
+

@@ -17,6 +17,12 @@ class WAMRInstance {
     WASMModuleInstanceCommon *module_inst;
     WASMModuleCommon *module;
     WASMFunctionInstanceCommon *func;
+   std::vector<const char *> dir_;
+       std::vector<const char *> map_dir_;
+           std::vector<const char *> env_;
+               std::vector<const char *> arg_;
+                   std::vector<const char *> addr_;
+                       std::vector<const char *> ns_pool_;
     bool is_jit;
     char *buffer;
     char error_buf[128];
@@ -32,6 +38,7 @@ class WAMRInstance {
 
 public:
     explicit WAMRInstance(const char *wasm_path, bool is_jit);
+    void instantiate();
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
     bool load_wasm_binary(const char *wasm_path);
     WASMFunction *get_func();
@@ -39,7 +46,9 @@ public:
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();
     WASMModule *get_module();
-    void set_wasi_args(std::vector<std::string> dir_list, std::vector<std::string> env_list);
+    void set_wasi_args(std::vector<std::string> dir_list, std::vector<std::string> map_dir_list,
+                       std::vector<std::string> env_list,std::vector<std::string> arg_list,std::vector<std::string> addr_list,std::vector<std::string> ns_lookup_pool);
+
     int invoke_main();
     ~WAMRInstance();
 };
