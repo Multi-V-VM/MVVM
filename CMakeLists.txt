@@ -14,6 +14,7 @@ if(APPLE)
     else()
         set(LLVM_LLDB_LIB /usr/local/Cellar/llvm@14/14.0.6/lib/liblldb.dylib)
     endif()
+    set(WAMR_DISABLE_HW_BOUND_CHECK 1)
 else()
     set(WAMR_BUILD_PLATFORM "linux")
     set(LLVM_LLDB_LIB /usr/lib/liblldb.so)
@@ -24,12 +25,6 @@ add_compile_options (-fdiagnostics-color=always)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 add_compile_options (-fcolor-diagnostics)
 endif ()
-
-# Reset default linker flags
-set(CMAKE_C_FLAGS "-Wno-implicit-function-declaration")
-set(CMAKE_CXX_FLAGS "-Wno-implicit-function-declaration")
-set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
-set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 # Set WAMR_BUILD_TARGET, currently values supported:
 # "X86_64", "AMD_64", "X86_32", "AARCH64[sub]", "ARM[sub]", "THUMB[sub]",

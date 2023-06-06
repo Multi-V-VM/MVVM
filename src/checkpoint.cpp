@@ -65,6 +65,7 @@ void sigint_handler(int sig) {
     // Your logic here
     printf("Caught signal %d, performing custom logic...\n", sig);
     wamr->get_exec_env()->is_checkpoint = true;
+    //check whether the current function is sleep
     struct sigaction sa {};
 
     // Clear the structure
@@ -90,6 +91,8 @@ int main(int argc, char *argv[]) {
     options.add_options()("t,target", "The webassembly file to execute",
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
+        "d,dir", "The directory list exposed to WAMRe", cxxopts::value<std::vector<std::string>>()->default_value("./"))(
+        "e,env", "The evironment list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value("a=b"))(
         "h,help", "The value for epoch value", cxxopts::value<bool>()->default_value("false"));
 
     auto result = options.parse(argc, argv);
@@ -99,6 +102,8 @@ int main(int argc, char *argv[]) {
     }
     auto target = result["target"].as<std::string>();
     auto is_jit = result["jit"].as<bool>();
+    auto dir = result["dir"].as<std::vector<std::string>>();
+    auto env = result["env"].as<std::vector<std::string>>();
     wamr = new WAMRInstance(target.c_str(), is_jit);
 #ifndef MVVM_DEBUG
     // Define the sigaction structure

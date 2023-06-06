@@ -8,9 +8,11 @@
 #include "wasm_runtime.h"
 #include <algorithm>
 #include <cstdlib>
+#include <stdarg.h>
 #include <filesystem>
 #include <fmt/color.h>
 #include <fmt/format.h>
+#include <fmt/printf.h>
 #include <fmt/os.h>
 #include <fmt/ostream.h>
 #include <fstream>

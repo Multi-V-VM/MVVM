@@ -23,6 +23,9 @@ jobs:
     - name: Install Dependency
       run: brew install cxxopts fmt llvm@14
 
+    - name: Checkout
+      run: git submodule update --init
+
     - name: Install WASI SDK
       run: |
         cd /opt
@@ -30,15 +33,18 @@ jobs:
         sudo tar -xzf wasi-sdk-*.tar.gz
         sudo mv wasi-sdk-20.0 wasi-sdk
 
+    - name: Make WASI Socket Ext
+      run: |
+        cd lib/wasm-micro-runtime/samples/socket-api/
+        cmake .
+        make -j
+
     - name: Make WASM LD no check features
       run: |
         sudo mv /opt/wasi-sdk/bin/wasm-ld /opt/wasi-sdk/bin/wasm-ld.bak
         echo '#!/bin/bash 
         /opt/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | sudo tee /opt/wasi-sdk/bin/wasm-ld
         sudo chmod +x /opt/wasi-sdk/bin/wasm-ld
-
-    - name: Checkout
-      run: git submodule update --init
 
     - name: configure cmake
       run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/local/opt/llvm@14/lib/cmake/llvm/

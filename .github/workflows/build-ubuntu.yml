@@ -22,7 +22,10 @@ jobs:
 
     - name: Install Dependency
       run: sudo apt install libssl-dev libprotobuf-c-dev libprotobuf-dev libgrpc-dev libfmt-dev llvm-14-dev libedit-dev libcxxopts-dev libpfm4-dev liblldb-dev
-
+      
+    - name: Checkout
+      run: git submodule update --init
+      
     - name: Install WASI SDK
       run: |
         cd /opt
@@ -37,8 +40,11 @@ jobs:
         /opt/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | sudo tee /opt/wasi-sdk/bin/wasm-ld
         sudo chmod +x /opt/wasi-sdk/bin/wasm-ld
 
-    - name: Checkout
-      run: git submodule update --init
+    - name: Make WASI Socket Ext
+      run: |
+        cd lib/wasm-micro-runtime/samples/socket-api/
+        cmake .
+        make -j
 
     - name: configure cmake
       run: sudo touch /usr/lib/llvm-14/lib/libMLIRSupportIndentedOstream.a && cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm/

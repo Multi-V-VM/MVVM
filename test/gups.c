@@ -355,8 +355,8 @@ int main(int argc, char **argv)
   move_hotset = true;
   hot_offset_page = hotsize / GUPS_PAGE_SIZE;
   //hot_start = (16UL * 1024UL * 1024UL * 1024UL) / elt_size;              // 16GB to the right;
-  printf("hot_start: %lu\thot_size: %lu\n", hot_start, hotsize);
-  printf("hot_offset_page: %lu\n", hot_offset_page);
+  printf("hot_start: %llu\thot_size: %llu\n", hot_start, hotsize);
+  printf("hot_offset_page: %llu\n", hot_offset_page);
 
   filename = "indices3.txt";
 

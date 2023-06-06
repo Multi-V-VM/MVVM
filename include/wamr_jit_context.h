@@ -6,38 +6,40 @@
 #define MVVM_WAMR_JIT_CONTEXT_H
 
 #include "debug/jit_debug.h"
+#include "wamr_interp_frame.h"
+#include "wamr_serializer.h"
+#include "lldb/API/SBBlock.h"
+#include "lldb/API/SBAttachInfo.h"
+#include "lldb/API/SBBreakpoint.h"
+#include "lldb/API/SBBroadcaster.h"
+#include "lldb/API/SBDefines.h"
+#include "lldb/API/SBFileSpec.h"
+#include "lldb/API/SBFileSpecList.h"
+#include "lldb/API/SBLaunchInfo.h"
+#include "lldb/API/SBSymbolContextList.h"
+#include "lldb/API/SBType.h"
+#include "lldb/API/SBValue.h"
+#include "lldb/API/SBWatchpoint.h"
 
-using namespace llvm;
-using namespace llvm::object;
-using namespace llvm::orc;
-
-/// Do the registration.
-void NotifyDebugger(jit_code_entry *JITCodeEntry) {
-    __jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
-
-    // Insert this entry at the head of the list.
-    JITCodeEntry->prev_entry = nullptr;
-    jit_code_entry *NextEntry = __jit_debug_descriptor.first_entry;
-    JITCodeEntry->next_entry = NextEntry;
-    if (NextEntry) {
-        NextEntry->prev_entry = JITCodeEntry;
-    }
-    __jit_debug_descriptor.first_entry = JITCodeEntry;
-    __jit_debug_descriptor.relevant_entry = JITCodeEntry;
-    jit_debug_register_code();
-}
+typedef struct JITCodeEntry {
+    struct JITCodeEntry *next_;
+    struct JITCodeEntry *prev_;
+    const uint8 *symfile_addr_;
+    uint64 symfile_size_;
+} JITCodeEntry;
 
 struct WAMRJITContext {
 
-    void notifyGDB(){};
-    void dump(LLVME *env){
+
+    void dump(JITCodeEntry *env){
 
     };
-    void restore(LLVM *env){
+    void restore(JITCodeEntry *env){
 
     };
 };
-template <SerializerTrait<WAMRJITContext *> T> void dump(T t, JITCodeEntry *env) { t->dump(env); }
 
+template <SerializerTrait<WAMRJITContext *> T> void dump(T t, JITCodeEntry *env) { t->dump(env); }
 template <SerializerTrait<WAMRJITContext *> T> void restore(T t, JITCodeEntry *env) { t->restore(env); }
+
 #endif // MVVM_WAMR_JIT_CONTEXT_H

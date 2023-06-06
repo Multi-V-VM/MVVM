@@ -11,6 +11,8 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <ranges>
+
 // TODO: add more context
 struct WAMRFDObjectEntry {
     uint8 type;
@@ -60,6 +62,9 @@ struct WAMRWASIContext {
     };
     void restore(WASIContext *env){
         // Need to open the file and reinitialize the file descripter by map.
+        for(auto [fd,name]: fd_map){
+
+        }
     };
 };
 

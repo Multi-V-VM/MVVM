@@ -39,6 +39,7 @@ public:
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();
     WASMModule *get_module();
+    void set_wasi_args(std::vector<std::string> dir_list, std::vector<std::string> env_list);
     int invoke_main();
     ~WAMRInstance();
 };

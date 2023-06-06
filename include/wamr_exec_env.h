@@ -8,6 +8,7 @@
 #include "wamr_interp_frame.h"
 #include "wamr_module_instance.h"
 #include "wasm_runtime.h"
+#include "wamr_jit_context.h"
 #include <memory>
 #include <vector>
 

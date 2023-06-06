@@ -4,7 +4,7 @@
 
 #ifndef MVVM_WAMR_WASI_NN_CONTEXT_H
 #define MVVM_WAMR_WASI_NN_CONTEXT_H
-// #include "wasm_runtime.h"
+#include "wamr_serializer.h
 #include "wasi_nn.h"
 struct WAMRWASINNContext {
     bool is_initialized;
