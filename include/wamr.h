@@ -1,5 +1,5 @@
 //
-// Created by yiwei yang on 5/6/23.
+// Created by victoryang00 on 5/6/23.
 //
 
 #ifndef MVVM_WAMR_H
@@ -12,11 +12,11 @@
 #include "wasm_runtime.h"
 
 class WAMRInstance {
-    WASMExecEnv *exec_env;
-    WASMExecEnv *cur_env;
-    WASMModuleInstanceCommon *module_inst;
+    WASMExecEnv *exec_env{};
+    WASMExecEnv *cur_env{};
+    WASMModuleInstanceCommon *module_inst{};
     WASMModuleCommon *module;
-    WASMFunctionInstanceCommon *func;
+    WASMFunctionInstanceCommon *func{};
    std::vector<const char *> dir_;
        std::vector<const char *> map_dir_;
            std::vector<const char *> env_;
@@ -24,9 +24,9 @@ class WAMRInstance {
                    std::vector<const char *> addr_;
                        std::vector<const char *> ns_pool_;
     bool is_jit;
-    char *buffer;
-    char error_buf[128];
-    uint32 buf_size, stack_size = 8092, heap_size = 8092;
+    char *buffer{};
+    char error_buf[128]{};
+    uint32 buf_size{}, stack_size = 8092, heap_size = 8092;
     typedef struct ThreadArgs {
         wasm_exec_env_t exec_env;
         wasm_thread_callback_t callback;
@@ -34,7 +34,7 @@ class WAMRInstance {
     } ThreadArgs;
     std::vector<ThreadArgs> thread_arg;
     std::vector<wasm_thread_t> tid;
-    void (*thread_callback)(wasm_exec_env_t, void *);
+    void (*thread_callback)(wasm_exec_env_t, void *){};
 
 public:
     explicit WAMRInstance(const char *wasm_path, bool is_jit);
@@ -46,8 +46,8 @@ public:
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();
     WASMModule *get_module();
-    void set_wasi_args(std::vector<std::string> dir_list, std::vector<std::string> map_dir_list,
-                       std::vector<std::string> env_list,std::vector<std::string> arg_list,std::vector<std::string> addr_list,std::vector<std::string> ns_lookup_pool);
+    void set_wasi_args(const std::vector<std::string>& dir_list, const std::vector<std::string>& map_dir_list,
+                       const std::vector<std::string>& env_list,const std::vector<std::string>& arg_list,const std::vector<std::string>& addr_list,const std::vector<std::string>& ns_lookup_pool);
 
     int invoke_main();
     ~WAMRInstance();

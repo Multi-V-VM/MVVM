@@ -1,5 +1,5 @@
 //
-// Created by root on 5/11/23.
+// Created by victoryang00 on 5/11/23.
 //
 
 #ifndef MVVM_WAMR_WASI_NN_CONTEXT_H
@@ -10,9 +10,9 @@ struct WAMRWASINNContext {
     bool is_initialized;
     graph_encoding current_encoding;
     uint32_t current_models;
-    // Model models[MAX_GRAPHS_PER_INST];
-    // uint32_t current_interpreters;
-    // Interpreter interpreters[MAX_GRAPH_EXEC_CONTEXTS_PER_INST];
+    Model models[MAX_GRAPHS_PER_INST];
+    uint32_t current_interpreters;
+    Interpreter interpreters[MAX_GRAPH_EXEC_CONTEXTS_PER_INST];
 };
 
 template <SerializerTrait<WAMRWASINNContext *> T> void dump(T t, WASINNContext *env) { t->dump(env); }

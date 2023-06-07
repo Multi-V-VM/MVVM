@@ -1,5 +1,5 @@
 //
-// Created by yiwei yang on 5/6/23.
+// Created by victoryang00 on 5/6/23.
 //
 
 #ifndef MVVM_LOGGING_H
@@ -8,17 +8,17 @@
 #include "wasm_runtime.h"
 #include <algorithm>
 #include <cstdlib>
-#include <stdarg.h>
 #include <filesystem>
 #include <fmt/color.h>
 #include <fmt/format.h>
-#include <fmt/printf.h>
 #include <fmt/os.h>
 #include <fmt/ostream.h>
+#include <fmt/printf.h>
 #include <fstream>
 #include <iostream>
 #include <list>
 #include <sstream>
+#include <stdarg.h>
 #include <string>
 
 using std::list;

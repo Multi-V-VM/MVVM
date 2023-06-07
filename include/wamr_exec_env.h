@@ -1,5 +1,5 @@
 //
-// Created by yiwei yang on 5/1/23.
+// Created by victoryang00 on 5/1/23.
 //
 
 #ifndef MVVM_WAMR_EXEC_ENV_H
@@ -8,7 +8,6 @@
 #include "wamr_interp_frame.h"
 #include "wamr_module_instance.h"
 #include "wasm_runtime.h"
-#include "wamr_jit_context.h"
 #include <memory>
 #include <vector>
 
@@ -107,9 +106,9 @@ struct WAMRExecEnv { // multiple
     /* The native thread handle of current thread */
     //    korp_tid handle;
 
-    // #if WASM_ENABLE_INTERP != 0 && WASM_ENABLE_FAST_INTERP == 0
+#if WASM_ENABLE_INTERP != 0
     WAMRBlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
-    // #endif
+#endif
 
     // #ifdef OS_ENABLE_HW_BOUND_CHECK
     //     WASMJmpBuf *jmpbuf_stack_top;
@@ -145,12 +144,12 @@ struct WAMRExecEnv { // multiple
         flags = env->suspend_flags.flags;
         aux_boundary = env->aux_stack_boundary.boundary;
         aux_bottom = env->aux_stack_bottom.bottom;
-        auto cur_frame = env->cur_frame;
         for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE;i++) {
             for (int j = 0; j < 2;j++) {
                 ::dump(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
             }
         }
+        auto cur_frame = env->cur_frame;
         while (cur_frame) {
             auto dumped_frame = new WAMRInterpFrame();
             ::dump(dumped_frame, cur_frame);

@@ -1,5 +1,5 @@
 //
-// Created by yiwei yang on 5/6/23.
+// Created by victoryang00 on 5/6/23.
 //
 
 #include "wamr.h"
@@ -110,12 +110,12 @@ WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func
 void WAMRInstance::set_func(WASMFunction *f) {
     func = static_cast<WASMFunction *>(f);
 }
-void WAMRInstance::set_wasi_args(std::vector<std::string> dir_list, std::vector<std::string> map_dir_list,
-                                 std::vector<std::string> env_list,std::vector<std::string> arg_list,std::vector<std::string> addr_list, std::vector<std::string> ns_lookup_pool) {
+void WAMRInstance::set_wasi_args(const std::vector<std::string>& dir_list, const std::vector<std::string>& map_dir_list,
+                                 const std::vector<std::string>& env_list,const std::vector<std::string>& arg_list,const std::vector<std::string>& addr_list, const std::vector<std::string>& ns_lookup_pool) {
     auto string_vec_to_cstr_array = [](const std::vector<std::string>& vecStr) {
         std::vector<const char*> cstrArray(vecStr.size());
-        if (vecStr[0]=="")
-            return std::vector<const char *>(NULL);
+        if (vecStr[0].empty())
+            return std::vector<const char *>(0);
         std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(), [](const std::string& str){ return str.c_str(); });
         return cstrArray;
     };
