@@ -5,10 +5,10 @@
 #ifndef MVVM_WAMR_WASI_CONTEXT_H
 #define MVVM_WAMR_WASI_CONTEXT_H
 
-#include "refcount.h"
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <dirent.h>
+#include <atomic>
 #include <fmt/printf.h>
 #include <filesystem>
 #include <map>
@@ -19,7 +19,7 @@
 
 // TODO: add more context
 struct wasi_fd_object {
-    struct refcount refcount;
+    std::atomic_uint refcount;
     __wasi_filetype_t type;
     int number;
 
@@ -51,11 +51,6 @@ struct WAMRFDTable {
     uint32 size{};
     uint32 used{};
 };
-enum WAMRFDStat {
-    Read,
-    Write,
-    ReadWrite,
-};
 struct WAMRFDPrestat {
     std::string dir; // the path link prestats for dir need to load target directory
 };
@@ -77,7 +72,7 @@ struct WAMRAddrPool {
     bool is_4;
     uint8 mask;
 };
-// TODO: add more context
+
 struct WAMRWASIContext {
     WAMRFDTable curfds;
     //    std::map<uint32, std::pair<std::string,WAMRFDStat>, std::less<>> fd_map;
@@ -102,6 +97,7 @@ struct WAMRWASIContext {
                     auto d = readdir(entry[i].object->directory.handle);
                     //got from dir path, is that one on one?
 //                   dumped_fo.dir=fmt::sprintf("%s/%s",dir_path, d->d_name);
+                    dumped_fo.dir = d->d_name;
                     LOGV(DEBUG) << dumped_fo.dir;
                     dumped_fo.offset = entry[i].object->directory.offset;
                 }
@@ -147,6 +143,17 @@ struct WAMRWASIContext {
         }
         closedir(d);
 #endif
+        this->prestats.size = env->prestats->size;
+        this->prestats.used = env->prestats->used;
+
+        for (int i = 0; i < env->curfds->size; i++) {
+            auto dumped_pres = WAMRFDPrestat();
+            dumped_pres.dir = ((const char *)env->prestats->prestats[i]);
+            LOGV(DEBUG) << dumped_pres.dir;
+            this->prestats.prestats.emplace_back(dumped_pres);
+        }
+        this->argv_environ.argv_list;
+
     };
     void restore(WASIContext *env) {
         // Need to open the file and reinitialize the file descripter by map.

@@ -54,10 +54,7 @@ void sigtrap_handler(int sig) {
     printf("Caught signal %d, performing custom logic...\n", sig);
 
     // You can exit the program here, if desired
-    std::vector<std::unique_ptr<WAMRExecEnv>> a;
-    dump(&a, wamr->get_exec_env());
-    struct_pack::serialize_to(writer, a);
-    exit(0);
+    serialize_to_file(this->exec_env);
 }
 
 // Signal handler function for SIGINT

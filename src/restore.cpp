@@ -6,13 +6,13 @@
 #include "wamr.h"
 #include "wamr_exec_env.h"
 #include "wamr_read_write.h"
+#include <cxxopts.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <cxxopts.hpp>
 
 auto reader = FreadStream("test.bin");
-WAMRInstance* wamr = nullptr;
+WAMRInstance *wamr = nullptr;
 
 void serialize_to_file(WASMExecEnv *instance) {}
 
@@ -22,6 +22,7 @@ int main(int argc, char **argv) {
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
         "h,help", "The value for epoch value", cxxopts::value<bool>()->default_value("false"));
+    // Can first discover from the wasi context.
 
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {
@@ -30,9 +31,9 @@ int main(int argc, char **argv) {
     }
     auto target = result["target"].as<std::string>();
     wamr = new WAMRInstance(target.c_str(), false);
-    //  first get the deserializer message, here just hard code
-
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(reader).value();
+    wamr->set_wasi_args(a[0].get()->module_inst.wasi_ctx);
+    //  first get the deserializer message, here just hard code
 
     wamr->recover(&a);
     return 0;

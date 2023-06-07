@@ -46,6 +46,7 @@ public:
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();
     WASMModule *get_module();
+    void set_wasi_args(WAMRWASIContext & context);
     void set_wasi_args(const std::vector<std::string>& dir_list, const std::vector<std::string>& map_dir_list,
                        const std::vector<std::string>& env_list,const std::vector<std::string>& arg_list,const std::vector<std::string>& addr_list,const std::vector<std::string>& ns_lookup_pool);
 

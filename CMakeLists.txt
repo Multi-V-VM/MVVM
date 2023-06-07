@@ -17,7 +17,7 @@ if(APPLE)
     set(WAMR_DISABLE_HW_BOUND_CHECK 1)
 else()
     set(WAMR_BUILD_PLATFORM "linux")
-    set(LLVM_LLDB_LIB /usr/lib/liblldb.so)
+    set(LLVM_LLDB_LIB /home/victoryang00/Documents/asplos24/MVVM/lib/wasm-micro-runtime/core/deps/llvm/build/lib/liblldb.so)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

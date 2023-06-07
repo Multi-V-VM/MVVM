@@ -5,7 +5,7 @@
 #include "wamr.h"
 #include "thread_manager.h"
 #include "wasm_interp.h"
-WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) :is_jit(is_jit){
+WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) {
     RuntimeInitArgs wasm_args;
     memset(&wasm_args, 0, sizeof(RuntimeInitArgs));
     wasm_args.mem_alloc_type = Alloc_With_Allocator;
@@ -13,7 +13,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) :is_jit(is_jit){
     wasm_args.mem_alloc_option.allocator.realloc_func = ((void *)realloc);
     wasm_args.mem_alloc_option.allocator.free_func = ((void *)free);
     wasm_args.max_thread_num = 16;
-    if(!is_jit)
+    if (!is_jit)
         wasm_args.running_mode = RunningMode::Mode_Interp;
     else
         wasm_args.running_mode = RunningMode::Mode_LLVM_JIT;
@@ -97,41 +97,46 @@ void WAMRInstance::recover(
         restore(exec_.get(), cur_env);
         cur_env->is_restore = true;
         if (exec_->cur_count != 0) {
-            auto thread_arg = ThreadArgs{cur_env,nullptr,nullptr}; // requires to record the args and callback for the pthread.
-
+            auto thread_arg =
+                ThreadArgs{cur_env, nullptr, nullptr}; // requires to record the args and callback for the pthread.
         }
-        get_exec_env()->is_restore=true;
+        get_exec_env()->is_restore = true;
         wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
                                        get_exec_env()->cur_frame->prev_frame);
 
     } // every pthread has a semaphore for main thread to set all break point to start.
 }
 WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func); }
-void WAMRInstance::set_func(WASMFunction *f) {
-    func = static_cast<WASMFunction *>(f);
-}
-void WAMRInstance::set_wasi_args(const std::vector<std::string>& dir_list, const std::vector<std::string>& map_dir_list,
-                                 const std::vector<std::string>& env_list,const std::vector<std::string>& arg_list,const std::vector<std::string>& addr_list, const std::vector<std::string>& ns_lookup_pool) {
-    auto string_vec_to_cstr_array = [](const std::vector<std::string>& vecStr) {
-        std::vector<const char*> cstrArray(vecStr.size());
+void WAMRInstance::set_func(WASMFunction *f) { func = static_cast<WASMFunction *>(f); }
+void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
+                                 const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,
+                                 const std::vector<std::string> &addr_list,
+                                 const std::vector<std::string> &ns_lookup_pool) {
+    auto string_vec_to_cstr_array = [](const std::vector<std::string> &vecStr) {
+        std::vector<const char *> cstrArray(vecStr.size());
         if (vecStr[0].empty())
             return std::vector<const char *>(0);
-        std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(), [](const std::string& str){ return str.c_str(); });
+        std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(),
+                       [](const std::string &str) { return str.c_str(); });
         return cstrArray;
     };
 
-     dir_ = string_vec_to_cstr_array(dir_list);
-     map_dir_ = string_vec_to_cstr_array(map_dir_list);
-     env_ = string_vec_to_cstr_array(env_list);
-     arg_ = string_vec_to_cstr_array(arg_list);
-     addr_ = string_vec_to_cstr_array(addr_list);
-     ns_pool_ = string_vec_to_cstr_array(ns_lookup_pool);
+    dir_ = string_vec_to_cstr_array(dir_list);
+    map_dir_ = string_vec_to_cstr_array(map_dir_list);
+    env_ = string_vec_to_cstr_array(env_list);
+    arg_ = string_vec_to_cstr_array(arg_list);
+    addr_ = string_vec_to_cstr_array(addr_list);
+    ns_pool_ = string_vec_to_cstr_array(ns_lookup_pool);
 
-    wasm_runtime_set_wasi_args_ex(this->module,dir_.data(),dir_.size(),map_dir_.data(),map_dir_.size(),env_.data(),env_.size(),const_cast<char**>(arg_.data()),arg_.size(),0,1,2);
+    wasm_runtime_set_wasi_args_ex(this->module, dir_.data(), dir_.size(), map_dir_.data(), map_dir_.size(), env_.data(),
+                                  env_.size(), const_cast<char **>(arg_.data()), arg_.size(), 0, 1, 2);
 
     wasm_runtime_set_wasi_addr_pool(module, addr_.data(), addr_.size());
-    wasm_runtime_set_wasi_ns_lookup_pool(module, ns_pool_.data(),
-                                         ns_pool_.size());
+    wasm_runtime_set_wasi_ns_lookup_pool(module, ns_pool_.data(), ns_pool_.size());
+}
+void WAMRInstance::set_wasi_args(WAMRWASIContext & context) {
+    // some handmade directory after recovery dir
+   set_wasi_args({}, {}, context.argv_environ.env_list, context.argv_environ.argv_list, {}, context.ns_lookup_list);
 }
 void WAMRInstance::instantiate() {
     module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
@@ -141,4 +146,3 @@ void WAMRInstance::instantiate() {
     }
     cur_env = exec_env = wasm_runtime_create_exec_env(module_inst, stack_size);
 }
-
