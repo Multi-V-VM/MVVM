@@ -15,7 +15,7 @@ void WAMRBlockAddr::dump(BlockAddr *env) {
     if (env->end_addr)
         this->end_addr = env->end_addr - wamr->get_exec_env()->cur_frame->function->u.func->code;
 }
-void WAMRBlockAddr::restore(BlockAddr *env) {
+void WAMRBlockAddr::restore(BlockAddr *env) const {
     env->start_addr = wamr->get_exec_env()->cur_frame->function->u.func->code + start_addr;
     if (else_addr)
         env->else_addr = wamr->get_exec_env()->cur_frame->function->u.func->code + else_addr;

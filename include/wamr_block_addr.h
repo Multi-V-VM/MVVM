@@ -14,7 +14,7 @@ struct WAMRBlockAddr {
     uint32 end_addr;
 
     void dump(BlockAddr *env);
-    void restore(BlockAddr *env);
+    void restore(BlockAddr *env) const;
 };
 
 template <SerializerTrait<BlockAddr *> T> void dump(T t, BlockAddr *env) { t->dump(env); }

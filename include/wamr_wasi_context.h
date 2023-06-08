@@ -102,14 +102,15 @@ struct WAMRWASIContext {
                 dumped_fo.number = entry[i].object->number;
 
                 // open type? read write? or just rw
-                if (entry[i].object->directory.handle != nullptr) {
+                if (((uint64)entry[i].object->directory.handle) >10000) {
                     auto d = readdir(entry[i].object->directory.handle);
                     // got from dir path, is that one on one?
                     // dumped_fo.dir=fmt::sprintf("%s/%s",dir_path, d->d_name);
                     dumped_fo.dir = d->d_name;
-                    LOGV(DEBUG) << dumped_fo.dir;
                     dumped_fo.offset = entry[i].object->directory.offset;
                 }
+                LOGV(DEBUG) << "type:"<<dumped_fo.type;
+                LOGV(DEBUG) <<  "number:" <<dumped_fo.number;
             }
             dumped_fo.rights_base = entry[i].rights_base;
             dumped_fo.rights_inheriting = entry[i].rights_inheriting;
@@ -166,25 +167,30 @@ struct WAMRWASIContext {
         };
         for (int i = 0; i < env->prestats->size; i++) {
             auto dumped_pres = WAMRFDPrestat();
-            dumped_pres.dir = removeTrailingSlashes((const char *)((wasi_fd_prestats *)env->prestats)->prestats[i].dir);
-            LOGV(DEBUG) << dumped_pres.dir;
+            auto dir_ = (const char *)((wasi_fd_prestats *)env->prestats)->prestats[i].dir;
+            if (dir_) {
+                dumped_pres.dir = removeTrailingSlashes(dir_);
+                LOGV(DEBUG) << dumped_pres.dir;
+            }
             this->prestats.prestats.emplace_back(dumped_pres);
         }
         auto cur_pool = env->addr_pool;
         while (cur_pool) {
-            auto dumped_addr = WAMRAddrPool();
-            if (cur_pool->type == 0) {
-                dumped_addr.is_4 = true;
-                memcpy(dumped_addr.ip4, &cur_pool->addr.ip4, sizeof(uint32));
-                LOGV(DEBUG) << fmt::format("ip4:{}", cur_pool->addr.ip4);
-            } else {
-                dumped_addr.is_4 = false;
-                memcpy(dumped_addr.ip6, &cur_pool->addr.ip6, sizeof(uint16) * 8);
+            if (cur_pool->addr.ip4!=0){
+                auto dumped_addr = WAMRAddrPool();
+                if (cur_pool->type == 0) {
+                    dumped_addr.is_4 = true;
+                    memcpy(dumped_addr.ip4, &cur_pool->addr.ip4, sizeof(uint32));
+                    LOGV(DEBUG) << fmt::format("ip4:{}", cur_pool->addr.ip4);
+                } else {
+                    dumped_addr.is_4 = false;
+                    memcpy(dumped_addr.ip6, &cur_pool->addr.ip6, sizeof(uint16) * 8);
+                }
+                if (cur_pool->mask == 0) {
+                    dumped_addr.mask = UINT8_MAX;
+                }
+                this->addr_pool.emplace_back(dumped_addr);
             }
-            if (cur_pool->mask == 0) {
-                dumped_addr.mask = UINT8_MAX;
-            }
-            this->addr_pool.emplace_back(dumped_addr);
             cur_pool = cur_pool->next;
         }
         this->argv_environ.argv_list = std::vector<std::string>(env->argv_environ->argv_list,
