@@ -19,7 +19,7 @@ void WAMRBranchBlock::dump(WASMBranchBlock *env) {
 
     cell_num = env->cell_num;
 }
-void WAMRBranchBlock::restore(WASMBranchBlock *env) {
+void WAMRBranchBlock::restore(WASMBranchBlock *env) const {
     if (begin_addr)
         env->begin_addr = wamr->get_func()->code + begin_addr;
 

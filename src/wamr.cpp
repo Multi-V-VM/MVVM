@@ -5,6 +5,8 @@
 #include "wamr.h"
 #include "thread_manager.h"
 #include "wasm_interp.h"
+#include <regex>
+
 WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) {
     RuntimeInitArgs wasm_args;
     memset(&wasm_args, 0, sizeof(RuntimeInitArgs));
@@ -134,9 +136,45 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
     wasm_runtime_set_wasi_addr_pool(module, addr_.data(), addr_.size());
     wasm_runtime_set_wasi_ns_lookup_pool(module, ns_pool_.data(), ns_pool_.size());
 }
-void WAMRInstance::set_wasi_args(WAMRWASIContext & context) {
+void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
     // some handmade directory after recovery dir
-   set_wasi_args({}, {}, context.argv_environ.env_list, context.argv_environ.argv_list, {}, context.ns_lookup_list);
+    auto get_dir_from_context = [](const WAMRWASIContext &wasiContext, bool is_map_dir = false) {
+        auto cstrArray = std::vector<std::string>(wasiContext.prestats.size);
+        std::regex dir_replacer(".+?/");
+        std::transform(wasiContext.prestats.prestats.begin(), wasiContext.prestats.prestats.end(), cstrArray.begin(),
+                       [&is_map_dir, &dir_replacer](const WAMRFDPrestat &str) {
+                           return is_map_dir ? std::regex_replace(str.dir, dir_replacer, "") : str.dir;
+                       });
+        return cstrArray;
+    };
+    auto get_addr_from_context = [](const WAMRWASIContext &wasiContext) {
+        auto addr_pool = std::vector<std::string>(wasiContext.addr_pool.size());
+        std::transform(wasiContext.addr_pool.begin(), wasiContext.addr_pool.end(), addr_pool.begin(),
+                       [](const WAMRAddrPool &addr_) {
+                           std::string addr_str;
+                           if (addr_.is_4) {
+                               addr_str = fmt::format("{}.{}.{}.{}/{}", addr_.ip4[0], addr_.ip4[1], addr_.ip4[2],
+                                                      addr_.ip4[3], addr_.mask);
+                               if (addr_.mask != UINT8_MAX) {
+                                   addr_str += fmt::format("/{}", addr_.mask);
+                               }
+                           } else {
+                               addr_str =
+
+                                   fmt::format("{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}", addr_.ip6[0], addr_.ip6[1],
+                                               addr_.ip6[2], addr_.ip6[3], addr_.ip6[4], addr_.ip6[5], addr_.ip6[6],
+                                               addr_.ip6[7], addr_.mask);
+                               if (addr_.mask != UINT8_MAX) {
+                                   addr_str += fmt::format("/{}", addr_.mask);
+                               }
+                           }
+                           return addr_str;
+                       });
+
+        return addr_pool;
+    };
+    set_wasi_args(get_dir_from_context(context), get_dir_from_context(context, true), context.argv_environ.env_list,
+                  context.argv_environ.argv_list, get_addr_from_context(context), context.ns_lookup_list);
 }
 void WAMRInstance::instantiate() {
     module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
