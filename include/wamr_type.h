@@ -20,7 +20,7 @@ struct WAMRType {
         ret_cell_num = env->ret_cell_num;
         ref_count = env->ref_count;
     };
-    bool equal(WASMType *type) {
+    bool equal(WASMType *type) const {
         return param_count == type->param_count && result_count == type->result_count &&
                param_cell_num == type->param_cell_num && ret_cell_num == type->ret_cell_num &&
                ref_count == type->ref_count;

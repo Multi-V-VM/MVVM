@@ -13,7 +13,7 @@
 
 auto reader = FreadStream("test.bin");
 WAMRInstance *wamr = nullptr;
-
+void insert_fd(int fd, const char *path,int flags){};
 void serialize_to_file(WASMExecEnv *instance) {}
 
 int main(int argc, char **argv) {
@@ -32,9 +32,6 @@ int main(int argc, char **argv) {
     auto target = result["target"].as<std::string>();
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(reader).value();
-    wamr->set_wasi_args(a[0].get()->module_inst.wasi_ctx);
-    //  first get the deserializer message, here just hard code
-
     wamr->recover(&a);
     return 0;
 }

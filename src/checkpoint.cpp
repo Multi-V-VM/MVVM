@@ -11,7 +11,12 @@ WAMRInstance *wamr = nullptr;
 auto writer = FwriteStream("test.bin");
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
-
+void insert_fd(int fd, const char *path,int flags) {
+    wamr->fd_map_.insert( std::make_pair(fd,std::make_pair(std::string(path),flags)));
+}
+void remove_fd(int fd) {
+    wamr->fd_map_.erase(fd);
+}
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     auto cluster = wasm_exec_env_get_cluster(instance);

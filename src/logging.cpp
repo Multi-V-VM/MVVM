@@ -48,9 +48,3 @@ fmt::color level2color(LogLevel level) {
         return fmt::color::white;
     }
 }
-std::string get_short_name(const char *file_path) {
-    std::string short_file_path = file_path;
-    auto index = short_file_path.find_last_of('/');
-
-    return short_file_path.substr(index + 1);
-}
