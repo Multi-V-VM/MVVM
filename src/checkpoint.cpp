@@ -11,12 +11,10 @@ WAMRInstance *wamr = nullptr;
 auto writer = FwriteStream("test.bin");
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
-void insert_fd(int fd, const char *path,int flags) {
-    wamr->fd_map_.insert( std::make_pair(fd,std::make_pair(std::string(path),flags)));
+void insert_fd(int fd, const char *path, int flags) {
+    wamr->fd_map_.insert(std::make_pair(fd, std::make_pair(std::string(path), flags)));
 }
-void remove_fd(int fd) {
-    wamr->fd_map_.erase(fd);
-}
+void remove_fd(int fd) { wamr->fd_map_.erase(fd); }
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     auto cluster = wasm_exec_env_get_cluster(instance);
@@ -67,7 +65,7 @@ void sigint_handler(int sig) {
     // Your logic here
     printf("Caught signal %d, performing custom logic...\n", sig);
     wamr->get_exec_env()->is_checkpoint = true;
-    //check whether the current function is sleep
+    // check whether the current function is sleep
     struct sigaction sa {};
 
     // Clear the structure
@@ -93,13 +91,17 @@ int main(int argc, char *argv[]) {
     options.add_options()("t,target", "The webassembly file to execute",
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
-        "d,dir", "The directory list exposed to WAMRe", cxxopts::value<std::vector<std::string>>()->default_value("./"))(
-        "m,map_dir", "The mapped directory list exposed to WAMRe", cxxopts::value<std::vector<std::string>>()->default_value(""))(
-        "e,env", "The environment list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value("a=b"))(
+        "d,dir", "The directory list exposed to WAMRe",
+        cxxopts::value<std::vector<std::string>>()->default_value("./"))(
+        "m,map_dir", "The mapped directory list exposed to WAMRe",
+        cxxopts::value<std::vector<std::string>>()->default_value(""))(
+        "e,env", "The environment list exposed to WAMR",
+        cxxopts::value<std::vector<std::string>>()->default_value("a=b"))(
         "a,arg", "The arg list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
         "p,addr", "The address exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
-        "n,ns_pool", "The ns lookup pool exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
-        "h,help", "The value for epoch value", cxxopts::value<bool>()->default_value("false"));
+        "n,ns_pool", "The ns lookup pool exposed to WAMR",
+        cxxopts::value<std::vector<std::string>>()->default_value(""))("h,help", "The value for epoch value",
+                                                                       cxxopts::value<bool>()->default_value("false"));
 
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {
@@ -115,7 +117,7 @@ int main(int argc, char *argv[]) {
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
     wamr = new WAMRInstance(target.c_str(), is_jit);
-    wamr->set_wasi_args(dir,map_dir,env,arg,addr,ns_pool);
+    wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
 #ifndef MVVM_DEBUG
     // Define the sigaction structure

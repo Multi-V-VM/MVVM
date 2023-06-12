@@ -4,12 +4,12 @@
 #include "wamr_wasi_context.h"
 #include "wamr.h"
 extern WAMRInstance *wamr;
-void WAMRWASIContext::dump(WASIContext *env) {
-    for(int i=0;i<wamr->dir_.size();i++){
-        dir.emplace_back( wamr->dir_[i]);
+void WAMRWASIContext::dump_impl(WASIContext *env) {
+    for (int i = 0; i < wamr->dir_.size(); i++) {
+        dir.emplace_back(wamr->dir_[i]);
     }
-    for(int i=0;i<wamr->map_dir_.size();i++){
-        map_dir.emplace_back( wamr->map_dir_[i]);
+    for (int i = 0; i < wamr->map_dir_.size(); i++) {
+        map_dir.emplace_back(wamr->map_dir_[i]);
     }
     // Need to open the file and reinitialize the file descripter by map.
     this->curfds.size = env->curfds->size;
@@ -22,16 +22,16 @@ void WAMRWASIContext::dump(WASIContext *env) {
             dumped_fo.number = entry[i].object->number;
             if (dumped_fo.number > 2 && wamr->fd_map_.contains(dumped_fo.number)) {
                 fd_map[dumped_fo.number] = wamr->fd_map_[dumped_fo.number];
-                LOGV(DEBUG)<<fmt::format("fd:{} path:{}",dumped_fo.number,fd_map[dumped_fo.number].first);
+                LOGV(DEBUG) << fmt::format("fd:{} path:{}", dumped_fo.number, fd_map[dumped_fo.number].first);
             }
             // open type? read write? or just rw
-//            if (((uint64)entry[i].object->directory.handle) > 10000) {
-//                auto d = readdir(entry[i].object->directory.handle);
-//                // got from dir path, is that one on one?
-//                // dumped_fo.dir=fmt::sprintf("%s/%s",dir_path, d->d_name);
-//                dumped_fo.dir = d->d_name;
-//                dumped_fo.offset = entry[i].object->directory.offset;
-//            }
+            //            if (((uint64)entry[i].object->directory.handle) > 10000) {
+            //                auto d = readdir(entry[i].object->directory.handle);
+            //                // got from dir path, is that one on one?
+            //                // dumped_fo.dir=fmt::sprintf("%s/%s",dir_path, d->d_name);
+            //                dumped_fo.dir = d->d_name;
+            //                dumped_fo.offset = entry[i].object->directory.offset;
+            //            }
             LOGV(DEBUG) << "type:" << dumped_fo.type;
             LOGV(DEBUG) << "number:" << dumped_fo.number;
         }
@@ -123,7 +123,7 @@ void WAMRWASIContext::dump(WASIContext *env) {
         env->argv_environ->environ_list, env->argv_environ->environ_list + env->argv_environ->environ_count);
     this->exit_code = env->exit_code;
 }
-void WAMRWASIContext::restore(WASIContext *env){
+void WAMRWASIContext::restore_impl(WASIContext *env) {
     // Need to open the file and reinitialize the file descripter by map.
     env->curfds->size = this->curfds.size;
     env->curfds->used = this->curfds.used;
@@ -148,9 +148,9 @@ void WAMRWASIContext::restore(WASIContext *env){
     }
     env->prestats->size = this->prestats.size;
     env->prestats->used = this->prestats.used;
-    i=0;
+    i = 0;
     env->prestats->prestats = (fd_prestat *)malloc(sizeof(wasi_fd_prestat) * this->prestats.size);
-    auto prestats_= (wasi_fd_prestat *)env->prestats->prestats;
+    auto prestats_ = (wasi_fd_prestat *)env->prestats->prestats;
     for (auto &&pre : this->prestats.prestats) {
         if (!pre.dir.empty()) {
             prestats_[i].dir = pre.dir.c_str();

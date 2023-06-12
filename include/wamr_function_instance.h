@@ -34,7 +34,7 @@ struct WAMRFunction {
     uint32 max_block_num;
     uint32 code_size;
     //    uint8 *code;
-    void dump(WASMFunction *env) {
+    void dump_impl(WASMFunction *env) {
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
         field_name = env->field_name;
         LOGV(DEBUG) << "field_name:" << field_name;
@@ -55,7 +55,7 @@ struct WAMRFunction {
         code_size = env->code_size;
 #endif
     };
-    bool equal(WASMFunction *env) const {
+    bool equal_impl(WASMFunction *env) const {
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
         return field_name == env->field_name;
 #else
@@ -85,20 +85,20 @@ struct WAMRFunction {
     };
 };
 
-template <CheckerTrait<WASMFunction *> T> void dump(T t, WASMFunction *env) { t->dump(env); }
-template <CheckerTrait<WASMFunction *> T> bool equal(T t, WASMFunction *env) { return t->equal(env); }
+template <CheckerTrait<WASMFunction *> T> void dump(T t, WASMFunction *env) { t->dump_impl(env); }
+template <CheckerTrait<WASMFunction *> T> bool equal(T t, WASMFunction *env) { return t->equal_impl(env); }
 
 struct WAMRFunctionImport {
     std::string field_name;
-    void dump(WASMFunctionImport *env) {
+    void dump_impl(WASMFunctionImport *env) {
         field_name = env->field_name;
         LOGV(DEBUG) << "field_name:" << field_name;
     };
-    bool equal(WASMFunctionImport *env) const { return field_name == env->field_name; };
+    bool equal_impl(WASMFunctionImport *env) const { return field_name == env->field_name; };
 };
 
-template <CheckerTrait<WASMFunctionImport *> T> void dump(T t, WASMFunctionImport *env) { t->dump(env); }
-template <CheckerTrait<WASMFunctionImport *> T> bool equal(T t, WASMFunctionImport *env) { return t->equal(env); }
+template <CheckerTrait<WASMFunctionImport *> T> void dump(T t, WASMFunctionImport *env) { t->dump_impl(env); }
+template <CheckerTrait<WASMFunctionImport *> T> bool equal(T t, WASMFunctionImport *env) { return t->equal_impl(env); }
 
 struct WAMRFunctionInstance {
     /* whether it is import function or WASM function */
@@ -127,13 +127,13 @@ struct WAMRFunctionInstance {
     WAMRFunction func;
     WAMRFunctionImport func_import;
     //    } u;
-    void dump(WASMFunctionInstance *env) {
+    void dump_impl(WASMFunctionInstance *env) {
         is_import_func = env->is_import_func;
         LOGV(DEBUG) << "is_import_func:" << is_import_func;
         if (!is_import_func) {
-            ::dump(&func, env->u.func);
+            dump(&func, env->u.func);
         } else {
-            ::dump(&func_import, env->u.func_import);
+            dump(&func_import, env->u.func_import);
         }
         param_count = env->param_count;
         LOGV(DEBUG) << "param_count:" << param_count;
@@ -155,10 +155,11 @@ struct WAMRFunctionInstance {
         /* local types, NULL for import function */
         local_types = std::vector(env->local_types, env->local_types + local_count);
     };
-    void restore(WASMFunctionInstance *env);
+    void restore_impl(WASMFunctionInstance *env);
 };
 
-template <SerializerTrait<WASMFunctionInstance *> T> void dump(T t, WASMFunctionInstance *env) { t->dump(env); }
-template <SerializerTrait<WASMFunctionInstance *> T> void restore(T t, WASMFunctionInstance *env) { t->restore(env); }
+template <SerializerTrait<WASMFunctionInstance *> T> void dump(T t, WASMFunctionInstance *env) { t->dump_impl(env); }
+template <SerializerTrait<WASMFunctionInstance *> T> void restore(T t, WASMFunctionInstance *env) {
+    t->restore_impl(env); }
 
 #endif // MVVM_WAMR_FUNCTION_INSTANCE_H

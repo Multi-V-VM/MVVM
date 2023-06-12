@@ -7,7 +7,7 @@ int main() {
     int c = 0;
     while (1){
         c++;
-        if (c==1000000){
+        if (c==10){
             break;
         }
     }

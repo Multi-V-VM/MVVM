@@ -13,7 +13,7 @@
 
 auto reader = FreadStream("test.bin");
 WAMRInstance *wamr = nullptr;
-void insert_fd(int fd, const char *path,int flags){};
+void insert_fd(int fd, const char *path, int flags){};
 void serialize_to_file(WASMExecEnv *instance) {}
 
 int main(int argc, char **argv) {

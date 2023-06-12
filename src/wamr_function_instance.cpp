@@ -5,7 +5,7 @@
 #include "wamr_function_instance.h"
 #include "wamr.h"
 extern WAMRInstance *wamr;
-void WAMRFunctionInstance::restore(WASMFunctionInstance *env) {
+void WAMRFunctionInstance::restore_impl(WASMFunctionInstance *env) {
     // iterate all the function instance and put to the function instance
     auto target_module = wamr->get_module_instance()->e;
     for (int i = 0; i < target_module->function_count; i++) {
@@ -48,12 +48,12 @@ void WAMRFunctionInstance::restore(WASMFunctionInstance *env) {
                 }
             }
 #endif
-            if (::equal(&func, cur_func.u.func)) {
+            if (equal(&func, cur_func.u.func)) {
                 *env = cur_func;
                 break;
             }
         } else {
-            if (::equal(&func_import, cur_func.u.func_import)) {
+            if (equal(&func_import, cur_func.u.func_import)) {
                 *env = cur_func;
                 break;
             }

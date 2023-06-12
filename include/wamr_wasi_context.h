@@ -91,11 +91,11 @@ struct WAMRWASIContext {
     std::vector<WAMRAddrPool> addr_pool;
     std::vector<std::string> ns_lookup_list;
     uint32_t exit_code;
-    void dump(WASIContext *env);
-    void restore(WASIContext *env);
+    void dump_impl(WASIContext *env);
+    void restore_impl(WASIContext *env);
 };
 
-template <SerializerTrait<WASIContext *> T> void dump(T t, WASIContext *env) { t->dump(env); }
-template <SerializerTrait<WASIContext *> T> void restore(T t, WASIContext *env) { t->restore(env); }
+template <SerializerTrait<WASIContext *> T> void dump(T t, WASIContext *env) { t->dump_impl(env); }
+template <SerializerTrait<WASIContext *> T> void restore(T t, WASIContext *env) { t->restore_impl(env); }
 
 #endif // MVVM_WAMR_WASI_CONTEXT_H

@@ -31,7 +31,7 @@ struct WAMRMemoryInstance {
     /* Heap data base address */
     std::vector<uint8> heap_data;
 
-    void dump(WASMMemoryInstance *env) {
+    void dump_impl(WASMMemoryInstance *env) {
         module_type = env->module_type;
         is_shared = env->is_shared;
         num_bytes_per_page = env->num_bytes_per_page;
@@ -46,7 +46,7 @@ struct WAMRMemoryInstance {
         //        }
         heap_data = std::vector<uint8>(env->heap_data, env->heap_data_end);
     };
-    void restore(WASMMemoryInstance *env) {
+    void restore_impl(WASMMemoryInstance *env) {
         env->module_type = module_type;
         env->is_shared = is_shared;
         env->num_bytes_per_page = num_bytes_per_page;
@@ -66,7 +66,7 @@ struct WAMRMemoryInstance {
     };
 };
 
-template <SerializerTrait<WASMMemoryInstance *> T> void dump(T t, WASMMemoryInstance *env) { t->dump(env); }
-template <SerializerTrait<WASMMemoryInstance *> T> void restore(T t, WASMMemoryInstance *env) { t->restore(env); }
+template <SerializerTrait<WASMMemoryInstance *> T> void dump(T t, WASMMemoryInstance *env) { t->dump_impl(env); }
+template <SerializerTrait<WASMMemoryInstance *> T> void restore(T t, WASMMemoryInstance *env) { t->restore_impl(env); }
 
 #endif // MVVM_WAMR_MEMORY_INSTANCE_H

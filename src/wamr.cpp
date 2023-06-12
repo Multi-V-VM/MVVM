@@ -119,7 +119,7 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
                                  const std::vector<std::string> &ns_lookup_pool) {
     auto string_vec_to_cstr_array = [](const std::vector<std::string> &vecStr) {
         std::vector<const char *> cstrArray(vecStr.size());
-        if (vecStr.data()==nullptr || vecStr[0].empty())
+        if (vecStr.data() == nullptr || vecStr[0].empty())
             return std::vector<const char *>(0);
         LOGV(DEBUG) << "vecStr[0]:" << vecStr[0];
         std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(),
@@ -150,18 +150,18 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
             if (stat.second == 0) {
                 auto dir_name = opendir(stat.first.c_str());
                 fd_ = dirfd(dir_name);
-            }else {
+            } else {
                 fd_ = open(stat.first.c_str(), O_RDWR);
             }
             if (fd > fd_) {
-//                close(fd_);
+                //                close(fd_);
                 to_close.emplace_back(fd_);
                 continue;
             }
-            if(fd< fd_){
+            if (fd < fd_) {
                 throw std::runtime_error("restore fd overflow");
             }
-            //remain socket.
+            // remain socket.
             break;
         }
     }

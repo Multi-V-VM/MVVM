@@ -9,14 +9,14 @@
 
 template <typename T, typename K>
 concept SerializerTrait = requires(T &t, K k) {
-    { t->dump(k) } -> std::same_as<void>;
-    { t->restore(k) } -> std::same_as<void>;
+    { t->dump_impl(k) } -> std::same_as<void>;
+    { t->restore_impl(k) } -> std::same_as<void>;
 };
 
 template <typename T, typename K>
 concept CheckerTrait = requires(T &t, K k) {
-    { t->dump(k) } -> std::same_as<void>;
-    { t->equal(k) } -> std::convertible_to<bool>;
+    { t->dump_impl(k) } -> std::same_as<void>;
+    { t->equal_impl(k) } -> std::convertible_to<bool>;
 };
 
 #endif // MVVM_WAMR_SERIALIZER_H

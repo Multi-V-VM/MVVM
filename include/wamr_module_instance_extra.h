@@ -45,26 +45,27 @@ struct WAMRModuleInstanceExtra {
 #if WASM_ENABLE_WASI_NN!=0
     WAMRWASINNContext wasi_nn_ctx{};
 #endif
-    void dump(WASMModuleInstanceExtra *env) {
+    void dump_impl(WASMModuleInstanceExtra *env) {
         global_count = env->global_count;
         function_count = env->function_count;
 #if WASM_ENABLE_WASI_NN!=0
-        ::dump(&wasi_nn_ctx, env->wasi_nn_ctx);
+        dump(&wasi_nn_ctx, env->wasi_nn_ctx);
 #endif
     };
-    void restore(WASMModuleInstanceExtra *env) const {
+    void restore_impl(WASMModuleInstanceExtra *env) const {
         env->global_count = global_count;
         env->function_count = function_count;
 #if WASM_ENABLE_WASI_NN!=0
-        ::restore(&wasi_nn_ctx, env->wasi_nn_ctx);
+        restore(&wasi_nn_ctx, env->wasi_nn_ctx);
 #endif
     };
 };
 
-template <SerializerTrait<WASMModuleInstanceExtra *> T> void dump(T t, WASMModuleInstanceExtra *env) { t->dump(env); }
+template <SerializerTrait<WASMModuleInstanceExtra *> T> void dump(T t, WASMModuleInstanceExtra *env) {
+    t->dump_impl(env); }
 
 template <SerializerTrait<WASMModuleInstanceExtra *> T> void restore(T t, WASMModuleInstanceExtra *env) {
-    t->restore(env);
+    t->restore_impl(env);
 }
 
 #endif // MVVM_WAMR_MODULE_INSTANCE_EXTRA_H
