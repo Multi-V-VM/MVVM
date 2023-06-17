@@ -73,7 +73,12 @@ int WAMRInstance::invoke_main() {
 
     return wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
-
+int WAMRInstance::invoke_open(uint32 fd, std::string path, uint32 option) {
+    if (!(func = wasm_runtime_lookup_function(module_inst,"open",))) {
+        LOGV(ERROR) << "The wasi mode main function is not found.";
+        return -1;
+    }
+     return 0; };
 WASMExecEnv *WAMRInstance::get_exec_env() {
     return cur_env; // should return the current thread's
 }
@@ -142,32 +147,34 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
 }
 void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
     // some handmade directory after recovery dir
-    std::vector<int> to_close;
-    for (auto [fd, stat] : context.fd_map) {
-        while (true) {
-            // if the time is not socket
-            int fd_;
-            if (stat.second == 0) {
-                auto dir_name = opendir(stat.first.c_str());
-                fd_ = dirfd(dir_name);
-            } else {
-                fd_ = open(stat.first.c_str(), O_RDWR);
-            }
-            if (fd > fd_) {
-                //                close(fd_);
-                to_close.emplace_back(fd_);
-                continue;
-            }
-            if (fd < fd_) {
-                throw std::runtime_error("restore fd overflow");
-            }
-            // remain socket.
-            break;
-        }
-    }
-    for (auto fd : to_close) {
-        close(fd);
-    }
+    // std::vector<int> to_close;
+    // for (auto [fd, stat] : context.fd_map) {
+    //     while (true) {
+    //         // if the time is not socket
+    //         int fd_;
+    //         if (stat.second == 0) {
+    //             auto dir_name = opendir(stat.first.c_str());
+    //             fd_ = dirfd(dir_name);
+    //         } else {
+    //             fd_ = open(stat.first.c_str(), O_RDWR);
+    //         }
+    //         if (fd > fd_) {
+    //             //                close(fd_);
+    //             to_close.emplace_back(fd_);
+    //             continue;
+    //         }
+    //         if (fd < fd_) {
+    //             throw std::runtime_error("restore fd overflow");
+    //         }
+    //         // remain socket.
+    //         break;
+    //     }
+    // }
+    // for (auto fd : to_close) {
+    //     close(fd);
+    // }
+    /** refer to wasm bpf call function */
+
     //    auto get_dir_from_context = [](const WAMRWASIContext &wasiContext, bool is_map_dir = false) {
     //        auto cstrArray = std::vector<std::string>(wasiContext.prestats.size);
     //        std::regex dir_replacer(".+?/");

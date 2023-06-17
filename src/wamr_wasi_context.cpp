@@ -157,4 +157,7 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
         }
         i++;
     }
+    for (auto [fd,res]:this->fd_map){
+    
+    wamr->invoke_open(fd,res.first,res.second);}
 };

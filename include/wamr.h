@@ -10,6 +10,7 @@
 #include "wamr_exec_env.h"
 #include "wamr_read_write.h"
 #include "wasm_runtime.h"
+#include "wamr_export.h"
 
 class WAMRInstance {
     WASMExecEnv *exec_env{};
@@ -55,7 +56,7 @@ public:
                        const std::vector<std::string> &addr_list, const std::vector<std::string> &ns_lookup_pool);
 
     int invoke_main();
+    int invoke_open(uint32,std::string, uint32);
     ~WAMRInstance();
 };
-void serialize_to_file(WASMExecEnv *instance);
 #endif // MVVM_WAMR_H

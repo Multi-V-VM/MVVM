@@ -51,7 +51,6 @@ void serialize_to_file(WASMExecEnv *instance) {
     }
     exit(0);
 }
-
 #ifndef MVVM_DEBUG
 void sigtrap_handler(int sig) {
     printf("Caught signal %d, performing custom logic...\n", sig);
