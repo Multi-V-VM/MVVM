@@ -5,6 +5,7 @@
 #include "thread_manager.h"
 #include "wamr.h"
 #include <cxxopts.hpp>
+#include <thread>
 // file map, direcotry handle
 
 WAMRInstance *wamr = nullptr;
@@ -39,9 +40,8 @@ void serialize_to_file(WASMExecEnv *instance) {
             LOGV(INFO) << "serialize to file" << cur_count << " " << all_count << "\n";
         }
         as_mtx.unlock();
-        if (cur_count == 0) {
-            sleep(100);
-        }
+        if (cur_count == 0)
+            std::this_thread::sleep_for(std::chrono::seconds(100));
     } else {
         auto a = new WAMRExecEnv();
         dump(a, instance);

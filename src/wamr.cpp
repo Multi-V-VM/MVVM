@@ -73,12 +73,13 @@ int WAMRInstance::invoke_main() {
 
     return wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
-int WAMRInstance::invoke_open(uint32 fd, std::string path, uint32 option) {
-    if (!(func = wasm_runtime_lookup_function(module_inst,"open",))) {
-        LOGV(ERROR) << "The wasi mode main function is not found.";
+int WAMRInstance::invoke_fopen(uint32 fd, std::string path, uint32 option) {
+    if (!(func = wasm_runtime_lookup_function(module_inst, "fopen", "(ii*~iIIi*)i"))) {
+        LOGV(ERROR) << "The wasi-open function is not found.";
         return -1;
     }
-     return 0; };
+    return 0;
+};
 WASMExecEnv *WAMRInstance::get_exec_env() {
     return cur_env; // should return the current thread's
 }

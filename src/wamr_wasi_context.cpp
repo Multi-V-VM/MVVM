@@ -11,6 +11,7 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
     for (int i = 0; i < wamr->map_dir_.size(); i++) {
         map_dir.emplace_back(wamr->map_dir_[i]);
     }
+#if 0
     // Need to open the file and reinitialize the file descripter by map.
     this->curfds.size = env->curfds->size;
     this->curfds.used = env->curfds->used;
@@ -25,13 +26,13 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
                 LOGV(DEBUG) << fmt::format("fd:{} path:{}", dumped_fo.number, fd_map[dumped_fo.number].first);
             }
             // open type? read write? or just rw
-            //            if (((uint64)entry[i].object->directory.handle) > 10000) {
-            //                auto d = readdir(entry[i].object->directory.handle);
-            //                // got from dir path, is that one on one?
-            //                // dumped_fo.dir=fmt::sprintf("%s/%s",dir_path, d->d_name);
-            //                dumped_fo.dir = d->d_name;
-            //                dumped_fo.offset = entry[i].object->directory.offset;
-            //            }
+            // if (((uint64)entry[i].object->directory.handle) > 10000) {
+            //     auto d = readdir(entry[i].object->directory.handle);
+            //     // got from dir path, is that one on one?
+            //     // dumped_fo.dir=fmt::sprintf("%s/%s",dir_path, d->d_name);
+            //     dumped_fo.dir = d->d_name;
+            //     dumped_fo.offset = entry[i].object->directory.offset;
+            // }
             LOGV(DEBUG) << "type:" << dumped_fo.type;
             LOGV(DEBUG) << "number:" << dumped_fo.number;
         }
@@ -39,7 +40,8 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
         dumped_fo.rights_inheriting = entry[i].rights_inheriting;
         this->curfds.entries.emplace_back(dumped_fo);
     }
-#ifndef MVVM_DEBUG
+#endif
+#if 0
     char path[256] = "/proc/self/fd";
     char fname[256];
     DIR *d;
@@ -76,6 +78,7 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
     }
     closedir(d);
 #endif
+#if 0
     this->prestats.size = env->prestats->size;
     this->prestats.used = env->prestats->used;
     auto removeTrailingSlashes = [](const std::string &input) {
@@ -121,9 +124,11 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
         std::vector<std::string>(env->argv_environ->argv_list, env->argv_environ->argv_list + env->argv_environ->argc);
     this->argv_environ.env_list = std::vector<std::string>(
         env->argv_environ->environ_list, env->argv_environ->environ_list + env->argv_environ->environ_count);
+#endif
     this->exit_code = env->exit_code;
 }
 void WAMRWASIContext::restore_impl(WASIContext *env) {
+#if 0
     // Need to open the file and reinitialize the file descripter by map.
     env->curfds->size = this->curfds.size;
     env->curfds->used = this->curfds.used;
@@ -157,7 +162,9 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
         }
         i++;
     }
-    for (auto [fd,res]:this->fd_map){
-    
-    wamr->invoke_open(fd,res.first,res.second);}
+#endif
+    for (auto [fd, res] : this->fd_map) {
+        // differ from path from file
+        wamr->invoke_fopen(fd, res.first, res.second);
+    }
 };

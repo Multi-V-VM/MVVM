@@ -5,7 +5,9 @@
 #ifndef MVVM_WAMR_READ_WRITE_H
 #define MVVM_WAMR_READ_WRITE_H
 #include "struct_pack/struct_pack.hpp"
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 struct FwriteStream {
     FILE *file;
     bool write(const char *data, std::size_t sz) const { return fwrite(data, sz, 1, file) == 1; }

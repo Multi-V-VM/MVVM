@@ -1,0 +1,66 @@
+name: build-macos
+
+on: push
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [Debug, Release]
+        standard: [cxx23]
+
+    defaults:
+      run:
+        shell: bash
+
+    name: "${{matrix.standard}}-${{matrix.build}}"
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Choco Dependency
+      uses: crazy-max/ghaction-chocolatey@v2
+      with:
+        args: install make llvm msys2
+
+    - name: Install Dependency
+      run: |
+        cd D:\
+        git clone https://github.com/microsoft/vcpkg
+        cd vcpkg
+        .\bootstrap-vcpkg.bat
+        .\vcpkg install fmt:x64-windows cxxopts:x64-windows # llvm[clang,lldb]:x64-windows
+
+    - name: Checkout
+      run: git submodule update --init
+
+    - name: Install WASI SDK
+      run: |
+        cd D:\
+        wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-20/wasi-sdk-20.0.m-mingw.tar.gz -O D:\wasi-sdk-20.0.m-mingw.tar.gz
+        tar -xzf wasi-sdk-20.0.m-mingw.tar.gz
+        mv wasi-sdk-20.0+m wasi-sdk
+
+    - name: Make WASI Socket Ext
+      run: |
+        cd lib/wasm-micro-runtime/samples/socket-api/
+        cmake . -DWASI_SDK_DIR="D:/wasi-sdk"
+        make
+
+    - name: Make WASM LD no check features
+      run: |
+        mv D:/wasi-sdk/bin/wasm-ld D:/wasi-sdk/bin/wasm-ld.bak
+        echo D:/wasi-sdk/bin/wasm-ld.bak --no-check-features %1 | tee D:/wasi-sdk/bin/wasm-ld.bat
+
+    - name: configure cmake
+      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE="D:\vcpkg\scripts\buildsystems\vcpkg.cmake"
+
+    - name: build
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config ${{matrix.build}}
+
+    - name: test
+      working-directory: ${{runner.workspace}}/build
+      run: ctest -V

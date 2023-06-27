@@ -57,7 +57,16 @@ private:
 
 class LogStream {
 public:
-    LogStream() { sstream_ = new std::stringstream(); }
+    LogStream() {
+#ifdef _WIN32
+        HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE), hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+        DWORD dwMode;
+        GetConsoleMode(hOutput, &dwMode);
+        dwMode |= ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        SetConsoleMode(hOutput, dwMode);
+#endif
+        sstream_ = new std::stringstream();
+    }
     ~LogStream() = default;
 
     template <typename T> LogStream &operator<<(const T &val) noexcept {

@@ -176,7 +176,7 @@ struct WAMRExecEnv { // multiple
         env->cur_frame = (WASMInterpFrame *)((uint8 *)env->wasm_stack.s.bottom + this->frames[0]->lp -
                                              (uint32)offsetof(WASMInterpFrame, lp));
         auto cur_frame = env->cur_frame;
-#if defined(__DARWIN__) || defined(__APPLE__)
+#if defined(__DARWIN__) || defined(__APPLE__) || defined(_WIN32)
         for (int i=0; i<this->frames.size(); i++) {
             restore(this->frames[i].get(), cur_frame);
             if (i != this->frames.size()-1) {

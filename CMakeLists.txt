@@ -3,7 +3,6 @@ project(MVVM LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
 
 find_package(FMT REQUIRED)
-find_package(LLVM REQUIRED)
 find_package(cxxopts REQUIRED)
 include(CTest)
 
@@ -20,9 +19,10 @@ elseif(LINUX)
     set(LLVM_LLDB_LIB /usr/lib/liblldb.so)
 else()
     set(WAMR_BUILD_PLATFORM "windows")
-    set (WAMR_BUILD_LIBC_UVWASI 1)
+    set(WAMR_BUILD_LIBC_UVWASI 1)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "")
     set(CMAKE_GENERATOR_PLATFORM "")
+    set(LLVM_LLDB_LIB uv)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -77,7 +77,7 @@ set(WAMR_BUILD_SIMD 1)
 set(WAMR_BUILD_CHECKPOINT_RESTORE 1)
 
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-U,_get_ext_lib_export_apis")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 
 set(CMAKE_MACOSX_RPATH True)
 
