@@ -38,7 +38,7 @@ jobs:
 
     - name: Install LLVM SDK
       run: |
-        cd "C:/Program Files/"
+        cd D:
         wget https://asplos.dev/LLVM.zip -O LLVM.zip
         unzip LLVM.zip
 
@@ -61,7 +61,7 @@ jobs:
         echo D:/wasi-sdk/bin/wasm-ld.bak --no-check-features %1 | tee D:/wasi-sdk/bin/wasm-ld.bat
 
     - name: configure cmake
-      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
+      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DLLVM_DIR="D:/LLVM/share/llvm"
 
     - name: build
       working-directory: ${{runner.workspace}}/build
