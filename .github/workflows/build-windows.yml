@@ -23,6 +23,11 @@ jobs:
     - name: Checkout
       run: git submodule update --init
 
+    - name: Install Choco Dependency
+      uses: crazy-max/ghaction-chocolatey@v2
+      with:
+        args: install make wget msys2
+
     - name: Install Dependency
       run: |
         cd D:
@@ -30,11 +35,7 @@ jobs:
         cd vcpkg
         ./bootstrap-vcpkg.bat
         ./vcpkg install fmt:x64-windows cxxopts:x64-windows
-
-    - name: Install Choco Dependency
-      uses: crazy-max/ghaction-chocolatey@v2
-      with:
-        args: install make wget
+        pacman -Syuu gcc
 
     - name: Install LLVM SDK
       run: |
@@ -52,7 +53,7 @@ jobs:
     - name: Make WASI Socket Ext
       run: |
         cd lib/wasm-micro-runtime/samples/socket-api/
-        cmake . -DWASI_SDK_DIR="D:/wasi-sdk"
+        cmake . -DWASI_SDK_DIR="D:/wasi-sdk" -DCMAKE_MAKE_PROGRAM="C:/ProgramData/chocolatey/bin/make.exe" -GUnix Makefiles -DCMAKE_C_COMPILER="C:/tools/msys64/usr/bin/gcc.exe" -DCMAKE_CXX_COMPILER="C:/tools/msys64/usr/bin/g++.exe"
         make
 
     - name: Make WASM LD no check features
