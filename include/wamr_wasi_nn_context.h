@@ -15,7 +15,7 @@ struct WAMRWASINNContext {
     Interpreter interpreters[MAX_GRAPH_EXEC_CONTEXTS_PER_INST];
 };
 
-template <SerializerTrait<WAMRWASINNContext *> T> void dump(T t, WASINNContext *env) { t->dump(env); }
+template <SerializerTrait<WAMRWASINNContext *> T> void dump(T t, WASINNContext *env) { t->dump_impl(env); }
 
-template <SerializerTrait<WAMRWASINNContext *> T> void restore(T t, WASINNContext *env) { t->restore(env); }
+template <SerializerTrait<WAMRWASINNContext *> T> void restore(T t, WASINNContext *env) { t->restore_impl(env); }
 #endif // MVVM_WAMR_WASI_NN_CONTEXT_H

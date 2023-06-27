@@ -9,6 +9,8 @@
 #include "wamr_module_instance.h"
 #include "wasm_runtime.h"
 #include <memory>
+#include <ranges>
+#include <tuple>
 #include <vector>
 
 struct WAMRExecEnv { // multiple
@@ -139,53 +141,71 @@ struct WAMRExecEnv { // multiple
     //    } wasm_stack;
     std::vector<uint8_t> wasm_stack; // not known in the compile time
 
-    void dump(WASMExecEnv *env) {
-        ::dump(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
+    void dump_impl(WASMExecEnv *env) {
+        dump(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
         flags = env->suspend_flags.flags;
         aux_boundary = env->aux_stack_boundary.boundary;
         aux_bottom = env->aux_stack_bottom.bottom;
-        for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE;i++) {
-            for (int j = 0; j < 2;j++) {
-                ::dump(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
+        for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE; i++) {
+            for (int j = 0; j < 2; j++) {
+                dump(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
             }
         }
         auto cur_frame = env->cur_frame;
         while (cur_frame) {
             auto dumped_frame = new WAMRInterpFrame();
-            ::dump(dumped_frame, cur_frame);
+            dump(dumped_frame, cur_frame);
             this->frames.emplace_back(dumped_frame);
+            //            this->lp.emplace_back(((uint8*)cur_frame->lp)- env->wasm_stack.s.bottom);
+            //            LOGV(DEBUG)<<"lp:"<<this->lp.back() << " " << ((uint8*)cur_frame)-env->wasm_stack.s.bottom;
             cur_frame = cur_frame->prev_frame;
         }
         wasm_stack = std::vector(env->wasm_stack.s.bottom, env->wasm_stack.s.top);
     };
-    void restore(WASMExecEnv *env) {
-        ::restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
+
+    void restore_impl(WASMExecEnv *env) {
+        restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
         env->suspend_flags.flags = flags;
         env->aux_stack_boundary.boundary = aux_boundary;
         env->aux_stack_bottom.bottom = aux_bottom;
         /** Need to make sure up to this point wasm_stack is allocated */
         memcpy(env->wasm_stack.s.bottom, wasm_stack.data(), wasm_stack.size());
         env->wasm_stack.s.top = env->wasm_stack.s.bottom + wasm_stack.size();
-        env->cur_frame = (WASMInterpFrame *)malloc(sizeof(WASMInterpFrame));
+        /** Should comply to the original wasm_stack */
+        LOGV(DEBUG) << (uint32)offsetof(WASMInterpFrame, lp);
+        env->cur_frame = (WASMInterpFrame *)((uint8 *)env->wasm_stack.s.bottom + this->frames[0]->lp -
+                                             (uint32)offsetof(WASMInterpFrame, lp));
         auto cur_frame = env->cur_frame;
-        for (auto &&frame : this->frames) {
-            ::restore(frame.get(), cur_frame);
-            if (frame != this->frames.back()) {
-                cur_frame->prev_frame = (WASMInterpFrame *)malloc(sizeof(WASMInterpFrame));
-                LOGV(DEBUG)<<"cur_frame"<<(void*)cur_frame;
+#if defined(__DARWIN__) || defined(__APPLE__)
+        for (int i=0; i<this->frames.size(); i++) {
+            restore(this->frames[i].get(), cur_frame);
+            if (i != this->frames.size()-1) {
+                cur_frame->prev_frame = (WASMInterpFrame *)((uint8 *)env->wasm_stack.s.bottom + this->frames[i+1]->lp -
+                                                            (uint32)offsetof(WASMInterpFrame, lp));
+                LOGV(DEBUG) << "cur_frame" << (void *)cur_frame << " " << this->frames[i+1]->lp;
                 cur_frame = cur_frame->prev_frame;
             }
         }
-
-        for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE;i++) {
-            for (int j = 0; j < BLOCK_ADDR_CONFLICT_SIZE;j++) {
-                ::restore(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
+#else
+        for (auto &&[frame, next] : this->frames | std::views::adjacent<2>) {
+            restore(frame.get(), cur_frame);
+            if (frame != this->frames.back()) {
+                cur_frame->prev_frame = (WASMInterpFrame *)((uint8 *)env->wasm_stack.s.bottom + next->lp -
+                                                            (uint32)offsetof(WASMInterpFrame, lp));
+                LOGV(DEBUG) << "cur_frame" << (void *)cur_frame << " " << next->lp;
+                cur_frame = cur_frame->prev_frame;
+            }
+        }
+#endif
+        for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE; i++) {
+            for (int j = 0; j < BLOCK_ADDR_CONFLICT_SIZE; j++) {
+                restore(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
             }
         }
     };
 };
 
-template <SerializerTrait<WASMExecEnv *> T> void dump(T t, WASMExecEnv *env) { t->dump(env); }
-template <SerializerTrait<WASMExecEnv *> T> void restore(T t, WASMExecEnv *env) { t->restore(env); }
+template <SerializerTrait<WASMExecEnv *> T> void dump(T t, WASMExecEnv *env) { t->dump_impl(env); }
+template <SerializerTrait<WASMExecEnv *> T> void restore(T t, WASMExecEnv *env) { t->restore_impl(env); }
 
 #endif // MVVM_WAMR_EXEC_ENV_H

@@ -13,11 +13,11 @@ struct WAMRBlockAddr {
     uint32 else_addr;
     uint32 end_addr;
 
-    void dump(BlockAddr *env);
-    void restore(BlockAddr *env) const;
+    void dump_impl(BlockAddr *env);
+    void restore_impl(BlockAddr *env) const;
 };
 
-template <SerializerTrait<BlockAddr *> T> void dump(T t, BlockAddr *env) { t->dump(env); }
-template <SerializerTrait<BlockAddr *> T> void restore(T t, BlockAddr *env) { t->restore(env); }
+template <SerializerTrait<BlockAddr *> T> void dump(T t, BlockAddr *env) { t->dump_impl(env); }
+template <SerializerTrait<BlockAddr *> T> void restore(T t, BlockAddr *env) { t->restore_impl(env); }
 
 #endif // MVVM_WAMR_BLOCK_ADDR_H

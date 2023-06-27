@@ -13,10 +13,10 @@ struct WAMRBranchBlock {
     uint32 frame_sp{};
     uint32 cell_num{};
 
-    void dump(WASMBranchBlock *env);
-    void restore(WASMBranchBlock *env) const;
+    void dump_impl(WASMBranchBlock *env);
+    void restore_impl(WASMBranchBlock *env) const;
 };
 
-template <SerializerTrait<WASMBranchBlock *> T> void dump(T t, WASMBranchBlock *env) { t->dump(env); }
-template <SerializerTrait<WASMBranchBlock *> T> void restore(T t, WASMBranchBlock *env) { t->restore(env); }
+template <SerializerTrait<WASMBranchBlock *> T> void dump(T t, WASMBranchBlock *env) { t->dump_impl(env); }
+template <SerializerTrait<WASMBranchBlock *> T> void restore(T t, WASMBranchBlock *env) { t->restore_impl(env); }
 #endif // MVVM_WAMR_BRANCH_BLOCK_H

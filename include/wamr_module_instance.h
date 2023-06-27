@@ -118,12 +118,12 @@ struct WAMRModuleInstance {
     //        uint8 bytes[1];
     //    } global_table_data;
 
-    void dump(WASMModuleInstance *env) {
+    void dump_impl(WASMModuleInstance *env) {
         module_type = env->module_type;
         for (int i = 0; i < env->memory_count; i++) {
             // TODO: if the referenced memory has been serialized, just skip.
             auto local_mem = WAMRMemoryInstance();
-            ::dump(&local_mem, env->memories[i]);
+            dump(&local_mem, env->memories[i]);
             memories.push_back(local_mem);
         }
         global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
@@ -137,8 +137,8 @@ struct WAMRModuleInstance {
             std::back_inserter(tables), env->table_count,
             [i = 0, env]() mutable { return *(env->tables[i++]); } // or whatever your 'body' lambda would look like.
         );
-        ::dump(&wasi_ctx, env->wasi_ctx);
-        ::dump(&extra, env->e);
+        dump(&wasi_ctx, env->wasi_ctx);
+        dump(&extra, env->e);
         aux_data_end_global_index = env->module->aux_data_end_global_index;
         aux_data_end = env->module->aux_data_end;
         aux_heap_base_global_index = env->module->aux_heap_base_global_index;
@@ -146,13 +146,13 @@ struct WAMRModuleInstance {
         aux_stack_top_global_index = env->module->aux_stack_top_global_index;
         aux_stack_bottom = env->module->aux_stack_bottom;
         aux_stack_size = env->module->aux_stack_size;
-        ::dump(&global_table_data, env->global_table_data.memory_instances);
+        dump(&global_table_data, env->global_table_data.memory_instances);
     };
-    void restore(WASMModuleInstance *env) {
+    void restore_impl(WASMModuleInstance *env) {
         env->module_type = module_type;
         env->memory_count = memories.size();
         for (int i = 0; i < env->memory_count; i++) {
-            ::restore(&memories[i], env->memories[i]);
+            restore(&memories[i], env->memories[i]);
         }
         memcpy(env->global_data, global_data.data(), global_data.size());
         env->global_data_size = global_data.size();
@@ -167,8 +167,8 @@ struct WAMRModuleInstance {
         for (int i = 0; i < env->table_count; i++) {
             *env->tables[i] = tables[i];
         }
-        ::restore(&wasi_ctx, env->wasi_ctx);
-        ::restore(&extra, env->e);
+        restore(&wasi_ctx, env->wasi_ctx);
+        restore(&extra, env->e);
         env->module->aux_data_end_global_index = aux_data_end_global_index;
         env->module->aux_data_end = aux_data_end;
         env->module->aux_heap_base_global_index = aux_heap_base_global_index;
@@ -176,11 +176,11 @@ struct WAMRModuleInstance {
         env->module->aux_stack_top_global_index = aux_stack_top_global_index;
         env->module->aux_stack_bottom = aux_stack_bottom;
         env->module->aux_stack_size = aux_stack_size;
-        ::restore(&global_table_data, env->global_table_data.memory_instances);
+        restore(&global_table_data, env->global_table_data.memory_instances);
     };
 };
 
-template <SerializerTrait<WASMModuleInstance *> T> void dump(T t, WASMModuleInstance *env) { t->dump(env); }
-template <SerializerTrait<WASMModuleInstance *> T> void restore(T t, WASMModuleInstance *env) { t->restore(env); }
+template <SerializerTrait<WASMModuleInstance *> T> void dump(T t, WASMModuleInstance *env) { t->dump_impl(env); }
+template <SerializerTrait<WASMModuleInstance *> T> void restore(T t, WASMModuleInstance *env) { t->restore_impl(env); }
 
 #endif // MVVM_WAMR_MODULE_INSTANCE_H

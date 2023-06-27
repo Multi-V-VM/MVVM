@@ -10,6 +10,7 @@
 #include "wasm_runtime.h"
 #include <memory>
 struct WAMRInterpFrame {
+    uint32 size{};
     /* Instruction pointer of the bytecode array.  */
     uint32 ip{};
 
@@ -44,11 +45,11 @@ struct WAMRInterpFrame {
     uint32 lp{}; // this thing is dynamic allocated
     // #endif
 
-    void dump(WASMInterpFrame *env);
-    void restore(WASMInterpFrame *env);
+    void dump_impl(WASMInterpFrame *env);
+    void restore_impl(WASMInterpFrame *env);
 };
 
-template <SerializerTrait<WASMInterpFrame *> T> void dump(T t, WASMInterpFrame *env) { t->dump(env); }
-template <SerializerTrait<WASMInterpFrame *> T> void restore(T t, WASMInterpFrame *env) { t->restore(env); }
+template <SerializerTrait<WASMInterpFrame *> T> void dump(T t, WASMInterpFrame *env) { t->dump_impl(env); }
+template <SerializerTrait<WASMInterpFrame *> T> void restore(T t, WASMInterpFrame *env) { t->restore_impl(env); }
 
 #endif // MVVM_WAMR_INTERP_FRAME_H

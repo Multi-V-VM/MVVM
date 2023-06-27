@@ -73,7 +73,12 @@ int WAMRInstance::invoke_main() {
 
     return wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
-
+int WAMRInstance::invoke_open(uint32 fd, std::string path, uint32 option) {
+    if (!(func = wasm_runtime_lookup_function(module_inst,"open",))) {
+        LOGV(ERROR) << "The wasi mode main function is not found.";
+        return -1;
+    }
+     return 0; };
 WASMExecEnv *WAMRInstance::get_exec_env() {
     return cur_env; // should return the current thread's
 }
@@ -96,6 +101,9 @@ void WAMRInstance::recover(
         if (exec_->cur_count != 0) {
             cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
         }
+        this->set_wasi_args(exec_->module_inst.wasi_ctx);
+        //  first get the deserializer message, here just hard code
+        this->instantiate();
         restore(exec_.get(), cur_env);
         cur_env->is_restore = true;
         if (exec_->cur_count != 0) {
@@ -116,8 +124,9 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
                                  const std::vector<std::string> &ns_lookup_pool) {
     auto string_vec_to_cstr_array = [](const std::vector<std::string> &vecStr) {
         std::vector<const char *> cstrArray(vecStr.size());
-        if (vecStr[0].empty())
+        if (vecStr.data() == nullptr || vecStr[0].empty())
             return std::vector<const char *>(0);
+        LOGV(DEBUG) << "vecStr[0]:" << vecStr[0];
         std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(),
                        [](const std::string &str) { return str.c_str(); });
         return cstrArray;
@@ -138,34 +147,63 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
 }
 void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
     // some handmade directory after recovery dir
-    auto get_dir_from_context = [](const WAMRWASIContext &wasiContext, bool is_map_dir = false) {
-        auto cstrArray = std::vector<std::string>(wasiContext.prestats.size);
-        std::regex dir_replacer(".+?/");
-        std::transform(wasiContext.prestats.prestats.begin(), wasiContext.prestats.prestats.end(), cstrArray.begin(),
-                       [&is_map_dir, &dir_replacer](const WAMRFDPrestat &str) {
-                           return is_map_dir ? std::regex_replace(str.dir, dir_replacer, "") : str.dir;
-                       });
-        return cstrArray;
-    };
+    // std::vector<int> to_close;
+    // for (auto [fd, stat] : context.fd_map) {
+    //     while (true) {
+    //         // if the time is not socket
+    //         int fd_;
+    //         if (stat.second == 0) {
+    //             auto dir_name = opendir(stat.first.c_str());
+    //             fd_ = dirfd(dir_name);
+    //         } else {
+    //             fd_ = open(stat.first.c_str(), O_RDWR);
+    //         }
+    //         if (fd > fd_) {
+    //             //                close(fd_);
+    //             to_close.emplace_back(fd_);
+    //             continue;
+    //         }
+    //         if (fd < fd_) {
+    //             throw std::runtime_error("restore fd overflow");
+    //         }
+    //         // remain socket.
+    //         break;
+    //     }
+    // }
+    // for (auto fd : to_close) {
+    //     close(fd);
+    // }
+    /** refer to wasm bpf call function */
+
+    //    auto get_dir_from_context = [](const WAMRWASIContext &wasiContext, bool is_map_dir = false) {
+    //        auto cstrArray = std::vector<std::string>(wasiContext.prestats.size);
+    //        std::regex dir_replacer(".+?/");
+    //        std::transform(wasiContext.prestats.prestats.begin(), wasiContext.prestats.prestats.end(),
+    //        cstrArray.begin(),
+    //                       [&is_map_dir, &dir_replacer](const WAMRFDPrestat &str) {
+    //                           return is_map_dir ? std::regex_replace(str.dir, dir_replacer, "") : str.dir;
+    //                       });
+    //        return cstrArray;
+    //    };
     auto get_addr_from_context = [](const WAMRWASIContext &wasiContext) {
         auto addr_pool = std::vector<std::string>(wasiContext.addr_pool.size());
         std::transform(wasiContext.addr_pool.begin(), wasiContext.addr_pool.end(), addr_pool.begin(),
-                       [](const WAMRAddrPool &addr_) {
+                       [](const WAMRAddrPool &addrs) {
                            std::string addr_str;
-                           if (addr_.is_4) {
-                               addr_str = fmt::format("{}.{}.{}.{}/{}", addr_.ip4[0], addr_.ip4[1], addr_.ip4[2],
-                                                      addr_.ip4[3], addr_.mask);
-                               if (addr_.mask != UINT8_MAX) {
-                                   addr_str += fmt::format("/{}", addr_.mask);
+                           if (addrs.is_4) {
+                               addr_str = fmt::format("{}.{}.{}.{}/{}", addrs.ip4[0], addrs.ip4[1], addrs.ip4[2],
+                                                      addrs.ip4[3], addrs.mask);
+                               if (addrs.mask != UINT8_MAX) {
+                                   addr_str += fmt::format("/{}", addrs.mask);
                                }
                            } else {
                                addr_str =
 
-                                   fmt::format("{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}", addr_.ip6[0], addr_.ip6[1],
-                                               addr_.ip6[2], addr_.ip6[3], addr_.ip6[4], addr_.ip6[5], addr_.ip6[6],
-                                               addr_.ip6[7], addr_.mask);
-                               if (addr_.mask != UINT8_MAX) {
-                                   addr_str += fmt::format("/{}", addr_.mask);
+                                   fmt::format("{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}", addrs.ip6[0], addrs.ip6[1],
+                                               addrs.ip6[2], addrs.ip6[3], addrs.ip6[4], addrs.ip6[5], addrs.ip6[6],
+                                               addrs.ip6[7], addrs.mask);
+                               if (addrs.mask != UINT8_MAX) {
+                                   addr_str += fmt::format("/{}", addrs.mask);
                                }
                            }
                            return addr_str;
@@ -173,8 +211,8 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
 
         return addr_pool;
     };
-    set_wasi_args(get_dir_from_context(context), get_dir_from_context(context, true), context.argv_environ.env_list,
-                  context.argv_environ.argv_list, get_addr_from_context(context), context.ns_lookup_list);
+    set_wasi_args(context.dir, context.map_dir, context.argv_environ.env_list, context.argv_environ.argv_list,
+                  get_addr_from_context(context), context.ns_lookup_list);
 }
 void WAMRInstance::instantiate() {
     module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));

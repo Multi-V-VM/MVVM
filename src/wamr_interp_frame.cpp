@@ -5,7 +5,7 @@
 #include "wamr_interp_frame.h"
 #include "wamr.h"
 extern WAMRInstance *wamr;
-void WAMRInterpFrame::dump(WASMInterpFrame *env) {
+void WAMRInterpFrame::dump_impl(WASMInterpFrame *env) {
     if (env->function) {
         wamr->set_func(env->function->u.func);
 
@@ -21,46 +21,54 @@ void WAMRInterpFrame::dump(WASMInterpFrame *env) {
         auto csp_size = (env->csp - env->csp_bottom) + 1;
         for (int i = 0; i < csp_size; i++) {
             auto *local_csp = new WAMRBranchBlock();
-            ::dump(local_csp, env->csp - i);
+            dump(local_csp, env->csp - i);
             csp.emplace_back(local_csp);
         }
         if (env->function)
-            ::dump(&function, env->function);
+            dump(&function, env->function);
     }
 }
-void WAMRInterpFrame::restore(WASMInterpFrame *env) {
+void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     env->function = reinterpret_cast<WASMFunctionInstance *>(malloc(sizeof(WASMFunctionInstance)));
-    ::restore(&function, env->function);
+    restore(&function, env->function);
+
     if (env->function)
         wamr->set_func(env->function->u.func);
-    if (ip)
+    if (ip) {
+        //        LOGV(ERROR)<<"env_ip "<<env->ip << " "<<env->function->u.func->code + ip;
         env->ip = env->function->u.func->code + ip;
-    if (sp)
+    }
+    if (sp) {
+        //        LOGV(ERROR)<<"env_sp "<<env->sp<<" "<<reinterpret_cast<uint32 *>((uint8
+        //        *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
         env->sp = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
-
+    }
     if (lp) {
-        memcpy(env->lp, reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp),
-               sizeof(uint32));
-        env->lp_bak = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
-        LOGV(DEBUG) << "lp" << env->lp[0];
-        LOGV(DEBUG) << "lp" << env->lp;
+        LOGV(ERROR) << "env_lp " << env->lp[0] << " "
+                    << *reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
+        //        memcpy(env->lp, reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp),
+        //               sizeof(uint32));
+
+        //        env->lp_bak = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
+        //        LOGV(DEBUG) << "lp" << env->lp[0];
+        //        LOGV(DEBUG) << "lp" << env->lp;
     }
     int i = 0;
-    env->sp_bottom = env->lp_bak + env->function->param_cell_num + env->function->local_cell_num;
-    // env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
-    // should memcpy
+    env->sp_bottom = ((uint32 *)env->lp) + env->function->param_cell_num + env->function->local_cell_num;
+    env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
+
     if (env->function->u.func && !env->function->is_import_func && env->sp_bottom) {
         env->sp_boundary = env->sp_bottom + env->function->u.func->max_stack_cell_num;
-        env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
-
+        //        env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
         std::reverse(csp.begin(), csp.end());
         for (auto &&csp_item : csp) {
-            ::restore(csp_item.get(), env->csp_bottom + i);
+            restore(csp_item.get(), env->csp_bottom + i);
+            LOGV(ERROR) << "csp_bottom" << ((uint8 *)env->csp_bottom + i) - wamr->get_exec_env()->wasm_stack.s.bottom;
             i++;
         }
         env->csp = env->csp_bottom + csp.size() - 1;
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
-        LOGV(DEBUG) << env->function->u.func->field_name << "csp_bottom" << env->csp_bottom << " sp_bottom"
+        LOGV(DEBUG) << env->function->u.func->field_name << " csp_bottom" << env->csp_bottom << " sp_bottom"
                     << env->sp_bottom << " sp" << sp << ((uint8 *)env->sp) - wamr->get_exec_env()->wasm_stack.s.bottom
                     << " lp" << lp;
     } else if (env->function->u.func && env->function->is_import_func && env->sp_bottom) {
@@ -68,7 +76,7 @@ void WAMRInterpFrame::restore(WASMInterpFrame *env) {
         env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
         env->csp_boundary = env->csp_bottom;
 
-        LOGV(ERROR) << env->function->u.func_import->field_name << "csp_bottom" << env->csp_bottom << " sp_bottom"
+        LOGV(ERROR) << env->function->u.func_import->field_name << " csp_bottom" << env->csp_bottom << " sp_bottom"
                     << env->sp_bottom;
     }
 }
