@@ -1,4 +1,4 @@
-name: build-macos
+name: build-windows
 
 on: push
 
@@ -20,10 +20,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install Choco Dependency
-      uses: crazy-max/ghaction-chocolatey@v2
-      with:
-        args: install make llvm msys2
+    - name: Checkout
+      run: git submodule update --init
 
     - name: Install Dependency
       run: |
@@ -31,10 +29,12 @@ jobs:
         git clone https://github.com/microsoft/vcpkg
         cd vcpkg
         .\bootstrap-vcpkg.bat
-        .\vcpkg install fmt:x64-windows cxxopts:x64-windows # llvm[clang,lldb]:x64-windows
+        .\vcpkg install fmt:x64-windows cxxopts:x64-windows
 
-    - name: Checkout
-      run: git submodule update --init
+    - name: Install Choco Dependency
+      uses: crazy-max/ghaction-chocolatey@v2
+      with:
+        args: install make
 
     - name: Install WASI SDK
       run: |
