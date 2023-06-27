@@ -21,7 +21,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install Dependency
-      run: sudo apt install libssl-dev libprotobuf-c-dev libprotobuf-dev libgrpc-dev libfmt-dev llvm-14-dev libedit-dev libcxxopts-dev libpfm4-dev liblldb-dev
+      run: sudo apt install libssl-dev gcc-13 g++-13 libprotobuf-c-dev libprotobuf-dev libgrpc-dev libfmt-dev llvm-14-dev libedit-dev libcxxopts-dev libpfm4-dev liblldb-dev
       
     - name: Checkout
       run: git submodule update --init
@@ -51,7 +51,7 @@ jobs:
 
     - name: build
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config ${{matrix.build}}
+      run: CC=gcc-13 CXX=g++-13 cmake --build . --config ${{matrix.build}}
 
     - name: test
       working-directory: ${{runner.workspace}}/build
