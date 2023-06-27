@@ -47,11 +47,11 @@ jobs:
         make -j
 
     - name: configure cmake
-      run: sudo touch /usr/lib/llvm-14/lib/libMLIRSupportIndentedOstream.a && cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm/
+      run: sudo touch /usr/lib/llvm-14/lib/libMLIRSupportIndentedOstream.a && CC=gcc-13 CXX=g++-13 cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm/
 
     - name: build
       working-directory: ${{runner.workspace}}/build
-      run: CC=gcc-13 CXX=g++-13 cmake --build . --config ${{matrix.build}}
+      run: cmake --build . --config ${{matrix.build}}
 
     - name: test
       working-directory: ${{runner.workspace}}/build
