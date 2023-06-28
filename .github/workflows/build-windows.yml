@@ -35,7 +35,8 @@ jobs:
         cd vcpkg
         ./bootstrap-vcpkg.bat
         ./vcpkg install fmt:x64-windows cxxopts:x64-windows
-        C:/tools/msys64/usr/bin/pacman.exe --noconfirm -Syuu gcc
+        echo "C:/tools/msys64/usr/bin/" >> $PATH
+        pacman --noconfirm -S mingw-w64-x86_64-gcc
 
     - name: Install LLVM SDK
       run: |
@@ -53,7 +54,7 @@ jobs:
     - name: Make WASI Socket Ext
       run: |
         cd lib/wasm-micro-runtime/samples/socket-api/
-        sh -c "cmake . -DWASI_SDK_DIR=D:/wasi-sdk -DCMAKE_MAKE_PROGRAM=C:/ProgramData/chocolatey/bin/make.exe -GUnix\ Makefiles -DCMAKE_C_COMPILER=C:/tools/msys64/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/tools/msys64/usr/bin/g++.exe"
+        cmake . -DWASI_SDK_DIR=D:/wasi-sdk -DCMAKE_MAKE_PROGRAM=C:/ProgramData/chocolatey/bin/make.exe -G"Unix Makefiles" -DCMAKE_C_COMPILER=C:/tools/msys64/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/tools/msys64/usr/bin/g++.exe
         make
 
     - name: Make WASM LD no check features
