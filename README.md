@@ -8,4 +8,6 @@
 ## Design Doc
 1. All the pointer will be stored as offset to the linear memory.
 2. Go forward and never go back.
-3. Use Dwarf with stable point to achieve cross platform.
+3. Use AOT compiler convention with stable point to achieve cross platform.
+
+![](https://asplos.dev/wordpress/wp-content/uploads/2023/06/mvvm-1024x695.png)
