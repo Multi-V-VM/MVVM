@@ -35,7 +35,7 @@ jobs:
         cd vcpkg
         ./bootstrap-vcpkg.bat
         ./vcpkg install fmt:x64-windows cxxopts:x64-windows
-        pacman -Syuu gcc
+        C:/tools/msys64/usr/bin/pacman.exe -Syuu gcc
 
     - name: Install LLVM SDK
       run: |
