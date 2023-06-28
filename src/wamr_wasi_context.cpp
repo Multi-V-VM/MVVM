@@ -165,6 +165,6 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
 #endif
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
-        wamr->invoke_fopen(fd, res.first, res.second);
+        wamr->invoke_open(fd, res.first, res.second);
     }
 };

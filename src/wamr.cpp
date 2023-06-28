@@ -73,12 +73,45 @@ int WAMRInstance::invoke_main() {
 
     return wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
-int WAMRInstance::invoke_fopen(uint32 fd, std::string path, uint32 option) {
-    if (!(func = wasm_runtime_lookup_function(module_inst, "fopen", "(ii*~iIIi*)i"))) {
-        LOGV(ERROR) << "The wasi-open function is not found.";
+int WAMRInstance::invoke_open(uint32 fd, const std::string& path, uint32 option) {
+    if (!(func = wasm_runtime_lookup_function(module_inst, "open", "($i)i"))) {
+        LOGV(ERROR) << "The wasi open function is not found.";
         return -1;
     }
-    return 0;
+    char *buffer_ = nullptr;
+    uint32_t buffer_for_wasm;
+
+    buffer_for_wasm = wasm_runtime_module_malloc(module_inst, 100, reinterpret_cast<void **>(&buffer_));
+    if (buffer_for_wasm != 0) {
+        uint32 argv[2];
+        strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
+        argv[0] = buffer_for_wasm; // pass the buffer_ address for WASM space
+        argv[1] = option; // the size of buffer_
+        auto res = wasm_runtime_call_wasm(exec_env, func, 2, argv);
+        wasm_runtime_module_free(module_inst, buffer_for_wasm);
+        return res;
+    }
+    return -1;
+};
+int WAMRInstance::invoke_preopen(uint32 fd, const std::string& path) {
+    if (!(func = wasm_runtime_lookup_function(module_inst, "__wasilibc_register_preopened_fd", "(i$)i"))) {
+        LOGV(ERROR) << "The __wasilibc_register_preopened_fd function is not found.";
+        return -1;
+    }
+    char *buffer_ = nullptr;
+    uint32_t buffer_for_wasm;
+
+    buffer_for_wasm = wasm_runtime_module_malloc(module_inst, 100, reinterpret_cast<void **>(&buffer_));
+    if (buffer_for_wasm != 0) {
+        uint32 argv[2];
+        strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
+        argv[0] = fd; // pass the buffer_ address for WASM space
+        argv[1] = buffer_for_wasm; // the size of buffer_
+        auto res = wasm_runtime_call_wasm(exec_env, func, 2, argv);
+        wasm_runtime_module_free(module_inst, buffer_for_wasm);
+        return res;
+    }
+    return -1;
 };
 WASMExecEnv *WAMRInstance::get_exec_env() {
     return cur_env; // should return the current thread's
@@ -97,7 +130,10 @@ void WAMRInstance::recover(
               [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
                   return a->cur_count > b->cur_count;
               });
-
+    // need to preopen the stdio here.
+    invoke_preopen(0, "/dev/stdin");
+    invoke_preopen(1, "/dev/stdout");
+    invoke_preopen(2, "/dev/stderr");
     for (auto &&exec_ : *execEnv) {
         if (exec_->cur_count != 0) {
             cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.

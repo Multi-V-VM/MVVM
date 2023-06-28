@@ -29,16 +29,14 @@ jobs:
         args: install make wget msys2
 
     - name: Install Dependency
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
       run: |
         cd D:
         git clone https://github.com/microsoft/vcpkg
         cd vcpkg
         ./bootstrap-vcpkg.bat
         ./vcpkg install fmt:x64-windows cxxopts:x64-windows
-        echo "::add-path::C:/tools/msys64/usr/bin/"
-        pacman --noconfirm -S mingw-w64-x86_64-gcc
+        echo "C:/tools/msys64/usr/bin/" >> "$GITHUB_PATH"
+        C:\tools\msys64\usr\bin\pacman.exe --noconfirm -S mingw-w64-x86_64-gcc
 
     - name: Install LLVM SDK
       run: |
@@ -65,10 +63,8 @@ jobs:
         echo D:/wasi-sdk/bin/wasm-ld.bak --no-check-features %1 | tee D:/wasi-sdk/bin/wasm-ld.bat
 
     - name: configure cmake
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
       run: |
-        echo "::add-path::C:/tools/msys64/usr/bin/"
+        echo "C:/tools/msys64/usr/bin/" >> "$GITHUB_PATH"
         cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DLLVM_DIR="D:/LLVM/share/llvm"
 
     - name: build
