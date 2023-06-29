@@ -11,6 +11,14 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
     for (int i = 0; i < wamr->map_dir_.size(); i++) {
         map_dir.emplace_back(wamr->map_dir_[i]);
     }
+    for (auto [fd, res] : this->fd_map) {
+        // differ from path from file
+        LOGV(DEBUG)<<fmt::format("fd:{} path:{} option",fd,res.first);
+    }
+#if WASM_ENABLE_UVWASI != 0
+#else
+
+#endif
 #if 0
     // Need to open the file and reinitialize the file descripter by map.
     this->curfds.size = env->curfds->size;
