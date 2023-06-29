@@ -15,10 +15,7 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
         // differ from path from file
         LOGV(DEBUG)<<fmt::format("fd:{} path:{} option",fd,res.first);
     }
-#if WASM_ENABLE_UVWASI != 0
-#else
 
-#endif
 #if 0
     // Need to open the file and reinitialize the file descripter by map.
     this->curfds.size = env->curfds->size;
@@ -170,6 +167,11 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
         }
         i++;
     }
+#endif
+#ifdef __linux__
+    invoke_preopen(0, "/dev/stdin");
+    invoke_preopen(1, "/dev/stdout");
+    invoke_preopen(2, "/dev/stderr");
 #endif
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
