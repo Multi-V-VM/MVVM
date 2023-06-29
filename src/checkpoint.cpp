@@ -13,7 +13,11 @@ auto writer = FwriteStream("test.bin");
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 void insert_fd(int fd, const char *path, int flags) {
-    wamr->fd_map_.insert(std::make_pair(fd, std::make_pair(std::string(path), flags)));
+    if (wamr->fd_map_.find(fd) != wamr->fd_map_.end()) {
+        LOGV(ERROR) << "fd already exist" << fd;
+        wamr->fd_map_[fd] = std::make_pair(std::string(path), flags);
+    } else
+        wamr->fd_map_.insert(std::make_pair(fd, std::make_pair(std::string(path), flags)));
 }
 void remove_fd(int fd) {
     if (wamr->fd_map_.find(fd) != wamr->fd_map_.end())
