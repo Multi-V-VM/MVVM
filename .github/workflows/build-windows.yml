@@ -48,8 +48,11 @@ jobs:
     - name: Make WASM LD no check features
       run: |
         mv D:/wasi-sdk/bin/wasm-ld D:/wasi-sdk/bin/wasm-ld.bak
-        echo D:/wasi-sdk/bin/wasm-ld.bak --no-check-features %1 | tee D:/wasi-sdk/bin/wasm-ld.bat
-
+        echo '#!/bin/bash 
+        D:/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | tee D:/wasi-sdk/bin/wasm-ld
+        chmod 777 D:/wasi-sdk/bin/wasm-ld
+        which wasm-ld
+        
     - name: Make WASI Socket Ext
       run: |
         cd lib/wasm-micro-runtime/samples/socket-api/
