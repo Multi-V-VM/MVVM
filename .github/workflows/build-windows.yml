@@ -48,10 +48,7 @@ jobs:
     - name: Make WASM LD no check features
       run: |
         mv D:/wasi-sdk/bin/wasm-ld D:/wasi-sdk/bin/wasm-ld.bak
-        echo '#!/bin/bash 
-        D:/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | tee D:/wasi-sdk/bin/wasm-ld
-        chmod 777 D:/wasi-sdk/bin/wasm-ld
-        which wasm-ld
+        echo D:/wasi-sdk/bin/wasm-ld.bak --no-check-features %1 | tee D:/wasi-sdk/bin/wasm-ld.bat
         
     - name: Make WASI Socket Ext
       run: |
@@ -68,11 +65,11 @@ jobs:
 
     - name: configure cmake
       working-directory: ${{runner.workspace}}
-      run:  cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DLLVM_DIR="D:/LLVM/share/llvm"
+      run:  cmd.exe /C "cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR=D:/LLVM/share/llvm"
 
     - name: build
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config ${{matrix.build}}
+      run: cmd.exe /C "cmake --build . --config ${{matrix.build}}"
 
     - name: test
       working-directory: ${{runner.workspace}}/build
