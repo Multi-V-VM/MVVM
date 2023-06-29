@@ -15,7 +15,12 @@ std::mutex as_mtx;
 void insert_fd(int fd, const char *path, int flags) {
     wamr->fd_map_.insert(std::make_pair(fd, std::make_pair(std::string(path), flags)));
 }
-void remove_fd(int fd) { wamr->fd_map_.erase(fd); }
+void remove_fd(int fd) {
+    if (wamr->fd_map_.find(fd) != wamr->fd_map_.end())
+        wamr->fd_map_.erase(fd);
+    else
+        LOGV(ERROR)<< "fd not found" << fd;
+}
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     auto cluster = wasm_exec_env_get_cluster(instance);
@@ -51,6 +56,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     }
     exit(0);
 }
+
 #ifndef MVVM_DEBUG
 void sigtrap_handler(int sig) {
     printf("Caught signal %d, performing custom logic...\n", sig);

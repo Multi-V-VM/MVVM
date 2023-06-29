@@ -16,7 +16,12 @@ WAMRInstance *wamr = nullptr;
 void insert_fd(int fd, const char *path, int flags){};
 void remove_fd(int fd) {}
 void serialize_to_file(WASMExecEnv *instance) {}
-
+void insert_socket(char const *, int){};
+void remove_socket(char const *){};
+void insert_lock(char const *, int){};
+void insert_sem(char const *, int){};
+void remove_lock(char const *){};
+void remove_sem(char const *){};
 int main(int argc, char **argv) {
     cxxopts::Options options("MVVM", "Migratable Velocity Virtual Machine, to ship the VM state to another machine");
     options.add_options()("t,target", "The webassembly file to execute",
