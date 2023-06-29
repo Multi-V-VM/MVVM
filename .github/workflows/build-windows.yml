@@ -65,7 +65,8 @@ jobs:
 
     - name: configure cmake
       run: |
-        cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DLLVM_DIR="D:/LLVM/share/llvm"
+        cd ${{runner.workspace}}
+        cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DLLVM_DIR="D:/LLVM/share/llvm"
 
     - name: build
       working-directory: ${{runner.workspace}}/build
