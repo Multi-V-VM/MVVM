@@ -38,12 +38,6 @@ jobs:
         echo "C:/tools/msys64/usr/bin/" >> "$GITHUB_PATH"
         C:/tools/msys64/usr/bin/pacman.exe --noconfirm -S gcc
 
-    - name: Install LLVM SDK
-      run: |
-        cd D:
-        wget https://asplos.dev/LLVM.zip -O LLVM.zip
-        unzip LLVM.zip
-
     - name: Install WASI SDK
       run: |
         cd D:
@@ -59,8 +53,14 @@ jobs:
     - name: Make WASI Socket Ext
       run: |
         cd lib/wasm-micro-runtime/samples/socket-api/
-        cmake . -DWASI_SDK_DIR=D:/wasi-sdk -DCMAKE_MAKE_PROGRAM=C:/tools/msys64/usr/bin/make.exe -G"Unix Makefiles" -DCMAKE_C_COMPILER=C:/tools/msys64/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/tools/msys64/usr/bin/g++.exe
+        cmake . -DWASI_SDK_DIR=D:/wasi-sdk -DCMAKE_MAKE_PROGRAM=C:/ProgramData/chocolatey/bin/make.exe -G"Unix Makefiles" -DCMAKE_C_COMPILER=C:/tools/msys64/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/tools/msys64/usr/bin/g++.exe
         make
+
+    - name: Install LLVM SDK
+      run: |
+        cd D:
+        wget https://asplos.dev/LLVM.zip -O LLVM.zip
+        unzip LLVM.zip
 
     - name: configure cmake
       run: |
