@@ -64,13 +64,16 @@ jobs:
         unzip LLVM.zip
 
     - name: configure cmake
+      shell: cmd
       working-directory: ${{runner.workspace}}
-      run:  cmd.exe /C "cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR=D:/LLVM/share/llvm"
+      run:  cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR=D:/LLVM/share/llvm
 
     - name: build
+      shell: cmd
       working-directory: ${{runner.workspace}}/build
-      run: cmd.exe /C "cmake --build . --config ${{matrix.build}}"
+      run: cmake --build . --config ${{matrix.build}}
 
     - name: test
+      shell: cmd
       working-directory: ${{runner.workspace}}/build
       run: ctest -V
