@@ -55,7 +55,7 @@ jobs:
         cd "C:/Program Files/"
         wget https://asplos.dev/LLVM.zip -O LLVM.zip
         unzip LLVM.zip
-        cp "C:/Program Files/LLVM/bin/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
+        cp "C:/Program Files/LLVM/tools/llvm/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
         
     - name: Make WASI Socket Ext
       run: |
