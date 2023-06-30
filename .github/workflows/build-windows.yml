@@ -49,6 +49,8 @@ jobs:
       run: |
         mv D:/wasi-sdk/bin/wasm-ld.exe D:/wasi-sdk/bin/wasm-ld.bak
         which wasm-ld
+        rm -rf "C:/Program Files/LLVM/"
+        which wasm-ld
         
     - name: Make WASI Socket Ext
       run: |
@@ -70,7 +72,7 @@ jobs:
     - name: build
       working-directory: ${{runner.workspace}}/build
       run: |
-        cp "C:/Program Files/LLVM/bin/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
+        cp "D:/LLVM/bin/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
         cmake --build . --config ${{matrix.build}}
 
     - name: test
