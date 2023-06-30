@@ -26,7 +26,7 @@ jobs:
     - name: Install Choco Dependency
       uses: crazy-max/ghaction-chocolatey@v2
       with:
-        args: install wget ninja msys2 
+        args: install wget msys2 
 
     - name: Install Dependency
       run: |
@@ -66,7 +66,7 @@ jobs:
 
     - name: configure cmake
       working-directory: ${{runner.workspace}}
-      run:  cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -GNinja -DCMAKE_MAKE_PROGRAM=C:/ProgramData/chocolatey/lib/ninja/tools/ninja.exe -DCMAKE_C_COMPILER_WORKS=1 -DCMAKE_CXX_COMPILER_WORKS=1 -DCMAKE_C_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.35.32215/bin/HostX64/x64/cl.exe" -DCMAKE_CXX_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.35.32215/bin/HostX64/x64/cl.exe" -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
+      run:  cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
 
     - name: build
       working-directory: ${{runner.workspace}}/build
@@ -75,4 +75,4 @@ jobs:
 
     - name: test
       working-directory: ${{runner.workspace}}/build
-      run: ctest -V
+      run: ctest -V -C ${{matrix.build}}
