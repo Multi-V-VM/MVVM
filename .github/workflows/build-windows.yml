@@ -68,10 +68,10 @@ jobs:
       run:  cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR=D:/LLVM/share/llvm
 
     - name: build
-      shell: powershell
+      shell: cmd
       working-directory: ${{runner.workspace}}/build
       run: |
-        $env:PATHEXT += ";.bat"
+        set PATHEXT=.COM;.EXE;.BAT;.CMD;
         cmake --build . --config ${{matrix.build}}
 
     - name: test
