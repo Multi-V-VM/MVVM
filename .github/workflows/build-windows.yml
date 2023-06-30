@@ -75,4 +75,4 @@ jobs:
 
     - name: test
       working-directory: ${{runner.workspace}}/build
-      run: ctest -V
+      run: ctest -V -C Debug
