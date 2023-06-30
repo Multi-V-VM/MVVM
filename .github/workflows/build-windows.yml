@@ -50,6 +50,13 @@ jobs:
         mv D:/wasi-sdk/bin/wasm-ld.exe D:/wasi-sdk/bin/wasm-ld.bak
         rm -rf "C:/Program Files/LLVM/"
         
+    - name: Install LLVM SDK
+      run: |
+        cd "C:/Program Files/"
+        wget https://asplos.dev/LLVM.zip -O LLVM.zip
+        unzip LLVM.zip
+        cp "C:/Program Files/LLVM/bin/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
+        
     - name: Make WASI Socket Ext
       run: |
         cd lib/wasm-micro-runtime/samples/socket-api/
@@ -57,20 +64,13 @@ jobs:
         cmake . -DWASI_SDK_DIR=D:/wasi-sdk -G"Unix Makefiles" -DCMAKE_C_COMPILER=C:/tools/msys64/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/tools/msys64/usr/bin/g++.exe
         make
 
-    - name: Install LLVM SDK
-      run: |
-        cd D:
-        wget https://asplos.dev/LLVM.zip -O LLVM.zip
-        unzip LLVM.zip
-
     - name: configure cmake
       working-directory: ${{runner.workspace}}
-      run:  cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR=D:/LLVM/share/llvm
+      run:  cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
 
     - name: build
       working-directory: ${{runner.workspace}}/build
       run: |
-        cp "D:/LLVM/bin/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
         cmake --build . --config ${{matrix.build}}
 
     - name: test
