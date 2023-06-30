@@ -48,7 +48,7 @@ jobs:
     - name: Make WASM LD no check features
       run: |
         mv D:/wasi-sdk/bin/wasm-ld.exe D:/wasi-sdk/bin/wasm-ld.bak
-        rm -rf "C:/Program Files/LLVM/"`
+        rm -rf "C:/Program Files/LLVM/"
         
     - name: Make WASI Socket Ext
       run: |
