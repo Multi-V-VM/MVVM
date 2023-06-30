@@ -69,9 +69,7 @@ jobs:
 
     - name: build
       working-directory: ${{runner.workspace}}/build
-      run: |
-        echo ".COM;.EXE;.BAT;.CMD;" >> "$GITHUB_PATHEXT"
-        cmake --build . --config ${{matrix.build}}
+      run: cmake --build . --config ${{matrix.build}}
 
     - name: test
       working-directory: ${{runner.workspace}}/build
