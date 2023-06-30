@@ -70,7 +70,7 @@ jobs:
     - name: build
       working-directory: ${{runner.workspace}}/build
       run: |
-        set PATHEXT=.COM;.EXE;.BAT;.CMD;
+        set PATHEXT=".COM;.EXE;.BAT;.CMD;"
         cmake --build . --config ${{matrix.build}}
 
     - name: test
