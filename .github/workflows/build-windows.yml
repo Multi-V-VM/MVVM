@@ -47,7 +47,7 @@ jobs:
 
     - name: Make WASM LD no check features
       run: |
-        mv D:/wasi-sdk/bin/wasm-ld D:/wasi-sdk/bin/wasm-ld.bak
+        mv D:/wasi-sdk/bin/wasm-ld.exe D:/wasi-sdk/bin/wasm-ld.bak
         echo D:/wasi-sdk/bin/wasm-ld.bak --no-check-features %1 | tee D:/wasi-sdk/bin/wasm-ld.bat
         
     - name: Make WASI Socket Ext
