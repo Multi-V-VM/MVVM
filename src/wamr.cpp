@@ -94,9 +94,18 @@ int WAMRInstance::invoke_open(uint32 fd, const std::string& path, uint32 option)
     return -1;
 };
 int WAMRInstance::invoke_preopen(uint32 fd, const std::string& path) {
-    if (!(func = wasm_runtime_lookup_function(module_inst, "__wasilibc_register_preopened_fd", "(i$)i"))) {
+    if (!(func = wasm_runtime_lookup_function(module_inst, "__wasilibc_register_preopened_fd", NULL))) {
         LOGV(ERROR) << "The __wasilibc_register_preopened_fd function is not found.";
         return -1;
+    }
+    // TODO: find the preopen
+    auto target_module = get_module_instance()->e;
+    for (int i = 0; i < target_module->function_count; i++) {
+        auto cur_func = target_module->functions[i];
+        if(cur_func.is_import_func){
+//            if (!strcmp(cur_func[i].name, name))
+//                return module_inst->export_functions[i].function;
+        }
     }
     char *buffer_ = nullptr;
     uint32_t buffer_for_wasm;
@@ -130,6 +139,7 @@ void WAMRInstance::recover(
               [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
                   return a->cur_count > b->cur_count;
               });
+              
     for (auto &&exec_ : *execEnv) {
         if (exec_->cur_count != 0) {
             cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.

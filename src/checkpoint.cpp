@@ -25,6 +25,9 @@ void remove_fd(int fd) {
     else
         LOGV(ERROR)<< "fd not found" << fd;
 }
+void insert_socket(int fd){
+
+}
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     auto cluster = wasm_exec_env_get_cluster(instance);
@@ -100,7 +103,7 @@ int main(int argc, char *argv[]) {
     options.add_options()("t,target", "The webassembly file to execute",
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
-        "d,dir", "The directory list exposed to WAMRe",
+        "d,dir", "The directory list exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value("./"))(
         "m,map_dir", "The mapped directory list exposed to WAMRe",
         cxxopts::value<std::vector<std::string>>()->default_value(""))(

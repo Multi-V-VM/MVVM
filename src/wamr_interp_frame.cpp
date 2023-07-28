@@ -57,7 +57,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     env->sp_bottom = ((uint32 *)env->lp) + env->function->param_cell_num + env->function->local_cell_num;
     env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
 
-    if (env->function->u.func && !env->function->is_import_func && env->sp_bottom) {
+    if (env->ip && env->function->u.func && !env->function->is_import_func && env->sp_bottom) {
         env->sp_boundary = env->sp_bottom + env->function->u.func->max_stack_cell_num;
         //        env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
         std::reverse(csp.begin(), csp.end());
