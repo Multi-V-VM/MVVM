@@ -176,7 +176,6 @@ struct WAMRExecEnv { // multiple
         env->cur_frame = (WASMInterpFrame *)((uint8 *)env->wasm_stack.s.bottom + this->frames[0]->lp -
                                              (uint32)offsetof(WASMInterpFrame, lp));
         auto cur_frame = env->cur_frame;
-#if defined(__DARWIN__) || defined(__APPLE__) || defined(_WIN32)
         for (int i=0; i<this->frames.size(); i++) {
             restore(this->frames[i].get(), cur_frame);
             if (i != this->frames.size()-1) {
@@ -186,17 +185,7 @@ struct WAMRExecEnv { // multiple
                 cur_frame = cur_frame->prev_frame;
             }
         }
-#else
-        for (auto &&[frame, next] : this->frames | std::views::adjacent<2>) {
-            restore(frame.get(), cur_frame);
-            if (frame != this->frames.back()) {
-                cur_frame->prev_frame = (WASMInterpFrame *)((uint8 *)env->wasm_stack.s.bottom + next->lp -
-                                                            (uint32)offsetof(WASMInterpFrame, lp));
-                LOGV(DEBUG) << "cur_frame" << (void *)cur_frame << " " << next->lp;
-                cur_frame = cur_frame->prev_frame;
-            }
-        }
-#endif
+
         for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE; i++) {
             for (int j = 0; j < BLOCK_ADDR_CONFLICT_SIZE; j++) {
                 restore(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
