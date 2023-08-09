@@ -4,21 +4,31 @@
 
 #include "thread_manager.h"
 #include "wamr.h"
+#include <cstdio>
 #include <cxxopts.hpp>
+#include <fstream>
+#include <sstream>
+#include <string>
 #include <thread>
 // file map, direcotry handle
 
 WAMRInstance *wamr = nullptr;
+std::ostringstream re{};
 auto writer = FwriteStream("test.bin");
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
+/**fopen, fseek*/
 void insert_fd(int fd, const char *path, int flags) {
+    printf("\n #insert_fd(fd,filename,flags) %d %s %d \n\n",fd, path,flags);
+    
     if (wamr->fd_map_.find(fd) != wamr->fd_map_.end()) {
         LOGV(ERROR) << "fd already exist" << fd;
         wamr->fd_map_[fd] = std::make_pair(std::string(path), flags);
     } else
         wamr->fd_map_.insert(std::make_pair(fd, std::make_pair(std::string(path), flags)));
 }
+
+/**fclose */
 void remove_fd(int fd) {
     if (wamr->fd_map_.find(fd) != wamr->fd_map_.end())
         wamr->fd_map_.erase(fd);
@@ -30,6 +40,28 @@ void insert_socket(int fd){
 }
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
+    // Note: insert fd
+    std::ifstream stdoutput; stdoutput.open("output.txt");
+    std:string current_str;
+    std::string fd_output;
+    std::string filename_output;
+    std::string flags_output;
+    
+    if(stdoutput.is_open()) {
+        while(stdoutput.good()) {
+            stdoutput >> current_str;
+            if(current_str == "fopen_test(fd,filename,flags)") {
+                stdoutput >>  fd_output;
+                stdoutput >> filename_output;
+                stdoutput >> flags_output;
+                insert_fd(std::stoi(fd_output), filename_output.c_str(), std::stoi(flags_output));
+            }
+        }
+    }
+    stdoutput.close();
+
+    //
+    std::cout<<"dasfasdfasf"<< re.str()<<"dasfasdfasf\n";
     auto cluster = wasm_exec_env_get_cluster(instance);
     if (bh_list_length(&cluster->exec_env_list) > 1) {
         auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
@@ -61,6 +93,7 @@ void serialize_to_file(WASMExecEnv *instance) {
         as.back().get()->cur_count = 0;
         struct_pack::serialize_to(writer, as);
     }
+
     exit(0);
 }
 
@@ -131,6 +164,8 @@ int main(int argc, char *argv[]) {
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
+    freopen("output.txt","w",stdout);
+
 #ifndef MVVM_DEBUG
     // Define the sigaction structure
     struct sigaction sa {};

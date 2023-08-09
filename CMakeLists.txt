@@ -3,7 +3,7 @@ project(MVVM LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
 
 find_package(FMT REQUIRED)
-find_package(LLVM REQUIRED)
+# find_package(LLVM REQUIRED)
 find_package(cxxopts REQUIRED)
 include(CTest)
 
