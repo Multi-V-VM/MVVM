@@ -167,7 +167,6 @@ struct WAMRModuleInstance {
         for (int i = 0; i < env->table_count; i++) {
             *env->tables[i] = tables[i];
         }
-        restore(&wasi_ctx, env->wasi_ctx);
         restore(&extra, env->e);
         env->module->aux_data_end_global_index = aux_data_end_global_index;
         env->module->aux_data_end = aux_data_end;
@@ -177,6 +176,7 @@ struct WAMRModuleInstance {
         env->module->aux_stack_bottom = aux_stack_bottom;
         env->module->aux_stack_size = aux_stack_size;
         restore(&global_table_data, env->global_table_data.memory_instances);
+        restore(&wasi_ctx, env->wasi_ctx);
     };
 };
 

@@ -38,6 +38,7 @@ int main(int argc, char **argv) {
     auto target = result["target"].as<std::string>();
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(reader).value();
+    wamr->instantiate();
     wamr->recover(&a);
     return 0;
 }

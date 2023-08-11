@@ -55,6 +55,7 @@ struct WAMRMemoryInstance {
         env->memory_data_size = memory_data.size();
         env->memory_data = (uint8 *)malloc(env->memory_data_size);
         memcpy(env->memory_data, memory_data.data(), env->memory_data_size);
+        env->memory_data_end = env->memory_data + memory_data.size();
         //        LOGV(DEBUG)<< "memory_data_size:" << env->memory_data_size;
         //        for (int i = 0; i < 100; ++i) {
         //            LOGV(DEBUG)<< "memory_data:" <<i << memory_data[i];
