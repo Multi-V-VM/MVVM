@@ -69,7 +69,7 @@ jobs:
         cd lib/wasm-micro-runtime/wamr-compiler
         mkdir build
         cd build
-        cmake .. -DWAMR_BUILD_AOT=1 -DWAMR_BUILD_AOT_STACK_FRAME=1 -DWAMR_BUILD_DEBUG_AOT=0 -DWAMR_BUILD_DUMP_CALL_STACK=1 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_WITH_CUSTOM_LLVM=1 -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
+        cmake .. -DWAMR_BUILD_AOT=1 -DWAMR_BUILD_AOT_STACK_FRAME=1 -DWAMR_BUILD_DEBUG_AOT=0 -DWAMR_BUILD_DUMP_CALL_STACK=1 -DWAMR_BUILD_CUSTOM_NAME_SECTION=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_WITH_CUSTOM_LLVM=1 -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
         make -j
 
     - name: configure cmake

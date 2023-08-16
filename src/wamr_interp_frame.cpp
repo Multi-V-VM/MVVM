@@ -34,32 +34,22 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
 
     if (env->function)
         wamr->set_func(env->function->u.func);
-    if (ip) {
-        //        LOGV(ERROR)<<"env_ip "<<env->ip << " "<<env->function->u.func->code + ip;
+    if (ip)
         env->ip = env->function->u.func->code + ip;
-    }
-    if (sp) {
-        //        LOGV(ERROR)<<"env_sp "<<env->sp<<" "<<reinterpret_cast<uint32 *>((uint8
-        //        *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
+
+    if (sp)
         env->sp = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
-    }
-    if (lp) {
+
+    if (lp)
         LOGV(ERROR) << "env_lp " << env->lp[0] << " "
                     << *reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
-        //        memcpy(env->lp, reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp),
-        //               sizeof(uint32));
 
-        //        env->lp_bak = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
-        //        LOGV(DEBUG) << "lp" << env->lp[0];
-        //        LOGV(DEBUG) << "lp" << env->lp;
-    }
     int i = 0;
     env->sp_bottom = ((uint32 *)env->lp) + env->function->param_cell_num + env->function->local_cell_num;
     env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
 
     if (env->ip && env->function->u.func && !env->function->is_import_func && env->sp_bottom) {
         env->sp_boundary = env->sp_bottom + env->function->u.func->max_stack_cell_num;
-        //        env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
         std::reverse(csp.begin(), csp.end());
         for (auto &&csp_item : csp) {
             restore(csp_item.get(), env->csp_bottom + i);
@@ -68,7 +58,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         }
         env->csp = env->csp_bottom + csp.size() - 1;
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
-        LOGV(DEBUG) << env->function->u.func->field_name << " csp_bottom" << env->csp_bottom << " sp_bottom"
+        LOGV(DEBUG)  << " csp_bottom" << env->csp_bottom << " sp_bottom"
                     << env->sp_bottom << " sp" << sp << ((uint8 *)env->sp) - wamr->get_exec_env()->wasm_stack.s.bottom
                     << " lp" << lp;
     }

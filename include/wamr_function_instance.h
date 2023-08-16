@@ -10,7 +10,7 @@
 #include "wasm_runtime.h"
 #include <string>
 #include <vector>
-
+// AOT do not have custom name section
 struct WAMRFunction {
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
     std::string field_name;
@@ -39,7 +39,7 @@ struct WAMRFunction {
         field_name = env->field_name;
         LOGV(DEBUG) << "field_name:" << field_name;
 #else
-        ::dump(&func_type, env->func_type);
+        dump(&func_type, env->func_type);
         local_count = env->local_count;
         LOGV(DEBUG) << "local_count:" << local_count;
         param_cell_num = env->param_cell_num;
@@ -59,7 +59,7 @@ struct WAMRFunction {
 #if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
         return field_name == env->field_name;
 #else
-        if (!(func_type.equal(env->func_type))) {
+        if (!func_type.equal_impl(env->func_type)) {
             return false;
         }
         if (param_cell_num != env->param_cell_num) {
