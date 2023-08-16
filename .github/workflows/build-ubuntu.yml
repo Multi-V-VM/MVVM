@@ -46,6 +46,14 @@ jobs:
         cmake .
         make -j
 
+    - name: Install AOT wamrc
+      run: |
+        cd lib/wasm-micro-runtime/wamr-compiler
+        mkdir build
+        cd build
+        cmake .. -DWAMR_BUILD_AOT=1 -DWAMR_BUILD_AOT_STACK_FRAME=1 -DWAMR_BUILD_DEBUG_AOT=0 -DWAMR_BUILD_DUMP_CALL_STACK=1 -DWAMR_BUILD_SHARED_MEMORY=1
+        make -j
+
     - name: configure cmake
       run: sudo touch /usr/lib/llvm-14/lib/libMLIRSupportIndentedOstream.a && CC=gcc-13 CXX=g++-13 cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm/
 
