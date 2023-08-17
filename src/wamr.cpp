@@ -7,6 +7,16 @@
 #include "wasm_interp.h"
 #include <regex>
 
+static auto string_vec_to_cstr_array = [](const std::vector<std::string> &vecStr) {
+    std::vector<const char *> cstrArray(vecStr.size());
+    if (vecStr.data() == nullptr || vecStr[0].empty())
+        return std::vector<const char *>(0);
+    LOGV(DEBUG) << "vecStr[0]:" << vecStr[0];
+    std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(),
+                   [](const std::string &str) { return str.c_str(); });
+    return cstrArray;
+};
+
 WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) {
     RuntimeInitArgs wasm_args;
     memset(&wasm_args, 0, sizeof(RuntimeInitArgs));
@@ -163,25 +173,32 @@ void WAMRInstance::recover(
                 ThreadArgs{cur_env, nullptr, nullptr}; // requires to record the args and callback for the pthread.
         }
         get_exec_env()->is_restore = true;
+#if WASM_ENABLE_AOT == 0
         wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
                                        get_exec_env()->cur_frame->prev_frame);
+#endif
+        // how to get the previous frame here.
+        auto args_ = get_args() ;
+        uint32 argv_[args_.size()];
+        std::copy ( args_.begin(),args_.end(),argv_);
+        // The function instance can be got by the index of
+        aot_call_function(get_exec_env(), get_func(1),args_.size() ,argv_ );
     } // every pthread has a semaphore for main thread to set all break point to start.
 }
+#if WASM_ENABLE_AOT != 0
+std::vector<uint32> WAMRInstance::get_args(){
+ // TODO
+};
+AOTFunctionInstance *WAMRInstance::get_func(int index){
+    return nullptr;
+};
+#endif
 WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func); }
 void WAMRInstance::set_func(WASMFunction *f) { func = static_cast<WASMFunction *>(f); }
 void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
                                  const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,
                                  const std::vector<std::string> &addr_list,
                                  const std::vector<std::string> &ns_lookup_pool) {
-    auto string_vec_to_cstr_array = [](const std::vector<std::string> &vecStr) {
-        std::vector<const char *> cstrArray(vecStr.size());
-        if (vecStr.data() == nullptr || vecStr[0].empty())
-            return std::vector<const char *>(0);
-        LOGV(DEBUG) << "vecStr[0]:" << vecStr[0];
-        std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(),
-                       [](const std::string &str) { return str.c_str(); });
-        return cstrArray;
-    };
 
     dir_ = string_vec_to_cstr_array(dir_list);
     map_dir_ = string_vec_to_cstr_array(map_dir_list);

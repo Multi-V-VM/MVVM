@@ -112,6 +112,9 @@ struct WAMRFunctionInstance {
     WAMRFunction func{};
     WAMRFunctionImport func_import;
     void dump_impl(WASMFunctionInstance *env) {
+#if WASM_ENABLE_AOT != 0
+        func_index = env->local_cell_num;
+#endif
         is_import_func = env->is_import_func;
         LOGV(DEBUG) << "is_import_func:" << is_import_func;
         if (!is_import_func) {

@@ -20,13 +20,13 @@ void WAMRInterpFrame::dump_impl(WASMInterpFrame *env) {
             sp = reinterpret_cast<uint8 *>(env->sp) -
                  ((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom); // offset to the wasm_stack_top
         }
+#if WASM_ENABLE_AOT == 0
         auto csp_size = (env->csp - env->csp_bottom) + 1;
         for (int i = 0; i < csp_size; i++) {
             auto *local_csp = new WAMRBranchBlock();
             dump(local_csp, env->csp - i);
             csp.emplace_back(local_csp);
         }
-#if WASM_ENABLE_AOT == 0
         dump(&function, env->function);
 #else
         // get type + offset for the function
@@ -37,6 +37,7 @@ void WAMRInterpFrame::dump_impl(WASMInterpFrame *env) {
         auto func = new WASMFunctionInstance{.is_import_func = false,
                                              .param_count = func_type->param_count,
                                              .local_count = func_type->result_count,
+                                             .local_cell_num = static_cast<uint16>(func_type_idx),
                                              .u = {.func = new WASMFunction{.func_type = func_type}}
         };
         dump(&function, func);
@@ -45,10 +46,12 @@ void WAMRInterpFrame::dump_impl(WASMInterpFrame *env) {
 }
 void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     env->function = reinterpret_cast<WASMFunctionInstance *>(malloc(sizeof(WASMFunctionInstance)));
+#if WASM_ENABLE_AOT == 0
     restore(&function, env->function);
-
     if (env->function)
         wamr->set_func(env->function->u.func);
+#endif
+
     if (ip)
         env->ip = env->function->u.func->code + ip;
 
@@ -58,7 +61,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     if (lp)
         LOGV(ERROR) << "env_lp " << env->lp[0] << " "
                     << *reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + lp);
-
+#if WASM_ENABLE_AOT == 0
     int i = 0;
     env->sp_bottom = ((uint32 *)env->lp) + env->function->param_cell_num + env->function->local_cell_num;
     env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
@@ -76,4 +79,5 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         LOGV(DEBUG) << " csp_bottom" << env->csp_bottom << " sp_bottom" << env->sp_bottom << " sp" << sp
                     << ((uint8 *)env->sp) - wamr->get_exec_env()->wasm_stack.s.bottom << " lp" << lp;
     }
+#endif
 }
