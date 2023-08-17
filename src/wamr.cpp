@@ -139,8 +139,8 @@ WASMModuleInstance *WAMRInstance::get_module_instance() {
     return reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst);
 }
 
-WASMModule *WAMRInstance::get_module() {
-    return reinterpret_cast<WASMModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
+AOTModule *WAMRInstance::get_module() {
+    return reinterpret_cast<AOTModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
 }
 void WAMRInstance::recover(
     std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) { // will call pthread create wrapper if needed?

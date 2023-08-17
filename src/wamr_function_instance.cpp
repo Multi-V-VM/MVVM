@@ -18,34 +18,6 @@ void WAMRFunctionInstance::restore_impl(WASMFunctionInstance *env) {
             /* local variable count, 0 for import function */
             if (local_count != env->local_count) {
                 continue;
-            } /* cell num of parameters */
-            if (param_cell_num != env->param_cell_num) {
-                continue;
-            }
-            /* cell num of return type */
-            if (ret_cell_num != env->ret_cell_num) {
-                continue;
-            }
-            /* cell num of local variables, 0 for import function */
-            if (local_cell_num != env->local_cell_num) {
-                continue;
-            }
-
-            for (i = 0; i < param_count + local_count; i++) {
-                if (local_offsets[i] != env->local_offsets[i]) {
-                    continue;
-                }
-            }
-            for (i = 0; i < param_count; i++) {
-                if (param_types[i] != env->param_types[i]) {
-                    continue;
-                }
-            }
-            /* local types, NULL for import function */
-            for (i = 0; i < local_count; i++) {
-                if (local_types[i] != env->local_types[i]) {
-                    continue;
-                }
             }
 #endif
             if (equal(&func, cur_func.u.func)) {

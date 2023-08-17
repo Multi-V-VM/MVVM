@@ -101,32 +101,16 @@ template <CheckerTrait<WASMFunctionImport *> T> void dump(T t, WASMFunctionImpor
 template <CheckerTrait<WASMFunctionImport *> T> bool equal(T t, WASMFunctionImport *env) { return t->equal_impl(env); }
 
 struct WAMRFunctionInstance {
+    /* AOT required func index */
+    uint16 func_index{};
     /* whether it is import function or WASM function */
-    bool is_import_func;
+    bool is_import_func{};
     /* parameter count */
-    uint16 param_count;
+    uint16 param_count{};
     /* local variable count, 0 for import function */
-    uint16 local_count;
-    /* cell num of parameters */
-    uint16 param_cell_num;
-    /* cell num of return type */
-    uint16 ret_cell_num;
-    /* cell num of local variables, 0 for import function */
-    uint16 local_cell_num;
-    // #if WASM_ENABLE_FAST_INTERP != 0
-    //     /* cell num of consts */
-    //     uint16 const_cell_num;
-    // #endif
-    std::vector<uint16> local_offsets;
-    /* parameter types */
-    std::vector<uint8> param_types;
-    /* local types, NULL for import function */
-    std::vector<uint8> local_types;
-    //    union {
-    //        WASMFunctionImport *func_import;
-    WAMRFunction func;
+    uint16 local_count{};
+    WAMRFunction func{};
     WAMRFunctionImport func_import;
-    //    } u;
     void dump_impl(WASMFunctionInstance *env) {
         is_import_func = env->is_import_func;
         LOGV(DEBUG) << "is_import_func:" << is_import_func;
@@ -140,20 +124,6 @@ struct WAMRFunctionInstance {
         /* local variable count, 0 for import function */
         local_count = env->local_count;
         LOGV(DEBUG) << "local_count:" << local_count;
-        /* cell num of parameters */
-        param_cell_num = env->param_cell_num;
-        LOGV(DEBUG) << "param_cell_num:" << param_cell_num;
-        /* cell num of return type */
-        ret_cell_num = env->ret_cell_num;
-        LOGV(DEBUG) << "ret_cell_num:" << ret_cell_num;
-        /* cell num of local variables, 0 for import function */
-        local_cell_num = env->local_cell_num;
-        LOGV(DEBUG) << "local_cell_num:" << local_cell_num;
-        local_offsets = std::vector(env->local_offsets, env->local_offsets + (param_count + local_count));
-        /* parameter types */
-        param_types = std::vector(env->param_types, env->param_types + param_count);
-        /* local types, NULL for import function */
-        local_types = std::vector(env->local_types, env->local_types + local_count);
     };
     void restore_impl(WASMFunctionInstance *env);
 };

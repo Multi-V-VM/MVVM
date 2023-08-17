@@ -5,12 +5,13 @@
 #ifndef MVVM_WAMR_H
 #define MVVM_WAMR_H
 
+#include "aot_runtime.h"
 #include "bh_read_file.h"
 #include "logging.h"
 #include "wamr_exec_env.h"
+#include "wamr_export.h"
 #include "wamr_read_write.h"
 #include "wasm_runtime.h"
-#include "wamr_export.h"
 
 class WAMRInstance {
     WASMExecEnv *exec_env{};
@@ -49,7 +50,7 @@ public:
     void set_func(WASMFunction *);
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();
-    WASMModule *get_module();
+    AOTModule *get_module();
     void set_wasi_args(WAMRWASIContext &addrs);
     void set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
                        const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,

@@ -7,8 +7,10 @@
 extern WAMRInstance *wamr;
 void WAMRInterpFrame::dump_impl(WASMInterpFrame *env) {
     if (env->function) {
+        // what's the counterpart for the aot?
+#if WASM_ENABLE_AOT == 0
         wamr->set_func(env->function->u.func);
-
+#endif
         if (env->ip)
             ip = env->ip - env->function->u.func->code; // here we need to get the offset from the code start.
 
@@ -24,8 +26,21 @@ void WAMRInterpFrame::dump_impl(WASMInterpFrame *env) {
             dump(local_csp, env->csp - i);
             csp.emplace_back(local_csp);
         }
-        if (env->function)
-            dump(&function, env->function);
+#if WASM_ENABLE_AOT == 0
+        dump(&function, env->function);
+#else
+        // get type + offset for the function
+        auto module_ = wamr->get_module();
+        uint32 *func_type_indexes = module_->func_type_indexes;
+        auto func_type_idx = module_->func_type_indexes[module_->start_func_index - module_->import_func_count];
+        auto func_type = module_->func_types[func_type_idx];
+        auto func = new WASMFunctionInstance{.is_import_func = false,
+                                             .param_count = func_type->param_count,
+                                             .local_count = func_type->result_count,
+                                             .u = {.func = new WASMFunction{.func_type = func_type}}
+        };
+        dump(&function, func);
+#endif
     }
 }
 void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
@@ -58,8 +73,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         }
         env->csp = env->csp_bottom + csp.size() - 1;
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
-        LOGV(DEBUG)  << " csp_bottom" << env->csp_bottom << " sp_bottom"
-                    << env->sp_bottom << " sp" << sp << ((uint8 *)env->sp) - wamr->get_exec_env()->wasm_stack.s.bottom
-                    << " lp" << lp;
+        LOGV(DEBUG) << " csp_bottom" << env->csp_bottom << " sp_bottom" << env->sp_bottom << " sp" << sp
+                    << ((uint8 *)env->sp) - wamr->get_exec_env()->wasm_stack.s.bottom << " lp" << lp;
     }
 }

@@ -108,7 +108,7 @@ struct WAMRExecEnv { // multiple
     /* The native thread handle of current thread */
     //    korp_tid handle;
 
-#if WASM_ENABLE_INTERP != 0
+#if WASM_ENABLE_AOT == 0
     WAMRBlockAddr block_addr_cache[BLOCK_ADDR_CACHE_SIZE][BLOCK_ADDR_CONFLICT_SIZE];
 #endif
 
@@ -146,18 +146,18 @@ struct WAMRExecEnv { // multiple
         flags = env->suspend_flags.flags;
         aux_boundary = env->aux_stack_boundary.boundary;
         aux_bottom = env->aux_stack_bottom.bottom;
+#if WASM_ENABLE_AOT == 0
         for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE; i++) {
             for (int j = 0; j < 2; j++) {
                 dump(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
             }
         }
+#endif
         auto cur_frame = env->cur_frame;
         while (cur_frame) {
             auto dumped_frame = new WAMRInterpFrame();
             dump(dumped_frame, cur_frame);
             this->frames.emplace_back(dumped_frame);
-            //            this->lp.emplace_back(((uint8*)cur_frame->lp)- env->wasm_stack.s.bottom);
-            //            LOGV(DEBUG)<<"lp:"<<this->lp.back() << " " << ((uint8*)cur_frame)-env->wasm_stack.s.bottom;
             cur_frame = cur_frame->prev_frame;
         }
         wasm_stack = std::vector(env->wasm_stack.s.bottom, env->wasm_stack.s.top);
@@ -185,12 +185,13 @@ struct WAMRExecEnv { // multiple
                 cur_frame = cur_frame->prev_frame;
             }
         }
-
+#if WASM_ENABLE_AOT == 0
         for (int i = 0; i < BLOCK_ADDR_CACHE_SIZE; i++) {
             for (int j = 0; j < BLOCK_ADDR_CONFLICT_SIZE; j++) {
                 restore(&(block_addr_cache[i][j]), &(env->block_addr_cache[i][j]));
             }
         }
+#endif
     };
 };
 

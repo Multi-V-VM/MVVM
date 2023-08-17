@@ -9,7 +9,6 @@ void WAMRBlockAddr::dump_impl(BlockAddr *env) {
     this->start_addr =
         env->start_addr -
         wamr->get_exec_env()->cur_frame->function->u.func->code; // here we need to get the offset from the code start.
-    //    LOGV(DEBUG) << "start_addr " << this->start_addr;
     if (env->else_addr)
         this->else_addr = env->else_addr - wamr->get_exec_env()->cur_frame->function->u.func->code;
     if (env->end_addr)
