@@ -4,12 +4,14 @@
 
 #include "thread_manager.h"
 #include "wamr.h"
+#include <__utility/pair.h>
 #include <cstdio>
 #include <cxxopts.hpp>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <thread>
+#include <tuple>
 // file map, direcotry handle
 
 WAMRInstance *wamr = nullptr;
@@ -18,16 +20,33 @@ auto writer = FwriteStream("test.bin");
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 /**fopen, fseek*/
-void insert_fd(int fd, const char *path, int flags) {
-    printf("\n #insert_fd(fd,filename,flags) %d %s %d \n\n",fd, path,flags);
-    
+void insert_fd(int fd, const char *path, int flags, int offset) {
+    printf("\n #insert_fd(fd,filename,flags, offset) %d %s %d %d \n\n",fd, path,flags, offset);
+
     if (wamr->fd_map_.find(fd) != wamr->fd_map_.end()) {
         LOGV(ERROR) << "fd already exist" << fd;
-        wamr->fd_map_[fd] = std::make_pair(std::string(path), flags);
+        if(offset == 0) {
+            // fOpen call
+            std::string curPath;
+            int curFlags;
+            int curOffset;
+            std::tie(curPath, curFlags, curOffset) = wamr->fd_map_[fd];
+            wamr->fd_map_[fd] = std::make_tuple(std::string(path), flags, curOffset);
+        } else {
+            // fSeek call
+            std::string curPath;
+            int curFlags;
+            int curOffset;
+            std::tie(curPath, curFlags, curOffset) = wamr->fd_map_[fd];
+            wamr->fd_map_[fd] = std::make_tuple(curPath, curFlags, offset);
+        }
+        
     } else
-        wamr->fd_map_.insert(std::make_pair(fd, std::make_pair(std::string(path), flags)));
+        wamr->fd_map_.insert(std::make_pair(fd, std::make_tuple(std::string(path), flags, offset)));
 }
 
+/* update fd->offset**/
+void insert_fd_fseek();
 /**fclose */
 void remove_fd(int fd) {
     if (wamr->fd_map_.find(fd) != wamr->fd_map_.end())
@@ -54,7 +73,7 @@ void serialize_to_file(WASMExecEnv *instance) {
                 stdoutput >>  fd_output;
                 stdoutput >> filename_output;
                 stdoutput >> flags_output;
-                insert_fd(std::stoi(fd_output), filename_output.c_str(), std::stoi(flags_output));
+                insert_fd(std::stoi(fd_output), filename_output.c_str(), std::stoi(flags_output), 0);
             }
         }
     }

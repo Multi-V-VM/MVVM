@@ -45,6 +45,8 @@ FILE *fopen_test(const char *restrict filename, const char *restrict mode)
 	return 0;
 }
 
+
+
 int main() {
     FILE *file = fopen_test("./text.txt", "w");
     
