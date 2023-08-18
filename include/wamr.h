@@ -26,7 +26,8 @@ public:
     std::vector<const char *> arg_;
     std::vector<const char *> addr_;
     std::vector<const char *> ns_pool_;
-    std::map<int, std::pair<std::string,int>> fd_map_;
+    std::map<int, std::tuple<std::string,int, int>> fd_map_;
+    // add offset to pair->tuple, 3rd param 'int'
     bool is_jit;
     char *buffer{};
     char error_buf[128]{};
