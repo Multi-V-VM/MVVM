@@ -4,8 +4,12 @@
 
 #include "wamr.h"
 #include "thread_manager.h"
+#include "wasm_exec_env.h"
 #include "wasm_interp.h"
+#include "wasm_runtime.h"
 #include <regex>
+
+WAMRInstance::ThreadArgs** argptr;
 
 WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) {
     RuntimeInitArgs wasm_args;
@@ -139,12 +143,26 @@ WASMModuleInstance *WAMRInstance::get_module_instance() {
 WASMModule *WAMRInstance::get_module() {
     return reinterpret_cast<WASMModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
 }
-void WAMRInstance::recover(
-    std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) { // will call pthread create wrapper if needed?
+
+void restart_execution(uint32 id){
+        WAMRInstance::ThreadArgs* targs = argptr[id];
+            wasm_interp_call_func_bytecode(
+                    (WASMModuleInstance*)targs->exec_env->module_inst,
+                    targs->exec_env,
+                    targs->exec_env->cur_frame->function,
+                    targs->exec_env->cur_frame->prev_frame);
+
+}
+
+// will call pthread create wrapper if needed?
+void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
+    // order threads by id (descending)
     std::sort(execEnv->begin(), execEnv->end(),
               [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
                   return a->cur_count > b->cur_count;
               });
+    argptr = (ThreadArgs**) malloc(sizeof(void*) * execEnv->size());
+    uint32 id = 0;
 
     for (auto &&exec_ : *execEnv) {
         if (exec_->cur_count != 0) {
@@ -154,14 +172,27 @@ void WAMRInstance::recover(
         //  first get the deserializer message, here just hard code
         this->instantiate();
         restore(exec_.get(), cur_env);
+        get_exec_env()->is_restore = true;
         cur_env->is_restore = true;
         if (exec_->cur_count != 0) {
-            auto thread_arg =
-                ThreadArgs{cur_env, nullptr, nullptr}; // requires to record the args and callback for the pthread.
+
+            // requires to record the args and callback for the pthread.
+            auto thread_arg = ThreadArgs{cur_env};
+
+            argptr[id] = &thread_arg;
+
+            // restart thread execution
+            pthread_create_wrapper(exec_env, nullptr, nullptr, id, id);
+            id++;
+            continue;
         }
-        get_exec_env()->is_restore = true;
-        wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
-                                       get_exec_env()->cur_frame->prev_frame);
+        if (exec_->cur_count == 0) {
+            // restart main thread execution
+            wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
+                                           get_exec_env()->cur_frame->prev_frame);
+            break;
+        }
+        assert(false); // main thread at end should be the
     } // every pthread has a semaphore for main thread to set all break point to start.
 }
 WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func); }

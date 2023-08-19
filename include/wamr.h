@@ -8,9 +8,10 @@
 #include "bh_read_file.h"
 #include "logging.h"
 #include "wamr_exec_env.h"
-#include "wamr_read_write.h"
-#include "wasm_runtime.h"
 #include "wamr_export.h"
+#include "wamr_read_write.h"
+#include "wasm_export.h"
+#include "wasm_runtime.h"
 
 class WAMRInstance {
     WASMExecEnv *exec_env{};
@@ -33,8 +34,6 @@ public:
     uint32 buf_size{}, stack_size = 8092, heap_size = 8092;
     typedef struct ThreadArgs {
         wasm_exec_env_t exec_env;
-        wasm_thread_callback_t callback;
-        void *arg;
     } ThreadArgs;
     std::vector<ThreadArgs> thread_arg;
     std::vector<wasm_thread_t> tid;
