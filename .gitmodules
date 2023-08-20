@@ -4,3 +4,6 @@
 [submodule "lib/yalantinglibs"]
 	path = lib/yalantinglibs
 	url = https://github.com/alibaba/yalantinglibs
+[submodule "bench/gapbs"]
+	path = bench/gapbs
+	url = https://github.com/victoryang00/gapbs.git

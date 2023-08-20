@@ -4,7 +4,6 @@
 
 #include "thread_manager.h"
 #include "wamr.h"
-#include <__utility/pair.h>
 #include <cstdio>
 #include <cxxopts.hpp>
 #include <fstream>
@@ -79,8 +78,6 @@ void serialize_to_file(WASMExecEnv *instance) {
     }
     stdoutput.close();
 
-    //
-    std::cout<<"dasfasdfasf"<< re.str()<<"dasfasdfasf\n";
     auto cluster = wasm_exec_env_get_cluster(instance);
     if (bh_list_length(&cluster->exec_env_list) > 1) {
         auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
