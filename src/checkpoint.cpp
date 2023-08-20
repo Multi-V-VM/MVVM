@@ -4,6 +4,7 @@
 
 #include "thread_manager.h"
 #include "wamr.h"
+#include <__utility/pair.h>
 #include <cstdio>
 #include <cxxopts.hpp>
 #include <fstream>
