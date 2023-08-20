@@ -9,7 +9,7 @@ extern "C" {
 #include "wasm_runtime.h"
 void serialize_to_file(struct WASMExecEnv*);
 #endif
-void insert_fd(int, char const *, int);
+void insert_fd(int, char const *, int, int);
 void remove_fd(int);
 void insert_socket(char const *, int);
 void remove_socket(char const *); // see whether there's socket maintainance impl in wasi?

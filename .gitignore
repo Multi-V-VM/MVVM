@@ -21,3 +21,4 @@ build
 .idea
 cmake-*
 .cache
+.DS_Store
