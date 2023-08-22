@@ -225,45 +225,6 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
     wasm_runtime_set_wasi_ns_lookup_pool(module, ns_pool_.data(), ns_pool_.size());
 }
 void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
-    // some handmade directory after recovery dir
-    // std::vector<int> to_close;
-    // for (auto [fd, stat] : context.fd_map) {
-    //     while (true) {
-    //         // if the time is not socket
-    //         int fd_;
-    //         if (stat.second == 0) {
-    //             auto dir_name = opendir(stat.first.c_str());
-    //             fd_ = dirfd(dir_name);
-    //         } else {
-    //             fd_ = open(stat.first.c_str(), O_RDWR);
-    //         }
-    //         if (fd > fd_) {
-    //             //                close(fd_);
-    //             to_close.emplace_back(fd_);
-    //             continue;
-    //         }
-    //         if (fd < fd_) {
-    //             throw std::runtime_error("restore fd overflow");
-    //         }
-    //         // remain socket.
-    //         break;
-    //     }
-    // }
-    // for (auto fd : to_close) {
-    //     close(fd);
-    // }
-    /** refer to wasm bpf call function */
-
-    //    auto get_dir_from_context = [](const WAMRWASIContext &wasiContext, bool is_map_dir = false) {
-    //        auto cstrArray = std::vector<std::string>(wasiContext.prestats.size);
-    //        std::regex dir_replacer(".+?/");
-    //        std::transform(wasiContext.prestats.prestats.begin(), wasiContext.prestats.prestats.end(),
-    //        cstrArray.begin(),
-    //                       [&is_map_dir, &dir_replacer](const WAMRFDPrestat &str) {
-    //                           return is_map_dir ? std::regex_replace(str.dir, dir_replacer, "") : str.dir;
-    //                       });
-    //        return cstrArray;
-    //    };
     auto get_addr_from_context = [](const WAMRWASIContext &wasiContext) {
         auto addr_pool = std::vector<std::string>(wasiContext.addr_pool.size());
         std::transform(wasiContext.addr_pool.begin(), wasiContext.addr_pool.end(), addr_pool.begin(),

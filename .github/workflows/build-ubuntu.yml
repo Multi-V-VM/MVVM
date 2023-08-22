@@ -26,12 +26,18 @@ jobs:
     - name: Checkout
       run: git submodule update --init
       
-    - name: Install WASI SDK
+    # - name: Install WASI SDK
+    #   run: |
+    #     cd /opt
+    #     sudo wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-20/wasi-sdk-20.0-linux.tar.gz
+    #     sudo tar -xzf wasi-sdk-*.tar.gz
+    #     sudo mv wasi-sdk-20.0 wasi-sdk
+
+    - name: Install Instrumented WASI SDK
       run: |
         cd /opt
-        sudo wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-20/wasi-sdk-20.0-linux.tar.gz
+        sudo wget https://asplos.dev/wasi-sdk-20.0-linux.tar.gz
         sudo tar -xzf wasi-sdk-*.tar.gz
-        sudo mv wasi-sdk-20.0 wasi-sdk
 
     - name: Make WASM LD no check features
       run: |

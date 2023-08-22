@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.22)
 project(MVVM LANGUAGES C CXX)
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 
 find_package(FMT REQUIRED)
 # find_package(LLVM REQUIRED)
 find_package(cxxopts REQUIRED)
 include(CTest)
+if(WIN32)
+    set(WASI_SDK_DIR D:/wasi-sdk/)
+else()
+    set(WASI_SDK_DIR /opt/wasi-sdk/)
+endif()
 
 if(APPLE)
     set(WAMR_BUILD_PLATFORM "darwin")

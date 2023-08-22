@@ -18,7 +18,7 @@
 #include <iostream>
 #include <list>
 #include <sstream>
-#include <stdarg.h>
+#include <cstdarg>
 #include <string>
 
 using std::list;

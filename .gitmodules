@@ -7,3 +7,6 @@
 [submodule "bench/gapbs"]
 	path = bench/gapbs
 	url = https://github.com/victoryang00/gapbs.git
+[submodule "bench/clickhouse"]
+	path = bench/clickhouse
+	url = https://github.com/victoryang00/ClickHouse.git
