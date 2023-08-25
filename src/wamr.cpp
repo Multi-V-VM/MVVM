@@ -73,7 +73,7 @@ int WAMRInstance::invoke_main() {
 
     return wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
-int WAMRInstance::invoke_open(uint32 fd, const std::string &path, uint32 option) {
+int WAMRInstance::invoke_fopen(uint32 fd, const std::string &path, uint32 option) {
     if (!(func = wasm_runtime_lookup_function(module_inst, "open", "($i)i"))) {
         LOGV(ERROR) << "The wasi open function is not found.";
         return -1;
@@ -90,6 +90,20 @@ int WAMRInstance::invoke_open(uint32 fd, const std::string &path, uint32 option)
         auto res = wasm_runtime_call_wasm(exec_env, func, 2, argv);
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
         return res;
+    }
+    return -1;
+};
+int WAMRInstance::invoke_fseek(uint32 fd, uint32 offset) {
+    if (!(func = wasm_runtime_lookup_function(module_inst, "fseek", "($i)i"))) {
+        LOGV(ERROR) << "The wasi open function is not found.";
+        return -1;
+    }
+    char *buffer_ = nullptr;
+    uint32_t buffer_for_wasm;
+
+    buffer_for_wasm = wasm_runtime_module_malloc(module_inst, 100, reinterpret_cast<void **>(&buffer_));
+    if (buffer_for_wasm != 0) {
+        uint32 argv[2];
     }
     return -1;
 };

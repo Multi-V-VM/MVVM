@@ -57,7 +57,8 @@ public:
                        const std::vector<std::string> &addr_list, const std::vector<std::string> &ns_lookup_pool);
 
     int invoke_main();
-    int invoke_open(uint32 fd,const std::string& path, uint32 option);
+    int invoke_fopen(uint32 fd,const std::string& path, uint32 option);
+    int invoke_fseek(uint32 fd, uint32 offset);
     int invoke_preopen(uint32 fd,const std::string& path);
     ~WAMRInstance();
 };
