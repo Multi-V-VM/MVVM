@@ -29,7 +29,6 @@ struct WAMRAddrPool {
     uint8 mask;
 };
 struct WAMRWASIContext {
-    std::map<uint32, std::pair<std::string,int>> fd_map;
     std::vector<std::string> dir;
     std::vector<std::string> map_dir;
     WAMRArgvEnvironValues argv_environ;

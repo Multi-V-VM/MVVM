@@ -7,9 +7,9 @@ extern "C" {
 #endif
 #ifdef MVVM_WASI
 #include "wasm_runtime.h"
-void serialize_to_file(struct WASMExecEnv*);
+void serialize_to_file(struct WASMExecEnv *);
 #endif
-void insert_fd(int, char const *, int);
+void insert_fd(int, char const *, int, int);
 void remove_fd(int);
 void insert_socket(char const *, int);
 void remove_socket(char const *); // see whether there's socket maintainance impl in wasi?
@@ -17,6 +17,7 @@ void insert_lock(char const *, int);
 void insert_sem(char const *, int);
 void remove_lock(char const *);
 void remove_sem(char const *);
+void restart_execution(uint32 targs);
 #ifdef __cplusplus
 }
 #endif

@@ -26,7 +26,8 @@ public:
     std::vector<const char *> arg_;
     std::vector<const char *> addr_;
     std::vector<const char *> ns_pool_;
-    std::map<int, std::pair<std::string,int>> fd_map_;
+    std::map<int, std::tuple<std::string,int, int>> fd_map_;
+    // add offset to pair->tuple, 3rd param 'int'
     bool is_jit;
     char *buffer{};
     char error_buf[128]{};
@@ -56,7 +57,8 @@ public:
                        const std::vector<std::string> &addr_list, const std::vector<std::string> &ns_lookup_pool);
 
     int invoke_main();
-    int invoke_open(uint32 fd,const std::string& path, uint32 option);
+    int invoke_fopen(uint32 fd,const std::string& path, uint32 option);
+    int invoke_fseek(uint32 fd, uint32 offset);
     int invoke_preopen(uint32 fd,const std::string& path);
     ~WAMRInstance();
 };
