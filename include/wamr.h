@@ -58,6 +58,7 @@ public:
 
     int invoke_main();
     int invoke_fopen(std::string &path, uint32 option);
+    int invoke_frenumber(uint32 fd, uint32 to);
     int invoke_fseek(uint32 fd, uint32 offset);
     int invoke_preopen(uint32 fd, const std::string &path);
     ~WAMRInstance();

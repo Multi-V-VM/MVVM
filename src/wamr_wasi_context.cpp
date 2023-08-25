@@ -23,12 +23,10 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
         LOGV(INFO) << "fd: " << fd << " path: " << std::get<0>(res) << " flags: " << std::get<1>(res)
-                  << " offset: " << std::get<2>(res);
-        while (true) {
-            r = wamr->invoke_fopen(std::get<0>(res), std::get<1>(res));
-            if (r == fd)
-                break;
-            wamr->invoke_fseek(fd, std::get<2>(res));
-        }
+                   << " offset: " << std::get<2>(res);
+        r = wamr->invoke_fopen(std::get<0>(res), std::get<1>(res));
+        if (r != fd)
+            wamr->invoke_frenumber(r, fd);
+        wamr->invoke_fseek(fd, std::get<2>(res));
     }
 };
