@@ -6,6 +6,7 @@
 #include "wamr.h"
 #include "wamr_exec_env.h"
 #include "wamr_read_write.h"
+#include "wasm_runtime.h"
 #include <cxxopts.hpp>
 #include <iostream>
 #include <memory>
@@ -16,7 +17,8 @@ WAMRInstance *wamr = nullptr;
 void insert_fd(int fd, const char *path, int flags, int offset){};
 void remove_fd(int fd) {}
 void serialize_to_file(WASMExecEnv *instance) {}
-void insert_socket(char const *, int){};
+void insert_socket(int fd, int domain, int type, int protocol){};
+void update_socket_fd_address(int fd, SocketAddrPool *address){};
 void remove_socket(char const *){};
 void insert_lock(char const *, int){};
 void insert_sem(char const *, int){};
