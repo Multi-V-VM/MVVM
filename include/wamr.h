@@ -9,8 +9,10 @@
 #include "logging.h"
 #include "wamr_exec_env.h"
 #include "wamr_read_write.h"
+#include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
 #include "wamr_export.h"
+#include <tuple>
 
 class WAMRInstance {
     WASMExecEnv *exec_env{};
@@ -28,6 +30,7 @@ public:
     std::vector<const char *> ns_pool_;
     std::map<int, std::tuple<std::string,int, int>> fd_map_;
     // add offset to pair->tuple, 3rd param 'int'
+    std::map<int, SocketMetaData> socket_fd_map_;
     bool is_jit;
     char *buffer{};
     char error_buf[128]{};
