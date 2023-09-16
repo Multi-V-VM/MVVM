@@ -16,8 +16,8 @@
 WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
 auto writer = FwriteStream("test.bin");
-constinit std::vector<std::unique_ptr<WAMRExecEnv>> as;
-constinit std::mutex as_mtx;
+std::vector<std::unique_ptr<WAMRExecEnv>> as;
+std::mutex as_mtx;
 /**fopen, fseek*/
 void insert_fd(int fd, const char *path, int flags, int offset) {
     if (fd > 2) {
