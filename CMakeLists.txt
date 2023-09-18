@@ -94,7 +94,7 @@ add_executable(MVVM_checkpoint ${SOURCE_FILES} src/checkpoint.cpp  ${UNCOMMON_SH
 target_link_libraries(MVVM_restore fmt::fmt cxxopts::cxxopts vmlib -lm -ldl -lpthread ${LLVM_LLDB_LIB} ${LLVM_AVAILABLE_LIBS})
 target_link_libraries(MVVM_checkpoint fmt::fmt cxxopts::cxxopts vmlib -lm -ldl -lpthread ${LLVM_LLDB_LIB} ${LLVM_AVAILABLE_LIBS})
 add_definitions(-DMVVM_INTERP=1)
-add_definitions(-DMVVM_DEBUG=1)
+# add_definitions(-DMVVM_DEBUG=1)
 add_definitions(-DMVVM_WASI=1)
 add_definitions(-DCXXOPTS_NO_RTTI=1)
 add_subdirectory(test)

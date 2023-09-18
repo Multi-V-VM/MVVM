@@ -25,10 +25,6 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
     wasm_args.mem_alloc_option.allocator.realloc_func = ((void *)realloc);
     wasm_args.mem_alloc_option.allocator.free_func = ((void *)free);
     wasm_args.max_thread_num = 16;
-    if (!is_jit)
-        wasm_args.running_mode = RunningMode::Mode_Interp;
-    else
-        wasm_args.running_mode = RunningMode::Mode_LLVM_JIT;
     //    wasm_args.mem_alloc_type = Alloc_With_Pool;
     //    wasm_args.mem_alloc_option.pool.heap_buf = global_heap_buf;
     //    wasm_args.mem_alloc_option.pool.heap_size = sizeof(global_heap_buf);

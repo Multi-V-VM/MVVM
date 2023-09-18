@@ -8,11 +8,17 @@
 #include "aot_runtime.h"
 #include "bh_read_file.h"
 #include "logging.h"
-#include <ranges>
 #include "wamr_exec_env.h"
 #include "wamr_export.h"
 #include "wamr_read_write.h"
 #include "wasm_runtime.h"
+#include <ranges>
+
+enum ArchType { x86_64 };
+
+struct MVVMAotMetadata {
+    std::vector<std::size_t> nops;
+};
 
 class WAMRInstance {
     WASMExecEnv *exec_env{};
@@ -22,13 +28,14 @@ class WAMRInstance {
     WASMFunctionInstanceCommon *func{};
 
 public:
+    std::map<ArchType, MVVMAotMetadata> mvvm_aot_metadatas;
     std::vector<const char *> dir_;
     std::vector<const char *> map_dir_;
     std::vector<const char *> env_;
     std::vector<const char *> arg_;
     std::vector<const char *> addr_;
     std::vector<const char *> ns_pool_;
-    std::map<int, std::pair<std::string,int>> fd_map_;
+    std::map<int, std::pair<std::string, int>> fd_map_;
     bool is_jit;
     char *buffer{};
     char error_buf[128]{};
@@ -47,6 +54,7 @@ public:
     void instantiate();
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
     bool load_wasm_binary(const char *wasm_path);
+    bool load_mvvm_aot_metadata(const char *file_path);
     WASMFunction *get_func();
     void set_func(WASMFunction *);
 #if WASM_ENABLE_AOT != 0
@@ -62,8 +70,8 @@ public:
                        const std::vector<std::string> &addr_list, const std::vector<std::string> &ns_lookup_pool);
 
     int invoke_main();
-    int invoke_open(uint32 fd,const std::string& path, uint32 option);
-    int invoke_preopen(uint32 fd,const std::string& path);
+    int invoke_open(uint32 fd, const std::string &path, uint32 option);
+    int invoke_preopen(uint32 fd, const std::string &path);
     ~WAMRInstance();
 };
 #endif // MVVM_WAMR_H

@@ -2,10 +2,12 @@
 // Created by victoryang00 on 4/8/23.
 //
 
+#include "logging.h"
 #include "thread_manager.h"
 #include "wamr.h"
 #include <cstdio>
 #include <cxxopts.hpp>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -41,8 +43,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     // Note: insert fd
     std::ifstream stdoutput;
     stdoutput.open("output.txt");
-std:
-    string current_str;
+    std::string current_str;
     std::string fd_output;
     std::string filename_output;
     std::string flags_output;
@@ -97,17 +98,19 @@ std:
 
 #ifndef MVVM_DEBUG
 void sigtrap_handler(int sig) {
-    printf("Caught signal %d, performing custom logic...\n", sig);
+    fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+
+    // fprintf(stderr, "Do nothing but exit -1\n");
+    // exit(-1);
 
     // You can exit the program here, if desired
-    serialize_to_file(this->exec_env);
+    // serialize_to_file(this->exec_env);
 }
 
 // Signal handler function for SIGINT
 void sigint_handler(int sig) {
     // Your logic here
-    printf("Caught signal %d, performing custom logic...\n", sig);
-    wamr->get_exec_env()->is_checkpoint = true;
+    fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     // check whether the current function is sleep
     struct sigaction sa {};
 
@@ -124,7 +127,45 @@ void sigint_handler(int sig) {
     if (sigaction(SIGTRAP, &sa, nullptr) == -1) {
         perror("Error: cannot handle SIGTRAP");
         exit(-1);
+    } else {
+        LOGV_DEBUG << "SIGTRAP registered";
     }
+
+    auto module = wamr->get_module();
+    auto code = (unsigned char *)module->code;
+    auto code_size = module->code_size;
+    
+    LOGV_DEBUG << "Replacing nop to int 3";
+    auto arch = ArchType::x86_64;
+
+    LOGV_DEBUG << "Making the code section writable";
+    {
+        int map_prot = MMAP_PROT_READ | MMAP_PROT_WRITE;
+
+        uint8 *mmap_addr = module->literal - sizeof(uint32);
+        uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
+        os_mprotect(mmap_addr, total_size, map_prot);
+    }
+
+    for (auto addr : wamr->mvvm_aot_metadatas.at(arch).nops) {
+        if (code[addr] != 0x90) {
+            LOGV_FATAL << "code at " << addr << " is not nop(0x90)";
+        } else {
+            code[addr] = 0xcc; // int 3
+        }
+    }
+    LOGV_DEBUG << "Complete replacing";
+
+    LOGV_DEBUG << "Making the code section executable";
+    {
+        int map_prot = MMAP_PROT_READ | MMAP_PROT_EXEC;
+
+        uint8 *mmap_addr = module->literal - sizeof(uint32);
+        uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
+        os_mprotect(mmap_addr, total_size, map_prot);
+    }
+
+    LOGV_DEBUG << "Exit sigint handler";
 }
 #endif
 int main(int argc, char *argv[]) {
@@ -158,9 +199,18 @@ int main(int argc, char *argv[]) {
     auto arg = result["arg"].as<std::vector<std::string>>();
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
+
+    auto mvvm_meta_file = target + ".mvvm";
+    if (!std::filesystem::exists(mvvm_meta_file)) {
+        printf("MVVM metadata file %s does not exists. Exit.\n", mvvm_meta_file.c_str());
+        return -1;
+    }
+
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
+    wamr->load_mvvm_aot_metadata(mvvm_meta_file.c_str());
+
     freopen("output.txt", "w", stdout);
 
 #ifndef MVVM_DEBUG
