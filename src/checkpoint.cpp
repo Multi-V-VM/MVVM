@@ -81,9 +81,10 @@ void serialize_to_file(WASMExecEnv *instance) {
     //
     std::cout<<"dasfasdfasf"<< re.str()<<"dasfasdfasf\n";
     auto cluster = wasm_exec_env_get_cluster(instance);
-    if (bh_list_length(&cluster->exec_env_list) > 1) {
+    auto all_count = bh_list_length(&cluster->exec_env_list);
+    int cur_count = 0;
+    if (all_count > 1) {
         auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
-        int cur_count = 0;
         while (elem) {
             if (elem == instance) {
                 break;
@@ -91,28 +92,18 @@ void serialize_to_file(WASMExecEnv *instance) {
             cur_count++;
             elem = (WASMExecEnv *)bh_list_elem_next(elem);
         }
-        auto all_count = bh_list_length(&cluster->exec_env_list);
-        auto a = new WAMRExecEnv();
-        dump(a, instance);
-        as_mtx.lock();
-        as.emplace_back(a);
-        as.back().get()->cur_count = cur_count;
-        if (as.size() == all_count) {
-            struct_pack::serialize_to(writer, as);
-            LOGV(INFO) << "serialize to file" << cur_count << " " << all_count << "\n";
-        }
-        as_mtx.unlock();
-        if (cur_count == 0)
-            std::this_thread::sleep_for(std::chrono::seconds(100));
-    } else {
-        auto a = new WAMRExecEnv();
-        dump(a, instance);
-        as.emplace_back(a);
-        as.back().get()->cur_count = 0;
+    } // gets the element index
+    auto a = new WAMRExecEnv();
+    dump(a, instance);
+    as_mtx.lock();
+    as.emplace_back(a);
+    as.back().get()->cur_count = cur_count;
+    if (as.size() == all_count) {
         struct_pack::serialize_to(writer, as);
+        LOGV(INFO) << "serialize to file" << cur_count << " " << all_count << "\n";
+        exit(0);
     }
-
-    exit(0);
+    as_mtx.unlock();
 }
 
 #ifndef MVVM_DEBUG
