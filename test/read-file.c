@@ -65,6 +65,8 @@ int main() {
    size_t len2 = strlen(line2);
 
    fwrite(line1, sizeof(char), len1, file3);
+   //ntwritten
+   // checkpoint: lib_wasi_wrapper fwrite system record 
    
 
     // volatile int c = 0;

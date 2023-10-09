@@ -3,6 +3,7 @@
 //
 #include "wamr_wasi_context.h"
 #include "wamr.h"
+#include <string>
 extern WAMRInstance *wamr;
 void WAMRWASIContext::dump_impl(WASIContext *env) {
     for (int i = 0; i < wamr->dir_.size(); i++) {
@@ -20,6 +21,12 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
 }
 void WAMRWASIContext::restore_impl(WASIContext *env) {
     int r;
+    // std::string stdin_fd= "/dev/stdin";
+    // wamr->invoke_fopen(stdin_fd, 0);
+    // std::string stdout_fd= "/dev/stdout";
+    // wamr->invoke_fopen(stdout_fd, 0);
+    // std::string stderr_fd= "/dev/stderr";
+    // wamr->invoke_fopen(stderr_fd, 0);
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
         LOGV(INFO) << "fd: " << fd << " path: " << std::get<0>(res) << " flags: " << std::get<1>(res)
