@@ -168,11 +168,6 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
         i++;
     }
 #endif
-#ifdef __linux__
-    wamr->invoke_preopen(0, "/dev/stdin");
-    wamr->invoke_preopen(1, "/dev/stdout");
-    wamr->invoke_preopen(2, "/dev/stderr");
-#endif
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
         wamr->invoke_open(fd, res.first, res.second);

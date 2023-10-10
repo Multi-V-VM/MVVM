@@ -39,12 +39,12 @@ jobs:
         sudo wget https://asplos.dev/wasi-sdk-20.0-linux.tar.gz
         sudo tar -xzf wasi-sdk-*.tar.gz
 
-    - name: Make WASM LD no check features
-      run: |
-        sudo mv /opt/wasi-sdk/bin/wasm-ld /opt/wasi-sdk/bin/wasm-ld.bak
-        echo '#!/bin/bash 
-        /opt/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | sudo tee /opt/wasi-sdk/bin/wasm-ld
-        sudo chmod +x /opt/wasi-sdk/bin/wasm-ld
+    # - name: Make WASM LD no check features
+    #   run: |
+    #     sudo mv /opt/wasi-sdk/bin/wasm-ld /opt/wasi-sdk/bin/wasm-ld.bak
+    #     echo '#!/bin/bash 
+    #     /opt/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | sudo tee /opt/wasi-sdk/bin/wasm-ld
+    #     sudo chmod +x /opt/wasi-sdk/bin/wasm-ld
 
     - name: Make WASI Socket Ext
       run: |
