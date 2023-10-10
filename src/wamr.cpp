@@ -116,7 +116,7 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
     return -1;
 };
 int WAMRInstance::invoke_frenumber(uint32 fd, uint32 to) {
-    auto name = "fd_renumber";
+    auto name = "__wasi_fd_renumber";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi fopen function is not found.";
         auto target_module = get_module_instance()->e;
