@@ -109,9 +109,9 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
         argv[0] = buffer_for_wasm; // pass the buffer_ address for WASM space
         argv[1] = option; // the size of buffer_
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
-        auto res = wasm_runtime_call_wasm(exec_env, func, 2, argv);
+        wasm_runtime_call_wasm(exec_env, func, 2, argv);
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
-        return res;
+        return ((int)argv[0]);
     }
     return -1;
 };
