@@ -18,6 +18,45 @@ std::ostringstream re{};
 auto writer = FwriteStream("test.bin");
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
+
+void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t* sockfd) {
+    if (wamr->sock_open_data.poolfd == 0) {
+        wamr->sock_open_data.poolfd = poolfd;
+        wamr->sock_open_data.af = af;
+        wamr->sock_open_data.socktype = socktype;
+        wamr->sock_open_data.sockfd = sockfd;
+    } else {
+        LOGV(ERROR) << "sock_open_data already exist";
+    }
+}
+
+void insert_sock_send_to_data(uint32_t sock, const iovec_app1_t* si_data, uint32 si_data_len, uint16_t si_flags, const __wasi_addr_t* dest_addr, uint32* so_data_len) {
+    if(wamr->sock_sendto_data.sock == 0) {
+        wamr->sock_sendto_data.sock = sock;
+        wamr->sock_sendto_data.si_data = si_data;
+        wamr->sock_sendto_data.si_data_len = si_data_len;
+        wamr->sock_sendto_data.si_flags = si_flags;
+        wamr->sock_sendto_data.dest_addr = dest_addr;
+        wamr->sock_sendto_data.so_data_len = so_data_len;
+    } else {
+        LOGV(ERROR) << "sock_sendto_data already exist";
+    }
+}
+
+void insert_sock_recv_from_data(uint32_t sock, iovec_app1_t* ri_data, uint32 ri_data_len, uint16_t ri_flags, __wasi_addr_t* src_addr, uint32* ro_data_len) {
+    if(wamr->sock_recvfrom_data.sock == 0) {
+        wamr->sock_recvfrom_data.sock = sock;
+        wamr->sock_recvfrom_data.ri_data = ri_data;
+        wamr->sock_recvfrom_data.ri_data_len = ri_data_len;
+        wamr->sock_recvfrom_data.ri_flags = ri_flags;
+        wamr->sock_recvfrom_data.src_addr = src_addr;
+        wamr->sock_recvfrom_data.ro_data_len = ro_data_len;
+    } else {
+        LOGV(ERROR) << "sock_recvfrom_data already exist";
+    }
+}
+
+
 /**fopen, fseek*/
 void insert_fd(int fd, const char *path, int flags, int offset) {
     if (fd > 2) {

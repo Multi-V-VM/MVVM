@@ -12,6 +12,32 @@
 #include "wamr_read_write.h"
 #include "wasm_runtime.h"
 
+
+struct WasiSockOpenData {
+    uint32_t poolfd;
+    int af;
+    int socktype;
+    uint32_t* sockfd;
+};
+
+struct WasiSockSendToData {
+    uint32_t sock;
+    const iovec_app1_t* si_data;
+    uint32 si_data_len;
+    uint16_t si_flags;
+    const __wasi_addr_t* dest_addr;
+    uint32* so_data_len;
+};
+
+struct WasiSockRecvFromData {
+    uint32_t sock;
+    iovec_app1_t* ri_data;
+    uint32 ri_data_len;
+    uint16_t ri_flags;
+    __wasi_addr_t* src_addr;
+    uint32* ro_data_len;
+};
+
 class WAMRInstance {
     WASMExecEnv *exec_env{};
     WASMExecEnv *cur_env{};
@@ -28,6 +54,11 @@ public:
     std::vector<const char *> ns_pool_;
     std::map<int, std::tuple<std::string, int, int>> fd_map_;
     // add offset to pair->tuple, 3rd param 'int'
+
+    WasiSockOpenData sock_open_data;
+    WasiSockSendToData sock_sendto_data;
+    WasiSockRecvFromData sock_recvfrom_data;
+
     bool is_jit;
     char *buffer{};
     char error_buf[128]{};
@@ -61,6 +92,11 @@ public:
     int invoke_frenumber(uint32 fd, uint32 to);
     int invoke_fseek(uint32 fd, uint32 offset);
     int invoke_preopen(uint32 fd, const std::string &path);
+    int invoke_socket(uint32 domain, const std::string &path);
+    int invoke_(uint32 domain, const std::string &path);
+    int invoke_sock_sendto(uint32_t sock, const iovec_app1_t* si_data, uint32 si_data_len, uint16_t si_flags, const __wasi_addr_t* dest_addr, uint32* so_data_len);
+    int invoke_sock_recvfrom(uint32_t sock, iovec_app1_t* ri_data, uint32 ri_data_len, uint16_t ri_flags, __wasi_addr_t* src_addr, uint32* ro_data_len);
+    int invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32_t* sockfd);
     ~WAMRInstance();
 };
 #endif // MVVM_WAMR_H

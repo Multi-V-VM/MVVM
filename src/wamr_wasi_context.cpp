@@ -35,5 +35,13 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
         if (fd != 0 && fd != 1 && fd != 2)
             wamr->invoke_frenumber(r, fd);
         wamr->invoke_fseek(fd, std::get<2>(res));
+        wamr->invoke_sock_open(wamr->sock_open_data.poolfd, wamr->sock_open_data.af, wamr->sock_open_data.socktype,
+                               wamr->sock_open_data.sockfd);
+        wamr->invoke_sock_sendto(wamr->sock_sendto_data.sock, wamr->sock_sendto_data.si_data,
+                                 wamr->sock_sendto_data.si_data_len, wamr->sock_sendto_data.si_flags,
+                                 wamr->sock_sendto_data.dest_addr, wamr->sock_sendto_data.so_data_len);
+        wamr->invoke_sock_recvfrom(wamr->sock_recvfrom_data.sock, wamr->sock_recvfrom_data.ri_data,
+                                   wamr->sock_recvfrom_data.ri_data_len, wamr->sock_recvfrom_data.ri_flags,
+                                   wamr->sock_recvfrom_data.src_addr, wamr->sock_recvfrom_data.ro_data_len);
     }
 };
