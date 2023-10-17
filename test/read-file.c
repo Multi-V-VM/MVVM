@@ -81,5 +81,5 @@ int main() {
     fclose(file1);
     fclose(file2);
 	fclose(file3);
-	__wasi_fd_renumber(1,1);
+	__wasi_fd_renumber(3,10);
 }
