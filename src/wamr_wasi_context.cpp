@@ -18,6 +18,11 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
         auto dumped_res = std::make_tuple(path, flags, offset);
         this->fd_map[fd] = dumped_res;
     }
+
+    for (auto [fd, socketMetaData] : wamr->socket_fd_map_) {
+        SocketMetaData socketMetaDataCopy = socketMetaData;
+        this->socket_fd_map[fd] = socketMetaDataCopy;
+    }
 }
 void WAMRWASIContext::restore_impl(WASIContext *env) {
     int r;
@@ -35,13 +40,24 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
         if (r != fd)
             wamr->invoke_frenumber(r, fd);
         wamr->invoke_fseek(fd, std::get<2>(res));
-        wamr->invoke_sock_open(wamr->sock_open_data.poolfd, wamr->sock_open_data.af, wamr->sock_open_data.socktype,
-                               wamr->sock_open_data.sockfd);
-        wamr->invoke_sock_sendto(wamr->sock_sendto_data.sock, wamr->sock_sendto_data.si_data,
-                                 wamr->sock_sendto_data.si_data_len, wamr->sock_sendto_data.si_flags,
-                                 wamr->sock_sendto_data.dest_addr, wamr->sock_sendto_data.so_data_len);
-        wamr->invoke_sock_recvfrom(wamr->sock_recvfrom_data.sock, wamr->sock_recvfrom_data.ri_data,
-                                   wamr->sock_recvfrom_data.ri_data_len, wamr->sock_recvfrom_data.ri_flags,
-                                   wamr->sock_recvfrom_data.src_addr, wamr->sock_recvfrom_data.ro_data_len);
+    }
+
+    for (auto [fd, socketMetaData] : this->socket_fd_map) {
+        LOGV(INFO) << "fd: " << fd << " SocketMetaData[domain]: " << socketMetaData.domain
+                //    << " SocketMetaData[socketAddress]: " << socketMetaData.socketAddress
+                   << " SocketMetaData[protocol]: " << socketMetaData.protocol
+                   << " SocketMetaData[type]: " << socketMetaData.type;
+        uint32 tmp_sock_fd;
+        wamr->invoke_sock_open(socketMetaData.socketOpenData.poolfd, socketMetaData.socketOpenData.af,
+                               socketMetaData.socketOpenData.socktype, &tmp_sock_fd);
+        // if socket不一样 renumber
+        // wamr->invoke_sock_sendto(socketMetaData.socketSentToData.sock, &socketMetaData.socketSentToData.si_data,
+        //                          socketMetaData.socketSentToData.si_data_len, socketMetaData.socketSentToData.si_flags,
+        //                          socketMetaData.socketSentToData.dest_addr,//翻译
+        //                          socketMetaData.socketSentToData.so_data_len);
+        // wamr->invoke_sock_recvfrom(
+        //     socketMetaData.socketRecvFromData.sock, socketMetaData.socketRecvFromData.ri_data,
+        //     socketMetaData.socketRecvFromData.ri_data_len, socketMetaData.socketRecvFromData.ri_flags,
+        //     &socketMetaData.socketRecvFromData.src_addr, socketMetaData.socketRecvFromData.ro_data_len);
     }
 };

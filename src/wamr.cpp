@@ -144,7 +144,8 @@ int WAMRInstance::invoke_frenumber(uint32 fd, uint32 to) {
     uint32 argv[2] = {fd, to};
     return wasm_runtime_call_wasm(exec_env, func, 2, argv);
 };
-int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32_t* sockfd) {
+
+int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32_t *sockfd) {
     auto name = "__wasi_sock_open";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi fopen function is not found.";
@@ -174,17 +175,17 @@ int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32
 
     buffer_for_wasm = wasm_runtime_module_malloc(module_inst, sizeof(uint32), reinterpret_cast<void **>(&buffer_));
     if (buffer_for_wasm != 0) {
-        memcpy(buffer_, ((void*)sockfd), sizeof(uint32)); // use native address for accessing in runtime
-        uint32 argv[4] = {poolfd, static_cast<uint32>(af), static_cast<uint32>(socktype),buffer_for_wasm};
+        memcpy(buffer_, ((void *)sockfd), sizeof(uint32)); // use native address for accessing in runtime
+        uint32 argv[4] = {poolfd, static_cast<uint32>(af), static_cast<uint32>(socktype), buffer_for_wasm};
         auto res = wasm_runtime_call_wasm(exec_env, func, 4, argv);
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
         return res;
     }
     return -1;
-   
 }
 
-int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app1_t* si_data, uint32 si_data_len, uint16_t si_flags, const __wasi_addr_t* dest_addr, uint32* so_data_len) {
+int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
+                                     const __wasi_addr_t *dest_addr, uint32 *so_data_len) {
     auto name = "__wasi_sock_send_to";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi fopen function is not found.";
@@ -219,21 +220,22 @@ int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app1_t* si_data,
     int res = -1;
 
     si_data_for_wasm =
-        wasm_runtime_module_malloc(module_inst, sizeof(iovec_app1_t), reinterpret_cast<void **>(&si_data_));
+        wasm_runtime_module_malloc(module_inst, sizeof(iovec_app_t), reinterpret_cast<void **>(&si_data_));
     if (si_data_for_wasm != 0) {
-        memcpy(si_data_, ((void *)si_data), sizeof(iovec_app1_t)); // use native address for accessing in runtime
+        memcpy(si_data_, ((void *)si_data), sizeof(iovec_app_t)); // use native address for accessing in runtime
 
         dest_addr_for_wasm =
             wasm_runtime_module_malloc(module_inst, sizeof(__wasi_addr_t), reinterpret_cast<void **>(&dest_addr_));
         if (dest_addr_for_wasm != 0) {
-            memcpy(dest_addr_, ((void *)dest_addr), sizeof(__wasi_addr_t)); // use native address for accessing in runtime
+            memcpy(dest_addr_, ((void *)dest_addr),
+                   sizeof(__wasi_addr_t)); // use native address for accessing in runtime
 
             so_data_len_for_wasm =
                 wasm_runtime_module_malloc(module_inst, sizeof(uint32), reinterpret_cast<void **>(&so_data_len_));
             if (so_data_len_for_wasm != 0) {
                 memcpy(so_data_len_, ((void *)so_data_len),
                        sizeof(uint32)); // use native address for accessing in runtime
-                uint32 argv[6] = {sock,     si_data_for_wasm,  si_data_len,
+                uint32 argv[6] = {sock,     si_data_for_wasm,   si_data_len,
                                   si_flags, dest_addr_for_wasm, so_data_len_for_wasm};
 
                 wasm_runtime_call_wasm(exec_env, func, 6, argv);
@@ -248,7 +250,8 @@ int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app1_t* si_data,
     return -1;
 }
 
-int WAMRInstance::invoke_sock_recvfrom(uint32_t sock, iovec_app1_t* ri_data, uint32 ri_data_len, uint16_t ri_flags, __wasi_addr_t* src_addr, uint32* ro_data_len) {
+int WAMRInstance::invoke_sock_recvfrom(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,
+                                       __wasi_addr_t *src_addr, uint32 *ro_data_len) {
     auto name = "__wasi_sock_recv_from";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi fopen function is not found.";
@@ -283,9 +286,9 @@ int WAMRInstance::invoke_sock_recvfrom(uint32_t sock, iovec_app1_t* ri_data, uin
     int res = -1;
 
     ri_data_for_wasm =
-        wasm_runtime_module_malloc(module_inst, sizeof(iovec_app1_t), reinterpret_cast<void **>(&ri_data_));
+        wasm_runtime_module_malloc(module_inst, sizeof(iovec_app_t), reinterpret_cast<void **>(&ri_data_));
     if (ri_data_for_wasm != 0) {
-        memcpy(ri_data_, ((void *)ri_data), sizeof(iovec_app1_t)); // use native address for accessing in runtime
+        memcpy(ri_data_, ((void *)ri_data), sizeof(iovec_app_t)); // use native address for accessing in runtime
 
         src_addr_for_wasm =
             wasm_runtime_module_malloc(module_inst, sizeof(__wasi_addr_t), reinterpret_cast<void **>(&src_addr_));
