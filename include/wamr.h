@@ -37,8 +37,6 @@ public:
     uint32 buf_size{}, stack_size = 8092, heap_size = 8092;
     typedef struct ThreadArgs {
         wasm_exec_env_t exec_env;
-        wasm_thread_callback_t callback;
-        void *arg;
     } ThreadArgs;
     std::vector<ThreadArgs> thread_arg;
     std::vector<wasm_thread_t> tid;

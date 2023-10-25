@@ -18,8 +18,8 @@
 WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
 auto writer = FwriteStream("test.bin");
-std::vector<std::unique_ptr<WAMRExecEnv>> as;
-std::mutex as_mtx;
+constinit std::vector<std::unique_ptr<WAMRExecEnv>> as;
+constinit std::mutex as_mtx;
 /**fopen, fseek*/
 void insert_fd(int fd, const char *path, int flags, int offset) {
     printf("\n #insert_fd(fd,filename,flags, offset) %d %s %d %d \n\n",fd, path,flags, offset);
@@ -129,8 +129,6 @@ void serialize_to_file(WASMExecEnv *instance) {
     }
     stdoutput.close();
 
-    //
-    std::cout<<"dasfasdfasf"<< re.str()<<"dasfasdfasf\n";
     auto cluster = wasm_exec_env_get_cluster(instance);
     if (bh_list_length(&cluster->exec_env_list) > 1) {
         auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
