@@ -238,7 +238,6 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
     wasm_runtime_set_wasi_addr_pool(module, addr_.data(), addr_.size());
     wasm_runtime_set_wasi_ns_lookup_pool(module, ns_pool_.data(), ns_pool_.size());
 }
-void restart_execution(uint32 id) {}
 void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
     auto get_addr_from_context = [](const WAMRWASIContext &wasiContext) {
         auto addr_pool = std::vector<std::string>(wasiContext.addr_pool.size());

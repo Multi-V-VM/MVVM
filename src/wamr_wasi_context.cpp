@@ -13,7 +13,7 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
     }
     this->exit_code = env->exit_code;
 }
-void WAMRWASIContext::git checkout main(WASIContext *env) {
+void WAMRWASIContext::restore_impl(WASIContext *env) {
 #if 0
     // Need to open the file and reinitialize the file descripter by map.
     env->curfds->size = this->curfds.size;
@@ -49,9 +49,9 @@ void WAMRWASIContext::git checkout main(WASIContext *env) {
         i++;
     }
 #endif
-    for (auto [fd, res] : this->fd_map) {
-        // differ from path from file
-        wamr->invoke_fopen(fd, std::get<0>(res),std::get<1>(res));
-        wamr->invoke_fseek(fd, std::get<2>(res));
-    }
+//    for (auto [fd, res] : this->fd_map) {
+//        // differ from path from file
+//        wamr->invoke_fopen(fd, std::get<0>(res),std::get<1>(res));
+//        wamr->invoke_fseek(fd, std::get<2>(res));
+//    }
 };

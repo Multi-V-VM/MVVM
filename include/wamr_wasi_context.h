@@ -34,7 +34,7 @@ struct SocketMetaData {
     int domain{};
     int type{};
     int protocol{};
-    SocketAddrPool socketAddress;
+    SocketAddrPool socketAddress{};
 };
 
 struct WAMRWASIContext {
