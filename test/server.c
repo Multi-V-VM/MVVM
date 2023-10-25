@@ -93,6 +93,9 @@ main(int argc, char *argv[])
 
    printf("[Server] Create socket\n");
    socket_fd = socket(af, SOCK_DGRAM, 0);
+   // socket(domain, type, protocol)
+   // snapshot af, sock_dgram, 0
+   
    if (socket_fd < 0) {
        perror("Create socket failed");
        goto fail;

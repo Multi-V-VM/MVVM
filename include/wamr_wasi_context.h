@@ -6,6 +6,7 @@
 #define MVVM_WAMR_WASI_CONTEXT_H
 
 #include "logging.h"
+#include "platform_common.h"
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <atomic>
@@ -28,8 +29,15 @@ struct WAMRAddrPool {
     bool is_4;
     uint8 mask;
 };
+
+struct SocketMetaData {
+    int domain{};
+    int type{};
+    int protocol{};
+    SocketAddrPool socketAddress;
+};
+
 struct WAMRWASIContext {
-    std::map<uint32, std::pair<std::string,int>> fd_map;
     std::vector<std::string> dir;
     std::vector<std::string> map_dir;
     WAMRArgvEnvironValues argv_environ;
