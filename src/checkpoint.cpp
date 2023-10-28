@@ -4,9 +4,11 @@
 
 #include "thread_manager.h"
 #include "wamr.h"
+#include <condition_variable>
 #include <cstdio>
 #include <cxxopts.hpp>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -20,11 +22,11 @@ std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 /**fopen, fseek*/
 void insert_fd(int fd, const char *path, int flags, int offset) {
-    printf("\n #insert_fd(fd,filename,flags, offset) %d %s %d %d \n\n",fd, path,flags, offset);
+    printf("\n #insert_fd(fd,filename,flags, offset) %d %s %d %d \n\n", fd, path, flags, offset);
 
     if (wamr->fd_map_.find(fd) != wamr->fd_map_.end()) {
         LOGV(ERROR) << "fd already exist" << fd;
-        if(offset == 0) {
+        if (offset == 0) {
             // fOpen call
             std::string curPath;
             int curFlags;
@@ -39,7 +41,7 @@ void insert_fd(int fd, const char *path, int flags, int offset) {
             std::tie(curPath, curFlags, curOffset) = wamr->fd_map_[fd];
             wamr->fd_map_[fd] = std::make_tuple(curPath, curFlags, offset);
         }
-        
+
     } else
         wamr->fd_map_.insert(std::make_pair(fd, std::make_tuple(std::string(path), flags, offset)));
 }
@@ -51,25 +53,26 @@ void remove_fd(int fd) {
     if (wamr->fd_map_.find(fd) != wamr->fd_map_.end())
         wamr->fd_map_.erase(fd);
     else
-        LOGV(ERROR)<< "fd not found" << fd;
+        LOGV(ERROR) << "fd not found" << fd;
 }
-void insert_socket(int fd){
-
-}
+void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance);
+void insert_socket(int fd) {}
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     // Note: insert fd
-    std::ifstream stdoutput; stdoutput.open("output.txt");
-    std:string current_str;
+    std::ifstream stdoutput;
+    stdoutput.open("output.txt");
+std:
+    string current_str;
     std::string fd_output;
     std::string filename_output;
     std::string flags_output;
-    
-    if(stdoutput.is_open()) {
-        while(stdoutput.good()) {
+
+    if (stdoutput.is_open()) {
+        while (stdoutput.good()) {
             stdoutput >> current_str;
-            if(current_str == "fopen_test(fd,filename,flags)") {
-                stdoutput >>  fd_output;
+            if (current_str == "fopen_test(fd,filename,flags)") {
+                stdoutput >> fd_output;
                 stdoutput >> filename_output;
                 stdoutput >> flags_output;
                 insert_fd(std::stoi(fd_output), filename_output.c_str(), std::stoi(flags_output), 0);
@@ -79,7 +82,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     stdoutput.close();
 
     //
-    std::cout<<"dasfasdfasf"<< re.str()<<"dasfasdfasf\n";
+    std::cout << "dasfasdfasf" << re.str() << "dasfasdfasf\n";
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
     int cur_count = 0;
@@ -94,8 +97,9 @@ void serialize_to_file(WASMExecEnv *instance) {
         }
     } // gets the element index
     auto a = new WAMRExecEnv();
+    dump_tls(((WASMModuleInstance *)instance->module_inst)->module, ((WASMModuleInstance *)instance->module_inst)->e);
     dump(a, instance);
-    as_mtx.lock();
+    std::unique_lock as_ul(as_mtx);
     as.emplace_back(a);
     as.back().get()->cur_count = cur_count;
     if (as.size() == all_count) {
@@ -103,7 +107,31 @@ void serialize_to_file(WASMExecEnv *instance) {
         LOGV(INFO) << "serialize to file" << cur_count << " " << all_count << "\n";
         exit(0);
     }
-    as_mtx.unlock();
+    // Is there some better way to sleep until exit?
+    std::condition_variable as_cv;
+    as_cv.wait(as_ul);
+}
+// mini dumper
+void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance) {
+    WASMGlobal *aux_data_end_global = NULL, *aux_heap_base_global = NULL;
+    WASMGlobal *aux_stack_top_global = NULL, *global;
+    uint32 aux_data_end = (uint32)-1, aux_heap_base = (uint32)-1;
+    uint32 aux_stack_top = (uint32)-1, global_index, func_index, i;
+    uint32 aux_data_end_global_index = (uint32)-1;
+    uint32 aux_heap_base_global_index = (uint32)-1;
+    /* Resolve aux stack top global */
+    for (int global_index = 0; global_index < instance->global_count; global_index++) {
+        auto global = module->globals + global_index;
+        if (global->is_mutable /* heap_base and data_end is
+                                  not mutable */
+            && global->type == VALUE_TYPE_I32 && global->init_expr.init_expr_type == INIT_EXPR_TYPE_I32_CONST &&
+            (uint32)global->init_expr.u.i32 <= aux_heap_base) {
+            //        LOGV(INFO) << "TLS" << global->init_expr << "\n";
+            // this is not the place been accessed, but initialized.
+        } else {
+            break;
+        }
+    }
 }
 
 #ifndef MVVM_DEBUG
@@ -145,8 +173,7 @@ int main(int argc, char *argv[]) {
     options.add_options()("t,target", "The webassembly file to execute",
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
-        "d,dir", "The directory list exposed to WAMR",
-        cxxopts::value<std::vector<std::string>>()->default_value("./"))(
+        "d,dir", "The directory list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value("./"))(
         "m,map_dir", "The mapped directory list exposed to WAMRe",
         cxxopts::value<std::vector<std::string>>()->default_value(""))(
         "e,env", "The environment list exposed to WAMR",
@@ -173,7 +200,7 @@ int main(int argc, char *argv[]) {
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
-    freopen("output.txt","w",stdout);
+    freopen("output.txt", "w", stdout);
 
 #ifndef MVVM_DEBUG
     // Define the sigaction structure
