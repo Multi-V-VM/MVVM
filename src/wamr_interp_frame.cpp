@@ -6,6 +6,8 @@
 #include "wamr.h"
 extern WAMRInstance *wamr;
 void WAMRInterpFrame::dump_impl(WASMInterpFrame *env) {
+    LOGV(ERROR) << "env->function is not valid in AOT, skip serializing";
+    return;
     if (env->function) {
         // what's the counterpart for the aot?
 #if WASM_ENABLE_AOT == 0

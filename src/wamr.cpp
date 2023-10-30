@@ -169,16 +169,14 @@ void WAMRInstance::recover(
                 ThreadArgs{cur_env, nullptr, nullptr}; // requires to record the args and callback for the pthread.
         }
         get_exec_env()->is_restore = true;
-#if WASM_ENABLE_AOT == 0
         wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
                                        get_exec_env()->cur_frame->prev_frame);
-#endif
-        // how to get the previous frame here.
-        auto args_ = get_args() ;
-        uint32 argv_[args_.size()];
-        std::copy ( args_.begin(),args_.end(),argv_);
-        // The function instance can be got by the index of
-        aot_call_function(get_exec_env(), get_func(1),args_.size() ,argv_ );
+        // // how to get the previous frame here.
+        // auto args_ = get_args() ;
+        // uint32 argv_[args_.size()];
+        // std::copy ( args_.begin(),args_.end(),argv_);
+        // // The function instance can be got by the index of
+        // aot_call_function(get_exec_env(), get_func(1),args_.size() ,argv_ );
     } // every pthread has a semaphore for main thread to set all break point to start.
 }
 #if WASM_ENABLE_AOT != 0
