@@ -175,7 +175,7 @@ int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32
 
     buffer_for_wasm = wasm_runtime_module_malloc(module_inst, sizeof(uint32), reinterpret_cast<void **>(&buffer_));
     if (buffer_for_wasm != 0) {
-        memcpy(buffer_, ((void *)sockfd), sizeof(uint32)); // use native address for accessing in runtime
+        memcpy(buffer_, &sockfd, sizeof(uint32)); // use native address for accessing in runtime
         uint32 argv[4] = {poolfd, static_cast<uint32>(af), static_cast<uint32>(socktype), buffer_for_wasm};
         auto res = wasm_runtime_call_wasm(exec_env, func, 4, argv);
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
@@ -222,18 +222,18 @@ int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, 
     si_data_for_wasm =
         wasm_runtime_module_malloc(module_inst, sizeof(iovec_app_t), reinterpret_cast<void **>(&si_data_));
     if (si_data_for_wasm != 0) {
-        memcpy(si_data_, ((void *)si_data), sizeof(iovec_app_t)); // use native address for accessing in runtime
+        memcpy(si_data_, &si_data, sizeof(iovec_app_t)); // use native address for accessing in runtime
 
         dest_addr_for_wasm =
             wasm_runtime_module_malloc(module_inst, sizeof(__wasi_addr_t), reinterpret_cast<void **>(&dest_addr_));
         if (dest_addr_for_wasm != 0) {
-            memcpy(dest_addr_, ((void *)dest_addr),
+            memcpy(dest_addr_, &dest_addr,
                    sizeof(__wasi_addr_t)); // use native address for accessing in runtime
 
             so_data_len_for_wasm =
                 wasm_runtime_module_malloc(module_inst, sizeof(uint32), reinterpret_cast<void **>(&so_data_len_));
             if (so_data_len_for_wasm != 0) {
-                memcpy(so_data_len_, ((void *)so_data_len),
+                memcpy(so_data_len_, &so_data_len,
                        sizeof(uint32)); // use native address for accessing in runtime
                 uint32 argv[6] = {sock,     si_data_for_wasm,   si_data_len,
                                   si_flags, dest_addr_for_wasm, so_data_len_for_wasm};
