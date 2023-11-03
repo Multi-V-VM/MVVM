@@ -12,12 +12,29 @@ static auto string_vec_to_cstr_array = [](const std::vector<std::string> &vecStr
     if (vecStr.data() == nullptr || vecStr[0].empty())
         return std::vector<const char *>(0);
     LOGV(DEBUG) << "vecStr[0]:" << vecStr[0];
-    std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(),
-                   [](const std::string &str) { return str.c_str(); });
+    std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(), [](const std::string &str) { return str.c_str(); });
     return cstrArray;
 };
 
 WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) {
+    {
+        std::string path(wasm_path);
+
+        if (path.substr(path.length() - 5) == ".wasm") {
+            is_aot = false;
+            wasm_file_path = path;
+            aot_file_path = path.substr(0, path.length() - 5) + ".aot";
+        } else if (path.substr(path.length() - 4) == ".aot") {
+            is_aot = true;
+            wasm_file_path = path.substr(0, path.length() - 4) + ".wasm";
+            aot_file_path = path;
+        } else {
+            std::cout << "Invalid file extension. Please provide a path ending in either '.wasm' or '.aot'."
+                      << std::endl;
+            throw;
+        }
+    }
+
     RuntimeInitArgs wasm_args;
     memset(&wasm_args, 0, sizeof(RuntimeInitArgs));
     wasm_args.mem_alloc_type = Alloc_With_Allocator;
@@ -25,6 +42,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
     wasm_args.mem_alloc_option.allocator.realloc_func = ((void *)realloc);
     wasm_args.mem_alloc_option.allocator.free_func = ((void *)free);
     wasm_args.max_thread_num = 16;
+    wasm_args.running_mode = RunningMode::Mode_Interp;
     //    wasm_args.mem_alloc_type = Alloc_With_Pool;
     //    wasm_args.mem_alloc_option.pool.heap_buf = global_heap_buf;
     //    wasm_args.mem_alloc_option.pool.heap_size = sizeof(global_heap_buf);
@@ -33,7 +51,8 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
         LOGV(ERROR) << "Init runtime environment failed.\n";
         throw;
     }
-    if (!load_wasm_binary(wasm_path)) {
+    char *buffer{};
+    if (!load_wasm_binary(wasm_path, &buffer)) {
         LOGV(ERROR) << "Load wasm binary failed.\n";
         throw;
     }
@@ -44,17 +63,17 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
     }
 }
 
-bool WAMRInstance::load_wasm_binary(const char *wasm_path) {
-    buffer = bh_read_file_to_buffer(wasm_path, &buf_size);
-    if (!buffer) {
+bool WAMRInstance::load_wasm_binary(const char *wasm_path, char **buffer_ptr) {
+    *buffer_ptr = bh_read_file_to_buffer(wasm_path, &buf_size);
+    if (!*buffer_ptr) {
         LOGV(ERROR) << "Open wasm app file failed.\n";
         return false;
     }
-    if ((get_package_type((const uint8_t *)buffer, buf_size) != Wasm_Module_Bytecode) &&
-        (get_package_type((const uint8_t *)buffer, buf_size) != Wasm_Module_AoT)) {
+    if ((get_package_type((const uint8_t *)*buffer_ptr, buf_size) != Wasm_Module_Bytecode) &&
+        (get_package_type((const uint8_t *)*buffer_ptr, buf_size) != Wasm_Module_AoT)) {
         LOGV(ERROR) << "WASM bytecode or AOT object is expected but other file format";
 
-        BH_FREE(buffer);
+        BH_FREE(*buffer_ptr);
         return false;
     }
 
@@ -111,7 +130,7 @@ int WAMRInstance::invoke_preopen(uint32 fd, const std::string &path) {
                 if (!strcmp(cur_func->u.func_import->field_name, name))
                     func = ((WASMFunctionInstanceCommon *)cur_func);
             }
-#if WASM_ENABLE_CUSTOM_NAME_SECTION !=0
+#if WASM_ENABLE_CUSTOM_NAME_SECTION != 0
             else {
                 LOGV(DEBUG) << cur_func->u.func->field_name;
 
@@ -148,6 +167,26 @@ WASMModuleInstance *WAMRInstance::get_module_instance() {
 AOTModule *WAMRInstance::get_module() {
     return reinterpret_cast<AOTModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
 }
+WASMModuleInstance *WAMRInstance::get_wasm_module_instance() {
+    static WASMModuleInstance *wasm_module_instance{};
+    if (wasm_module_instance != nullptr)
+        return wasm_module_instance;
+
+    char *buffer{};
+    if (!load_wasm_binary(wasm_file_path.c_str(), &buffer)) {
+        LOGV(ERROR) << "Load wasm binary failed.\n";
+        throw;
+    }
+    auto module = wasm_runtime_load((uint8_t *)buffer, buf_size, error_buf, sizeof(error_buf));
+    if (!module) {
+        LOGV(ERROR) << fmt::format("Load wasm module failed. error: {}", error_buf);
+        throw;
+    }
+    wasm_module_instance = reinterpret_cast<WASMModuleInstance *>(
+        wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf)));
+
+    return wasm_module_instance;
+}
 void WAMRInstance::recover(
     std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) { // will call pthread create wrapper if needed?
     std::sort(execEnv->begin(), execEnv->end(),
@@ -181,11 +220,9 @@ void WAMRInstance::recover(
 }
 #if WASM_ENABLE_AOT != 0
 std::vector<uint32> WAMRInstance::get_args(){
- // TODO
+    // TODO
 };
-AOTFunctionInstance *WAMRInstance::get_func(int index){
-    return nullptr;
-};
+AOTFunctionInstance *WAMRInstance::get_func(int index) { return nullptr; };
 #endif
 WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func); }
 void WAMRInstance::set_func(WASMFunction *f) { func = static_cast<WASMFunction *>(f); }

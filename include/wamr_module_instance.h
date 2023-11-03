@@ -5,7 +5,6 @@
 #ifndef MVVM_WAMR_MODULE_INSTANCE_H
 #define MVVM_WAMR_MODULE_INSTANCE_H
 #include "wamr_memory_instance.h"
-#include "wamr_module_instance_extra.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
 #include <algorithm>
@@ -15,14 +14,11 @@ struct WAMRModuleInstance {
        for module instance loaded from AOT file, this field is
        Wasm_Module_AoT, and this structure should be treated as
        AOTModuleInstance structure. */
-    uint32 module_type;
 
     std::vector<WAMRMemoryInstance> memories;
 
     /* global and table info */
     std::vector<uint8> global_data;
-    /* For AOTModuleInstance, it denotes `AOTTableInstance *` */
-    std::vector<WASMTableInstance> tables;
 
     /* import func ptrs + llvm jit func ptrs */
     //        DefPointer(void **, func_ptrs);
@@ -95,7 +91,6 @@ struct WAMRModuleInstance {
     //     DefPointer(struct AOTFuncPerfProfInfo *, func_perf_profilings);
     //     /* WASM/AOT module extra info, for AOTModuleInstance,
     //        it denotes `AOTModuleInstanceExtra *` */
-    WAMRModuleInstanceExtra extra;
 
     /* Default WASM operand stack size */
     //    uint32 default_wasm_stack_size;
@@ -119,7 +114,6 @@ struct WAMRModuleInstance {
     //    } global_table_data;
 
     void dump_impl(WASMModuleInstance *env) {
-        module_type = env->module_type;
         for (int i = 0; i < env->memory_count; i++) {
             // TODO: if the referenced memory has been serialized, just skip.
             auto local_mem = WAMRMemoryInstance();
@@ -127,18 +121,11 @@ struct WAMRModuleInstance {
             memories.push_back(local_mem);
         }
         global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
-         LOGV(DEBUG) << env->global_data_size;
-         for (int i = 0; i < env->global_data_size; i++) {
-             LOGV(DEBUG) << env->global_data[i];
-         }
-//         tables = std::vector<WASMTableInstance>(env->tables, env->tables + env->table_count);
-        tables.reserve(env->table_count);
-        std::generate_n(
-            std::back_inserter(tables), env->table_count,
-            [i = 0, env]() mutable { return *(env->tables[i++]); } // or whatever your 'body' lambda would look like.
-        );
+        LOGV(DEBUG) << env->global_data_size;
+        for (int i = 0; i < env->global_data_size; i++) {
+            LOGV(DEBUG) << env->global_data[i];
+        }
         dump(&wasi_ctx, env->wasi_ctx);
-        dump(&extra, env->e);
         aux_data_end_global_index = env->module->aux_data_end_global_index;
         aux_data_end = env->module->aux_data_end;
         aux_heap_base_global_index = env->module->aux_heap_base_global_index;
@@ -149,25 +136,19 @@ struct WAMRModuleInstance {
         dump(&global_table_data, env->global_table_data.memory_instances);
     };
     void restore_impl(WASMModuleInstance *env) {
-        env->module_type = module_type;
         env->memory_count = memories.size();
         for (int i = 0; i < env->memory_count; i++) {
             restore(&memories[i], env->memories[i]);
         }
         memcpy(env->global_data, global_data.data(), global_data.size());
         env->global_data_size = global_data.size();
-//                env->global_data = global_data.data();
-//                env->global_data_size = global_data.size() - 1;
-         LOGV(DEBUG) << env->global_data_size;
-         LOGV(DEBUG) << env->global_data;
-         for (int i = 0; i < env->global_data_size; i++) {
-             LOGV(DEBUG) << env->global_data[i];
-         }
-        env->table_count = tables.size();
-        for (int i = 0; i < env->table_count; i++) {
-            *env->tables[i] = tables[i];
+        //                env->global_data = global_data.data();
+        //                env->global_data_size = global_data.size() - 1;
+        LOGV(DEBUG) << env->global_data_size;
+        LOGV(DEBUG) << env->global_data;
+        for (int i = 0; i < env->global_data_size; i++) {
+            LOGV(DEBUG) << env->global_data[i];
         }
-        restore(&extra, env->e);
         env->module->aux_data_end_global_index = aux_data_end_global_index;
         env->module->aux_data_end = aux_data_end;
         env->module->aux_heap_base_global_index = aux_heap_base_global_index;

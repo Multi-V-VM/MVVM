@@ -42,24 +42,24 @@ void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     // Note: insert fd
     std::ifstream stdoutput;
-    stdoutput.open("output.txt");
+    //    stdoutput.open("output.txt");
     std::string current_str;
     std::string fd_output;
     std::string filename_output;
     std::string flags_output;
 
-    if (stdoutput.is_open()) {
-        while (stdoutput.good()) {
-            stdoutput >> current_str;
-            if (current_str == "fopen_test(fd,filename,flags)") {
-                stdoutput >> fd_output;
-                stdoutput >> filename_output;
-                stdoutput >> flags_output;
-                insert_fd(std::stoi(fd_output), filename_output.c_str(), std::stoi(flags_output));
-            }
-        }
-    }
-    stdoutput.close();
+    //    if (stdoutput.is_open()) {
+    //        while (stdoutput.good()) {
+    //            stdoutput >> current_str;
+    //            if (current_str == "fopen_test(fd,filename,flags)") {
+    //                stdoutput >> fd_output;
+    //                stdoutput >> filename_output;
+    //                stdoutput >> flags_output;
+    //                insert_fd(std::stoi(fd_output), filename_output.c_str(), std::stoi(flags_output));
+    //            }
+    //        }
+    //    }
+    //    stdoutput.close();
 
     auto cluster = wasm_exec_env_get_cluster(instance);
     if (bh_list_length(&cluster->exec_env_list) > 1) {
@@ -96,38 +96,51 @@ void serialize_to_file(WASMExecEnv *instance) {
     exit(0);
 }
 
+void print_exec_env_debug_info(WASMExecEnv *exec_env) {
+    if (!exec_env) {
+        LOGV(ERROR) << fmt::format("no exec_env");
+        return;
+    }
+    if (exec_env->cur_frame) {
+        int call_depth = 0;
+        auto p = (AOTFrame *)exec_env->cur_frame;
+        while (p) {
+            uint32 *frame_lp = p->lp;
+            // LOGV(ERROR) << (size_t)((size_t)frame_lp - (size_t)p);
+            LOGV(DEBUG) << fmt::format("depth {}, function {}, ip {}, lp {}, sp {}", call_depth, p->func_index,
+                                       p->ip_offset, (void *)frame_lp, (void *)p->sp);
+            call_depth++;
+            p = p->prev_frame;
+        }
+    } else {
+        LOGV(ERROR) << fmt::format("no cur_frame");
+    }
+    LOGV(INFO) << fmt::format("----");
+}
+
+void replace_aot_function_with_wasm_function() {
+    auto exec_env = wamr->get_exec_env();
+    auto wasm_module_inst = wamr->get_wasm_module_instance();
+    if (exec_env->cur_frame) {
+        auto p = exec_env->cur_frame;
+        while (p) {
+            p->function = &wasm_module_inst->e->functions[(size_t)p->function];
+            p = p->prev_frame;
+        }
+    }
+}
+
 #ifndef MVVM_DEBUG
-const size_t snapshot_threshold = 15;
+const size_t snapshot_threshold = 5000000;
 size_t call_count = 0;
 bool checkpoint = false;
 void sigtrap_handler(int sig) {
     // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
 
     auto exec_env = wamr->get_exec_env();
+    // print_exec_env_debug_info(exec_env);
 
-    // call_count++;
-
-    // if (!exec_env) {
-    //     fprintf(stderr, "no exec_env\n");
-    //     return;
-    // }
-    // if (exec_env->cur_frame) {
-    //     int call_depth = 0;
-    //     auto p = exec_env->cur_frame;
-    //     while (p) {
-    //         call_depth++;
-    //         p = p->prev_frame;
-    //     }
-
-    //     fprintf(stderr, "depth %d, cur ip %p", call_depth, exec_env->cur_frame->ip);
-    //     if (exec_env->cur_frame->prev_frame) {
-    //         fprintf(stderr, ", prev ip %p\n", exec_env->cur_frame->prev_frame->ip);
-    //     } else {
-    //         fprintf(stderr, "\n");
-    //     }
-    // } else {
-    //     fprintf(stderr, "no cur_frame\n");
-    // }
+    call_count++;
 
     if (call_count == snapshot_threshold || checkpoint) {
         fprintf(stderr, "serializing\n");
@@ -245,7 +258,7 @@ int main(int argc, char *argv[]) {
     wamr->instantiate();
     // wamr->load_mvvm_aot_metadata(mvvm_meta_file.c_str());
 
-    freopen("output.txt", "w", stdout);
+    // freopen("output.txt", "w", stdout);
 
 #ifndef MVVM_DEBUG
     // Define the sigaction structure

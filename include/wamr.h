@@ -14,7 +14,7 @@
 #include "wasm_runtime.h"
 #include <ranges>
 
-enum ArchType { x86_64 };
+enum ArchType { x86_64, arm64 };
 
 struct MVVMAotMetadata {
     std::vector<std::size_t> nops;
@@ -28,6 +28,8 @@ class WAMRInstance {
     WASMFunctionInstanceCommon *func{};
 
 public:
+    std::string aot_file_path;
+    std::string wasm_file_path;
     std::map<ArchType, MVVMAotMetadata> mvvm_aot_metadatas;
     std::vector<const char *> dir_;
     std::vector<const char *> map_dir_;
@@ -37,7 +39,7 @@ public:
     std::vector<const char *> ns_pool_;
     std::map<int, std::pair<std::string, int>> fd_map_;
     bool is_jit;
-    char *buffer{};
+    bool is_aot{};
     char error_buf[128]{};
     uint32 buf_size{}, stack_size = 8092, heap_size = 8092;
     typedef struct ThreadArgs {
@@ -53,7 +55,7 @@ public:
 
     void instantiate();
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
-    bool load_wasm_binary(const char *wasm_path);
+    bool load_wasm_binary(const char *wasm_path, char** buffer_ptr);
     bool load_mvvm_aot_metadata(const char *file_path);
     WASMFunction *get_func();
     void set_func(WASMFunction *);
@@ -64,6 +66,7 @@ public:
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();
     AOTModule *get_module();
+    WASMModuleInstance *get_wasm_module_instance(); // for dump func
     void set_wasi_args(WAMRWASIContext &addrs);
     void set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
                        const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,
