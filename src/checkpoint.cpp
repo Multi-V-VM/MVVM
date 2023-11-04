@@ -4,6 +4,8 @@
 
 #include "thread_manager.h"
 #include "wamr.h"
+#include "wamr_wasi_context.h"
+#include "wasm_runtime.h"
 #include <cstdio>
 #include <cxxopts.hpp>
 #include <fstream>
@@ -18,7 +20,6 @@ std::ostringstream re{};
 FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
-
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     // Note: insert fd
@@ -42,8 +43,6 @@ std:
     }
     stdoutput.close();
 
-    //
-    std::cout << "dasfasdfasf" << re.str() << "dasfasdfasf\n";
     auto cluster = wasm_exec_env_get_cluster(instance);
     if (bh_list_length(&cluster->exec_env_list) > 1) {
         auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);

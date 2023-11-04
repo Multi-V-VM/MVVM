@@ -9,7 +9,6 @@
 #include "wamr_export.h"
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
-#include "wasmtime_ssp.h"
 #include <atomic>
 #include <filesystem>
 #include <map>
@@ -40,7 +39,7 @@ struct WasiSockOpenData {
     int socktype;
     uint32 sockfd;
 };
-
+#if !defined(__WINCRYPT_H__)
 struct WasiSockSendToData {
     uint32 sock;
     iovec_app_t si_data;
@@ -58,15 +57,17 @@ struct WasiSockRecvFromData {
     WAMRWasiAddr src_addr;
     uint32 ro_data_len;
 };
-
+#endif
 struct SocketMetaData {
     int domain{};
     int type{};
     int protocol{};
     SocketAddrPool socketAddress{};
     WasiSockOpenData socketOpenData{};
+#if !defined(__WINCRYPT_H__)
     WasiSockSendToData socketSentToData{};
     WasiSockRecvFromData socketRecvFromData{};
+#endif
 };
 struct WAMRWASIContext {
     std::map<int, std::tuple<std::string, int, int>> fd_map;

@@ -1,6 +1,16 @@
 [submodule "lib/wasm-micro-runtime"]
 	path = lib/wasm-micro-runtime
-	url = https://github.com/Multi-V-VM/wasm-micro-runtime/
+	url = https://github.com/Multi-V-VM/wasm-micro-runtime.git
 [submodule "lib/yalantinglibs"]
 	path = lib/yalantinglibs
-	url = https://github.com/alibaba/yalantinglibs
+	url = https://github.com/alibaba/yalantinglibs.git
+[submodule "bench/gapbs"]
+	path = bench/gapbs
+	url = https://github.com/victoryang00/gapbs.git
+[submodule "bench/clickhouse"]
+	path = bench/clickhouse
+	url = https://github.com/victoryang00/ClickHouse.git
+	branch = Alucardik/WASM_for_clickhouse-local
+[submodule "bench/llama"]
+	path = bench/llama
+	url = https://github.com/victoryang00/llamma-wamr.git

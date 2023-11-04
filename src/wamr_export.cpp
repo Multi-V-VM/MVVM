@@ -20,7 +20,7 @@ void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockf
     newSocketData.socketOpenData = openData;
     wamr->socket_fd_map_[sockfd] = newSocketData;
 }
-
+#if !defined(__WINCRYPT_H__)
 void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
                               const __wasi_addr_t *dest_addr, uint32 *so_data_len) {
     SocketMetaData newSocketData{};
@@ -103,6 +103,7 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
     newSocketData.socketRecvFromData = recvFromData;
     wamr->socket_fd_map_[sock] =  newSocketData;
 }
+#endif
 
 /**fopen, fseek*/
 void insert_fd(int fd, const char *path, int flags, int offset) {
@@ -131,7 +132,6 @@ void insert_fd(int fd, const char *path, int flags, int offset) {
             wamr->fd_map_.insert(std::make_pair(fd, std::make_tuple(std::string(path), flags, offset)));
     }
 }
-
 /* update fd->offset**/
 void insert_fd_fseek();
 /**fclose */

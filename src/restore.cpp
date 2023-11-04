@@ -6,6 +6,7 @@
 #include "wamr.h"
 #include "wamr_exec_env.h"
 #include "wamr_read_write.h"
+#include "wasm_runtime.h"
 #include <cxxopts.hpp>
 #include <iostream>
 #include <memory>

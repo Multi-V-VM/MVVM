@@ -41,7 +41,7 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
             wamr->invoke_frenumber(r, fd);
         wamr->invoke_fseek(fd, std::get<2>(res));
     }
-
+#if !defined(__WINCRYPT_H__)
     for (auto [fd, socketMetaData] : this->socket_fd_map) {
         LOGV(INFO) << "fd: " << fd << " SocketMetaData[domain]: " << socketMetaData.domain
                 //    << " SocketMetaData[socketAddress]: " << socketMetaData.socketAddress
@@ -114,4 +114,5 @@ void WAMRWASIContext::restore_impl(WASIContext *env) {
                                     tmp_addr_rev,
                                     &tmp_ro_data_len);
     }
+#endif
 };

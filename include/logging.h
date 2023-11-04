@@ -18,8 +18,17 @@
 #include <iostream>
 #include <list>
 #include <sstream>
-#include <stdarg.h>
+#include <ranges>
 #include <string>
+
+/** Barry's work*/
+struct Enumerate : std::ranges::range_adaptor_closure<Enumerate> {
+    template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {
+        return std::views::zip(std::views::iota(0), (R &&)r);
+    }
+};
+
+inline constexpr Enumerate enumerate;
 
 using std::list;
 using std::string;

@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+// #include <cstdio>
 
 FILE *a_file = NULL;
 
@@ -53,8 +54,6 @@ FILE *fopen_test(const char *restrict filename, const char *restrict mode)
 	return 0;
 }
 
-
-
 int main() {
     FILE *file = fopen_test("./text.txt", "w");
     
@@ -63,6 +62,7 @@ int main() {
    // fseek(file,1,1);
 
    /** Test fread*/
+   volatile int c = 0;
    FILE *file3 = fopen_test("./test.txt", "a");
    const char* line1 = "This is line 1\n";
    const char* line2 = "This is line 2\n";
@@ -73,15 +73,11 @@ int main() {
    //ntwritten
    // checkpoint: lib_wasi_wrapper fwrite system record 
    
-
-    // volatile int c = 0;
-    // for( int i =0;i<10000;i++){
-    //     c++;
-    // }
-
+    for( int i =0;i<10000;i++){
+        c++;
+    }
 	fwrite(line2, sizeof(char), len2, file3);
 	
-    fprintf(file, "Successfully wrote to the file.");
     fclose(file);
     fclose(file1);
     fclose(file2);
