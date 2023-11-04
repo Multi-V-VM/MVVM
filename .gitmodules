@@ -10,6 +10,7 @@
 [submodule "bench/clickhouse"]
 	path = bench/clickhouse
 	url = https://github.com/victoryang00/ClickHouse.git
+	branch = Alucardik/WASM_for_clickhouse-local
 [submodule "bench/llama"]
 	path = bench/llama
 	url = https://github.com/victoryang00/llamma-wamr.git

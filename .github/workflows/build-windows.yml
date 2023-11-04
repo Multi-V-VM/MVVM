@@ -34,7 +34,7 @@ jobs:
         git clone https://github.com/microsoft/vcpkg
         cd vcpkg
         ./bootstrap-vcpkg.bat
-        ./vcpkg install fmt:x64-windows cxxopts:x64-windows google-benchmark:x64-windows
+        ./vcpkg install fmt:x64-windows cxxopts:x64-windows benchmark:x64-windows
         echo "C:/tools/msys64/usr/bin/" >> "$GITHUB_PATH"
         C:/tools/msys64/usr/bin/pacman.exe --noconfirm -S gcc
 

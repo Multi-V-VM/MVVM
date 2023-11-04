@@ -28,7 +28,7 @@ else()
     set(WAMR_BUILD_LIBC_UVWASI 1)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "")
     set(CMAKE_GENERATOR_PLATFORM "")
-    set(CMAKE_CXX_FLAGS "/MD")
+    set(CMAKE_CXX_FLAGS "/MDd")
     set(LLVM_LLDB_LIB uv -lws2_32 "C:/Program Files/LLVM/lib/liblldb.lib")
 endif()
 
