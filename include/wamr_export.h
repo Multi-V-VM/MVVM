@@ -1,17 +1,36 @@
 //
 // Created by victoryang00 on 6/17/23.
 //
-
+#include "wasm_runtime.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-#ifdef MVVM_WASI
-#include "wasm_runtime.h"
-void serialize_to_file(struct WASMExecEnv *);
+
+#if !defined(MVVM_WASI)
+#define MVVM_WASI
+struct SocketAddrPool {
+    uint16 ip4[4];
+    uint16 ip6[8];
+    bool is_4;
+    uint16 port;
+};
+#if !defined(__WINCRYPT_H__)
+typedef struct iovec_app {
+    uint32 buf_offset;
+    uint32 buf_len;
+} iovec_app_t;
 #endif
+void serialize_to_file(struct WASMExecEnv *);
 
-
+#endif
+#if !defined(__WINCRYPT_H__)
+void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
+                              const __wasi_addr_t *dest_addr, uint32 *so_data_len);
+void insert_sock_open_data(uint32_t, int, int, uint32_t);
+void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,
+                                __wasi_addr_t *src_addr, uint32 *ro_data_len);
+#endif
 void insert_fd(int, char const *, int, int);
 void remove_fd(int);
 void insert_socket(int, int, int, int);

@@ -6,7 +6,7 @@
 #define MVVM_WAMR_WASI_CONTEXT_H
 
 #include "logging.h"
-#include "platform_common.h"
+#include "wamr_export.h"
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <atomic>
@@ -29,15 +29,49 @@ struct WAMRAddrPool {
     bool is_4;
     uint8 mask;
 };
+struct WAMRWasiAddr {
+    WAMRAddrPool ip;
+    uint16 port;
+};
+struct WasiSockOpenData {
+    uint32 poolfd;
+    int af;
+    int socktype;
+    uint32 sockfd;
+};
+#if !defined(__WINCRYPT_H__)
+struct WasiSockSendToData {
+    uint32 sock;
+    iovec_app_t si_data;
+    uint32 si_data_len;
+    uint16_t si_flags;
+    WAMRWasiAddr dest_addr;
+    uint32 so_data_len;
+};
 
+struct WasiSockRecvFromData {
+    uint32_t sock;
+    iovec_app_t ri_data;
+    uint32 ri_data_len;
+    uint16_t ri_flags;
+    WAMRWasiAddr src_addr;
+    uint32 ro_data_len;
+};
+#endif
 struct SocketMetaData {
     int domain{};
     int type{};
     int protocol{};
-    SocketAddrPool socketAddress;
+    SocketAddrPool socketAddress{};
+    WasiSockOpenData socketOpenData{};
+#if !defined(__WINCRYPT_H__)
+    WasiSockSendToData socketSentToData{};
+    WasiSockRecvFromData socketRecvFromData{};
+#endif
 };
-
 struct WAMRWASIContext {
+    std::map<int, std::tuple<std::string, int, int>> fd_map;
+    std::map<int, SocketMetaData> socket_fd_map;
     std::vector<std::string> dir;
     std::vector<std::string> map_dir;
     WAMRArgvEnvironValues argv_environ;

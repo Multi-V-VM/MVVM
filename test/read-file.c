@@ -9,11 +9,16 @@
 #include <errno.h>
 // #include <cstdio>
 
+FILE *a_file = NULL;
+
 FILE *fopen_test(const char *restrict filename, const char *restrict mode)
 {
 	FILE *f;
 	int fd;
 	int flags;
+	if(!a_file){
+		a_file = fopen("./test.txt","a");
+	}
 
 	/* Check for valid initial mode character */
 	if (!strchr("rwa", *mode)) {
@@ -28,7 +33,7 @@ FILE *fopen_test(const char *restrict filename, const char *restrict mode)
 #else
 	// WASI libc ignores the mode parameter anyway, so skip the varargs.
 	fd = __wasilibc_open_nomode(filename, flags);
-    printf("\n fopen_test(fd,filename,flags) %d %s %d \n\n",fd,filename,flags);
+    fprintf(a_file,"\n fopen_test(fd,filename,flags) %d %s %d \n\n",fd,filename,flags);
 #endif
 	if (fd < 0) return 0;
 #ifdef __wasilibc_unmodified_upstream // WASI has no syscall
@@ -65,6 +70,8 @@ int main() {
    size_t len2 = strlen(line2);
 
    fwrite(line1, sizeof(char), len1, file3);
+   //ntwritten
+   // checkpoint: lib_wasi_wrapper fwrite system record 
    
     for( int i =0;i<10000;i++){
         c++;
@@ -75,5 +82,5 @@ int main() {
     fclose(file1);
     fclose(file2);
 	fclose(file3);
+	__wasi_fd_renumber(3,10);
 }
-
