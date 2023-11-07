@@ -137,7 +137,7 @@ struct WAMRModuleInstance {
             std::back_inserter(tables), env->table_count,
             [i = 0, env]() mutable { return *(env->tables[i++]); } // or whatever your 'body' lambda would look like.
         );
-        dump(&wasi_ctx, env->wasi_ctx);
+        dump(&wasi_ctx, &env->module->wasi_args);
         dump(&extra, env->e);
         aux_data_end_global_index = env->module->aux_data_end_global_index;
         aux_data_end = env->module->aux_data_end;
@@ -176,7 +176,7 @@ struct WAMRModuleInstance {
         env->module->aux_stack_bottom = aux_stack_bottom;
         env->module->aux_stack_size = aux_stack_size;
         restore(&global_table_data, env->global_table_data.memory_instances);
-        restore(&wasi_ctx, env->wasi_ctx);
+        restore(&wasi_ctx, &env->module->wasi_args);
     };
 };
 

@@ -5,14 +5,13 @@
 #include "wamr.h"
 #include <string>
 extern WAMRInstance *wamr;
-void WAMRWASIContext::dump_impl(WASIContext *env) {
+void WAMRWASIContext::dump_impl(WASIArguments *env) {
     for (int i = 0; i < wamr->dir_.size(); i++) {
         dir.emplace_back(wamr->dir_[i]);
     }
     for (int i = 0; i < wamr->map_dir_.size(); i++) {
         map_dir.emplace_back(wamr->map_dir_[i]);
     }
-    this->exit_code = env->exit_code;
     for (auto [fd, res] : wamr->fd_map_) {
         auto [path, flags, offset] = res;
         auto dumped_res = std::make_tuple(path, flags, offset);
@@ -24,7 +23,7 @@ void WAMRWASIContext::dump_impl(WASIContext *env) {
         this->socket_fd_map[fd] = socketMetaDataCopy;
     }
 }
-void WAMRWASIContext::restore_impl(WASIContext *env) {
+void WAMRWASIContext::restore_impl(WASIArguments *env) {
     int r;
     // std::string stdin_fd= "/dev/stdin";
     // wamr->invoke_fopen(stdin_fd, 0);
