@@ -6,9 +6,11 @@
 #include "wamr.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
+#include <condition_variable>
 #include <cstdio>
 #include <cxxopts.hpp>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -44,9 +46,10 @@ std:
     stdoutput.close();
 
     auto cluster = wasm_exec_env_get_cluster(instance);
-    if (bh_list_length(&cluster->exec_env_list) > 1) {
+    auto all_count = bh_list_length(&cluster->exec_env_list);
+    int cur_count = 0;
+    if (all_count > 1) {
         auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
-        int cur_count = 0;
         while (elem) {
             if (elem == instance) {
                 break;
@@ -54,28 +57,43 @@ std:
             cur_count++;
             elem = (WASMExecEnv *)bh_list_elem_next(elem);
         }
-        auto all_count = bh_list_length(&cluster->exec_env_list);
-        auto a = new WAMRExecEnv();
-        dump(a, instance);
-        as_mtx.lock();
-        as.emplace_back(a);
-        as.back().get()->cur_count = cur_count;
-        if (as.size() == all_count) {
-            struct_pack::serialize_to(*writer, as);
-            LOGV(INFO) << "serialize to file" << cur_count << " " << all_count << "\n";
-        }
-        as_mtx.unlock();
-        if (cur_count == 0)
-            std::this_thread::sleep_for(std::chrono::seconds(100));
-    } else {
-        auto a = new WAMRExecEnv();
-        dump(a, instance);
-        as.emplace_back(a);
-        as.back().get()->cur_count = 0;
-        struct_pack::serialize_to(*writer, as);
+    } // gets the element index
+    auto a = new WAMRExecEnv();
+    dump_tls(((WASMModuleInstance *)instance->module_inst)->module, ((WASMModuleInstance *)instance->module_inst)->e);
+    dump(a, instance);
+    std::unique_lock as_ul(as_mtx);
+    as.emplace_back(a);
+    as.back().get()->cur_count = cur_count;
+    if (as.size() == all_count) {
+        struct_pack::serialize_to(writer, as);
+        LOGV(INFO) << "serialize to file" << cur_count << " " << all_count << "\n";
+        exit(0);
     }
-
-    exit(0);
+    // Is there some better way to sleep until exit?
+    std::condition_variable as_cv;
+    as_cv.wait(as_ul);
+}
+// mini dumper
+void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance) {
+    WASMGlobal *aux_data_end_global = NULL, *aux_heap_base_global = NULL;
+    WASMGlobal *aux_stack_top_global = NULL, *global;
+    uint32 aux_data_end = (uint32)-1, aux_heap_base = (uint32)-1;
+    uint32 aux_stack_top = (uint32)-1, global_index, func_index, i;
+    uint32 aux_data_end_global_index = (uint32)-1;
+    uint32 aux_heap_base_global_index = (uint32)-1;
+    /* Resolve aux stack top global */
+    for (int global_index = 0; global_index < instance->global_count; global_index++) {
+        auto global = module->globals + global_index;
+        if (global->is_mutable /* heap_base and data_end is
+                                  not mutable */
+            && global->type == VALUE_TYPE_I32 && global->init_expr.init_expr_type == INIT_EXPR_TYPE_I32_CONST &&
+            (uint32)global->init_expr.u.i32 <= aux_heap_base) {
+            //        LOGV(INFO) << "TLS" << global->init_expr << "\n";
+            // this is not the place been accessed, but initialized.
+        } else {
+            break;
+        }
+    }
 }
 
 #ifndef MVVM_DEBUG
