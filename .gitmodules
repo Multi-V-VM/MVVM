@@ -14,3 +14,9 @@
 [submodule "bench/llama"]
 	path = bench/llama
 	url = https://github.com/victoryang00/llamma-wamr.git
+[submodule "bench/redis++"]
+	path = bench/redis++
+	url = https://github.com/sewenew/redis-plus-plus
+[submodule "bench/redis"]
+	path = bench/redis
+	url = https://github.com/htw0056/redis-3.0-annotated-cmake-in-clion

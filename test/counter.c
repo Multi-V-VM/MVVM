@@ -10,7 +10,7 @@ int main(){
         a(c);
         c++;
         sleep(1);
-        if(c==10)
+        if(c==3)
             break;
     }
 }

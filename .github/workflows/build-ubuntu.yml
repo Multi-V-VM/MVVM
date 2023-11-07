@@ -24,27 +24,16 @@ jobs:
       run: sudo apt install libssl-dev gcc-13 g++-13 libprotobuf-c-dev libprotobuf-dev libgrpc-dev libfmt-dev llvm-14-dev libedit-dev libcxxopts-dev libpfm4-dev liblldb-dev libbenchmark-dev
       
     - name: Checkout
-      run: git submodule update --init
-      
-    # - name: Install WASI SDK
-    #   run: |
-    #     cd /opt
-    #     sudo wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-20/wasi-sdk-20.0-linux.tar.gz
-    #     sudo tar -xzf wasi-sdk-*.tar.gz
-    #     sudo mv wasi-sdk-20.0 wasi-sdk
+      run: |
+        git submodule update --init
+        cd bench/clickhouse
+        git submodule update --init
 
     - name: Install Instrumented WASI SDK
       run: |
         cd /opt
         sudo wget http://108.181.27.85/wasi-sdk-20.0-linux.tar.gz
         sudo tar -xzf wasi-sdk-*.tar.gz
-
-    # - name: Make WASM LD no check features
-    #   run: |
-    #     sudo mv /opt/wasi-sdk/bin/wasm-ld /opt/wasi-sdk/bin/wasm-ld.bak
-    #     echo '#!/bin/bash 
-    #     /opt/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | sudo tee /opt/wasi-sdk/bin/wasm-ld
-    #     sudo chmod +x /opt/wasi-sdk/bin/wasm-ld
 
     - name: Make WASI Socket Ext
       run: |
@@ -61,4 +50,9 @@ jobs:
 
     - name: test
       working-directory: ${{runner.workspace}}/build
-      run: ctest -V
+      run: ctest -V --timeout 10
+    
+    - name: bench
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        ./MVVM_benchmark

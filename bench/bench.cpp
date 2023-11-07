@@ -2,7 +2,7 @@
 #include <benchmark/benchmark.h>
 #include <wamr.h>
 
-WAMRInstance * wamr;
+WAMRInstance *wamr;
 
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
@@ -43,15 +43,34 @@ void serialize_to_file(WASMExecEnv *instance) {
 //./sssp -g10 -vn1 > test/out/verify-sssp-g10.out
 // \033[92mPASS\033[0m Verify sssp
 //./tc -g10 -vn1 > test/out/verify-tc-g10.out
-static void BM_gapbs(benchmark::State& state) {
+static void BM_gapbs(benchmark::State &state) {
     auto dir = {std::string("./")};
     auto map_dir = {std::string("./")};
     std::vector<string> env = {};
-    std::vector<std::string> cmd = {"bfs.wasm","bfs.wasm", "bfs.wasm", "bfs.wasm", "bfs.wasm", "bfs.wasm", "bfs.wasm", "bfs.wasm", "bfs.wasm", "bc.wasm", "bfs.wasm", "cc.wasm", "cc_sv.wasm", "pr.wasm", "pr_spmv.wasm", "sssp.wasm", "tc.wasm"};
-    std::vector<std::vector<string>> arg = {{"-g10","-n0"},{"-u10","-n0"},{"-f","test/graphs/4.gr","-n0"},{"-f","test/graphs/4.el","-n0"},{"-f","test/graphs/4.wel","-n0"},{"-f","test/graphs/4.graph","-n0"},{"-f","test/graphs/4w.graph","-n0"},{"-f","test/graphs/4.mtx","-n0"},{"-f","test/graphs/4w.mtx","-n0"},{"-g10","-vn1"},{"-g10","-vn1"},{"-g10","-vn1"},{"-g10","-vn1"},{"-g10","-vn1"},{"-g10","-vn1"},{"-g10","-vn1"},{"-g10","-vn1"}};
+    std::vector<std::string> cmd = {"bfs.wasm",   "bfs.wasm", "bfs.wasm",     "bfs.wasm",  "bfs.wasm", "bfs.wasm",
+                                    "bfs.wasm",   "bfs.wasm", "bfs.wasm",     "bc.wasm",   "bfs.wasm", "cc.wasm",
+                                    "cc_sv.wasm", "pr.wasm",  "pr_spmv.wasm", "sssp.wasm", "tc.wasm"};
+    std::vector<std::vector<string>> arg = {{"-g10", "-n0"},
+                                            {"-u10", "-n0"},
+                                            {"-f", "test/graphs/4.gr", "-n0"},
+                                            {"-f", "test/graphs/4.el", "-n0"},
+                                            {"-f", "test/graphs/4.wel", "-n0"},
+                                            {"-f", "test/graphs/4.graph", "-n0"},
+                                            {"-f", "test/graphs/4w.graph", "-n0"},
+                                            {"-f", "test/graphs/4.mtx", "-n0"},
+                                            {"-f", "test/graphs/4w.mtx", "-n0"},
+                                            {"-g10", "-vn1"},
+                                            {"-g10", "-vn1"},
+                                            {"-g10", "-vn1"},
+                                            {"-g10", "-vn1"},
+                                            {"-g10", "-vn1"},
+                                            {"-g10", "-vn1"},
+                                            {"-g10", "-vn1"},
+                                            {"-g10", "-vn1"}};
     std::vector<string> addr = {};
     std::vector<string> ns_pool = {};
     auto is_jit = false;
+#ifndef __APPLE__
     for (auto _ : state) {
         for (auto const &[k, v] : cmd | enumerate) {
             wamr = new WAMRInstance(v.c_str(), is_jit);
@@ -60,18 +79,28 @@ static void BM_gapbs(benchmark::State& state) {
             wamr->invoke_main();
         }
     }
+#else
+    for (auto _ : state) {
+        for (int i = 0; i < cmd.size(); i++) {
+            wamr = new WAMRInstance(cmd[i], is_jit);
+            wamr->set_wasi_args(dir, map_dir, env, arg[i], addr, ns_pool);
+            wamr->instantiate();
+            wamr->invoke_main();
+        }
+    }
+#endif
 }
 BENCHMARK(BM_gapbs);
 
 #if !defined(__WIN32__)
-static void BM_clickhouse(benchmark::State& state) {
+static void BM_clickhouse(benchmark::State &state) {
     for (auto _ : state) {
         // Your code to benchmark goes here
     }
 }
 BENCHMARK(BM_clickhouse);
 
-static void BM_llama(benchmark::State& state) {
+static void BM_llama(benchmark::State &state) {
     auto dir = {std::string("./")};
     auto map_dir = {std::string("./")};
     std::vector<string> env = {};
@@ -88,7 +117,7 @@ static void BM_llama(benchmark::State& state) {
 }
 BENCHMARK(BM_llama);
 
-static void BM_llama_aot(benchmark::State& state) {
+static void BM_llama_aot(benchmark::State &state) {
     auto dir = {std::string("./")};
     auto map_dir = {std::string("./")};
     std::vector<string> env = {};

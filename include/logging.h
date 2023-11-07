@@ -21,6 +21,7 @@
 #include <ranges>
 #include <string>
 
+#ifndef __APPLE__
 /** Barry's work*/
 struct Enumerate : std::ranges::range_adaptor_closure<Enumerate> {
     template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {
@@ -29,7 +30,7 @@ struct Enumerate : std::ranges::range_adaptor_closure<Enumerate> {
 };
 
 inline constexpr Enumerate enumerate;
-
+#endif
 using std::list;
 using std::string;
 struct LocationInfo {

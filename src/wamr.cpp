@@ -10,7 +10,7 @@
 #include "wasm_runtime.h"
 #include <regex>
 
-WAMRInstance::ThreadArgs** argptr;
+WAMRInstance::ThreadArgs **argptr;
 
 WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) {
     RuntimeInitArgs wasm_args;
@@ -399,14 +399,10 @@ WASMModule *WAMRInstance::get_module() {
     return reinterpret_cast<WASMModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
 }
 
-void restart_execution(uint32 id){
-        WAMRInstance::ThreadArgs* targs = argptr[id];
-            wasm_interp_call_func_bytecode(
-                    (WASMModuleInstance*)targs->exec_env->module_inst,
-                    targs->exec_env,
-                    targs->exec_env->cur_frame->function,
-                    targs->exec_env->cur_frame->prev_frame);
-
+void restart_execution(uint32 id) {
+    WAMRInstance::ThreadArgs *targs = argptr[id];
+    wasm_interp_call_func_bytecode((WASMModuleInstance *)targs->exec_env->module_inst, targs->exec_env,
+                                   targs->exec_env->cur_frame->function, targs->exec_env->cur_frame->prev_frame);
 }
 
 // will call pthread create wrapper if needed?
@@ -416,7 +412,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
               [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
                   return a->cur_count > b->cur_count;
               });
-    argptr = (ThreadArgs**) malloc(sizeof(void*) * execEnv->size());
+    argptr = (ThreadArgs **)malloc(sizeof(void *) * execEnv->size());
     uint32 id = 0;
 
     for (auto &&exec_ : *execEnv) {

@@ -64,8 +64,6 @@ public:
     int invoke_frenumber(uint32 fd, uint32 to);
     int invoke_fseek(uint32 fd, uint32 offset);
     int invoke_preopen(uint32 fd, const std::string &path);
-    int invoke_socket(uint32 domain, const std::string &path);
-    int invoke_(uint32 domain, const std::string &path);
 #if !defined(__WINCRYPT_H__)
     int invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
                            const __wasi_addr_t *dest_addr, uint32 *so_data_len);

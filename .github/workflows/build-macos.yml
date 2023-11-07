@@ -24,7 +24,10 @@ jobs:
       run: brew install cxxopts fmt llvm@14 google-benchmark
 
     - name: Checkout
-      run: git submodule update --init
+      run: |
+        git submodule update --init
+        cd bench/clickhouse
+        git submodule update --init
 
     - name: Install WASI SDK
       run: |
@@ -55,4 +58,9 @@ jobs:
 
     - name: test
       working-directory: ${{runner.workspace}}/build
-      run: ctest -V
+      run: ctest -V --timeout 10
+          
+    - name: bench
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        ./MVVM_benchmark
