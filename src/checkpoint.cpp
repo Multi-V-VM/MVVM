@@ -4,6 +4,8 @@
 
 #include "thread_manager.h"
 #include "wamr.h"
+#include "wamr_wasi_context.h"
+#include "wasm_runtime.h"
 #include <condition_variable>
 #include <cstdio>
 #include <cxxopts.hpp>
@@ -17,51 +19,13 @@
 
 WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
-auto writer = FwriteStream("test.bin");
+FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
-/**fopen, fseek*/
-void insert_fd(int fd, const char *path, int flags, int offset) {
-    printf("\n #insert_fd(fd,filename,flags, offset) %d %s %d %d \n\n", fd, path, flags, offset);
-
-    if (wamr->fd_map_.find(fd) != wamr->fd_map_.end()) {
-        LOGV(ERROR) << "fd already exist" << fd;
-        if (offset == 0) {
-            // fOpen call
-            std::string curPath;
-            int curFlags;
-            int curOffset;
-            std::tie(curPath, curFlags, curOffset) = wamr->fd_map_[fd];
-            wamr->fd_map_[fd] = std::make_tuple(std::string(path), flags, curOffset);
-        } else {
-            // fSeek call
-            std::string curPath;
-            int curFlags;
-            int curOffset;
-            std::tie(curPath, curFlags, curOffset) = wamr->fd_map_[fd];
-            wamr->fd_map_[fd] = std::make_tuple(curPath, curFlags, offset);
-        }
-
-    } else
-        wamr->fd_map_.insert(std::make_pair(fd, std::make_tuple(std::string(path), flags, offset)));
-}
-
-/* update fd->offset**/
-void insert_fd_fseek();
-/**fclose */
-void remove_fd(int fd) {
-    if (wamr->fd_map_.find(fd) != wamr->fd_map_.end())
-        wamr->fd_map_.erase(fd);
-    else
-        LOGV(ERROR) << "fd not found" << fd;
-}
-void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance);
-void insert_socket(int fd) {}
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     // Note: insert fd
     std::ifstream stdoutput;
-    stdoutput.open("output.txt");
 std:
     string current_str;
     std::string fd_output;
@@ -81,8 +45,6 @@ std:
     }
     stdoutput.close();
 
-    //
-    std::cout << "dasfasdfasf" << re.str() << "dasfasdfasf\n";
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
     int cur_count = 0;
@@ -183,7 +145,18 @@ int main(int argc, char *argv[]) {
         "n,ns_pool", "The ns lookup pool exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value(""))("h,help", "The value for epoch value",
                                                                        cxxopts::value<bool>()->default_value("false"));
-
+    auto removeExtension = [](std::string &filename) {
+        size_t dotPos = filename.find_last_of('.');
+        std::string res;
+        if (dotPos != std::string::npos) {
+            // Extract the substring before the period
+            res = filename.substr(0, dotPos);
+        } else {
+            // If there's no period in the string, it means there's no extension.
+            LOGV(ERROR) << "No extension found.";
+        }
+        return res;
+    };
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {
         std::cout << options.help() << std::endl;
@@ -197,10 +170,10 @@ int main(int argc, char *argv[]) {
     auto arg = result["arg"].as<std::vector<std::string>>();
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
+    writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
-    freopen("output.txt", "w", stdout);
 
 #ifndef MVVM_DEBUG
     // Define the sigaction structure

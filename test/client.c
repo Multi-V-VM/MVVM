@@ -63,7 +63,7 @@ main(int argc, char *argv[])
                 (struct sockaddr *)&server_address, serverlen);
    if (ret < 0) {
        close(socket_fd);
-       perror("Send failed");
+       perror("Send FAAAAAILED");
        return EXIT_FAILURE;
    }
 
@@ -80,5 +80,6 @@ main(int argc, char *argv[])
 
    close(socket_fd);
    printf("[Client] BYE \n");
+   __wasi_fd_renumber(1,1);
    return EXIT_SUCCESS;
 }

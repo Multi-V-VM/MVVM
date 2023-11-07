@@ -33,7 +33,7 @@ struct WAMRMemoryInstance {
 
     void dump_impl(WASMMemoryInstance *env) {
         module_type = env->module_type;
-        // is_shared = env->is_shared;
+        is_shared = env->ref_count;
         num_bytes_per_page = env->num_bytes_per_page;
         cur_page_count = env->cur_page_count;
         max_page_count = env->max_page_count;
@@ -48,7 +48,7 @@ struct WAMRMemoryInstance {
     };
     void restore_impl(WASMMemoryInstance *env) {
         env->module_type = module_type;
-        // env->is_shared = is_shared;
+        env->ref_count = is_shared;
         env->num_bytes_per_page = num_bytes_per_page;
         env->cur_page_count = cur_page_count;
         env->max_page_count = max_page_count;
