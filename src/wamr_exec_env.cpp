@@ -26,8 +26,26 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
     env->aux_stack_bottom.bottom = aux_bottom;
 
     if (wamr->is_aot) {
-        LOGV(ERROR) << "not impl";
-        exit(-1);
+        auto module_inst = (WASMModuleInstance *)env->module_inst;
+        std::reverse(frames.begin(), frames.end());
+        std::vector<AOTFrame *> replay_frames;
+        for (const auto &dump_frame : frames) {
+            if (!aot_alloc_frame(env, dump_frame->function_index)) {
+                LOGV(INFO) << "restore error: aot_alloc_frame failed";
+                exit(-1);
+            }
+            auto cur_frame = (AOTFrame *)env->cur_frame;
+            cur_frame->ip_offset = dump_frame->ip;
+            cur_frame->sp = cur_frame->lp + dump_frame->sp;
+            memcpy(cur_frame->lp, dump_frame->stack_frame.data(), dump_frame->stack_frame.size() * sizeof(uint32));
+            replay_frames.emplace_back(cur_frame);
+        }
+        std::reverse(replay_frames.begin(), replay_frames.end());
+        env->call_chain_size = replay_frames.size();
+        env->restore_call_chain = (AOTFrame **)malloc(sizeof(void *) * replay_frames.size());
+        memcpy(env->restore_call_chain, replay_frames.data(), sizeof(void *) * replay_frames.size());
+
+        env->cur_frame = nullptr;
     } else {
         auto module_inst = (WASMModuleInstance *)env->module_inst;
         auto get_function = [&](size_t function_index) {

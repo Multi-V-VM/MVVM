@@ -73,9 +73,15 @@ void WAMRInterpFrame::dump_impl(AOTFrame *env) {
     ip = env->ip_offset;
     sp = env->sp - env->lp; // offset to the wasm_stack_top
 
+    LOGV(INFO) << fmt::format("function_index {} ip_offset {} lp {} sp {} sp_offset {}", env->func_index, ip,
+                              (void *)env->lp, (void *)env->sp, sp);
+
     stack_frame = std::vector(env->lp, env->sp);
 
-    LOGV(INFO) << fmt::format("function_index {} ip {} sp {}", env->func_index, ip, sp);
+    for (auto x : stack_frame) {
+        std::cout << x << " ";
+    }
+    std::cout << std::endl;
 }
 void WAMRInterpFrame::restore_impl(AOTFrame *env) {
     LOGV(ERROR) << "not impl";

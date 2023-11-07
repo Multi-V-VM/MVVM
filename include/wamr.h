@@ -66,7 +66,6 @@ public:
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();
     AOTModule *get_module();
-    WASMModuleInstance *get_wasm_module_instance(); // for dump func
     void set_wasi_args(WAMRWASIContext &addrs);
     void set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
                        const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,

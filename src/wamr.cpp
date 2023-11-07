@@ -167,26 +167,6 @@ WASMModuleInstance *WAMRInstance::get_module_instance() {
 AOTModule *WAMRInstance::get_module() {
     return reinterpret_cast<AOTModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
 }
-WASMModuleInstance *WAMRInstance::get_wasm_module_instance() {
-    static WASMModuleInstance *wasm_module_instance{};
-    if (wasm_module_instance != nullptr)
-        return wasm_module_instance;
-
-    char *buffer{};
-    if (!load_wasm_binary(wasm_file_path.c_str(), &buffer)) {
-        LOGV(ERROR) << "Load wasm binary failed.\n";
-        throw;
-    }
-    auto module = wasm_runtime_load((uint8_t *)buffer, buf_size, error_buf, sizeof(error_buf));
-    if (!module) {
-        LOGV(ERROR) << fmt::format("Load wasm module failed. error: {}", error_buf);
-        throw;
-    }
-    wasm_module_instance = reinterpret_cast<WASMModuleInstance *>(
-        wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf)));
-
-    return wasm_module_instance;
-}
 void WAMRInstance::recover(
     std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) { // will call pthread create wrapper if needed?
     std::sort(execEnv->begin(), execEnv->end(),
@@ -208,8 +188,13 @@ void WAMRInstance::recover(
                 ThreadArgs{cur_env, nullptr, nullptr}; // requires to record the args and callback for the pthread.
         }
         get_exec_env()->is_restore = true;
-        wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
-                                       get_exec_env()->cur_frame->prev_frame);
+
+        if (!is_aot) {
+            wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
+                                           get_exec_env()->cur_frame->prev_frame);
+        } else {
+            invoke_main();
+        }
         // // how to get the previous frame here.
         // auto args_ = get_args() ;
         // uint32 argv_[args_.size()];

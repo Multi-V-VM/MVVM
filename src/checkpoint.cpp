@@ -2,9 +2,11 @@
 // Created by victoryang00 on 4/8/23.
 //
 
+#include "aot_runtime.h"
 #include "logging.h"
 #include "thread_manager.h"
 #include "wamr.h"
+#include "wasm_exec_env.h"
 #include <cstdio>
 #include <cxxopts.hpp>
 #include <filesystem>
@@ -96,7 +98,20 @@ void serialize_to_file(WASMExecEnv *instance) {
     exit(0);
 }
 
+void print_stack(AOTFrame *frame) {
+    if (frame) {
+        fprintf(stderr, "stack: ");
+        for (int *i = (int *)frame->lp; i < (int *)frame->sp; i++) {
+            fprintf(stderr, "%d ", *i);
+        }
+        fprintf(stderr, "\n");
+    } else {
+        LOGV(ERROR) << fmt::format("no cur_frame");
+    }
+}
+
 void print_exec_env_debug_info(WASMExecEnv *exec_env) {
+    LOGV(INFO) << fmt::format("----");
     if (!exec_env) {
         LOGV(ERROR) << fmt::format("no exec_env");
         return;
@@ -110,6 +125,8 @@ void print_exec_env_debug_info(WASMExecEnv *exec_env) {
             LOGV(DEBUG) << fmt::format("depth {}, function {}, ip {}, lp {}, sp {}", call_depth, p->func_index,
                                        p->ip_offset, (void *)frame_lp, (void *)p->sp);
             call_depth++;
+            print_stack(p);
+
             p = p->prev_frame;
         }
     } else {
@@ -118,14 +135,26 @@ void print_exec_env_debug_info(WASMExecEnv *exec_env) {
     LOGV(INFO) << fmt::format("----");
 }
 
-void replace_aot_function_with_wasm_function() {
-    auto exec_env = wamr->get_exec_env();
-    auto wasm_module_inst = wamr->get_wasm_module_instance();
-    if (exec_env->cur_frame) {
-        auto p = exec_env->cur_frame;
-        while (p) {
-            p->function = &wasm_module_inst->e->functions[(size_t)p->function];
-            p = p->prev_frame;
+void print_memory(WASMExecEnv *exec_env) {
+    if (!exec_env)
+        return;
+    auto module_inst = reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst);
+    if (!module_inst)
+        return;
+    for (size_t j = 0; j < module_inst->memory_count; j++) {
+        auto mem = module_inst->memories[j];
+        if (mem) {
+            LOGV(INFO) << fmt::format("memory data size {}", mem->memory_data_size);
+            if (mem->memory_data_size >= 70288 + 64) {
+                // for (int *i = (int *)(mem->memory_data + 70288); i < (int *)(mem->memory_data + 70288 + 64); ++i) {
+                //     fprintf(stdout, "%d ", *i);
+                // }
+                for (int *i = (int *)(mem->memory_data); i < (int *)(mem->memory_data_end); ++i) {
+                    if (1 <= *i && *i <= 9)
+                        fprintf(stdout, "%zu = %d\n", (uint8 *)i - mem->memory_data, *i);
+                }
+                fprintf(stdout, "\n");
+            }
         }
     }
 }
@@ -139,6 +168,7 @@ void sigtrap_handler(int sig) {
 
     auto exec_env = wamr->get_exec_env();
     // print_exec_env_debug_info(exec_env);
+    // print_memory(exec_env);
 
     call_count++;
 
