@@ -25,9 +25,7 @@ jobs:
 
     - name: Checkout
       run: |
-        git submodule update --init
-        cd bench/clickhouse
-        git submodule update --init
+        git submodule update --init --recursive
 
     - name: Install WASI SDK
       run: |

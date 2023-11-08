@@ -92,6 +92,20 @@ static void BM_gapbs(benchmark::State &state) {
 }
 BENCHMARK(BM_gapbs);
 
+static void BM_redis(benchmark::State &state) {
+    for (auto _ : state) {
+        // Your code to benchmark goes here
+    }
+}
+BENCHMARK(BM_redis);
+
+static void BM_redis_plus_plus(benchmark::State &state) {
+    for (auto _ : state) {
+        // Your code to benchmark goes here
+    }
+}
+BENCHMARK(BM_redis_plus_plus);
+
 #if !defined(__WIN32__)
 static void BM_clickhouse(benchmark::State &state) {
     for (auto _ : state) {
