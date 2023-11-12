@@ -32,7 +32,7 @@ jobs:
         cd /opt
         sudo wget http://108.181.27.85/wasi-sdk-20.0-linux.tar.gz
         sudo tar -xzf wasi-sdk-*.tar.gz
-        mv wasi-sdk-* wasi-sdk
+        sudo mv wasi-sdk-* wasi-sdk
         
     - name: Make WASI Socket Ext
       run: |
