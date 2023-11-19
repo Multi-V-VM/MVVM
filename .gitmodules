@@ -4,19 +4,13 @@
 [submodule "bench/gapbs"]
 	path = bench/gapbs
 	url = https://github.com/victoryang00/gapbs.git
-[submodule "bench/clickhouse"]
-	path = bench/clickhouse
-	url = https://github.com/victoryang00/ClickHouse.git
-	branch = Alucardik/WASM_for_clickhouse-local
 [submodule "bench/llama"]
 	path = bench/llama
-	url = https://github.com/victoryang00/llamma-wamr.git
-[submodule "bench/redis++"]
-	path = bench/redis++
-	url = https://github.com/sewenew/redis-plus-plus
+	url = https://github.com/victoryang00/llama2.c.git
 [submodule "bench/redis"]
 	path = bench/redis
-	url = https://github.com/htw0056/redis-3.0-annotated-cmake-in-clion
+	url = https://github.com/victoryang00/redis.git
+	branch = wasm
 [submodule "lib/wasm-micro-runtime"]
 	path = lib/wasm-micro-runtime
 	url = https://github.com/Multi-V-VM/wasm-micro-runtime.git

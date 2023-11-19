@@ -47,9 +47,8 @@ static void BM_gapbs(benchmark::State &state) {
     auto dir = {std::string("./")};
     auto map_dir = {std::string("./")};
     std::vector<string> env = {};
-    std::vector<std::string> cmd = {"bfs.wasm",   "bfs.wasm", "bfs.wasm",     "bfs.wasm",  "bfs.wasm", "bfs.wasm",
-                                    "bfs.wasm",   "bfs.wasm", "bfs.wasm",     "bc.wasm",   "bfs.wasm", "cc.wasm",
-                                    "cc_sv.wasm", "pr.wasm",  "pr_spmv.wasm", "sssp.wasm", "tc.wasm"};
+    std::vector<std::string> cmd = {"bfs", "bfs", "bfs", "bfs",   "bfs", "bfs",     "bfs",  "bfs", "bfs",
+                                    "bc",  "bfs", "cc",  "cc_sv", "pr",  "pr_spmv", "sssp", "tc"};
     std::vector<std::vector<string>> arg = {{"-g10", "-n0"},
                                             {"-u10", "-n0"},
                                             {"-f", "test/graphs/4.gr", "-n0"},
@@ -99,20 +98,7 @@ static void BM_redis(benchmark::State &state) {
 }
 BENCHMARK(BM_redis);
 
-static void BM_redis_plus_plus(benchmark::State &state) {
-    for (auto _ : state) {
-        // Your code to benchmark goes here
-    }
-}
-BENCHMARK(BM_redis_plus_plus);
-
 #if !defined(__WIN32__)
-static void BM_clickhouse(benchmark::State &state) {
-    for (auto _ : state) {
-        // Your code to benchmark goes here
-    }
-}
-BENCHMARK(BM_clickhouse);
 
 static void BM_llama(benchmark::State &state) {
     auto dir = {std::string("./")};
@@ -123,7 +109,7 @@ static void BM_llama(benchmark::State &state) {
     std::vector<string> ns_pool = {};
     auto is_jit = false;
     for (auto _ : state) {
-        wamr = new WAMRInstance("./llama.wasm", is_jit);
+        wamr = new WAMRInstance("./run", is_jit);
         wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
         wamr->instantiate();
         wamr->invoke_main();

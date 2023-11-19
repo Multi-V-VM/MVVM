@@ -93,6 +93,10 @@ add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 include(${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include ${LLVM_INCLUDE_DIRS})
 
+add_subdirectory(test)
+add_subdirectory(bench)
+add_subdirectory(gateway)
+
 file(GLOB_RECURSE SOURCE_FILES src/logging.cpp src/wamr*.cpp)
 add_library(MVVM_export ${SOURCE_FILES} ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_restore src/restore.cpp ${UNCOMMON_SHARED_SOURCE})
@@ -104,5 +108,3 @@ target_link_libraries(MVVM_checkpoint fmt::fmt cxxopts::cxxopts MVVM_export vmli
 add_definitions(-DMVVM_INTERP=1)
 add_definitions(-DMVVM_DEBUG=1)
 add_definitions(-DCXXOPTS_NO_RTTI=1)
-add_subdirectory(test)
-add_subdirectory(bench)

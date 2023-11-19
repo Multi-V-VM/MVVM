@@ -1,3 +1,9 @@
+if(WIN32)
+    set(WASI_SDK_DIR D:/wasi-sdk/)
+else()
+    set(WASI_SDK_DIR /opt/wasi-sdk/)
+endif()
+
 set(WAMR_DIR ${PROJECT_SOURCE_DIR}/lib/wasm-micro-runtime/)
 set(HOST_PREFIX ${WASI_SDK_DIR}/bin/)
 enable_testing()

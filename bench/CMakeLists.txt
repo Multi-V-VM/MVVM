@@ -1,5 +1,5 @@
 add_executable(MVVM_benchmark bench.cpp)
-target_link_libraries(MVVM_benchmark MVVM_export vmlib benchmark::benchmark MVVM_export)
+target_link_libraries(MVVM_benchmark MVVM_export vmlib benchmark MVVM_export)
 
 if(WIN32)
     set(WASI_SDK "D:/wasi-sdk")
@@ -27,58 +27,30 @@ ExternalProject_Add(gapbs
         BUILD_COMMAND     ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND   ""
 )
-#ExternalProject_Add(redis
-#        SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/redis
-#        UPDATE_COMMAND    ""
-#        PATCH_COMMAND     ""
-#        CONFIGURE_COMMAND  ${CMAKE_COMMAND}
-#        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
-#        -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
-#        -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
-#        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot
-#        ${CMAKE_CURRENT_SOURCE_DIR}/redis
-#        BUILD_COMMAND     ${CMAKE_COMMAND} --build .
-#        INSTALL_COMMAND   ""
-#        )
-#ExternalProject_Add(redis++
-#        SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/redis++
-#        UPDATE_COMMAND    ""
-#        PATCH_COMMAND     ""
-#        CONFIGURE_COMMAND  ${CMAKE_COMMAND}
-#        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
-#        -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
-#        -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
-#        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot
-#        ${CMAKE_CURRENT_SOURCE_DIR}/redis++
-#        BUILD_COMMAND     ${CMAKE_COMMAND} --build .
-#        INSTALL_COMMAND   ""
-#        )
-if(NOT WIN32)
-#    ExternalProject_Add(clickhouse
-#            SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/clickhouse
-#            UPDATE_COMMAND    ""
-#            PATCH_COMMAND     ""
-#            CONFIGURE_COMMAND  ${CMAKE_COMMAND}
-#            -GNinja
-#            -DCMAKE_C_COMPILER=${EMSDK_DIR}/bin/clang${WASI_EXE_POSTFIX}
-#            -DCMAKE_CXX_COMPILER=${EMSDK_DIR}/bin/clang++${WASI_EXE_POSTFIX}
-#            -DCMAKE_SYSROOT=${EMSDK_DIR}/emscripten/cache/sysroot -DEMSCRIPTEN=1
-#            ${CMAKE_CURRENT_SOURCE_DIR}/clickhouse
-#            BUILD_COMMAND     ${CMAKE_COMMAND} --build .
-#            INSTALL_COMMAND   ""
-#    )
+ExternalProject_Add(redis
+       SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/redis
+       UPDATE_COMMAND    ""
+       PATCH_COMMAND     ""
+       CONFIGURE_COMMAND  ${CMAKE_COMMAND}
+       -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+       -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
+       -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
+       -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot
+       ${CMAKE_CURRENT_SOURCE_DIR}/redis
+       BUILD_COMMAND     ${CMAKE_COMMAND} --build .
+       INSTALL_COMMAND   ""
+)
 
-    ExternalProject_Add(llama
-            SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/llama
-            UPDATE_COMMAND    ""
-            PATCH_COMMAND     ""
-            CONFIGURE_COMMAND  ${CMAKE_COMMAND}
-            -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
-            -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
-            -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
-            -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot
-            ${CMAKE_CURRENT_SOURCE_DIR}/llama
-            BUILD_COMMAND     ${CMAKE_COMMAND} --build .
-            INSTALL_COMMAND   ""
-    )
-endif()
+ExternalProject_Add(llama
+        SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/llama
+        UPDATE_COMMAND    ""
+        PATCH_COMMAND     ""
+        CONFIGURE_COMMAND  ${CMAKE_COMMAND}
+        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+        -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
+        -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
+        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot
+        ${CMAKE_CURRENT_SOURCE_DIR}/llama
+        BUILD_COMMAND     ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND   ""
+)
