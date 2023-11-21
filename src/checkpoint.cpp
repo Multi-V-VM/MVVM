@@ -275,6 +275,14 @@ int main(int argc, char *argv[]) {
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
 
+    if (arg.size() == 1 && arg[0].empty())
+        arg.clear();
+    arg.insert(arg.begin(), target);
+
+    for (const auto &e : arg) {
+        LOGV(INFO) << "arg " << e;
+    }
+
     // auto mvvm_meta_file = target + ".mvvm";
     // if (!std::filesystem::exists(mvvm_meta_file)) {
     //     printf("MVVM metadata file %s does not exists. Exit.\n", mvvm_meta_file.c_str());
