@@ -4,7 +4,10 @@
 
 #ifndef MVVM_WAMR_MODULE_INSTANCE_H
 #define MVVM_WAMR_MODULE_INSTANCE_H
+
+#if WASM_ENABLE_AOT != 0
 #include "aot_runtime.h"
+#endif
 #include "wamr_memory_instance.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"

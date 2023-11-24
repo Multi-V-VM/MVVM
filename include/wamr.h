@@ -5,7 +5,9 @@
 #ifndef MVVM_WAMR_H
 #define MVVM_WAMR_H
 
+#if WASM_ENABLE_AOT != 0
 #include "aot_runtime.h"
+#endif
 #include "bh_read_file.h"
 #include "logging.h"
 #include "wamr_exec_env.h"
@@ -13,9 +15,8 @@
 #include "wamr_read_write.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
-#include "wamr_export.h"
-#include <tuple>
 #include <ranges>
+#include <tuple>
 
 enum ArchType { x86_64, arm64 };
 
@@ -40,7 +41,7 @@ public:
     std::vector<const char *> arg_;
     std::vector<const char *> addr_;
     std::vector<const char *> ns_pool_;
-    std::map<int, std::tuple<std::string, std::vector<std::tuple<int,int,fd_op>>>> fd_map_;
+    std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_;
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, SocketMetaData> socket_fd_map_;
 
@@ -59,7 +60,7 @@ public:
 
     void instantiate();
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
-    bool load_wasm_binary(const char *wasm_path, char** buffer_ptr);
+    bool load_wasm_binary(const char *wasm_path, char **buffer_ptr);
     bool load_mvvm_aot_metadata(const char *file_path);
     WASMFunction *get_func();
     void set_func(WASMFunction *);
@@ -69,7 +70,11 @@ public:
 #endif
     WASMExecEnv *get_exec_env();
     WASMModuleInstance *get_module_instance();
+
+#if WASM_ENABLE_AOT != 0
     AOTModule *get_module();
+#endif
+
     void set_wasi_args(WAMRWASIContext &addrs);
     void set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
                        const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,

@@ -1,6 +1,8 @@
-#include "wamr_exec_env.h"
+#if WASM_ENABLE_AOT != 0
 #include "aot_runtime.h"
+#endif
 #include "wamr.h"
+#include "wamr_exec_env.h"
 extern WAMRInstance *wamr;
 void WAMRExecEnv::dump_impl(WASMExecEnv *env) {
     dump(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));

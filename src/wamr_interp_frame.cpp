@@ -68,6 +68,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
                               (void *)env->sp, (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
 }
 
+#if WASM_ENABLE_AOT != 0
 void WAMRInterpFrame::dump_impl(AOTFrame *env) {
     function_index = env->func_index;
     ip = env->ip_offset;
@@ -998,3 +999,4 @@ fail:
     LOGV(ERROR) << "FAULT";
     exit(-1);
 }
+#endif

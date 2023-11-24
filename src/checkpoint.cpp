@@ -2,7 +2,9 @@
 // Created by victoryang00 on 4/8/23.
 //
 
+#if WASM_ENABLE_AOT != 0
 #include "aot_runtime.h"
+#endif
 #include "logging.h"
 #include "thread_manager.h"
 #include "wamr.h"
@@ -57,7 +59,6 @@ void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     if (wamr->addr_.size() != 0) {
         // tell gateway to keep alive the server
-
     }
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
@@ -168,8 +169,7 @@ int main(int argc, char *argv[]) {
                                                                        cxxopts::value<bool>()->default_value("false"))(
         "f,function", "The function to test execution",
         cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
-        "c,count", "The function index to test execution",
-        cxxopts::value<int>()->default_value("0"));
+        "c,count", "The function index to test execution", cxxopts::value<int>()->default_value("0"));
     auto removeExtension = [](std::string &filename) {
         size_t dotPos = filename.find_last_of('.');
         std::string res;

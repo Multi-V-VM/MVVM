@@ -449,9 +449,11 @@ WASMModuleInstance *WAMRInstance::get_module_instance() {
     return reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst);
 }
 
+#if WASM_ENABLE_AOT != 0
 AOTModule *WAMRInstance::get_module() {
     return reinterpret_cast<AOTModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
 }
+#endif
 
 void restart_execution(uint32 id) {
     WAMRInstance::ThreadArgs *targs = argptr[id];
