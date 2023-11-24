@@ -2,6 +2,8 @@
 // Created by victoryang00 on 4/8/23.
 //
 
+#include "aot_runtime.h"
+#include "logging.h"
 #include "thread_manager.h"
 #include "wamr.h"
 #include "wamr_wasi_context.h"
@@ -9,6 +11,7 @@
 #include <condition_variable>
 #include <cstdio>
 #include <cxxopts.hpp>
+#include <filesystem>
 #include <fstream>
 #include <mutex>
 #include <sstream>
@@ -46,6 +49,7 @@ void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance) {
         }
     }
 }
+void insert_socket(int fd) {}
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     // Note: insert fd
@@ -84,38 +88,67 @@ void serialize_to_file(WASMExecEnv *instance) {
     as_cv.wait(as_ul);
 }
 
-#ifndef MVVM_DEBUG
-void sigtrap_handler(int sig) {
-    printf("Caught signal %d, performing custom logic...\n", sig);
-
-    // You can exit the program here, if desired
-    serialize_to_file(this->exec_env);
-}
-
-// Signal handler function for SIGINT
-void sigint_handler(int sig) {
-    // Your logic here
-    printf("Caught signal %d, performing custom logic...\n", sig);
-    wamr->get_exec_env()->is_checkpoint = true;
-    // check whether the current function is sleep
-    struct sigaction sa {};
-
-    // Clear the structure
-    sigemptyset(&sa.sa_mask);
-
-    // Set the signal handler function
-    sa.sa_handler = sigtrap_handler;
-
-    // Set the flags
-    sa.sa_flags = SA_RESTART;
-
-    // Register the signal handler for SIGTRAP
-    if (sigaction(SIGTRAP, &sa, nullptr) == -1) {
-        perror("Error: cannot handle SIGTRAP");
-        exit(-1);
+void print_stack(AOTFrame *frame) {
+    if (frame) {
+        fprintf(stderr, "stack: ");
+        for (int *i = (int *)frame->lp; i < (int *)frame->sp; i++) {
+            fprintf(stderr, "%d ", *i);
+        }
+        fprintf(stderr, "\n");
+    } else {
+        LOGV(ERROR) << fmt::format("no cur_frame");
     }
 }
-#endif
+
+void print_exec_env_debug_info(WASMExecEnv *exec_env) {
+    LOGV(INFO) << fmt::format("----");
+    if (!exec_env) {
+        LOGV(ERROR) << fmt::format("no exec_env");
+        return;
+    }
+    if (exec_env->cur_frame) {
+        int call_depth = 0;
+        auto p = (AOTFrame *)exec_env->cur_frame;
+        while (p) {
+            uint32 *frame_lp = p->lp;
+            // LOGV(ERROR) << (size_t)((size_t)frame_lp - (size_t)p);
+            LOGV(DEBUG) << fmt::format("depth {}, function {}, ip {}, lp {}, sp {}", call_depth, p->func_index,
+                                       p->ip_offset, (void *)frame_lp, (void *)p->sp);
+            call_depth++;
+            print_stack(p);
+
+            p = p->prev_frame;
+        }
+    } else {
+        LOGV(ERROR) << fmt::format("no cur_frame");
+    }
+    LOGV(INFO) << fmt::format("----");
+}
+
+void print_memory(WASMExecEnv *exec_env) {
+    if (!exec_env)
+        return;
+    auto module_inst = reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst);
+    if (!module_inst)
+        return;
+    for (size_t j = 0; j < module_inst->memory_count; j++) {
+        auto mem = module_inst->memories[j];
+        if (mem) {
+            LOGV(INFO) << fmt::format("memory data size {}", mem->memory_data_size);
+            if (mem->memory_data_size >= 70288 + 64) {
+                // for (int *i = (int *)(mem->memory_data + 70288); i < (int *)(mem->memory_data + 70288 + 64); ++i) {
+                //     fprintf(stdout, "%d ", *i);
+                // }
+                for (int *i = (int *)(mem->memory_data); i < (int *)(mem->memory_data_end); ++i) {
+                    if (1 <= *i && *i <= 9)
+                        fprintf(stdout, "%zu = %d\n", (uint8 *)i - mem->memory_data, *i);
+                }
+                fprintf(stdout, "\n");
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     cxxopts::Options options(
         "MVVM_checkpoint",
@@ -162,12 +195,32 @@ int main(int argc, char *argv[]) {
     auto arg = result["arg"].as<std::vector<std::string>>();
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
+
+    if (arg.size() == 1 && arg[0].empty())
+        arg.clear();
+    arg.insert(arg.begin(), target);
+
+    for (const auto &e : arg) {
+        LOGV(INFO) << "arg " << e;
+    }
+
+    // auto mvvm_meta_file = target + ".mvvm";
+    // if (!std::filesystem::exists(mvvm_meta_file)) {
+    //     printf("MVVM metadata file %s does not exists. Exit.\n", mvvm_meta_file.c_str());
+    //     return -1;
+    // }
+
+    register_sigtrap();
+
     func_to_stop = result["function"].as<std::string>().c_str();
     func_to_stop_count = result["count"].as<int>();
     writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
+    // wamr->load_mvvm_aot_metadata(mvvm_meta_file.c_str());
+
+    // freopen("output.txt", "w", stdout);
 
 #ifndef MVVM_DEBUG
     // Define the sigaction structure

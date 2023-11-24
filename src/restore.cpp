@@ -4,6 +4,7 @@
 
 #include "struct_pack/struct_pack.hpp"
 #include "wamr.h"
+#include "wamr_export.h"
 #include "wamr_exec_env.h"
 #include "wamr_read_write.h"
 #include "wasm_runtime.h"
@@ -14,6 +15,7 @@
 
 FreadStream *reader;
 WAMRInstance *wamr = nullptr;
+
 void serialize_to_file(WASMExecEnv *instance) {}
 int main(int argc, char **argv) {
     cxxopts::Options options("MVVM", "Migratable Velocity Virtual Machine, to ship the VM state to another machine");
@@ -34,6 +36,8 @@ int main(int argc, char **argv) {
         }
         return res;
     };
+
+    register_sigtrap();
 
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {

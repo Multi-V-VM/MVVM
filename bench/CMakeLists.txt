@@ -1,5 +1,5 @@
 add_executable(MVVM_benchmark bench.cpp)
-target_link_libraries(MVVM_benchmark MVVM_export vmlib benchmark MVVM_export)
+target_link_libraries(MVVM_benchmark MVVM_export vmlib benchmark::benchmark MVVM_export)
 
 if(WIN32)
     set(WASI_SDK "D:/wasi-sdk")
@@ -54,3 +54,7 @@ ExternalProject_Add(llama
         BUILD_COMMAND     ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND   ""
 )
+
+if(WAMR_BUILD_AOT)
+# TODO: build the corresponding aot 
+endif()

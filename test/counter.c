@@ -5,7 +5,7 @@ int a(int c){
     printf("%d %d\n",b,c);
 }
 int main(){
-    int c;
+    int c=0;
     while (1){
         a(c);
         c++;

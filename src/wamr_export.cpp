@@ -3,7 +3,6 @@
 //
 
 #include "wamr.h"
-#include "wamr_block_addr.h"
 #include "wamr_wasi_context.h"
 extern WAMRInstance *wamr;
 
@@ -196,3 +195,88 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
     }
     wamr->socket_fd_map_[fd] = metaData;
 }
+
+#ifndef MVVM_DEBUG
+const size_t snapshot_threshold = 5000000;
+size_t call_count = 0;
+bool checkpoint = false;
+void sigtrap_handler(int sig) {
+    // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+
+    auto exec_env = wamr->get_exec_env();
+    // print_exec_env_debug_info(exec_env);
+    // print_memory(exec_env);
+
+    call_count++;
+
+    if (call_count == snapshot_threshold || checkpoint) {
+        fprintf(stderr, "serializing\n");
+        serialize_to_file(exec_env);
+        fprintf(stderr, "serialized\n");
+        exit(-1);
+    }
+}
+
+void register_sigtrap() {
+    struct sigaction sa {};
+
+    // Clear the structure
+    sigemptyset(&sa.sa_mask);
+
+    // Set the signal handler function
+    sa.sa_handler = sigtrap_handler;
+
+    // Set the flags
+    sa.sa_flags = SA_RESTART;
+
+    // Register the signal handler for SIGTRAP
+    if (sigaction(SIGTRAP, &sa, nullptr) == -1) {
+        perror("Error: cannot handle SIGTRAP");
+        exit(-1);
+    } else {
+        LOGV_DEBUG << "SIGTRAP registered";
+    }
+}
+
+// Signal handler function for SIGINT
+void sigint_handler(int sig) {
+    fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+    checkpoint = true;
+
+    // auto module = wamr->get_module();
+    // auto code = (unsigned char *)module->code;
+    // auto code_size = module->code_size;
+
+    // LOGV_DEBUG << "Replacing nop to int 3";
+    // auto arch = ArchType::x86_64;
+
+    // LOGV_DEBUG << "Making the code section writable";
+    // {
+    //     int map_prot = MMAP_PROT_READ | MMAP_PROT_WRITE;
+
+    //     uint8 *mmap_addr = module->literal - sizeof(uint32);
+    //     uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
+    //     os_mprotect(mmap_addr, total_size, map_prot);
+    // }
+
+    // for (auto addr : wamr->mvvm_aot_metadatas.at(arch).nops) {
+    //     if (code[addr] != 0x90) {
+    //         LOGV_FATAL << "code at " << addr << " is not nop(0x90)";
+    //     } else {
+    //         code[addr] = 0xcc; // int 3
+    //     }
+    // }
+    // LOGV_DEBUG << "Complete replacing";
+
+    // LOGV_DEBUG << "Making the code section executable";
+    // {
+    //     int map_prot = MMAP_PROT_READ | MMAP_PROT_EXEC;
+
+    //     uint8 *mmap_addr = module->literal - sizeof(uint32);
+    //     uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
+    //     os_mprotect(mmap_addr, total_size, map_prot);
+    // }
+
+    // LOGV_DEBUG << "Exit sigint handler";
+}
+#endif

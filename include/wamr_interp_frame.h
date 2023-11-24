@@ -4,8 +4,8 @@
 
 #ifndef MVVM_WAMR_INTERP_FRAME_H
 #define MVVM_WAMR_INTERP_FRAME_H
+#include "aot_runtime.h"
 #include "wamr_branch_block.h"
-#include "wamr_function_instance.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"
 #include <memory>
@@ -17,7 +17,7 @@ struct WAMRInterpFrame {
     // #if WASM_ENABLE_FAST_JIT != 0
     //     uint8 *jitted_return_addr;
     // #endif
-    WAMRFunctionInstance function{};
+    size_t function_index{};
 
     // #if WASM_ENABLE_PERF_PROFILING != 0
     //     uint64 time_started;
@@ -33,7 +33,6 @@ struct WAMRInterpFrame {
     /* Operand stack top pointer of the current frame. The bottom of
        the stack is the next cell after the last local variable. */
     uint32 sp{}; // all the sp that can be restart
-    std::vector<std::unique_ptr<WAMRBranchBlock>> csp;
 
     /*
      * Frame data, the layout is:
@@ -42,14 +41,22 @@ struct WAMRInterpFrame {
      *  csp_bottom to csp_boundary: wasm label stack
      *  jit spill cache: only available for fast jit
      */
-    uint32 lp{}; // this thing is dynamic allocated
     // #endif
+
+    std::vector<uint32> stack_frame;
 
     void dump_impl(WASMInterpFrame *env);
     void restore_impl(WASMInterpFrame *env);
+
+
+    void dump_impl(AOTFrame *env);
+    void restore_impl(AOTFrame *env);
 };
 
 template <SerializerTrait<WASMInterpFrame *> T> void dump(T t, WASMInterpFrame *env) { t->dump_impl(env); }
 template <SerializerTrait<WASMInterpFrame *> T> void restore(T t, WASMInterpFrame *env) { t->restore_impl(env); }
+
+template <SerializerTrait<AOTFrame *> T> void dump(T t, AOTFrame *env) { t->dump_impl(env); }
+template <SerializerTrait<AOTFrame *> T> void restore(T t, AOTFrame *env) { t->restore_impl(env); }
 
 #endif // MVVM_WAMR_INTERP_FRAME_H

@@ -57,6 +57,13 @@ extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, /* t
                                   uint32 elem_index, /* entry function */
                                   uint32 arg) /* arguments buffer */
     ;
+#ifndef MVVM_DEBUG
+void sigint_handler(int sig);
+void register_sigtrap();
+void sigtrap_handler(int sig);
+extern const size_t snapshot_threashold;
+extern bool checkpoint;
+#endif
 #ifdef __cplusplus
 }
 #endif
