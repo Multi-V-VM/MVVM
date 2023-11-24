@@ -16,11 +16,11 @@ struct SocketAddrPool {
     uint16 port;
 };
 enum fd_op {
-    FOPEN = 0,
-    FWRITE = 1,
-    FREAD = 2,
-    FSEEK = 4,
-    FTELL = 5,
+    MVVM_FOPEN = 0,
+    MVVM_FWRITE = 1,
+    MVVM_FREAD = 2,
+    MVVM_FSEEK = 4,
+    MVVM_FTELL = 5,
 };
 #if !defined(__WINCRYPT_H__)
 typedef struct iovec_app {

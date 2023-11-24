@@ -42,17 +42,17 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
             // differ from path from file
             LOGV(INFO) << "fd: " << fd << " path: "<< path << " flag: " << flags << " op: " << op;
             switch(op){
-                case FOPEN:
+                case MVVM_FOPEN:
                     r = wamr->invoke_fopen(path, flags);
                     if (r != fd)
                         wamr->invoke_frenumber(r, fd);
                     break;
-                case FWRITE:
-                case FREAD:
-                case FTELL:
+                case MVVM_FWRITE:
+                case MVVM_FREAD:
+                case MVVM_FTELL:
                     wamr->invoke_ftell(fd, offset, flags);
                     break;
-                case FSEEK:
+                case MVVM_FSEEK:
                     wamr->invoke_fseek(fd, flags);
                     break;
             }

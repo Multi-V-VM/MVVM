@@ -102,7 +102,8 @@ struct op_data {
     int sever_ip;
     int port;
 };
-#define MVVM_SOCK_PATH "0.0.0.0:1234"
+#define MVVM_SOCK_ADDR INADDR_ANY
+#define MVVM_SOCK_PORT 1234
 #define LOG_IF(level) LogWriter(LocationInfo(__FILE__, __LINE__, __FUNCTION__), level) < LogStream()
 #define LOGV(level) LOGV_##level
 #define LOGV_DEBUG LOG_IF(BH_LOG_LEVEL_DEBUG)
