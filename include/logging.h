@@ -93,6 +93,16 @@ private:
 string level2string(LogLevel level);
 fmt::color level2color(LogLevel level);
 
+enum opcode {
+    MVVM_SOCK_SUSPEND = 0,
+    MVVM_SOCK_RESUME = 1,
+};
+struct op_data {
+    enum opcode op;
+    int sever_ip;
+    int port;
+};
+#define MVVM_SOCK_PATH "0.0.0.0:1234"
 #define LOG_IF(level) LogWriter(LocationInfo(__FILE__, __LINE__, __FUNCTION__), level) < LogStream()
 #define LOGV(level) LOGV_##level
 #define LOGV_DEBUG LOG_IF(BH_LOG_LEVEL_DEBUG)

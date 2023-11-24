@@ -4,6 +4,9 @@
 #include "wamr_wasi_context.h"
 #include "wamr.h"
 #include <string>
+#include "wamr_wasi_context.h"
+#include "wamr.h"
+#include <string>
 extern WAMRInstance *wamr;
 void WAMRWASIContext::dump_impl(WASIArguments *env) {
     for (int i = 0; i < wamr->dir_.size(); i++) {
@@ -13,8 +16,8 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
         map_dir.emplace_back(wamr->map_dir_[i]);
     }
     for (auto [fd, res] : wamr->fd_map_) {
-        auto [path, flags, offset] = res;
-        auto dumped_res = std::make_tuple(path, flags, offset);
+        auto [path, op] = res;
+        auto dumped_res = std::make_tuple(path, op);
         this->fd_map[fd] = dumped_res;
     }
 
@@ -33,15 +36,31 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     // wamr->invoke_fopen(stderr_fd, 0);
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
-        LOGV(INFO) << "fd: " << fd << " path: " << std::get<0>(res) << " flags: " << std::get<1>(res)
-                   << " offset: " << std::get<2>(res);
-        r = wamr->invoke_fopen(std::get<0>(res), std::get<1>(res));
-        if (r != fd)
-            wamr->invoke_frenumber(r, fd);
-        wamr->invoke_fseek(fd, std::get<2>(res));
+       auto  path = std::get<0>(res);
+        LOGV(INFO) << "fd: " << fd << " path: " << path;
+        for (auto [flags,offset,op ] : std::get<1>(res)) {
+            // differ from path from file
+            LOGV(INFO) << "fd: " << fd << " path: "<< path << " flag: " << flags << " op: " << op;
+            switch(op){
+                case FOPEN:
+                    r = wamr->invoke_fopen(path, flags);
+                    if (r != fd)
+                        wamr->invoke_frenumber(r, fd);
+                    break;
+                case FWRITE:
+                case FREAD:
+                case FTELL:
+                    wamr->invoke_ftell(fd, offset, flags);
+                    break;
+                case FSEEK:
+                    wamr->invoke_fseek(fd, flags);
+                    break;
+            }
+        }
     }
 #if !defined(__WINCRYPT_H__)
     for (auto [fd, socketMetaData] : this->socket_fd_map) {
+        // Unfinished recv need to reset, if it's done, remove the socket
         LOGV(INFO) << "fd: " << fd << " SocketMetaData[domain]: " << socketMetaData.domain
                 //    << " SocketMetaData[socketAddress]: " << socketMetaData.socketAddress
                    << " SocketMetaData[protocol]: " << socketMetaData.protocol

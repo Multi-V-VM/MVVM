@@ -29,9 +29,9 @@ public:
     std::vector<const char *> arg_;
     std::vector<const char *> addr_;
     std::vector<const char *> ns_pool_;
-    std::map<int, std::tuple<std::string, int, int>> fd_map_;
+    std::map<int, std::tuple<std::string, std::vector<std::tuple<int,int,fd_op>>>> fd_map_;
     // add offset to pair->tuple, 3rd param 'int'
-    std::map<uint32, SocketMetaData> socket_fd_map_;
+    std::map<int, SocketMetaData> socket_fd_map_;
 
     bool is_jit;
     char *buffer{};
@@ -63,6 +63,7 @@ public:
     int invoke_fopen(std::string &path, uint32 option);
     int invoke_frenumber(uint32 fd, uint32 to);
     int invoke_fseek(uint32 fd, uint32 offset);
+    int invoke_ftell(uint32 fd, uint32 offset, uint32 whench);
     int invoke_preopen(uint32 fd, const std::string &path);
 #if !defined(__WINCRYPT_H__)
     int invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,

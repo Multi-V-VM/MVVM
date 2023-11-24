@@ -65,12 +65,12 @@ struct SocketMetaData {
     SocketAddrPool socketAddress{};
     WasiSockOpenData socketOpenData{};
 #if !defined(__WINCRYPT_H__)
-    WasiSockSendToData socketSentToData{};
-    WasiSockRecvFromData socketRecvFromData{};
+    WasiSockSendToData socketSentToData{}; // on the fly
+    WasiSockRecvFromData socketRecvFromData{}; // on the fly
 #endif
 };
 struct WAMRWASIContext {
-    std::map<int, std::tuple<std::string, int, int>> fd_map;
+    std::map<int, std::tuple<std::string, std::vector<std::tuple<int,int,fd_op>>>>  fd_map;
     std::map<int, SocketMetaData> socket_fd_map;
     std::vector<std::string> dir;
     std::vector<std::string> map_dir;

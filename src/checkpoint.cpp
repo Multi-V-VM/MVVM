@@ -22,51 +22,39 @@ std::ostringstream re{};
 FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
+extern const char *func_to_stop;
+extern int func_to_stop_count;
 // mini dumper
 void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance) {
-WASMGlobal *aux_data_end_global = NULL, *aux_heap_base_global = NULL;
-WASMGlobal *aux_stack_top_global = NULL, *global;
-uint32 aux_data_end = (uint32)-1, aux_heap_base = (uint32)-1;
-uint32 aux_stack_top = (uint32)-1, global_index, func_index, i;
-uint32 aux_data_end_global_index = (uint32)-1;
-uint32 aux_heap_base_global_index = (uint32)-1;
-/* Resolve aux stack top global */
-for (int global_index = 0; global_index < instance->global_count; global_index++) {
-auto global = module->globals + global_index;
-if (global->is_mutable /* heap_base and data_end is
-                                  not mutable */
-&& global->type == VALUE_TYPE_I32 && global->init_expr.init_expr_type == INIT_EXPR_TYPE_I32_CONST &&
-(uint32)global->init_expr.u.i32 <= aux_heap_base) {
-//        LOGV(INFO) << "TLS" << global->init_expr << "\n";
-// this is not the place been accessed, but initialized.
-} else {
-break;
-}
-}
+    WASMGlobal *aux_data_end_global = NULL, *aux_heap_base_global = NULL;
+    WASMGlobal *aux_stack_top_global = NULL, *global;
+    uint32 aux_data_end = (uint32)-1, aux_heap_base = (uint32)-1;
+    uint32 aux_stack_top = (uint32)-1, global_index, func_index, i;
+    uint32 aux_data_end_global_index = (uint32)-1;
+    uint32 aux_heap_base_global_index = (uint32)-1;
+    /* Resolve aux stack top global */
+    for (int global_index = 0; global_index < instance->global_count; global_index++) {
+        auto global = module->globals + global_index;
+        if (global->is_mutable /* heap_base and data_end is
+                                          not mutable */
+            && global->type == VALUE_TYPE_I32 && global->init_expr.init_expr_type == INIT_EXPR_TYPE_I32_CONST &&
+            (uint32)global->init_expr.u.i32 <= aux_heap_base) {
+            // LOGV(INFO) << "TLS" << global->init_expr << "\n";
+            // this is not the place been accessed, but initialized.
+        } else {
+            break;
+        }
+    }
 }
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     // Note: insert fd
     std::ifstream stdoutput;
-std:
-    string current_str;
-    std::string fd_output;
-    std::string filename_output;
-    std::string flags_output;
+    // gateway
+    if (wamr->addr_.size() != 0) {
+        // tell gateway to keep alive the server
 
-    if (stdoutput.is_open()) {
-        while (stdoutput.good()) {
-            stdoutput >> current_str;
-            if (current_str == "fopen_test(fd,filename,flags)") {
-                stdoutput >> fd_output;
-                stdoutput >> filename_output;
-                stdoutput >> flags_output;
-                insert_fd(std::stoi(fd_output), filename_output.c_str(), std::stoi(flags_output), 0);
-            }
-        }
     }
-    stdoutput.close();
-
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
     int cur_count = 0;
@@ -88,7 +76,7 @@ std:
     as.back().get()->cur_count = cur_count;
     if (as.size() == all_count) {
         struct_pack::serialize_to(*writer, as);
-        LOGV(INFO) << "serialize to file" << cur_count << " " << all_count << "\n";
+        LOGV(INFO) << "serialize to file " << cur_count << " " << all_count << "\n";
         exit(0);
     }
     // Is there some better way to sleep until exit?
@@ -144,7 +132,11 @@ int main(int argc, char *argv[]) {
         "p,addr", "The address exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
         "n,ns_pool", "The ns lookup pool exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value(""))("h,help", "The value for epoch value",
-                                                                       cxxopts::value<bool>()->default_value("false"));
+                                                                       cxxopts::value<bool>()->default_value("false"))(
+        "f,function", "The function to test execution",
+        cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
+        "c,count", "The function index to test execution",
+        cxxopts::value<int>()->default_value("0"));
     auto removeExtension = [](std::string &filename) {
         size_t dotPos = filename.find_last_of('.');
         std::string res;
@@ -170,6 +162,8 @@ int main(int argc, char *argv[]) {
     auto arg = result["arg"].as<std::vector<std::string>>();
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
+    func_to_stop = result["function"].as<std::string>().c_str();
+    func_to_stop_count = result["count"].as<int>();
     writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
