@@ -81,7 +81,7 @@ static void BM_gapbs(benchmark::State &state) {
 #else
     for (auto _ : state) {
         for (int i = 0; i < cmd.size(); i++) {
-            wamr = new WAMRInstance(cmd[i], is_jit);
+            wamr = new WAMRInstance(cmd[i].c_str(), is_jit);
             wamr->set_wasi_args(dir, map_dir, env, arg[i], addr, ns_pool);
             wamr->instantiate();
             wamr->invoke_main();

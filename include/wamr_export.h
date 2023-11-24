@@ -9,6 +9,8 @@ extern "C" {
 
 #if !defined(MVVM_WASI)
 #define MVVM_WASI
+#define SNAPSHOT_DEBUG_STEP 0
+#define SNAPSHOT_STEP 1e8
 struct SocketAddrPool {
     uint16 ip4[4];
     uint16 ip6[8];

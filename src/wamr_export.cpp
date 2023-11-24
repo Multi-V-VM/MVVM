@@ -108,8 +108,8 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
-        LOGV(INFO) << fmt::format("insert_fd(fd,filename,flags, offset) fd:{} path:{} flags:{} offset:{} op:{}", fd,
-                                   path, flags, offset, op);
+        // LOGV(INFO) << fmt::format("insert_fd(fd,filename,flags, offset) fd:{} path:{} flags:{} offset:{} op:{}", fd,
+        //                            path, flags, offset, op);
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
         std::tie(path_, ops_) = wamr->fd_map_[fd];
@@ -149,7 +149,7 @@ void remove_fd(int fd) {
     create fd-socketmetadata map and store the "domain", "type", "protocol" value
 */
 void insert_socket(int fd, int domain, int type, int protocol) {
-    LOGV(INFO) << fmt::format("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
+    // LOGV(INFO) << fmt::format("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
 
     if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end()) {
         LOGV(ERROR) << "socket_fd already exist" << fd;

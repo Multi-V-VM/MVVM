@@ -27,7 +27,7 @@ jobs:
     - name: Install Choco Dependency
       uses: crazy-max/ghaction-chocolatey@v2
       with:
-        args: install wget msys2 ninja
+        args: install wget msys2 ninja winpcap
 
     - name: Install Dependency
       run: |
