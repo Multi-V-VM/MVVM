@@ -1,4 +1,5 @@
 #include "wamr_module_instance.h"
+#include "aot_runtime.h"
 #include "wamr.h"
 
 extern WAMRInstance *wamr;

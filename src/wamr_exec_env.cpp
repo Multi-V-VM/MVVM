@@ -1,6 +1,4 @@
-#if WASM_ENABLE_AOT != 0
 #include "aot_runtime.h"
-#endif
 #include "wamr.h"
 #include "wamr_exec_env.h"
 extern WAMRInstance *wamr;
