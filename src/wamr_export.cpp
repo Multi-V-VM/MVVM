@@ -197,6 +197,43 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
 }
 
 #ifndef MVVM_DEBUG
+void print_stack(AOTFrame *frame) {
+    if (frame) {
+        fprintf(stderr, "stack: ");
+        for (int *i = (int *)frame->lp; i < (int *)frame->sp; i++) {
+            fprintf(stderr, "%d ", *i);
+        }
+        fprintf(stderr, "\n");
+    } else {
+        LOGV(ERROR) << fmt::format("no cur_frame");
+    }
+}
+
+void print_exec_env_debug_info(WASMExecEnv *exec_env) {
+    LOGV(DEBUG) << fmt::format("----");
+    if (!exec_env) {
+        LOGV(ERROR) << fmt::format("no exec_env");
+        return;
+    }
+    if (exec_env->cur_frame) {
+        int call_depth = 0;
+        auto p = (AOTFrame *)exec_env->cur_frame;
+        while (p) {
+            uint32 *frame_lp = p->lp;
+            // LOGV(ERROR) << (size_t)((size_t)frame_lp - (size_t)p);
+            LOGV(DEBUG) << fmt::format("depth {}, function {}, ip {}, lp {}, sp {}", call_depth, p->func_index,
+                                       p->ip_offset, (void *)frame_lp, (void *)p->sp);
+            call_depth++;
+            print_stack(p);
+
+            p = p->prev_frame;
+        }
+    } else {
+        LOGV(ERROR) << fmt::format("no cur_frame");
+    }
+    LOGV(DEBUG) << fmt::format("----");
+}
+
 const size_t snapshot_threshold = 5000000;
 size_t call_count = 0;
 bool checkpoint = false;

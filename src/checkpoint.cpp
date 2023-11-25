@@ -103,43 +103,6 @@ void serialize_to_file(WASMExecEnv *instance) {
     as_cv.wait(as_ul);
 }
 
-void print_stack(AOTFrame *frame) {
-    if (frame) {
-        fprintf(stderr, "stack: ");
-        for (int *i = (int *)frame->lp; i < (int *)frame->sp; i++) {
-            fprintf(stderr, "%d ", *i);
-        }
-        fprintf(stderr, "\n");
-    } else {
-        LOGV(ERROR) << fmt::format("no cur_frame");
-    }
-}
-
-void print_exec_env_debug_info(WASMExecEnv *exec_env) {
-    LOGV(INFO) << fmt::format("----");
-    if (!exec_env) {
-        LOGV(ERROR) << fmt::format("no exec_env");
-        return;
-    }
-    if (exec_env->cur_frame) {
-        int call_depth = 0;
-        auto p = (AOTFrame *)exec_env->cur_frame;
-        while (p) {
-            uint32 *frame_lp = p->lp;
-            // LOGV(ERROR) << (size_t)((size_t)frame_lp - (size_t)p);
-            LOGV(DEBUG) << fmt::format("depth {}, function {}, ip {}, lp {}, sp {}", call_depth, p->func_index,
-                                       p->ip_offset, (void *)frame_lp, (void *)p->sp);
-            call_depth++;
-            print_stack(p);
-
-            p = p->prev_frame;
-        }
-    } else {
-        LOGV(ERROR) << fmt::format("no cur_frame");
-    }
-    LOGV(INFO) << fmt::format("----");
-}
-
 void print_memory(WASMExecEnv *exec_env) {
     if (!exec_env)
         return;
