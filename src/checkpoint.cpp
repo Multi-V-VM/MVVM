@@ -66,7 +66,6 @@ void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance) {
         }
     }
 }
-void insert_socket(int fd) {}
 void serialize_to_file(WASMExecEnv *instance) {
     /** Sounds like AoT/JIT is in this?*/
     // Note: insert fd
