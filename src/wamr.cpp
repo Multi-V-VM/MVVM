@@ -495,8 +495,13 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
         }
         if (exec_->cur_count == 0) {
             // restart main thread execution
-            wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
-                                           get_exec_env()->cur_frame->prev_frame);
+            if (!is_aot) {
+                wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
+                                               get_exec_env()->cur_frame->function,
+                                               get_exec_env()->cur_frame->prev_frame);
+            } else {
+                invoke_main();
+            }
             break;
         }
         assert(false); // main thread at end should be the

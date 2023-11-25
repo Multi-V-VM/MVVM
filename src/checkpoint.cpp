@@ -38,16 +38,31 @@ void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance) {
     uint32 aux_data_end_global_index = (uint32)-1;
     uint32 aux_heap_base_global_index = (uint32)-1;
     /* Resolve aux stack top global */
-    for (int global_index = 0; global_index < instance->global_count; global_index++) {
-        auto global = module->globals + global_index;
-        if (global->is_mutable /* heap_base and data_end is
-                                          not mutable */
-            && global->type == VALUE_TYPE_I32 && global->init_expr.init_expr_type == INIT_EXPR_TYPE_I32_CONST &&
-            (uint32)global->init_expr.u.i32 <= aux_heap_base) {
-            // LOGV(INFO) << "TLS" << global->init_expr << "\n";
-            // this is not the place been accessed, but initialized.
-        } else {
-            break;
+    if (wamr->is_aot) {
+        for (int global_index = 0; global_index < instance->global_count; global_index++) {
+            auto global = ((AOTModule*)module)->globals + global_index;
+            if (global->is_mutable /* heap_base and data_end is
+                                              not mutable */
+                && global->type == VALUE_TYPE_I32 && global->init_expr.init_expr_type == INIT_EXPR_TYPE_I32_CONST &&
+                (uint32)global->init_expr.u.i32 <= aux_heap_base) {
+                // LOGV(INFO) << "TLS" << global->init_expr << "\n";
+                // this is not the place been accessed, but initialized.
+            } else {
+                break;
+            }
+        }
+    } else {
+        for (int global_index = 0; global_index < instance->global_count; global_index++) {
+            auto global = module->globals + global_index;
+            if (global->is_mutable /* heap_base and data_end is
+                                              not mutable */
+                && global->type == VALUE_TYPE_I32 && global->init_expr.init_expr_type == INIT_EXPR_TYPE_I32_CONST &&
+                (uint32)global->init_expr.u.i32 <= aux_heap_base) {
+                // LOGV(INFO) << "TLS" << global->init_expr << "\n";
+                // this is not the place been accessed, but initialized.
+            } else {
+                break;
+            }
         }
     }
 }
