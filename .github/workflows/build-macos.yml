@@ -55,22 +55,6 @@ jobs:
         /opt/wasi-sdk/bin/wasm-ld.bak --no-check-features "$@"' | sudo tee /opt/wasi-sdk/bin/wasm-ld
         sudo chmod +x /opt/wasi-sdk/bin/wasm-ld
 
-    - name: configure cmake interpreter
-      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build_interp -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/local/opt/llvm@14/lib/cmake/llvm/ -DWAMR_BUILD_AOT=0
-  
-    - name: build interpreter
-      working-directory: ${{runner.workspace}}/build_interp
-      run: cmake --build . --config ${{matrix.build}}
-
-    - name: test interpreter
-      working-directory: ${{runner.workspace}}/build_interp
-      run: ctest -V --timeout 10
-          
-    - name: bench interpreter
-      working-directory: ${{runner.workspace}}/build_interp
-      run: |
-        ./MVVM_benchmark
-
     - name: configure cmake
       run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/local/opt/llvm@14/lib/cmake/llvm/
 

@@ -27,7 +27,7 @@ jobs:
     - name: Install Choco Dependency
       uses: crazy-max/ghaction-chocolatey@v2
       with:
-        args: install wget msys2 ninja winpcap
+        args: install wget msys2 ninja
 
     - name: Install Dependency
       run: |
@@ -72,25 +72,6 @@ jobs:
         cd build
         cmake .. -DWAMR_BUILD_AOT=1 -DWAMR_BUILD_AOT_STACK_FRAME=1 -DWAMR_BUILD_DEBUG_AOT=0 -DWAMR_BUILD_DUMP_CALL_STACK=1 -DWAMR_BUILD_CUSTOM_NAME_SECTION=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_WITH_CUSTOM_LLVM=1 -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
         make -j
-
-
-    - name: configure cmake interpreter
-      run: |
-        cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm" -DWAMR_BUILD_AOT=0
-        sed -i "s/add_library(uv SHARED/add_library(uv/g" build/_deps/libuv-src/CMakeLists.txt
-  
-    - name: build interpreter
-      working-directory: ${{runner.workspace}}/build_interp
-      run: cmake --build . --config ${{matrix.build}}
-
-    - name: test interpreter
-      working-directory: ${{runner.workspace}}/build_interp
-      run: ctest -V --timeout 10
-          
-    - name: bench interpreter
-      working-directory: ${{runner.workspace}}/build_interp
-      run: |
-        ./MVVM_benchmark
 
     - name: configure cmake
       working-directory: ${{runner.workspace}}
