@@ -48,6 +48,16 @@ ExternalProject_Add(redis
        BUILD_COMMAND     ${CMAKE_COMMAND} --build .
        INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_if_different ./redis ${CMAKE_CURRENT_BINARY_DIR}/redis.wasm 
 )
+ExternalProject_Add(redis-native
+       SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/redis
+       UPDATE_COMMAND    ""
+       PATCH_COMMAND     ""
+       CONFIGURE_COMMAND  ${CMAKE_COMMAND}
+       -GNinja -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1 -DCMAKE_BUILD_TYPE=Debug
+       ${CMAKE_CURRENT_SOURCE_DIR}/redis
+       BUILD_COMMAND     ${CMAKE_COMMAND} --build .
+       INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_if_different ./redis ${CMAKE_CURRENT_BINARY_DIR}/redis
+)
 
 ExternalProject_Add(llama
         SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/llama
