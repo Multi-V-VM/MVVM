@@ -279,41 +279,6 @@ void register_sigtrap() {
 void sigint_handler(int sig) {
     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     checkpoint = true;
-
-    // auto module = wamr->get_module();
-    // auto code = (unsigned char *)module->code;
-    // auto code_size = module->code_size;
-
-    // LOGV_DEBUG << "Replacing nop to int 3";
-    // auto arch = ArchType::x86_64;
-
-    // LOGV_DEBUG << "Making the code section writable";
-    // {
-    //     int map_prot = MMAP_PROT_READ | MMAP_PROT_WRITE;
-
-    //     uint8 *mmap_addr = module->literal - sizeof(uint32);
-    //     uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
-    //     os_mprotect(mmap_addr, total_size, map_prot);
-    // }
-
-    // for (auto addr : wamr->mvvm_aot_metadatas.at(arch).nops) {
-    //     if (code[addr] != 0x90) {
-    //         LOGV_FATAL << "code at " << addr << " is not nop(0x90)";
-    //     } else {
-    //         code[addr] = 0xcc; // int 3
-    //     }
-    // }
-    // LOGV_DEBUG << "Complete replacing";
-
-    // LOGV_DEBUG << "Making the code section executable";
-    // {
-    //     int map_prot = MMAP_PROT_READ | MMAP_PROT_EXEC;
-
-    //     uint8 *mmap_addr = module->literal - sizeof(uint32);
-    //     uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
-    //     os_mprotect(mmap_addr, total_size, map_prot);
-    // }
-
-    // LOGV_DEBUG << "Exit sigint handler";
+    wamr->replace_nop_with_int3();
 }
 #endif

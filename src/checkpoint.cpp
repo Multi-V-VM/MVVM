@@ -181,12 +181,6 @@ int main(int argc, char *argv[]) {
         LOGV(INFO) << "arg " << e;
     }
 
-    // auto mvvm_meta_file = target + ".mvvm";
-    // if (!std::filesystem::exists(mvvm_meta_file)) {
-    //     printf("MVVM metadata file %s does not exists. Exit.\n", mvvm_meta_file.c_str());
-    //     return -1;
-    // }
-
     register_sigtrap();
 
     func_to_stop = result["function"].as<std::string>().c_str();
@@ -195,7 +189,8 @@ int main(int argc, char *argv[]) {
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
-    // wamr->load_mvvm_aot_metadata(mvvm_meta_file.c_str());
+    wamr->get_int3_addr();
+    wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 
@@ -218,7 +213,17 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 #endif
+    // get current time
+    auto start = std::chrono::high_resolution_clock::now();
+
     // Main program loop
     wamr->invoke_main();
+
+    // get current time
+    auto end = std::chrono::high_resolution_clock::now();
+    // get duration in us
+    auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    // print in s
+    std::cout << fmt::format("Execution time: {} s\n", (double)dur.count()/1000000);
     return 0;
 }

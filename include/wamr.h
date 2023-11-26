@@ -18,12 +18,6 @@
 #include <ranges>
 #include <tuple>
 
-enum ArchType { x86_64, arm64 };
-
-struct MVVMAotMetadata {
-    std::vector<std::size_t> nops;
-};
-
 class WAMRInstance {
     WASMExecEnv *exec_env{};
     WASMExecEnv *cur_env{};
@@ -34,7 +28,7 @@ class WAMRInstance {
 public:
     std::string aot_file_path;
     std::string wasm_file_path;
-    std::map<ArchType, MVVMAotMetadata> mvvm_aot_metadatas;
+    std::vector<std::size_t> int3_addr;
     std::vector<const char *> dir_;
     std::vector<const char *> map_dir_;
     std::vector<const char *> env_;
@@ -61,7 +55,9 @@ public:
     void instantiate();
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
     bool load_wasm_binary(const char *wasm_path, char **buffer_ptr);
-    bool load_mvvm_aot_metadata(const char *file_path);
+    bool get_int3_addr();
+    bool replace_int3_with_nop();
+    bool replace_nop_with_int3();
     WASMFunction *get_func();
     void set_func(WASMFunction *);
 #if WASM_ENABLE_AOT != 0
