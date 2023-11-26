@@ -9,11 +9,11 @@
 #include <string>
 extern WAMRInstance *wamr;
 void WAMRWASIContext::dump_impl(WASIArguments *env) {
-    for (int i = 0; i < wamr->dir_.size(); i++) {
-        dir.emplace_back(wamr->dir_[i]);
+    for (auto & i : wamr->dir_) {
+        dir.emplace_back(i);
     }
-    for (int i = 0; i < wamr->map_dir_.size(); i++) {
-        map_dir.emplace_back(wamr->map_dir_[i]);
+    for (auto & i : wamr->map_dir_) {
+        map_dir.emplace_back(i);
     }
     for (auto [fd, res] : wamr->fd_map_) {
         auto [path, op] = res;
@@ -34,6 +34,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     // wamr->invoke_fopen(stdout_fd, 0);
     // std::string stderr_fd= "/dev/stderr";
     // wamr->invoke_fopen(stderr_fd, 0);
+//    r = wamr->invoke_preopen(3,"./");
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
        auto  path = std::get<0>(res);

@@ -107,8 +107,8 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
-        // LOGV(INFO) << fmt::format("insert_fd(fd,filename,flags, offset) fd:{} path:{} flags:{} offset:{} op:{}", fd,
-        //                            path, flags, offset, op);
+        LOGV(INFO) << fmt::format("insert_fd(fd,filename,flags, offset) fd:{} path:{} flags:{} offset:{} op:{}", fd,
+                                  path, flags, offset, op);
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
         std::tie(path_, ops_) = wamr->fd_map_[fd];
@@ -121,6 +121,9 @@ void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
 }
 /** frename */
 void rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) {
+    LOGV(INFO) << fmt::format(
+        "rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) old:{} old_fd:{} new_fd:{}, new_path:{}", old_fd,
+        old_path, new_fd, new_path);
     if (wamr->fd_map_.find(old_fd) != wamr->fd_map_.end()) {
         auto new_fd_ = wamr->fd_map_[old_fd];
         std::string path_;
@@ -135,6 +138,7 @@ void rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_pat
 };
 /** fclose */
 void remove_fd(int fd) {
+    LOGV(INFO) << fmt::format("remove_fd(fd) fd{}", fd);
     if (wamr->fd_map_.find(fd) != wamr->fd_map_.end())
         wamr->fd_map_.erase(fd);
     else {
@@ -234,7 +238,7 @@ void print_exec_env_debug_info(WASMExecEnv *exec_env) {
     LOGV(DEBUG) << fmt::format("----");
 }
 
-const size_t snapshot_threshold = 5000000;
+const size_t snapshot_threshold = 50;
 size_t call_count = 0;
 bool checkpoint = false;
 void sigtrap_handler(int sig) {

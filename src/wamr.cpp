@@ -109,7 +109,7 @@ int WAMRInstance::invoke_main() {
 int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
     auto name = "__wasilibc_open_nomode";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        LOGV(ERROR) << "The wasi fopen function is not found.";
+        LOGV(ERROR) << "The wasi " << name <<" function is not found.";
         auto target_module = get_module_instance()->e;
         for (int i = 0; i < target_module->function_count; i++) {
             auto cur_func = &target_module->functions[i];
@@ -121,12 +121,12 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
                     break;
                 }
             } else {
-                // LOGV(DEBUG) << cur_func->u.func->field_name;
+                LOGV(DEBUG) << cur_func->u.func->field_name;
 
-                // if (!strcmp(cur_func->u.func->field_name, name)) {
-                //     func = ((WASMFunctionInstanceCommon *)cur_func);
-                //     break;
-                // }
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
             }
         }
     }
@@ -161,12 +161,12 @@ int WAMRInstance::invoke_frenumber(uint32 fd, uint32 to) {
                 }
 
             } else {
-                // LOGV(DEBUG) << cur_func->u.func->field_name;
+                LOGV(DEBUG) << cur_func->u.func->field_name;
 
-                // if (!strcmp(cur_func->u.func->field_name, name)) {
-                //     func = ((WASMFunctionInstanceCommon *)cur_func);
-                //     break;
-                // }
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
             }
         }
     }
@@ -190,12 +190,12 @@ int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32
                 }
 
             } else {
-                // LOGV(DEBUG) << cur_func->u.func->field_name;
+                LOGV(DEBUG) << cur_func->u.func->field_name;
 
-                // if (!strcmp(cur_func->u.func->field_name, name)) {
-                //     func = ((WASMFunctionInstanceCommon *)cur_func);
-                //     break;
-                // }
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
             }
         }
     }
@@ -230,12 +230,12 @@ int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, 
                 }
 
             } else {
-                // LOGV(DEBUG) << cur_func->u.func->field_name;
+                LOGV(DEBUG) << cur_func->u.func->field_name;
 
-                // if (!strcmp(cur_func->u.func->field_name, name)) {
-                //     func = ((WASMFunctionInstanceCommon *)cur_func);
-                //     break;
-                // }
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
             }
         }
     }
@@ -296,12 +296,12 @@ int WAMRInstance::invoke_sock_recvfrom(uint32_t sock, iovec_app_t *ri_data, uint
                 }
 
             } else {
-                // LOGV(DEBUG) << cur_func->u.func->field_name;
+                LOGV(DEBUG) << cur_func->u.func->field_name;
 
-                // if (!strcmp(cur_func->u.func->field_name, name)) {
-                //     func = ((WASMFunctionInstanceCommon *)cur_func);
-                //     break;
-                // }
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
             }
         }
     }
@@ -360,12 +360,12 @@ int WAMRInstance::invoke_fseek(uint32 fd, uint32 offset) {
                 }
 
             } else {
-                // LOGV(DEBUG) << cur_func->u.func->field_name;
+                LOGV(DEBUG) << cur_func->u.func->field_name;
 
-                // if (!strcmp(cur_func->u.func->field_name, name)) {
-                //     func = ((WASMFunctionInstanceCommon *)cur_func);
-                //     break;
-                // }
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
             }
         }
     }
@@ -388,12 +388,12 @@ int WAMRInstance::invoke_ftell(uint32 fd, uint32 offset, uint32 whench) {
                 }
 
             } else {
-                // LOGV(DEBUG) << cur_func->u.func->field_name;
+                LOGV(DEBUG) << cur_func->u.func->field_name;
 
-                // if (!strcmp(cur_func->u.func->field_name, name)) {
-                //     func = ((WASMFunctionInstanceCommon *)cur_func);
-                //     break;
-                // }
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
             }
         }
     }
@@ -416,12 +416,12 @@ int WAMRInstance::invoke_preopen(uint32 fd, const std::string &path) {
                 }
 
             } else {
-                // LOGV(DEBUG) << cur_func->u.func->field_name;
+                LOGV(DEBUG) << cur_func->u.func->field_name;
 
-                // if (!strcmp(cur_func->u.func->field_name, name)) {
-                //     func = ((WASMFunctionInstanceCommon *)cur_func);
-                //     break;
-                // }
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
             }
         }
     }

@@ -75,7 +75,7 @@ ExternalProject_Add(llama
 
 if(WAMR_BUILD_AOT)
 function(bench_wamr_app input)
-add_custom_target(bench_${input}_compile ALL COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=znver2 --enable-dump-call-stack -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
+add_custom_target(bench_${input}_compile ALL COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --emit-custom-sections=name --enable-dump-call-stack -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
 add_test(NAME bench_${input}_checkpoint COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_checkpoint --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
 add_test(NAME bench_${input}_restore COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_restore --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
 endfunction()

@@ -4,8 +4,8 @@
 
 #include "struct_pack/struct_pack.hpp"
 #include "wamr.h"
-#include "wamr_export.h"
 #include "wamr_exec_env.h"
+#include "wamr_export.h"
 #include "wamr_read_write.h"
 #include "wasm_runtime.h"
 #include <cxxopts.hpp>
@@ -48,7 +48,6 @@ int main(int argc, char **argv) {
     reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
-    wamr->instantiate();
     wamr->recover(&a);
     return 0;
 }
