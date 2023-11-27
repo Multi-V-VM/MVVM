@@ -18,6 +18,7 @@ ExternalProject_Add(gapbs
         UPDATE_COMMAND    ""
         PATCH_COMMAND     ""
         CONFIGURE_COMMAND  ${CMAKE_COMMAND}
+        -DCMAKE_BUILD_TYPE=Release
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
         -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
         -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
@@ -41,6 +42,7 @@ ExternalProject_Add(redis
        UPDATE_COMMAND    ""
        PATCH_COMMAND     ""
        CONFIGURE_COMMAND  ${CMAKE_COMMAND}
+       -DCMAKE_BUILD_TYPE=Release
        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
        -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
        -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX} 
@@ -55,6 +57,7 @@ ExternalProject_Add(redis-native
        UPDATE_COMMAND    ""
        PATCH_COMMAND     ""
        CONFIGURE_COMMAND  ${CMAKE_COMMAND}
+       -DCMAKE_BUILD_TYPE=Release
        -GNinja -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1 -DCMAKE_BUILD_TYPE=Debug
        ${CMAKE_CURRENT_SOURCE_DIR}/redis
        BUILD_COMMAND     ${CMAKE_COMMAND} --build .
@@ -67,6 +70,7 @@ ExternalProject_Add(llama
         PATCH_COMMAND     ""
         CONFIGURE_COMMAND  ${CMAKE_COMMAND}
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+        -DCMAKE_BUILD_TYPE=Release
         -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
         -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
         -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all"
