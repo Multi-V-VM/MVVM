@@ -32,7 +32,10 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     // wamr->invoke_fopen(stdout_fd, 0);
     // std::string stderr_fd= "/dev/stderr";
     // wamr->invoke_fopen(stderr_fd, 0);
-    r = wamr->invoke_preopen(3, "./");
+    // std::string cur_file = "./";
+    // wamr->invoke_init_c();
+    // LOGV(ERROR) << r;
+    return;
 
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
@@ -43,8 +46,11 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
             LOGV(INFO) << "fd: " << fd << " path: " << path << " flag: " << flags << " op: " << op;
             switch (op) {
             case MVVM_FOPEN:
-                r = wamr->invoke_preopen(fd, path);
-                wamr->fd_map_->insert({fd, path});
+                r = wamr->invoke_fopen(path, fd);
+                LOGV(ERROR) << r;
+                // if (r != fd)
+                //     wamr->invoke_frenumber(r, fd);
+                wamr->fd_map_[fd] = res;
                 break;
             case MVVM_FWRITE:
             case MVVM_FREAD:

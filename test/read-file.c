@@ -8,6 +8,16 @@
 
 FILE *a_file = NULL;
 
+int o_(char *path,int fd) {
+    int flags = O_RDWR | O_CREAT;
+    int ret = open( path, flags);
+    if (ret !=fd)
+        __wasi_fd_renumber(ret, fd);
+    printf("open %s, ret = %d\n", path, fd);
+    return ret;
+}
+
+
 int main() {
     FILE *file = fopen("./text.txt", "a");
 

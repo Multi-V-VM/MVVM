@@ -238,7 +238,7 @@ void print_exec_env_debug_info(WASMExecEnv *exec_env) {
     LOGV(DEBUG) << fmt::format("----");
 }
 
-const size_t snapshot_threshold = 50;
+size_t snapshot_threshold;
 size_t call_count = 0;
 bool checkpoint = false;
 void sigtrap_handler(int sig) {

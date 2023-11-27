@@ -6,15 +6,14 @@ import os
 
 
 def run_fd_once(funcs):
-    for func in funcs.keys():
-        for i in range(0, funcs[func]):
-            os.system(
-                f"LOGV=0 ./MVVM_checkpoint -t ./test/read-file.wasm -f {func} -c {i}"
-            )
-            os.system(f"LOGV=0 ./MVVM_restore -t ./test/read-file.wasm")
+    for i in funcs:
+        os.system(
+            f"LOGV=0 ./MVVM_checkpoint -t ./test/read-file.aot -c {i}"
+        )
+        os.system(f"LOGV=0 ./MVVM_restore -t ./test/read-file.aot -c 100000000")
 
 
 if __name__ == "__main__":
     run_fd_once(
-        {"fwrite": 2, "fread": 1, "fclose": 3, "fopen": 3, "fseek": 3, "ftell": 1}
+        [77,109]
     )

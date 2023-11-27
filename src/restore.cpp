@@ -22,7 +22,8 @@ int main(int argc, char **argv) {
     options.add_options()("t,target", "The webassembly file to execute",
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
-        "h,help", "The value for epoch value", cxxopts::value<bool>()->default_value("false"));
+        "h,help", "The value for epoch value", cxxopts::value<bool>()->default_value("false"))(
+        "c,count", "The value for epoch value", cxxopts::value<int>()->default_value("false"));
     // Can first discover from the wasi context.
     auto removeExtension = [](std::string &filename) {
         size_t dotPos = filename.find_last_of('.');
@@ -37,14 +38,17 @@ int main(int argc, char **argv) {
         return res;
     };
 
-    register_sigtrap();
-
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {
         std::cout << options.help() << std::endl;
         exit(0);
     }
     auto target = result["target"].as<std::string>();
+    auto count = result["count"].as<int>();
+
+    snapshot_threshold = count;
+    register_sigtrap();
+
     reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();

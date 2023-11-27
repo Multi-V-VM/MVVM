@@ -20,7 +20,6 @@ void WAMRExecEnv::dump_impl(WASMExecEnv *env) {
     }
 }
 void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
-    restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
     env->suspend_flags.flags = flags;
     env->aux_stack_boundary.boundary = aux_boundary;
     env->aux_stack_bottom.bottom = aux_bottom;
@@ -98,4 +97,5 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
         }
         env->cur_frame = prev_frame;
     }
+    restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
 }

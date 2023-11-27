@@ -77,6 +77,7 @@ public:
                        const std::vector<std::string> &addr_list, const std::vector<std::string> &ns_lookup_pool);
 
     int invoke_main();
+    void invoke_init_c();
     int invoke_fopen(std::string &path, uint32 option);
     int invoke_frenumber(uint32 fd, uint32 to);
     int invoke_fseek(uint32 fd, uint32 offset);
