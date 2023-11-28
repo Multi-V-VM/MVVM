@@ -78,6 +78,11 @@ bool WAMRInstance::replace_int3_with_nop() {
 
     // replace int3 with nop
     for (auto offset : int3_addr) {
+        // if (code[offset-3] == 0x0f && code[offset-2] == 0xae && code[offset-1] == 0xf0) {
+        //     code[offset-3] = 0x90;
+        //     code[offset-2] = 0x90;
+        //     code[offset-1] = 0x90;
+        // }
         code[offset] = 0x90;
     }
 
