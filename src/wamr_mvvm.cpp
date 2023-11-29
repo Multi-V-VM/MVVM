@@ -16,7 +16,11 @@ bool WAMRInstance::get_int3_addr() {
     }
 
     // disassemble object file and get the output
+#ifdef __x86_64__
     std::string cmd = "objdump -d " + object_file + " | grep -E int3$";
+#elif __aarch64__
+    std::string cmd = "objdump -d " + object_file + " | grep -E svc";
+#endif
     FILE *fp = popen(cmd.c_str(), "r");
     if (fp == nullptr) {
         fprintf(stderr, "popen failed\n");
@@ -49,10 +53,17 @@ bool WAMRInstance::get_int3_addr() {
     for (auto &a : addr) {
         auto addr = a;
         auto offset = std::stoul(addr, nullptr, 16);
+#ifdef __x86_64__
         if (code[offset] != 0xcc) {
             fprintf(stderr, "code[%lu] != 0xcc\n", offset);
             return false;
         }
+#elif __aarch64__
+        if (code[offset + 3] != 0xd4) {
+            fprintf(stderr, "code[%lu] != 0xd4\n", offset);
+            return false;
+        }
+#endif
         if (offset < code_size) {
             int3_addr.push_back(offset);
         }
@@ -69,6 +80,7 @@ bool WAMRInstance::replace_int3_with_nop() {
 
     // LOGV_DEBUG << "Making the code section writable";
     {
+        pthread_jit_write_protect_np(0);
         int map_prot = MMAP_PROT_READ | MMAP_PROT_WRITE;
 
         uint8 *mmap_addr = module->literal - sizeof(uint32);
@@ -83,7 +95,14 @@ bool WAMRInstance::replace_int3_with_nop() {
         //     code[offset-2] = 0x90;
         //     code[offset-1] = 0x90;
         // }
+#ifdef __x86_64__
         code[offset] = 0x90;
+#elif __aarch64__
+        code[offset + 3] = 0xd5;
+        code[offset + 2] = 0x03;
+        code[offset + 1] = 0x20;
+        code[offset] = 0x1f;
+#endif
     }
 
     // LOGV_DEBUG << "Making the code section executable";
