@@ -20,7 +20,7 @@ struct WAMRInterpFrame {
     // #if WASM_ENABLE_FAST_JIT != 0
     //     uint8 *jitted_return_addr;
     // #endif
-    size_t function_index{};
+    int32 function_index{};
 
     // #if WASM_ENABLE_PERF_PROFILING != 0
     //     uint64 time_started;

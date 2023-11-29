@@ -15,3 +15,6 @@
 	path = lib/wasm-micro-runtime
 	url = https://github.com/Multi-V-VM/wasm-micro-runtime.git
 	branch = pthread
+[submodule "bench/linpack"]
+	path = bench/linpack
+	url = https://github.com/ereyes01/linpack

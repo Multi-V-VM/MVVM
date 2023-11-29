@@ -107,8 +107,7 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
-        LOGV(INFO) << fmt::format("insert_fd(fd,filename,flags, offset) fd:{} path:{} flags:{} offset:{} op:{}", fd,
-                                  path, flags, offset, op);
+        LOGV(INFO) << "insert_fd(fd,filename,flags, offset) fd:"<<fd<<" flags:"<<flags<<" offset:"<<offset<<" op:"<< op;
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
         std::tie(path_, ops_) = wamr->fd_map_[fd];

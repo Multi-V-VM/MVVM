@@ -3,7 +3,6 @@
 //
 #include "wamr_wasi_context.h"
 #include "wamr.h"
-#include "wamr_wasi_context.h"
 #include <string>
 extern WAMRInstance *wamr;
 void WAMRWASIContext::dump_impl(WASIArguments *env) {
@@ -35,7 +34,6 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     // std::string cur_file = "./";
     // wamr->invoke_init_c();
     // LOGV(ERROR) << r;
-    return;
 
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
