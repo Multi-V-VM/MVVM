@@ -17,4 +17,4 @@
 	branch = pthread
 [submodule "bench/linpack"]
 	path = bench/linpack
-	url = https://github.com/ereyes01/linpack
+	url = https://github.com/victoryang00/linpack
