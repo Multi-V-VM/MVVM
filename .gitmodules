@@ -3,13 +3,13 @@
 	url = https://github.com/alibaba/yalantinglibs.git
 [submodule "bench/gapbs"]
 	path = bench/gapbs
-	url = https://github.com/victoryang00/gapbs.git
+	url = https://github.com/Multi-V-VM/gapbs.git
 [submodule "bench/llama"]
 	path = bench/llama
-	url = https://github.com/victoryang00/llama2.c.git
+	url = https://github.com/Multi-V-VM/llama2.c.git
 [submodule "bench/redis"]
 	path = bench/redis
-	url = https://github.com/victoryang00/redis.git
+	url = https://github.com/Multi-V-VM/redis.git
 	branch = wasm
 [submodule "lib/wasm-micro-runtime"]
 	path = lib/wasm-micro-runtime
