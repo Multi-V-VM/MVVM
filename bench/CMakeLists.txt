@@ -22,7 +22,6 @@ ExternalProject_Add(gapbs
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
         -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
         -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
-        -DCMAKE_CXX_FLAGS="-fno-exceptions -lstdc++"
         -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all"
         -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
         ${CMAKE_CURRENT_SOURCE_DIR}/gapbs

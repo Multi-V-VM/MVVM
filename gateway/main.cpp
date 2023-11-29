@@ -11,6 +11,7 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
 
 void keep_alive(int socket) {
     // Send keep alive message to socket
+    
 }
 
 int main() {
