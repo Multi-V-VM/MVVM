@@ -9,7 +9,7 @@ set(HOST_PREFIX ${WASI_SDK_DIR}/bin/)
 enable_testing()
 function(wamr_app input)
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-    COMMAND ${HOST_PREFIX}clang -Wno-implicit-function-declaration -Wno-int-conversion --target=wasm32-unknown-wasi -g -pthread -Wl,--export-all -Wl,--allow-undefined-file=${WAMR_DIR}/wamr-sdk/app/libc-builtin-sysroot/share/defined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+    COMMAND ${HOST_PREFIX}clang -Wno-implicit-function-declaration -Wno-int-conversion --target=wasm32-unknown-wasi -g -pthread -z stack-size=65536 -Wl,--initial-memory=655360 -Wl,--max-memory=655360  -Wl,--export-all -Wl,--allow-undefined-file=${WAMR_DIR}/wamr-sdk/app/libc-builtin-sysroot/share/defined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c
   )
   add_custom_target(${input}_wamr ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
