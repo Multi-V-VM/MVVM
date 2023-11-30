@@ -90,11 +90,6 @@ bool WAMRInstance::replace_int3_with_nop() {
 
     // replace int3 with nop
     for (auto offset : int3_addr) {
-        // if (code[offset-3] == 0x0f && code[offset-2] == 0xae && code[offset-1] == 0xf0) {
-        //     code[offset-3] = 0x90;
-        //     code[offset-2] = 0x90;
-        //     code[offset-1] = 0x90;
-        // }
 #ifdef __x86_64__
         code[offset] = 0x90;
 #elif __aarch64__
@@ -103,6 +98,42 @@ bool WAMRInstance::replace_int3_with_nop() {
         code[offset + 1] = 0x20;
         code[offset] = 0x1f;
 #endif
+    }
+
+    // LOGV_DEBUG << "Making the code section executable";
+    {
+        int map_prot = MMAP_PROT_READ | MMAP_PROT_EXEC;
+
+        uint8 *mmap_addr = module->literal - sizeof(uint32);
+        uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
+        os_mprotect(mmap_addr, total_size, map_prot);
+    }
+    return true;
+}
+
+bool WAMRInstance::replace_mfence_with_nop() {
+    if (!is_aot)
+        return true;
+    auto module = get_module();
+    auto code = static_cast<unsigned char *>(module->code);
+    auto code_size = module->code_size;
+
+    // LOGV_DEBUG << "Making the code section writable";
+    {
+        int map_prot = MMAP_PROT_READ | MMAP_PROT_WRITE;
+
+        uint8 *mmap_addr = module->literal - sizeof(uint32);
+        uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
+        os_mprotect(mmap_addr, total_size, map_prot);
+    }
+
+    // replace int3 with nop
+    for (auto offset : int3_addr) {
+        if (code[offset-3] == 0x0f && code[offset-2] == 0xae && code[offset-1] == 0xf0) {
+            code[offset-3] = 0x90;
+            code[offset-2] = 0x90;
+            code[offset-1] = 0x90;
+        }
     }
 
     // LOGV_DEBUG << "Making the code section executable";
