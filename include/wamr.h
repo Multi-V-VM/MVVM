@@ -57,6 +57,7 @@ public:
     bool load_wasm_binary(const char *wasm_path, char **buffer_ptr);
     bool get_int3_addr();
     bool replace_int3_with_nop();
+    bool replace_mfence_with_nop();
     bool replace_nop_with_int3();
     WASMFunction *get_func();
     void set_func(WASMFunction *);
