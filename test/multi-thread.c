@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
             printf("Thread creation failed\n");
         }
     }
+    printf("Value %d\n", g_count);
 
     for (int i = 0; i < MAX_NUM_THREADS; i++) {
         if (pthread_join(tids[i], NULL) != 0) {
