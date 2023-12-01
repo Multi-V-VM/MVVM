@@ -103,30 +103,6 @@ void serialize_to_file(WASMExecEnv *instance) {
     as_cv.wait(as_ul);
 }
 
-void print_memory(WASMExecEnv *exec_env) {
-    if (!exec_env)
-        return;
-    auto module_inst = reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst);
-    if (!module_inst)
-        return;
-    for (size_t j = 0; j < module_inst->memory_count; j++) {
-        auto mem = module_inst->memories[j];
-        if (mem) {
-            LOGV(INFO) << fmt::format("memory data size {}", mem->memory_data_size);
-            if (mem->memory_data_size >= 70288 + 64) {
-                // for (int *i = (int *)(mem->memory_data + 70288); i < (int *)(mem->memory_data + 70288 + 64); ++i) {
-                //     fprintf(stdout, "%d ", *i);
-                // }
-                for (int *i = (int *)(mem->memory_data); i < (int *)(mem->memory_data_end); ++i) {
-                    if (1 <= *i && *i <= 9)
-                        fprintf(stdout, "%zu = %d\n", (uint8 *)i - mem->memory_data, *i);
-                }
-                fprintf(stdout, "\n");
-            }
-        }
-    }
-}
-
 int main(int argc, char *argv[]) {
     cxxopts::Options options(
         "MVVM_checkpoint",

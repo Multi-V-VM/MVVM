@@ -107,7 +107,8 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
-        LOGV(INFO) << "insert_fd(fd,filename,flags, offset) fd:"<<fd<<" flags:"<<flags<<" offset:"<<offset<<" op:"<< op;
+        LOGV(INFO) << "insert_fd(fd,filename,flags, offset) fd:" << fd << " flags:" << flags << " offset:" << offset
+                   << " op:" << op;
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
         std::tie(path_, ops_) = wamr->fd_map_[fd];
@@ -120,9 +121,9 @@ void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
 }
 /** frename */
 void rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) {
-    LOGV(INFO) << fmt::format(
-        "rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) old:{} old_fd:{} new_fd:{}, new_path:{}", old_fd,
-        old_path, new_fd, new_path);
+    LOGV(INFO) << fmt::format("rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) old:{} "
+                              "old_fd:{} new_fd:{}, new_path:{}",
+                              old_fd, old_path, new_fd, new_path);
     if (wamr->fd_map_.find(old_fd) != wamr->fd_map_.end()) {
         auto new_fd_ = wamr->fd_map_[old_fd];
         std::string path_;
@@ -237,16 +238,38 @@ void print_exec_env_debug_info(WASMExecEnv *exec_env) {
     LOGV(DEBUG) << fmt::format("----");
 }
 
+void print_memory(WASMExecEnv *exec_env) {
+    if (!exec_env)
+        return;
+    auto module_inst = reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst);
+    if (!module_inst)
+        return;
+    for (size_t j = 0; j < module_inst->memory_count; j++) {
+        auto mem = module_inst->memories[j];
+        if (mem) {
+            LOGV(INFO) << fmt::format("memory data size {}", mem->memory_data_size);
+            if (mem->memory_data_size >= 70288 + 64) {
+                // for (int *i = (int *)(mem->memory_data + 70288); i < (int *)(mem->memory_data + 70288 + 64); ++i) {
+                //     fprintf(stdout, "%d ", *i);
+                // }
+                for (int *i = (int *)(mem->memory_data); i < (int *)(mem->memory_data_end); ++i) {
+                    if (1 <= *i && *i <= 9)
+                        fprintf(stdout, "%zu = %d\n", (uint8 *)i - mem->memory_data, *i);
+                }
+                fprintf(stdout, "\n");
+            }
+        }
+    }
+}
 size_t snapshot_threshold;
 size_t call_count = 0;
 bool checkpoint = false;
-extern void print_memory(WASMExecEnv *exec_env);
 void sigtrap_handler(int sig) {
-//     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+    //     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
 
     auto exec_env = wamr->get_exec_env();
-     print_exec_env_debug_info(exec_env);
-     print_memory(exec_env);
+    print_exec_env_debug_info(exec_env);
+    print_memory(exec_env);
 
     call_count++;
 
