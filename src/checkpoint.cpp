@@ -75,6 +75,7 @@ void serialize_to_file(WASMExecEnv *instance) {
         // tell gateway to keep alive the server
     }
     auto cluster = wasm_exec_env_get_cluster(instance);
+    wasm_cluster_suspend_all_except_self(cluster, instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
     int cur_count = 0;
     if (all_count > 1) {
@@ -160,8 +161,6 @@ int main(int argc, char *argv[]) {
     snapshot_threshold = count;
     register_sigtrap();
 
-    func_to_stop = result["function"].as<std::string>().c_str();
-    func_to_stop_count = result["count"].as<int>();
     writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
