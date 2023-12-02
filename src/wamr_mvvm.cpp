@@ -6,7 +6,7 @@ bool WAMRInstance::get_int3_addr() {
     auto module = get_module();
     auto code = static_cast<unsigned char *>(module->code);
     auto code_size = module->code_size;
-    fprintf(stderr, "code %p code_size %d\n", code, code_size);
+    //fprintf(stderr, "code %p code_size %d\n", code, code_size);
 
     std::string object_file = std::string(aot_file_path) + ".o";
     // if not exist, exit

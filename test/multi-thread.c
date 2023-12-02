@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define MAX_NUM_THREADS 2
-#define NUM_ITER 1000
+#define NUM_ITER 1000000
 
 int g_count = 0;
 int *count;
@@ -17,10 +17,10 @@ static void *thread(void *arg) {
     for (int i = 0; i < NUM_ITER; i++) {
         __atomic_fetch_add(&g_count, 1, __ATOMIC_SEQ_CST);
     }
-    printf("Value %d\n", g_count);
+    printf("Value of g_count is %d\n", g_count);
     for (int i =0; i<1e4;i++){
         count[i] = i;
-        printf("Value %d\n", count[i]);
+        printf("");
     }
     printf("%d\n", g_count);
     return NULL;

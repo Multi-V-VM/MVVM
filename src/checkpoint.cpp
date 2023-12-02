@@ -88,9 +88,10 @@ void serialize_to_file(WASMExecEnv *instance) {
     auto a = new WAMRExecEnv();
     dump_tls(((WASMModuleInstance *)instance->module_inst)->module, ((WASMModuleInstance *)instance->module_inst)->e);
     dump(a, instance);
+    a->cur_count = gettid();
+
     std::unique_lock as_ul(as_mtx);
     as.emplace_back(a);
-    as.back().get()->cur_count = cur_count;
     if (as.size() == all_count - 1) {
         kill(getpid(), SIGINT);
     }

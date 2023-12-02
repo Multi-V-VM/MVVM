@@ -54,7 +54,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
     //    wasm_args.mem_alloc_type = Alloc_With_Pool;
     //    wasm_args.mem_alloc_option.pool.heap_buf = global_heap_buf;
     //    wasm_args.mem_alloc_option.pool.heap_size = sizeof(global_heap_buf);
-    bh_log_set_verbose_level(5);
+    bh_log_set_verbose_level(0);
     if (!wasm_runtime_full_init(&wasm_args)) {
         LOGV(ERROR) << "Init runtime environment failed.\n";
         throw;
@@ -492,8 +492,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     argptr = (ThreadArgs **)malloc(sizeof(void *) * execEnv->size());
     uint32 id = 0;
 
-    for (auto &&exec_ : *execEnv) {
-        if (exec_->cur_count != 0) {
+    for (auto [idx,exec_] : *execEnv|enumerate) {
+        if (idx == execEnv->size()) {
             cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
             // the last one should be the main thread doing pthread join
         }

@@ -19,13 +19,13 @@
 #include <tuple>
 
 class WAMRInstance {
-    WASMExecEnv *exec_env{};
+public:
     WASMExecEnv *cur_env{};
+    WASMExecEnv *exec_env{};
     WASMModuleInstanceCommon *module_inst{};
     WASMModuleCommon *module;
     WASMFunctionInstanceCommon *func{};
 
-public:
     std::string aot_file_path;
     std::string wasm_file_path;
     std::vector<std::size_t> int3_addr;

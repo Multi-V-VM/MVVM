@@ -308,6 +308,10 @@ void register_sigtrap() {
 
 // Signal handler function for SIGINT
 void sigint_handler(int sig) {
+    if(checkpoint){
+	    serialize_to_file(wamr->exec_env);
+	    return;
+    }
     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     checkpoint = true;
     wamr->replace_nop_with_int3();

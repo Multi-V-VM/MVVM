@@ -51,6 +51,9 @@ void remove_lock(char const *);
 void remove_sem(char const *);
 void wasm_thread_restart();
 
+void lightweight_checkpoint();
+void lightweight_uncheckpoint();
+
 void restart_execution(uint32 targs);
 extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, /* thread_handle */
                                   const void *attr, /* not supported */
