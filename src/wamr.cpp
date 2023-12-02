@@ -495,6 +495,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     for (auto &&exec_ : *execEnv) {
         if (exec_->cur_count != 0) {
             cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
+            // the last one should be the main thread doing pthread join
         }
         this->set_wasi_args(exec_->module_inst.wasi_ctx);
         //  first get the deserializer message, here just hard code

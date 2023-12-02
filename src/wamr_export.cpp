@@ -273,7 +273,7 @@ void sigtrap_handler(int sig) {
 
     call_count++;
 
-    if (call_count == snapshot_threshold || checkpoint) {
+    if (call_count >= snapshot_threshold || checkpoint) {
         fprintf(stderr, "serializing\n");
         serialize_to_file(exec_env);
         fprintf(stderr, "serialized\n");

@@ -67,15 +67,12 @@ void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance) {
     }
 }
 void serialize_to_file(WASMExecEnv *instance) {
-    /** Sounds like AoT/JIT is in this?*/
-    // Note: insert fd
-    std::ifstream stdoutput;
     // gateway
     if (wamr->addr_.size() != 0) {
         // tell gateway to keep alive the server
     }
     auto cluster = wasm_exec_env_get_cluster(instance);
-    wasm_cluster_suspend_all_except_self(cluster, instance);
+    // wasm_cluster_suspend_all_except_self(cluster, instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
     int cur_count = 0;
     if (all_count > 1) {
@@ -94,7 +91,10 @@ void serialize_to_file(WASMExecEnv *instance) {
     std::unique_lock as_ul(as_mtx);
     as.emplace_back(a);
     as.back().get()->cur_count = cur_count;
-    if (as.size() == all_count) {
+    if (as.size() == all_count - 1) {
+        kill(getpid(), SIGINT);
+    }
+    if (as.size()== all_count){
         struct_pack::serialize_to(*writer, as);
         LOGV(INFO) << "serialize to file " << cur_count << " " << all_count << "\n";
         exit(0);
