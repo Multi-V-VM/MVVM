@@ -57,7 +57,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         for (auto &&csp_item : csp) {
             restore(csp_item.get(), env->csp_bottom + i);
             // LOGV(ERROR) << "csp_bottom" << ((uint8 *)env->csp_bottom + i) -
-            // wamr->get_exec_env()->wasm_stack.s.bottom;
+            // wamr->get_exec_env()->wasm_stack.bottom;
             i++;
         }
 
@@ -65,7 +65,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
     }
     LOGV(INFO) << fmt::format("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip,
-                              (void *)env->sp, (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
+                              (void *)env->sp, (void *)wamr->get_exec_env()->wasm_stack.bottom);
 }
 
 #if WASM_ENABLE_AOT != 0
@@ -98,8 +98,8 @@ void WAMRInterpFrame::restore_impl(AOTFrame *env) {
     // }
     // if (sp) {
     //     //        LOGV(ERROR)<<"env_sp "<<env->sp<<" "<<reinterpret_cast<uint32 *>((uint8
-    //     //        *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
-    //     env->sp = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
+    //     //        *)wamr->get_exec_env()->wasm_stack.bottom + sp);
+    //     env->sp = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.bottom + sp);
     // }
     // int i = 0;
     // env->sp_bottom = ((uint32 *)env->lp) + env->function->param_cell_num + env->function->local_cell_num;
@@ -112,13 +112,13 @@ void WAMRInterpFrame::restore_impl(AOTFrame *env) {
     //     for (auto &&csp_item : csp) {
     //         restore(csp_item.get(), env->csp_bottom + i);
     //         LOGV(ERROR) << "csp_bottom" << ((uint8 *)env->csp_bottom + i) -
-    //         wamr->get_exec_env()->wasm_stack.s.bottom; i++;
+    //         wamr->get_exec_env()->wasm_stack.bottom; i++;
     //     }
     //     env->csp = env->csp_bottom + csp.size() - 1;
     //     env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
     //     LOGV(DEBUG) << env->function->u.func->field_name << " csp_bottom" << env->csp_bottom << " sp_bottom"
     //                 << env->sp_bottom << " sp" << sp << ((uint8 *)env->sp) -
-    //                 wamr->get_exec_env()->wasm_stack.s.bottom
+    //                 wamr->get_exec_env()->wasm_stack.bottom
     //                 << " lp" << lp;
     // }
 }
@@ -272,7 +272,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         e->cell_num = cell_num;                                                                                        \
         e->begin_addr = frame_ip - cur_func->u.func->code;                                                             \
         e->target_addr = (_target_addr)-cur_func->u.func->code;                                                        \
-        e->frame_sp = reinterpret_cast<uint8 *>(frame_sp - (param_cell_num)) - exec_env->wasm_stack.s.bottom;          \
+        e->frame_sp = reinterpret_cast<uint8 *>(frame_sp - (param_cell_num)) - exec_env->wasm_stack.bottom;          \
         csp.emplace_back(std::move(e));                                                                                \
     }
 
@@ -295,7 +295,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         csp.resize(csp.size() - (n));                                                                                  \
         frame_ip = cur_func->u.func->code + csp.back()->target_addr;                                                   \
         /* copy arity values of block */                                                                               \
-        frame_sp = reinterpret_cast<uint32 *>(exec_env->wasm_stack.s.bottom + csp.back()->frame_sp);                   \
+        frame_sp = reinterpret_cast<uint32 *>(exec_env->wasm_stack.bottom + csp.back()->frame_sp);                   \
         cell_num_to_copy = csp.back()->cell_num;                                                                       \
         frame_sp += cell_num_to_copy;                                                                                  \
     } while (0)

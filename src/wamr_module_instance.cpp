@@ -49,11 +49,11 @@ void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {
     env->global_data_size = global_data.size();
     //                env->global_data = global_data.data();
     //                env->global_data_size = global_data.size() - 1;
-    LOGV(DEBUG) << env->global_data_size;
-    LOGV(DEBUG) << env->global_data;
-    for (int i = 0; i < env->global_data_size; i++) {
-        LOGV(DEBUG) << env->global_data[i];
-    }
+    // LOGV(DEBUG) << env->global_data_size;
+    // LOGV(DEBUG) << env->global_data;
+    // for (int i = 0; i < env->global_data_size; i++) {
+    //     LOGV(DEBUG) << env->global_data[i];
+    // }
     if (wamr->is_aot) {
         auto module = (AOTModule *)env->module;
         module->aux_data_end_global_index = aux_data_end_global_index;
