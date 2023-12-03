@@ -288,5 +288,17 @@ void sigint_handler(int sig) {
     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     checkpoint = true;
     wamr->replace_nop_with_int3();
+
+    struct sigaction sa {};
+    // Clear the structure
+    sigemptyset(&sa.sa_mask);
+    // Set the signal handler function
+    sa.sa_handler = SIG_DFL;
+    // Set the flags
+    sa.sa_flags = SA_RESTART;
+    // Register the signal handler for SIGINT
+    if (sigaction(SIGINT, &sa, nullptr) == -1) {
+        perror("Error: cannot restore SIGINT SIG_DFL");
+    }
 }
 #endif
