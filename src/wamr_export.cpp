@@ -242,11 +242,11 @@ size_t call_count = 0;
 bool checkpoint = false;
 extern void print_memory(WASMExecEnv *exec_env);
 void sigtrap_handler(int sig) {
-//     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+    fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
 
     auto exec_env = wamr->get_exec_env();
-     print_exec_env_debug_info(exec_env);
-     print_memory(exec_env);
+    //  print_exec_env_debug_info(exec_env);
+    //  print_memory(exec_env);
 
     call_count++;
 

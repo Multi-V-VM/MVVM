@@ -80,7 +80,7 @@ bool WAMRInstance::replace_int3_with_nop() {
 
     // LOGV_DEBUG << "Making the code section writable";
     {
-        pthread_jit_write_protect_np(0);
+        // pthread_jit_write_protect_np(0);
         int map_prot = MMAP_PROT_READ | MMAP_PROT_WRITE;
 
         uint8 *mmap_addr = module->literal - sizeof(uint32);
