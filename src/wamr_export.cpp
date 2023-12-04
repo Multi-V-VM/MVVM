@@ -293,8 +293,8 @@ void sigtrap_handler(int sig) {
     //     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
 
     auto exec_env = wamr->get_exec_env();
-    // print_exec_env_debug_info(exec_env);
-    // print_memory(exec_env);
+    print_exec_env_debug_info(exec_env);
+    print_memory(exec_env);
 
     call_count++;
 

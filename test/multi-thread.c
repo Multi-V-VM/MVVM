@@ -5,13 +5,11 @@
 
 #include <pthread.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #define MAX_NUM_THREADS 2
 #define NUM_ITER 1000000
 
 int g_count = 0;
-int *count;
 
 static void *thread(void *arg) {
     for (int i = 0; i < NUM_ITER; i++) {
@@ -19,21 +17,19 @@ static void *thread(void *arg) {
         printf("");
     }
     printf("Value of g_count is %d\n", g_count);
-    for (int i =0; i<1e4;i++){
-        count[i] = i;
-    }
     printf("%d\n", g_count);
     return NULL;
 }
 
 int main(int argc, char **argv) {
     pthread_t tids[MAX_NUM_THREADS];
-    count = (int*)malloc(MAX_NUM_THREADS*sizeof(int));
+
     for (int i = 0; i < MAX_NUM_THREADS; i++) {
         if (pthread_create(&tids[i], NULL, thread, NULL) != 0) {
             printf("Thread creation failed\n");
         }
     }
+    printf("Value %d\n", g_count);
 
     for (int i = 0; i < MAX_NUM_THREADS; i++) {
         if (pthread_join(tids[i], NULL) != 0) {
