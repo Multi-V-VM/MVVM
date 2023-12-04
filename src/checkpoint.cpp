@@ -26,7 +26,6 @@ WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
 FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
-std::mutex as_mtx;
 extern const char *func_to_stop;
 extern int func_to_stop_count;
 // mini dumper
@@ -66,6 +65,13 @@ void dump_tls(WASMModule *module, WASMModuleInstanceExtra *instance) {
         }
     }
 }
+
+WAMRExecEnv* to_wamr_execenv(int tid, WASMExecEnv* instance){
+    auto a = new WAMRExecEnv();
+    dump(a, instance);
+    a->cur_count = tid;
+    return a;
+}
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     if (wamr->addr_.size() != 0) {
@@ -85,19 +91,28 @@ void serialize_to_file(WASMExecEnv *instance) {
             elem = (WASMExecEnv *)bh_list_elem_next(elem);
         }
     } // gets the element index
-    auto a = new WAMRExecEnv();
     dump_tls(((WASMModuleInstance *)instance->module_inst)->module, ((WASMModuleInstance *)instance->module_inst)->e);
-    dump(a, instance);
-    a->cur_count = gettid();
 
-    std::unique_lock as_ul(as_mtx);
+    auto a = to_wamr_execenv(gettid(), instance);
+
+    std::unique_lock as_ul(wamr->as_mtx);
+    printf("get lock\n");
     as.emplace_back(a);
-    if (as.size() == all_count - 1) {
-        kill(getpid(), SIGINT);
+    if (as.size() + wamr->lwcp_map_.size() == all_count) {
+	printf("deal with blocked\n");
+	auto target_module = wamr->get_module_instance()->e;
+        for(auto [k, v] : wamr->lwcp_map_){
+            // serialize all the blocked threads
+	    // pop stack frames until we get out of imported functions
+	    auto cur_frame = (AOTFrame*)v->cur_frame;
+	    cur_frame->ip_offset -= 4;
+
+	    a = to_wamr_execenv(k, v);
+	    as.emplace_back(a);
+	}
     }
     if (as.size()== all_count){
         struct_pack::serialize_to(*writer, as);
-        LOGV(INFO) << "serialize to file " << cur_count << " " << all_count << "\n";
         exit(0);
     }
     // Is there some better way to sleep until exit?

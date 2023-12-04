@@ -38,6 +38,9 @@ public:
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_;
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, SocketMetaData> socket_fd_map_;
+    // lwcp is LightWeight CheckPoint
+    std::map<int, WASMExecEnv*> lwcp_map_;
+    std::mutex as_mtx;
 
     bool is_jit;
     bool is_aot{};

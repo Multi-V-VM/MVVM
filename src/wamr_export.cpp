@@ -4,6 +4,8 @@
 
 #include "wamr.h"
 #include "wamr_wasi_context.h"
+
+#include <condition_variable>
 extern WAMRInstance *wamr;
 
 void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockfd) {
@@ -198,6 +200,29 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
         metaData.socketAddress.ip6[7] = address->ip6[7];
     }
     wamr->socket_fd_map_[fd] = metaData;
+}
+
+void insert_lock(char const *, int){}
+void insert_sem(char const *, int){}
+void remove_lock(char const *){}
+void remove_sem(char const *){}
+
+void lightweight_checkpoint(WASMExecEnv *exec_env){
+printf("checkpoint %d\n", gettid());
+    //LOGV(INFO) << fmt::format("lightweight checkpoint(exec_env) {}", exec_env);
+    std::unique_lock as_ul(wamr->as_mtx);
+    wamr->lwcp_map_.insert(std::make_pair(gettid(), exec_env));
+}
+void lightweight_uncheckpoint(){
+printf("uncheckpoint %d\n", gettid());
+    std::unique_lock as_ul(wamr->as_mtx);
+    if(wamr->lwcp_map_.erase(gettid())){
+        return; //we haven't checkpointed
+    }
+    //been checkpointed so sleep forever
+    std::condition_variable as_cv;
+    as_cv.wait(as_ul);
+
 }
 
 #ifndef MVVM_DEBUG

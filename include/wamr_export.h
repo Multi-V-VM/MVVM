@@ -49,9 +49,8 @@ void insert_lock(char const *, int);
 void insert_sem(char const *, int);
 void remove_lock(char const *);
 void remove_sem(char const *);
-void wasm_thread_restart();
 
-void lightweight_checkpoint();
+void lightweight_checkpoint(WASMExecEnv*);
 void lightweight_uncheckpoint();
 
 void restart_execution(uint32 targs);
