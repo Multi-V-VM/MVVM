@@ -493,17 +493,19 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     uint32 id = 0;
 
     for (auto [idx,exec_] : *execEnv|enumerate) {
-        if (idx == execEnv->size()) {
-            cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
-            // the last one should be the main thread doing pthread join
-        }
+        // if (idx == execEnv->size()) {
+        //     cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
+        //     // the last one should be the main thread doing pthread join
+        // }
         this->set_wasi_args(exec_->module_inst.wasi_ctx);
         //  first get the deserializer message, here just hard code
         this->instantiate();
+        this->get_int3_addr();
+        this->replace_int3_with_nop();
         restore(exec_.get(), cur_env);
         get_exec_env()->is_restore = true;
         cur_env->is_restore = true;
-        if (exec_->cur_count != 0) {
+        if (idx+1 != execEnv->size()) {
 
             // requires to record the args and callback for the pthread.
             auto thread_arg = ThreadArgs{cur_env};
@@ -511,17 +513,18 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
             argptr[id] = &thread_arg;
 
             // restart thread execution
+            fprintf(stderr, "pthread_create_wrapper, func %d\n", id);
             pthread_create_wrapper(exec_env, nullptr, nullptr, id, id);
             id++;
             continue;
-        }
-        if (exec_->cur_count == 0) {
+        } else {
             // restart main thread execution
             if (!is_aot) {
                 wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
                                                get_exec_env()->cur_frame->function,
                                                get_exec_env()->cur_frame->prev_frame);
             } else {
+                fprintf(stderr, "invoke main\n");
                 invoke_main();
             }
             break;

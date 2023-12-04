@@ -36,6 +36,8 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
             auto cur_frame = (AOTFrame *)env->cur_frame;
             cur_frame->ip_offset = dump_frame->ip;
             cur_frame->sp = cur_frame->lp + dump_frame->sp;
+            fprintf(stderr, "restore function_index %d\n", dump_frame->function_index);
+            cur_frame->func_index = dump_frame->function_index;
             memcpy(cur_frame->lp, dump_frame->stack_frame.data(), dump_frame->stack_frame.size() * sizeof(uint32));
             replay_frames.emplace_back(cur_frame);
         }
