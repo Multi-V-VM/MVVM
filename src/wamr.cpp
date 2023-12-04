@@ -482,6 +482,7 @@ void restart_execution(uint32 id) {
                                    targs->exec_env->cur_frame->function, targs->exec_env->cur_frame->prev_frame);
 }
 
+WAMRExecEnv *child_env;
 // will call pthread create wrapper if needed?
 void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     // order threads by id (descending)
@@ -491,46 +492,43 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
               });
     argptr = (ThreadArgs **)malloc(sizeof(void *) * execEnv->size());
     uint32 id = 0;
+    auto main_exec_env = execEnv->back().get();
+    instantiate();
+    cur_env = exec_env;
+    get_int3_addr();
+    replace_int3_with_nop();
+    restore(main_exec_env, cur_env);
+    auto main_env = cur_env;
+    get_exec_env()->is_restore = true;
+    cur_env->is_restore = true;
 
     for (auto [idx,exec_] : *execEnv|enumerate) {
-        // if (idx == execEnv->size()) {
-        //     cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
-        //     // the last one should be the main thread doing pthread join
-        // }
-        this->set_wasi_args(exec_->module_inst.wasi_ctx);
-        //  first get the deserializer message, here just hard code
-        this->instantiate();
-        this->get_int3_addr();
-        this->replace_int3_with_nop();
-        restore(exec_.get(), cur_env);
-        get_exec_env()->is_restore = true;
-        cur_env->is_restore = true;
-        if (idx+1 != execEnv->size()) {
-
-            // requires to record the args and callback for the pthread.
-            auto thread_arg = ThreadArgs{cur_env};
-
-            argptr[id] = &thread_arg;
-
-            // restart thread execution
-            fprintf(stderr, "pthread_create_wrapper, func %d\n", id);
-            pthread_create_wrapper(exec_env, nullptr, nullptr, id, id);
-            id++;
-            continue;
-        } else {
-            // restart main thread execution
-            if (!is_aot) {
-                wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
-                                               get_exec_env()->cur_frame->function,
-                                               get_exec_env()->cur_frame->prev_frame);
-            } else {
-                fprintf(stderr, "invoke main\n");
-                invoke_main();
-            }
+        if (idx + 1 == execEnv->size()) {
+            // the last one should be the main thread
             break;
         }
-        assert(false); // main thread at end should be the
-    } // every pthread has a semaphore for main thread to set all break point to start.
+        this->set_wasi_args(exec_->module_inst.wasi_ctx);
+	child_env = exec_.get();
+
+        // requires to record the args and callback for the pthread.
+        auto thread_arg = ThreadArgs{cur_env};
+
+        argptr[id] = &thread_arg;
+
+        // restart thread execution
+        fprintf(stderr, "pthread_create_wrapper, func %d\n", id);
+        pthread_create_wrapper(exec_env, nullptr, nullptr, id, id);
+        id++;
+    }
+    // restart main thread execution
+    if (!is_aot) {
+	wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
+				       get_exec_env()->cur_frame->function,
+				       get_exec_env()->cur_frame->prev_frame);
+    } else {
+	fprintf(stderr, "invoke main\n");
+	invoke_main();
+    }
 }
 #if WASM_ENABLE_AOT != 0
 std::vector<uint32> WAMRInstance::get_args(){
@@ -589,6 +587,17 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
     set_wasi_args(context.dir, context.map_dir, context.argv_environ.env_list, context.argv_environ.argv_list,
                   get_addr_from_context(context), context.ns_lookup_list);
 }
+
+extern "C"{ // stop name mangling so it can be linked externally
+extern WAMRInstance *wamr;
+WASMExecEnv* restore_env(){
+	auto exec_env = wasm_exec_env_create_internal(wamr->module_inst, wamr->stack_size);
+        restore(child_env, exec_env);
+	exec_env->is_restore = true;
+	return exec_env;
+}
+}
+
 void WAMRInstance::instantiate() {
     module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
     if (!module_inst) {
