@@ -98,13 +98,13 @@ void serialize_to_file(WASMExecEnv *instance) {
     printf("get lock\n");
     as.emplace_back(a);
     if (as.size() + wamr->lwcp_map_.size() == all_count) {
-	printf("deal with blocked\n");
 	auto target_module = wamr->get_module_instance()->e;
         for(auto [k, v] : wamr->lwcp_map_){
+	    printf("deal with blocked\n");
             // serialize all the blocked threads
 	    // pop stack frames until we get out of imported functions
 	    auto cur_frame = (AOTFrame*)v->cur_frame;
-	    cur_frame->ip_offset -= 4;
+//	    cur_frame->ip_offset -= 4;
 
 	    a = to_wamr_execenv(k, v);
 	    as.emplace_back(a);

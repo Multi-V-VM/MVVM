@@ -14,7 +14,7 @@ int g_count = 0;
 static void *thread(void *arg) {
     for (int i = 0; i < NUM_ITER; i++) {
         __atomic_fetch_add(&g_count, 1, __ATOMIC_SEQ_CST);
-        printf("");
+        printf("print!!!%d\n", i);
     }
     printf("Value of g_count is %d\n", g_count);
     printf("%d\n", g_count);
