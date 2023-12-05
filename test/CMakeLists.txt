@@ -94,7 +94,7 @@ if(WAMR_BUILD_AOT)
     # )
     # add_custom_target(${input}_ckpt_br_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot)
 
-    add_custom_target(${input}_compile_all ALL DEPENDS ${input}_pure_compile ${input}_stack_compile ${input}_compile ${input}_ckpt_br_compile)
+    # add_custom_target(${input}_compile_all ALL DEPENDS ${input}_pure_compile ${input}_stack_compile ${input}_compile ${input}_ckpt_br_compile)
   endif ()
 
   add_test(NAME ${input}_checkpoint COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_checkpoint --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)

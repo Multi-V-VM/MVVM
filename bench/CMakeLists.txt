@@ -97,6 +97,17 @@ ExternalProject_Add(llama
         BUILD_COMMAND   ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./llama ${CMAKE_CURRENT_BINARY_DIR}/llama.wasm 
 )
+ExternalProject_Add(llama-native
+        SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/llama
+        UPDATE_COMMAND    ""
+        PATCH_COMMAND     ""
+        CONFIGURE_COMMAND  ${CMAKE_COMMAND}
+        -GNinja
+        -DCMAKE_BUILD_TYPE=Release
+        ${CMAKE_CURRENT_SOURCE_DIR}/llama
+        BUILD_COMMAND   ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./llama ${CMAKE_CURRENT_BINARY_DIR}/llama 
+)
 
 ExternalProject_Add(linpack
         SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/linpack
@@ -113,6 +124,18 @@ ExternalProject_Add(linpack
         BUILD_COMMAND   ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./linpack ${CMAKE_CURRENT_BINARY_DIR}/linpack.wasm
 )
+ExternalProject_Add(linpack-native
+        SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/linpack
+        UPDATE_COMMAND    ""
+        PATCH_COMMAND     ""
+        CONFIGURE_COMMAND  ${CMAKE_COMMAND}
+        -GNinja
+        -DCMAKE_BUILD_TYPE=Release
+        ${CMAKE_CURRENT_SOURCE_DIR}/linpack
+        BUILD_COMMAND   ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./linpack ${CMAKE_CURRENT_BINARY_DIR}/linpack
+)
+
 
 if(WAMR_BUILD_AOT)
 function(bench_wamr_app input)
@@ -147,15 +170,14 @@ function(bench_wamr_app input)
           COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-br-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
           DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
         )
-        add_custom_target(${input}_ckpt_br_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot)
+        add_custom_target(${input}_ckpt_br_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot)
 
         add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-restore-br.aot
           COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-br-checkpoint --enable-restore -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-restore-br.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
           DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
         )
-        add_custom_target(${input}_ckpt_restore_br_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-restore-br.aot)
+        add_custom_target(${input}_ckpt_restore_br_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-restore-br.aot)
 
-        add_custom_target(${input}_ckpt_every_dirty_compile ALL DEPENDS ${input}_wamr COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-every-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
         add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot
           COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-every-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
           DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
@@ -178,4 +200,5 @@ bench_wamr_app(sssp)
 bench_wamr_app(tc)
 # bench_wamr_app(redis)
 bench_wamr_app(llama)
+bench_wamr_app(linpack)
 endif()

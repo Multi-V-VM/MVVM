@@ -4,36 +4,46 @@ import time
 import subprocess
 import pickle
 
-cmd = ["bfs", "bfs", "bfs", "bfs", "bfs", "bfs", "bfs", "bfs", "bfs",
-    "bc", "bfs", "cc", "cc_sv", "pr", "pr_spmv", "sssp", "tc"]
-arg = [["-g20", "-n30"],
-    ["-u20", "-n30"],
-    # ["-f", "../../bench/gapbs/test/graphs/4.gr", "-n1000"],
-    # ["-f", "../../bench/gapbs/test/graphs/4.el", "-n1000"],
-    # ["-f", "../../bench/gapbs/test/graphs/4.wel", "-n1000"],
-    # ["-f", "../../bench/gapbs/test/graphs/4.graph", "-n1000"],
-    # ["-f", "../../bench/gapbs/test/graphs/4w.graph", "-n1000"],
-    # ["-f", "../../bench/gapbs/test/graphs/4.mtx", "-n1000"],
-    # ["-f", "../../bench/gapbs/test/graphs/4w.mtx", "-n1000"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
+cmd = []
+arg = []
 
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-n2"]]
+# cmd = cmd + ["bfs", "bfs", 
+#     #    "bfs", "bfs", "bfs", "bfs", "bfs", "bfs", "bfs",
+#     "bc", "bfs", "cc", "cc_sv", "pr", "pr_spmv", "sssp", "tc"]
+# arg = arg + [["-g20", "-n30"],
+#     ["-u20", "-n30"],
+#     # ["-f", "../../bench/gapbs/test/graphs/4.gr", "-n1000"],
+#     # ["-f", "../../bench/gapbs/test/graphs/4.el", "-n1000"],
+#     # ["-f", "../../bench/gapbs/test/graphs/4.wel", "-n1000"],
+#     # ["-f", "../../bench/gapbs/test/graphs/4.graph", "-n1000"],
+#     # ["-f", "../../bench/gapbs/test/graphs/4w.graph", "-n1000"],
+#     # ["-f", "../../bench/gapbs/test/graphs/4.mtx", "-n1000"],
+#     # ["-f", "../../bench/gapbs/test/graphs/4w.mtx", "-n1000"],
+#     # ["-g20", "-n30"],
+#     # ["-g20", "-n30"],
+#     # ["-g20", "-n30"],
+#     # ["-g20", "-n30"],
+#     # ["-g20", "-n30"],
+#     # ["-g20", "-n30"],
+#     # ["-g20", "-n30"],
 
-# aot_variant = [".aot", "-pure.aot", "-stack.aot", "-ckpt.aot", "-ckpt-br.aot"]
-aot_variant = ["-ckpt-every-dirty.aot"]
+#     ["-g20", "-vn30"],
+#     ["-g20", "-vn30"],
+#     ["-g20", "-vn30"],
+#     ["-g20", "-vn30"],
+#     ["-g20", "-vn30"],
+#     ["-g20", "-vn30"],
+#     ["-g20", "-vn30"],
+#     ["-g20", "-n2"]]
+
+cmd = cmd + ["linpack"]
+arg = arg + [[]]
+
+cmd = cmd + ["llama"]
+arg = arg + [["stories110M.bin", "-n", "1024", "-s", "114514", "-i", "Once upon a time in the era of sword and sorcery there is a programmer"]]
+
+aot_variant = ["-pure.aot", "-stack.aot", "-ckpt.aot", "-ckpt-restore.aot", "-ckpt-br.aot", "-ckpt-restore-br.aot"]
+# aot_variant = ["-ckpt-every-dirty.aot"]
 
 def run(aot_file: str, arg: list[str]) -> tuple[str, str]:
     cmd = f"../MVVM_checkpoint -t {aot_file} {' '.join(['-a ' + str(x) for x in arg])}"

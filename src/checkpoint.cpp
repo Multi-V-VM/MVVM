@@ -219,6 +219,7 @@ int main(int argc, char *argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
 
     // Main program loop
+    fprintf(stdout, "Start execution\n");
     wamr->invoke_main();
 
     // get current time

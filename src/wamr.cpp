@@ -502,6 +502,9 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
         restore(exec_.get(), cur_env);
         get_exec_env()->is_restore = true;
         cur_env->is_restore = true;
+        this->get_int3_addr();
+        this->replace_int3_with_nop();
+        this->replace_mfence_with_nop();
         if (exec_->cur_count != 0) {
 
             // requires to record the args and callback for the pthread.
