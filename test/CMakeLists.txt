@@ -30,21 +30,18 @@ if(WAMR_BUILD_AOT)
     add_custom_target(${input}_stack_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-stack.aot)
 
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot
-      COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+      COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-checkpoint --enable-restore -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
       DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
     )
     add_custom_target(${input}_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
 
-    # add_custom_target(${input}_ckpt_br_compile ALL DEPENDS ${input}_wamr COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-br-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot
-      COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-br-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-    )
-    add_custom_target(${input}_ckpt_br_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot)
+    # add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot
+    #   COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-br-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+    #   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+    # )
+    # add_custom_target(${input}_ckpt_br_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot)
 
-    # add_custom_target(${input}_ckpt_every_dirty_compile ALL DEPENDS ${input}_wamr COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-every-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
-
-    add_custom_target(${input}_compile_all ALL DEPENDS ${input}_pure_compile ${input}_stack_compile ${input}_compile ${input}_ckpt_br_compile)
+    # add_custom_target(${input}_compile_all ALL DEPENDS ${input}_pure_compile ${input}_stack_compile ${input}_compile ${input}_ckpt_br_compile)
   endif ()
 
   add_test(NAME ${input}_checkpoint COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_checkpoint --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
