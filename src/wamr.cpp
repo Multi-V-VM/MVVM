@@ -195,9 +195,10 @@ int WAMRInstance::invoke_frenumber(uint32 fd, uint32 to) {
 };
 
 int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32_t *sockfd) {
-    auto name = "__wasi_sock_open";
+    auto name = "socket";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        LOGV(ERROR) << "The wasi fopen function is not found.";
+        LOGV(ERROR) << "The wasi \"" << name << "\" function is not found.";
+#if WASM_ENABLE_AOT == 0
         auto target_module = get_module_instance()->e;
         for (int i = 0; i < target_module->function_count; i++) {
             auto cur_func = &target_module->functions[i];
@@ -218,6 +219,14 @@ int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32
                 }
             }
         }
+#else
+        uint32 i;
+        AOTFunctionInstance *export_funcs =
+            (AOTFunctionInstance *)((AOTModuleInstance*)module_inst)->export_functions;
+        for (i = 0; i < ((AOTModuleInstance*)module_inst)->export_func_count; i++)
+            if (!strcmp(export_funcs[i].func_name, name))
+                func= &export_funcs[i];
+#endif
     }
     void *buffer_ = nullptr;
     uint32_t buffer_for_wasm;
@@ -235,7 +244,7 @@ int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32
 #if !defined(__WINCRYPT_H__)
 int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
                                      const __wasi_addr_t *dest_addr, uint32 *so_data_len) {
-    auto name = "__wasi_sock_send_to";
+    auto name = "sendto";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi fopen function is not found.";
         auto target_module = get_module_instance()->e;
@@ -301,7 +310,7 @@ int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, 
 
 int WAMRInstance::invoke_sock_recvfrom(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,
                                        __wasi_addr_t *src_addr, uint32 *ro_data_len) {
-    auto name = "__wasi_sock_recv_from";
+    auto name = "recvfrom";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi fopen function is not found.";
         auto target_module = get_module_instance()->e;
@@ -482,6 +491,7 @@ void restart_execution(uint32 id) {
                                    targs->exec_env->cur_frame->function, targs->exec_env->cur_frame->prev_frame);
 }
 
+WAMRExecEnv *child_env;
 // will call pthread create wrapper if needed?
 void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     // order threads by id (descending)
@@ -491,50 +501,54 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
               });
     argptr = (ThreadArgs **)malloc(sizeof(void *) * execEnv->size());
     uint32 id = 0;
+    auto main_exec_env = execEnv->back().get();
+    set_wasi_args(main_exec_env->module_inst.wasi_ctx);
+    instantiate();
+    cur_env = exec_env;
+    get_int3_addr();
+    replace_int3_with_nop();
+    restore(main_exec_env, cur_env);
+    auto main_env = cur_env;
+    get_exec_env()->is_restore = true;
+    cur_env->is_restore = true;
 
     for (auto [idx,exec_] : *execEnv|enumerate) {
-        if (idx == execEnv->size()) {
-            cur_env = wasm_cluster_spawn_exec_env(exec_env); // look into the pthread create wrapper how it worked.
-            // the last one should be the main thread doing pthread join
-        }
-        this->set_wasi_args(exec_->module_inst.wasi_ctx);
-        //  first get the deserializer message, here just hard code
-        this->instantiate();
-        restore(exec_.get(), cur_env);
-        get_exec_env()->is_restore = true;
-        cur_env->is_restore = true;
-        if (exec_->cur_count != 0) {
-
-            // requires to record the args and callback for the pthread.
-            auto thread_arg = ThreadArgs{cur_env};
-
-            argptr[id] = &thread_arg;
-
-            // restart thread execution
-            pthread_create_wrapper(exec_env, nullptr, nullptr, id, id);
-            id++;
-            continue;
-        }
-        if (exec_->cur_count == 0) {
-            // restart main thread execution
-            if (!is_aot) {
-                wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
-                                               get_exec_env()->cur_frame->function,
-                                               get_exec_env()->cur_frame->prev_frame);
-            } else {
-                invoke_main();
-            }
+        if (idx + 1 == execEnv->size()) {
+            // the last one should be the main thread
             break;
         }
-        assert(false); // main thread at end should be the
-    } // every pthread has a semaphore for main thread to set all break point to start.
+	child_env = exec_.get();
+
+        // requires to record the args and callback for the pthread.
+        auto thread_arg = ThreadArgs{cur_env};
+
+        argptr[id] = &thread_arg;
+
+        // restart thread execution
+        fprintf(stderr, "pthread_create_wrapper, func %d\n", id);
+        pthread_create_wrapper(exec_env, nullptr, nullptr, id, id);
+        id++;
+    }
+    // restart main thread execution
+    if (!is_aot) {
+	wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
+				       get_exec_env()->cur_frame->function,
+				       get_exec_env()->cur_frame->prev_frame);
+    } else {
+	fprintf(stderr, "invoke main\n");
+    instantiate();
+    invoke_init_c();
+    invoke_main();
+    }
 }
+
 #if WASM_ENABLE_AOT != 0
 std::vector<uint32> WAMRInstance::get_args(){
     // TODO
 };
 AOTFunctionInstance *WAMRInstance::get_func(int index) { return nullptr; };
 #endif
+
 WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func); }
 void WAMRInstance::set_func(WASMFunction *f) { func = static_cast<WASMFunction *>(f); }
 void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
@@ -586,6 +600,29 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
     set_wasi_args(context.dir, context.map_dir, context.argv_environ.env_list, context.argv_environ.argv_list,
                   get_addr_from_context(context), context.ns_lookup_list);
 }
+
+extern "C"{ // stop name mangling so it can be linked externally
+extern WAMRInstance *wamr;
+WASMExecEnv* restore_env(){
+    auto exec_env = wasm_exec_env_create_internal(wamr->module_inst, wamr->stack_size);
+    restore(child_env, exec_env);
+
+    auto name = "__wasm_init_memory";
+    exec_env->is_restore = false;
+    auto s = exec_env->restore_call_chain;
+    exec_env->restore_call_chain = NULL;
+    auto func = wasm_runtime_lookup_function(wamr->module_inst, name, nullptr);
+    wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
+    auto name1 = "__wasm_call_ctors";
+    func = wasm_runtime_lookup_function(wamr->module_inst, name1, nullptr);
+    wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
+    
+    exec_env->restore_call_chain = s;
+    exec_env->is_restore = true;
+	return exec_env;
+}
+}
+
 void WAMRInstance::instantiate() {
     module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
     if (!module_inst) {

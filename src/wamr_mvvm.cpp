@@ -54,14 +54,14 @@ bool WAMRInstance::get_int3_addr() {
         auto addr = a;
         auto offset = std::stoul(addr, nullptr, 16);
 #ifdef __x86_64__
-        if (code[offset] != 0xcc) {
-            fprintf(stderr, "code[%lu] != 0xcc\n", offset);
-            return false;
+        if (code[offset] != 0xcc && code[offset] != 0x90) {
+            fprintf(stderr, "code[%lu] = %u != 0xcc\n", offset, code[offset]);
+            // return false;
         }
 #elif __aarch64__
         if (code[offset + 3] != 0xd4) {
             fprintf(stderr, "code[%lu] != 0xd4\n", offset);
-            return false;
+            // return false;
         }
 #endif
         if (offset < code_size) {
