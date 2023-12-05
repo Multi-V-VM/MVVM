@@ -18,3 +18,6 @@
 [submodule "bench/linpack"]
 	path = bench/linpack
 	url = https://github.com/victoryang00/linpack
+[submodule "bench/hdastar"]
+	path = bench/hdastar
+	url = https://github.com/victoryang00/HDAStar
