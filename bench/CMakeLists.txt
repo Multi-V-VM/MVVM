@@ -192,6 +192,18 @@ function(bench_wamr_app input)
         )
         add_custom_target(${input}_ckpt_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt.aot)
 
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot
+          COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-loop-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+          DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        )
+        add_custom_target(${input}_ckpt_loop_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot)
+
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-restore-loop.aot
+          COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-loop-checkpoint --enable-restore -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-restore-loop.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+          DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        )
+        add_custom_target(${input}_ckpt_restore_loop_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-restore-loop.aot)
+
         add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot
           COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --target=x86_64 --cpu=skylake --disable-aux-stack-check --enable-br-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
           DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
