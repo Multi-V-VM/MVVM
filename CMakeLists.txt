@@ -17,12 +17,15 @@ if (APPLE)
     set(WAMR_BUILD_PLATFORM "darwin")
     if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)")
         set(LLVM_LLDB_LIB /opt/homebrew/Cellar/llvm@14/14.0.6/lib/liblldb.dylib)
+        set(BLAS_LIBRARIES /opt/homebrew/opt/openblas/lib/libopenblas.0.dylib)
     else ()
         set(LLVM_LLDB_LIB /usr/local/Cellar/llvm@14/14.0.6/lib/liblldb.dylib)
+        set(BLAS_LIBRARIES /usr/local/opt/openblas/lib/libopenblas.0.dylib)
     endif ()
 elseif (LINUX)
     set(WAMR_BUILD_PLATFORM "linux")
     set(LLVM_LLDB_LIB /usr/lib/liblldb.so)
+    add_subdirectory(lib/faasm)
 else ()
     set(WAMR_BUILD_PLATFORM "windows")
     set(WAMR_BUILD_LIBC_UVWASI 1)
@@ -90,13 +93,20 @@ include(${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 
 include(${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/wasm-micro-runtime/core/iwasm/aot ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include ${LLVM_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/wasm-micro-runtime/core/iwasm/aot ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include ${LLVM_INCLUDE_DIRS} ${BLAS_INCLUDE_DIRS})
 
 add_subdirectory(test)
 # add_subdirectory(bench)
 # if (NOT WIN32)
 #     add_subdirectory(gateway)
 # endif ()
+find_path(BLAS_INCLUDE_DIRS cblas.h
+        /usr/include
+        /usr/local/include
+        /opt/OpenBLAS/include/
+        /opt/homebrew/opt/openblas/include
+        $ENV{BLAS_HOME}/include)
+message(${BLAS_INCLUDE_DIRS})
 
 file(GLOB_RECURSE SOURCE_FILES src/logging.cpp src/wamr*.cpp)
 add_library(MVVM_export ${SOURCE_FILES} ${UNCOMMON_SHARED_SOURCE})
@@ -104,8 +114,8 @@ add_executable(MVVM_restore src/restore.cpp ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_checkpoint src/checkpoint.cpp ${UNCOMMON_SHARED_SOURCE})
 
 target_link_libraries(MVVM_export fmt::fmt vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS})
-target_link_libraries(MVVM_restore fmt::fmt cxxopts::cxxopts MVVM_export vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS} MVVM_export)
-target_link_libraries(MVVM_checkpoint fmt::fmt cxxopts::cxxopts MVVM_export vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS} MVVM_export)
+target_link_libraries(MVVM_restore fmt::fmt cxxopts::cxxopts MVVM_export vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS} ${BLAS_LIBRARIES} MVVM_export)
+target_link_libraries(MVVM_checkpoint fmt::fmt cxxopts::cxxopts MVVM_export vmlib -lm -ldl -lpthread ${LLVM_AVAILABLE_LIBS} ${BLAS_LIBRARIES} MVVM_export)
 add_definitions(-DMVVM_INTERP=1)
 # add_definitions(-DMVVM_DEBUG=1)
 add_definitions(-DCXXOPTS_NO_RTTI=1)

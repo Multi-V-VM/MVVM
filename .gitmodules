@@ -21,3 +21,6 @@
 [submodule "bench/hdastar"]
 	path = bench/hdastar
 	url = https://github.com/victoryang00/HDAStar
+[submodule "lib/faasm"]
+	path = lib/faasm
+	url = https://github.com/faasm/faasm/

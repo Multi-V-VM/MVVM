@@ -28,9 +28,14 @@ struct Enumerate : std::ranges::range_adaptor_closure<Enumerate> {
         return std::views::zip(std::views::iota(0), (R &&)r);
     }
 };
-
-inline constexpr Enumerate enumerate;
+#else
+struct Enumerate : std::__range_adaptor_closure<Enumerate> {
+    template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {
+        return std::views::zip(std::views::iota(0), (R &&)r);
+    }
+};
 #endif
+inline constexpr Enumerate enumerate;
 using std::list;
 using std::string;
 struct LocationInfo {
