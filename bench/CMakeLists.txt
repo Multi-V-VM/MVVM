@@ -97,17 +97,17 @@ ExternalProject_Add(llama
         BUILD_COMMAND   ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./llama ${CMAKE_CURRENT_BINARY_DIR}/llama.wasm 
 )
-ExternalProject_Add(llama-native
-        SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/llama
-        UPDATE_COMMAND    ""
-        PATCH_COMMAND     ""
-        CONFIGURE_COMMAND  ${CMAKE_COMMAND}
-        -GNinja
-        -DCMAKE_BUILD_TYPE=Release
-        ${CMAKE_CURRENT_SOURCE_DIR}/llama
-        BUILD_COMMAND   ${CMAKE_COMMAND} --build .
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./llama ${CMAKE_CURRENT_BINARY_DIR}/llama 
-)
+# ExternalProject_Add(llama-native
+#         SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/llama
+#         UPDATE_COMMAND    ""
+#         PATCH_COMMAND     ""
+#         CONFIGURE_COMMAND  ${CMAKE_COMMAND}
+#         -GNinja
+#         -DCMAKE_BUILD_TYPE=Release
+#         ${CMAKE_CURRENT_SOURCE_DIR}/llama
+#         BUILD_COMMAND   ${CMAKE_COMMAND} --build .
+#         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./llama ${CMAKE_CURRENT_BINARY_DIR}/llama 
+# )
 
 ExternalProject_Add(linpack
         SOURCE_DIR        ${CMAKE_CURRENT_SOURCE_DIR}/linpack
@@ -152,16 +152,16 @@ ExternalProject_Add(hdastar
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./hw5 ${CMAKE_CURRENT_BINARY_DIR}/hdastar.wasm
 )
-ExternalProject_Add(hdastar-native
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
-        UPDATE_COMMAND ""
-        PATCH_COMMAND ""
-        CONFIGURE_COMMAND ${CMAKE_COMMAND}
-        -GNinja
-        ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
-        BUILD_COMMAND ${CMAKE_COMMAND} --build .
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./hw5 ${CMAKE_CURRENT_BINARY_DIR}/hdastar
-)
+# ExternalProject_Add(hdastar-native
+#         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
+#         UPDATE_COMMAND ""
+#         PATCH_COMMAND ""
+#         CONFIGURE_COMMAND ${CMAKE_COMMAND}
+#         -GNinja
+#         ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
+#         BUILD_COMMAND ${CMAKE_COMMAND} --build .
+#         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./hw5 ${CMAKE_CURRENT_BINARY_DIR}/hdastar
+# )
 
 if(WAMR_BUILD_AOT)
 function(bench_wamr_app input)

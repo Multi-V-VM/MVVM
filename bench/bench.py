@@ -7,34 +7,36 @@ import pickle
 cmd = []
 arg = []
 
-# cmd = cmd + ["bfs", "bfs", 
-#     #    "bfs", "bfs", "bfs", "bfs", "bfs", "bfs", "bfs",
-#     "bc", "bfs", "cc", "cc_sv", "pr", "pr_spmv", "sssp", "tc"]
-# arg = arg + [["-g20", "-n30"],
-#     ["-u20", "-n30"],
-#     # ["-f", "../../bench/gapbs/test/graphs/4.gr", "-n1000"],
-#     # ["-f", "../../bench/gapbs/test/graphs/4.el", "-n1000"],
-#     # ["-f", "../../bench/gapbs/test/graphs/4.wel", "-n1000"],
-#     # ["-f", "../../bench/gapbs/test/graphs/4.graph", "-n1000"],
-#     # ["-f", "../../bench/gapbs/test/graphs/4w.graph", "-n1000"],
-#     # ["-f", "../../bench/gapbs/test/graphs/4.mtx", "-n1000"],
-#     # ["-f", "../../bench/gapbs/test/graphs/4w.mtx", "-n1000"],
-#     # ["-g20", "-n30"],
-#     # ["-g20", "-n30"],
-#     # ["-g20", "-n30"],
-#     # ["-g20", "-n30"],
-#     # ["-g20", "-n30"],
-#     # ["-g20", "-n30"],
-#     # ["-g20", "-n30"],
+cmd = cmd + [
+    # "bfs", "bfs", 
+    #    "bfs", "bfs", "bfs", "bfs", "bfs", "bfs", "bfs",
+    "bc", "bfs", "cc", "cc_sv", "pr", "pr_spmv", "sssp", "tc"]
+arg = arg + [
+    # ["-g20", "-n30"],
+    # ["-u20", "-n30"],
+    # ["-f", "../../bench/gapbs/test/graphs/4.gr", "-n1000"],
+    # ["-f", "../../bench/gapbs/test/graphs/4.el", "-n1000"],
+    # ["-f", "../../bench/gapbs/test/graphs/4.wel", "-n1000"],
+    # ["-f", "../../bench/gapbs/test/graphs/4.graph", "-n1000"],
+    # ["-f", "../../bench/gapbs/test/graphs/4w.graph", "-n1000"],
+    # ["-f", "../../bench/gapbs/test/graphs/4.mtx", "-n1000"],
+    # ["-f", "../../bench/gapbs/test/graphs/4w.mtx", "-n1000"],
+    # ["-g20", "-n30"],
+    # ["-g20", "-n30"],
+    # ["-g20", "-n30"],
+    # ["-g20", "-n30"],
+    # ["-g20", "-n30"],
+    # ["-g20", "-n30"],
+    # ["-g20", "-n30"],
 
-#     ["-g20", "-vn30"],
-#     ["-g20", "-vn30"],
-#     ["-g20", "-vn30"],
-#     ["-g20", "-vn30"],
-#     ["-g20", "-vn30"],
-#     ["-g20", "-vn30"],
-#     ["-g20", "-vn30"],
-#     ["-g20", "-n2"]]
+    ["-g20", "-vn30"],
+    ["-g20", "-vn30"],
+    ["-g20", "-vn30"],
+    ["-g20", "-vn30"],
+    ["-g20", "-vn30"],
+    ["-g20", "-vn30"],
+    ["-g20", "-vn30"],
+    ["-g20", "-n2"]]
 
 cmd = cmd + ["linpack"]
 arg = arg + [[]]
@@ -58,7 +60,7 @@ def run(aot_file: str, arg: list[str]) -> tuple[str, str]:
 
 # set up a process pool
 from multiprocessing import Pool
-pool = Pool(processes=40)
+pool = Pool(processes=2)
 
 # run the benchmarks
 results = []
