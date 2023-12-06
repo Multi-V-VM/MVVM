@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
         "h,help", "The value for epoch value", cxxopts::value<bool>()->default_value("false"))(
-        "c,count", "The value for epoch value", cxxopts::value<int>()->default_value("0"));
+        "c,count", "The value for epoch value", cxxopts::value<size_t>()->default_value("0"));
     // Can first discover from the wasi context.
     auto removeExtension = [](std::string &filename) {
         size_t dotPos = filename.find_last_of('.');
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
         exit(0);
     }
     auto target = result["target"].as<std::string>();
-    auto count = result["count"].as<int>();
+    auto count = result["count"].as<size_t>();
 
     snapshot_threshold = count;
     register_sigtrap();

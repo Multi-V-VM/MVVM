@@ -51,7 +51,7 @@ void remove_lock(char const *);
 void remove_sem(char const *);
 
 void lightweight_checkpoint(WASMExecEnv*);
-void lightweight_uncheckpoint();
+void lightweight_uncheckpoint(WASMExecEnv*);
 
 void restart_execution(uint32 targs);
 extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, /* thread_handle */
