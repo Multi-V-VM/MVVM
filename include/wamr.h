@@ -39,7 +39,7 @@ public:
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, SocketMetaData> socket_fd_map_;
     // lwcp is LightWeight CheckPoint
-    std::map<int, WASMExecEnv*> lwcp_map_;
+    size_t ready = 0;
     std::mutex as_mtx;
 
     bool is_jit;

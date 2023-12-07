@@ -77,46 +77,30 @@ void serialize_to_file(WASMExecEnv *instance) {
     if (wamr->addr_.size() != 0) {
         // tell gateway to keep alive the server
     }
-    auto cluster = wasm_exec_env_get_cluster(instance);
+    auto cluster = wasm_exec_env_get_cluster(wamr->exec_env);
     auto all_count = bh_list_length(&cluster->exec_env_list);
-    int cur_count = 0;
-    if (all_count > 1) {
-        auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
-        while (elem) {
-            if (elem == instance) {
-                break;
-            }
-            cur_count++;
-            elem = (WASMExecEnv *)bh_list_elem_next(elem);
-        }
-    } // gets the element index
-    dump_tls(((WASMModuleInstance *)instance->module_inst)->module, ((WASMModuleInstance *)instance->module_inst)->e);
-
-    auto a = to_wamr_execenv(gettid(), instance);
-
     std::unique_lock as_ul(wamr->as_mtx);
     printf("get lock\n");
-    as.emplace_back(a);
-    if (as.size() + wamr->lwcp_map_.size() == all_count) {
-	auto target_module = wamr->get_module_instance()->e;
-        for(auto [k, v] : wamr->lwcp_map_){
-	    printf("deal with blocked\n");
-            // serialize all the blocked threads
-	    // pop stack frames until we get out of imported functions
-	    auto cur_frame = (AOTFrame*)v->cur_frame;
-//	    cur_frame->ip_offset -= 4;
-
-	    a = to_wamr_execenv(k, v);
-	    as.emplace_back(a);
-	}
+    wamr->ready++;
+    //If we're not all ready
+    if(wamr->ready < all_count){
+        printf("thread %d, with %d ready out of %d total\n", gettid(), wamr->ready, all_count);
+	// Then wait for someone else to get here and finish the job
+        std::condition_variable as_cv;
+        as_cv.wait(as_ul);
     }
-    if (as.size()== all_count){
-        struct_pack::serialize_to(*writer, as);
-        exit(0);
+    // Everyone is ready to be serialized
+    int cur_count = 0;
+    auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
+    while (elem) {
+        dump_tls(((WASMModuleInstance *)elem->module_inst)->module, ((WASMModuleInstance *)elem->module_inst)->e);
+        auto a = to_wamr_execenv(cur_count, elem);
+        as.emplace_back(a);
+        cur_count++;
+        elem = (WASMExecEnv *)bh_list_elem_next(elem);
     }
-    // Is there some better way to sleep until exit?
-    std::condition_variable as_cv;
-    as_cv.wait(as_ul);
+    struct_pack::serialize_to(*writer, as);
+    exit(0);
 }
 
 int main(int argc, char *argv[]) {
@@ -138,7 +122,7 @@ int main(int argc, char *argv[]) {
                                                                        cxxopts::value<bool>()->default_value("false"))(
         "f,function", "The function to test execution",
         cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
-        "c,count", "The function index to test execution", cxxopts::value<int>()->default_value("0"));
+        "c,count", "The function index to test execution", cxxopts::value<size_t>()->default_value("0"));
     auto removeExtension = [](std::string &filename) {
         size_t dotPos = filename.find_last_of('.');
         std::string res;
@@ -164,7 +148,7 @@ int main(int argc, char *argv[]) {
     auto arg = result["arg"].as<std::vector<std::string>>();
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
-    auto count = result["count"].as<int>();
+    auto count = result["count"].as<size_t>();
 
     if (arg.size() == 1 && arg[0].empty())
         arg.clear();

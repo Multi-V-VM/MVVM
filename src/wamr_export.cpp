@@ -208,21 +208,30 @@ void remove_lock(char const *){}
 void remove_sem(char const *){}
 
 void lightweight_checkpoint(WASMExecEnv *exec_env){
-printf("checkpoint %d\n", gettid());
-    //LOGV(INFO) << fmt::format("lightweight checkpoint(exec_env) {}", exec_env);
-    std::unique_lock as_ul(wamr->as_mtx);
-    wamr->lwcp_map_.insert(std::make_pair(gettid(), exec_env));
-}
-void lightweight_uncheckpoint(){
-printf("uncheckpoint %d\n", gettid());
-    std::unique_lock as_ul(wamr->as_mtx);
-    if(wamr->lwcp_map_.erase(gettid())){
-        return; //we haven't checkpointed
+    int fid = -1;
+    if(((AOTFrame*)exec_env->cur_frame)){
+        fid = (((AOTFrame*)exec_env->cur_frame)->func_index);
     }
-    //been checkpointed so sleep forever
-    std::condition_variable as_cv;
-    as_cv.wait(as_ul);
-
+    LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
+    if(fid == -1){
+        LOGV(DEBUG) << "skip checkpoint";
+        return;
+    }
+    std::unique_lock as_ul(wamr->as_mtx);
+    wamr->ready++;
+}
+void lightweight_uncheckpoint(WASMExecEnv *exec_env){
+    int fid = -1;
+    if(((AOTFrame*)exec_env->cur_frame)){
+        fid = (((AOTFrame*)exec_env->cur_frame)->func_index);
+    }
+    LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
+    if(fid == -1){
+        LOGV(DEBUG) << "skip uncheckpoint";
+        return;
+    }
+    std::unique_lock as_ul(wamr->as_mtx);
+    wamr->ready--;
 }
 
 #ifndef MVVM_DEBUG
