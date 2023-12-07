@@ -1,7 +1,7 @@
-#include "openblas/cblas.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <>
 
 void init(double* matrix, int row, int column) {
     for (int j = 0; j < column; j++) {
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
         init(A, rowsA, common);
         init(B, common, colsB);
         start = clock();
-        cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, rowsA, colsB, common,
+        dgemm(1, 1, 1, rowsA, colsB, common,
                     1.0, A, rowsA, B, common, 0.0, C, rowsA);
         end = clock();
         cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;

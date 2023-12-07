@@ -5,14 +5,6 @@
 #include <cblas.h>
 #include <cstddef>
 #include <cstdint>
-#ifdef __linux__
-#include <faabric/mpi/MpiMessageBuffer.h>
-#include <faabric/mpi/mpi.h>
-#include <faabric/mpi/mpi.pb.h>
-#include <faabric/proto/faabric.pb.h>
-#include <faabric/scheduler/InMemoryMessageQueue.h>
-#include <faabric/transport/PointToPointBroker.h>
-#endif
 #include <lib_export.h>
 
 #define REG_NATIVE_FUNC(func_name, signature)                                                                          \

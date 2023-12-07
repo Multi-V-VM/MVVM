@@ -103,3 +103,5 @@ endfunction()
 
 wamr_socket_app(server)
 wamr_socket_app(client)
+add_executable(mpi mpi.cpp)
+target_link_libraries(mpi MVVM_export)
