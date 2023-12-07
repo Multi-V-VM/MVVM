@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     double B[common * colsB];
     double C[rowsA * colsB];
 
-    srand(time(NULL));
+//    srand(time(NULL));
 
     printf("Run,Time\n");
 
