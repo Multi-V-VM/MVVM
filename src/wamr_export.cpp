@@ -206,7 +206,13 @@ void insert_lock(char const *, int){}
 void insert_sem(char const *, int){}
 void remove_lock(char const *){}
 void remove_sem(char const *){}
-
+#if defined(__APPLE__)
+int gettid() {
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    return tid;
+}
+#endif
 void lightweight_checkpoint(WASMExecEnv *exec_env){
     int fid = -1;
     if(((AOTFrame*)exec_env->cur_frame)){

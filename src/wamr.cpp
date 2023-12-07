@@ -5,6 +5,7 @@
 #include "wamr.h"
 #include "platform_common.h"
 #include "thread_manager.h"
+#include "wamr_native.h"
 #include "wasm_export.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"
@@ -595,7 +596,7 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
                                  const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,
                                  const std::vector<std::string> &addr_list,
                                  const std::vector<std::string> &ns_lookup_pool) {
-
+    initialiseWAMRNatives();
     dir_ = string_vec_to_cstr_array(dir_list);
     map_dir_ = string_vec_to_cstr_array(map_dir_list);
     env_ = string_vec_to_cstr_array(env_list);
