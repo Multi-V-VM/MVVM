@@ -55,7 +55,7 @@ void remove_fd(int);
 void rename_fd(int, char const *, int, char const *);
 void lightweight_checkpoint(WASMExecEnv*);
 void lightweight_uncheckpoint(WASMExecEnv*);
-
+void wamr_wait();
 void sigint_handler(int sig);
 void register_sigtrap();
 void sigtrap_handler(int sig);
