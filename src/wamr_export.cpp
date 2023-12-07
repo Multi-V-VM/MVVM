@@ -21,7 +21,7 @@ void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockf
     newSocketData.socketOpenData = openData;
     wamr->socket_fd_map_[sockfd] = newSocketData;
 }
-#if !defined(__WINCRYPT_H__)
+#if !defined(_WIN32)
 void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
                               const __wasi_addr_t *dest_addr, uint32 *so_data_len) {
     SocketMetaData newSocketData{};
@@ -212,6 +212,8 @@ int gettid() {
     pthread_threadid_np(NULL, &tid);
     return tid;
 }
+#elif defined(_WIN32)
+int gettid() { return GetCurrentThreadId(); }
 #endif
 void lightweight_checkpoint(WASMExecEnv *exec_env){
     int fid = -1;
@@ -322,6 +324,11 @@ void sigtrap_handler(int sig) {
 }
 
 void register_sigtrap() {
+#if defined(_WIN32)
+    signal(UVWASI_SIGTRAP, sigtrap_handler);
+    signal(UVWASI_SIGSYS, sigtrap_handler);
+#else
+    FILE *fp = popen(cmd.c_str(), "r");
     struct sigaction sa {};
 
     // Clear the structure
@@ -334,26 +341,42 @@ void register_sigtrap() {
     sa.sa_flags = SA_RESTART;
 
     // Register the signal handler for SIGTRAP
-#ifdef __x86_64__
     if (sigaction(SIGTRAP, &sa, nullptr) == -1) {
-#elif __aarch64__
-    if (sigaction(SIGSYS, &sa, nullptr) == -1) {
-#endif
-        perror("Error: cannot handle SIGTRAP");
-        exit(-1);
+        if (sigaction(SIGSYS, &sa, nullptr) == -1) {
+            perror("Error: cannot handle SIGTRAP");
+            exit(-1);
+        } else {
+            LOGV_DEBUG << "SIGTRAP registered";
+        }
     } else {
         LOGV_DEBUG << "SIGTRAP registered";
     }
+#endif
 }
 
 // Signal handler function for SIGINT
 void sigint_handler(int sig) {
-    if(checkpoint){
-	    serialize_to_file(wamr->exec_env);
-	    return;
+    if (checkpoint) {
+        serialize_to_file(wamr->exec_env);
+        return;
     }
     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     checkpoint = true;
     wamr->replace_nop_with_int3();
+#if defined(_WIN32)
+    signal(UVWASI_SIGINT, SIG_DFL);
+#else
+    struct sigaction sa {};
+    // Clear the structure
+    sigemptyset(&sa.sa_mask);
+    // Set the signal handler function
+    sa.sa_handler = SIG_DFL;
+    // Set the flags
+    sa.sa_flags = SA_RESTART;
+    // Register the signal handler for SIGINT
+    if (sigaction(SIGINT, &sa, nullptr) == -1) {
+        perror("Error: cannot restore SIGINT SIG_DFL");
+    }
+#endif
 }
 #endif

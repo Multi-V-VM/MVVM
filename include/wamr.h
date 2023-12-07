@@ -87,7 +87,7 @@ public:
     int invoke_fseek(uint32 fd, uint32 offset);
     int invoke_ftell(uint32 fd, uint32 offset, uint32 whench);
     int invoke_preopen(uint32 fd, const std::string &path);
-#if !defined(__WINCRYPT_H__)
+#if !defined(_WIN32)
     int invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
                            const __wasi_addr_t *dest_addr, uint32 *so_data_len);
     int invoke_sock_recvfrom(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,

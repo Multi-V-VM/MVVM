@@ -39,7 +39,7 @@ struct WasiSockOpenData {
     int socktype;
     uint32 sockfd;
 };
-#if !defined(__WINCRYPT_H__)
+#if !defined(_WIN32)
 struct WasiSockSendToData {
     uint32 sock;
     iovec_app_t si_data;
@@ -64,7 +64,7 @@ struct SocketMetaData {
     int protocol{};
     SocketAddrPool socketAddress{};
     WasiSockOpenData socketOpenData{};
-#if !defined(__WINCRYPT_H__)
+#if !defined(_WIN32)
     WasiSockSendToData socketSentToData{}; // on the fly
     WasiSockRecvFromData socketRecvFromData{}; // on the fly
 #endif

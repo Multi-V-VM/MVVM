@@ -65,8 +65,3 @@ jobs:
     - name: test
       working-directory: ${{runner.workspace}}/build
       run: ctest -V --timeout 10
-          
-    - name: bench
-      working-directory: ${{runner.workspace}}/build/bench
-      run: |
-        ./MVVM_benchmark

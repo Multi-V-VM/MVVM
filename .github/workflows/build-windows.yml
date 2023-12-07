@@ -57,6 +57,7 @@ jobs:
         wget http://108.181.27.85/LLVM.zip -O LLVM.zip
         unzip LLVM.zip
         cp "C:/Program Files/LLVM/tools/llvm/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
+        cp "C:/Program Files/LLVM/build" lib/wasm-micro-runtime/wamr-compiler
         
     - name: Make WASI Socket Ext
       run: |
@@ -64,20 +65,16 @@ jobs:
         echo "C:/ProgramData/chocolatey/bin/" >> "$GITHUB_PATH"
         cmake . -DWASI_SDK_DIR=D:/wasi-sdk -G"Unix Makefiles" -DCMAKE_C_COMPILER=C:/tools/msys64/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/tools/msys64/usr/bin/g++.exe
         make
-        
-    - name: Install AOT wamrc
-      run: |
-        cd lib/wasm-micro-runtime/wamr-compiler
-        mkdir build
-        cd build
-        cmake .. -DWAMR_BUILD_AOT=1 -DWAMR_BUILD_AOT_STACK_FRAME=1 -DWAMR_BUILD_DEBUG_AOT=0 -DWAMR_BUILD_DUMP_CALL_STACK=1 -DWAMR_BUILD_CUSTOM_NAME_SECTION=1 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_WITH_CUSTOM_LLVM=1 -DWAMR_BUILD_LOAD_CUSTOM_SECTION=1  -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
-        make -j
 
     - name: configure cmake
       working-directory: ${{runner.workspace}}
       run: |
         cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
         sed -i "s/add_library(uv SHARED/add_library(uv/g" build/_deps/libuv-src/CMakeLists.txt
+
+    - name: Install benchmark
+      run: |
+        cp "C:/Program Files/LLVM/bench/*" build/bench
 
     - name: build
       working-directory: ${{runner.workspace}}/build
@@ -87,8 +84,3 @@ jobs:
     - name: test
       working-directory: ${{runner.workspace}}/build
       run: ctest -V -C ${{matrix.build}} --timeout 10
-    
-    - name: bench
-      working-directory: ${{runner.workspace}}/build/bench
-      run: |
-        ./MVVM_benchmark

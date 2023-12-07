@@ -2,7 +2,11 @@
 #define MVVM_WAMR_NATIVE_H
 #pragma once
 
+#if defined(_WIN32)
+#include <cublas.h>
+#else
 #include <cblas.h>
+#endif
 #include <cstddef>
 #include <cstdint>
 #include <lib_export.h>

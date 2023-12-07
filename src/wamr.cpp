@@ -4,16 +4,17 @@
 
 #include "wamr.h"
 #include "platform_common.h"
-#include "thread_manager.h"
-#include "wamr_native.h"
 #include "wasm_export.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"
 #include <semaphore>
 #include <regex>
+#if !defined(_WIN32)
+#include "thread_manager.h"
+#endif
 
 WAMRInstance::ThreadArgs **argptr;
-    std::counting_semaphore<100> wakeup(0);
+std::counting_semaphore<100> wakeup(0);
 
 static auto string_vec_to_cstr_array = [](const std::vector<std::string> &vecStr) {
     std::vector<const char *> cstrArray(vecStr.size());
@@ -152,7 +153,7 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
 
     buffer_for_wasm = wasm_runtime_module_malloc(module_inst, path.size(), (void **)&buffer_);
     if (buffer_for_wasm != 0) {
-        uint32 argv[0];
+        uint32 argv[2];
         argv[0] = buffer_for_wasm; // pass the buffer_ address for WASM space
         argv[1] = option; // the size of buffer_
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
@@ -245,7 +246,7 @@ int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32
     }
     return -1;
 }
-#if !defined(__WINCRYPT_H__)
+#if !defined(_WIN32)
 int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
                                      const __wasi_addr_t *dest_addr, uint32 *so_data_len) {
     auto name = "sendto";
@@ -501,7 +502,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     // order threads by id (descending)
     std::sort(execEnv->begin(), execEnv->end(),
               [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
-                return a->frames.back()->function_index > b->frames.back()->function_index;;
+                  return a->frames.back()->function_index > b->frames.back()->function_index;;
               });
 
     for (const auto& exec_ : *execEnv) {
@@ -531,8 +532,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     main_env->restore_call_chain = nullptr;
 
     invoke_init_c();
+#if !defined(_WIN32)
     invoke_preopen(1, "/dev/stdout");
-
     for (auto [idx,exec_] : *execEnv|enumerate) {
         if (idx + 1 == execEnv->size()) {
             // the last one should be the main thread
@@ -547,48 +548,42 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
 
         // restart thread execution
         fprintf(stderr, "pthread_create_wrapper, func %d\n", id);
-    /*    module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
-    exec_env->is_restore = false;
-    auto s = exec_env->restore_call_chain;
-    exec_env->restore_call_chain = NULL;
-    	invoke_init_c();
-        invoke_preopen(1, "/dev/stdout");
-    exec_env->is_restore = true;
-    exec_env->restore_call_chain =s; // */
+        /*    module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
+        exec_env->is_restore = false;
+        auto s = exec_env->restore_call_chain;
+        exec_env->restore_call_chain = NULL;
+            invoke_init_c();
+            invoke_preopen(1, "/dev/stdout");
+        exec_env->is_restore = true;
+        exec_env->restore_call_chain =s; // */
         pthread_create_wrapper(main_env, nullptr, nullptr, id, id);
         id++;
     }
     module_inst = mi;
     fprintf(stderr, "child spawned %p\n\n", main_env);
     // restart main thread execution
+#endif
     if (!is_aot) {
-	wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
-				       get_exec_env()->cur_frame->function,
-				       get_exec_env()->cur_frame->prev_frame);
+        wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
+                                       get_exec_env()->cur_frame->function,
+                                       get_exec_env()->cur_frame->prev_frame);
     } else {
-    exec_env = cur_env = main_env;
-    module_inst = main_env->module_inst;
+        exec_env = cur_env = main_env;
+        module_inst = main_env->module_inst;
 
-    fprintf(stderr, "invoke_init_c\n");
-    //invoke_init_c();
-   // invoke_preopen(1, "/dev/stdout");
-    fprintf(stderr, "wakeup.release\n");
-    wakeup.release(100);
+        fprintf(stderr, "invoke_init_c\n");
+        //invoke_init_c();
+        // invoke_preopen(1, "/dev/stdout");
+        fprintf(stderr, "wakeup.release\n");
+        wakeup.release(100);
 
-    cur_env->is_restore = true;
-    cur_env->restore_call_chain = main_saved_call_chain;
+        cur_env->is_restore = true;
+        cur_env->restore_call_chain = main_saved_call_chain;
 
-    fprintf(stderr, "invoke main %p %p\n", cur_env, cur_env->restore_call_chain);
-    invoke_main();
+        fprintf(stderr, "invoke main %p %p\n", cur_env, cur_env->restore_call_chain);
+        invoke_main();
     }
 }
-
-#if WASM_ENABLE_AOT != 0
-std::vector<uint32> WAMRInstance::get_args(){
-    // TODO
-};
-AOTFunctionInstance *WAMRInstance::get_func(int index) { return nullptr; };
-#endif
 
 WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func); }
 void WAMRInstance::set_func(WASMFunction *f) { func = static_cast<WASMFunction *>(f); }
@@ -596,7 +591,7 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
                                  const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,
                                  const std::vector<std::string> &addr_list,
                                  const std::vector<std::string> &ns_lookup_pool) {
-    initialiseWAMRNatives();
+
     dir_ = string_vec_to_cstr_array(dir_list);
     map_dir_ = string_vec_to_cstr_array(map_dir_list);
     env_ = string_vec_to_cstr_array(env_list);
@@ -641,9 +636,8 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
     set_wasi_args(context.dir, context.map_dir, context.argv_environ.env_list, context.argv_environ.argv_list,
                   get_addr_from_context(context), context.ns_lookup_list);
 }
-
-extern "C"{ // stop name mangling so it can be linked externally
 extern WAMRInstance *wamr;
+extern "C"{ // stop name mangling so it can be linked externally
 void wamr_wait(){
     fprintf(stderr, "finish child restore\n");
     wakeup.acquire();
@@ -664,7 +658,7 @@ WASMExecEnv* restore_env(){
     auto name1 = "__wasm_call_ctors";
     func = wasm_runtime_lookup_function(wamr->module_inst, name1, nullptr);
     wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
-    
+
     exec_env->restore_call_chain = s;
 // */
     exec_env->is_restore = true;

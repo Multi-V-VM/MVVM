@@ -4,8 +4,12 @@
 
 static void dgemm_wrapper(wasm_exec_env_t exec_env, int8_t a, int8_t b, int8_t c, int32_t d, int32_t e, int32_t f,
                           double g, double *h, int32_t i, double *j, int32_t k, double l, double *m, int32_t n) {
+#if defined(_WIN32)
+
+#else
     cblas_dgemm(static_cast<const CBLAS_ORDER>(a), static_cast<const CBLAS_TRANSPOSE>(b),
                 static_cast<const CBLAS_TRANSPOSE>(c), d, e, f, g, h, i, j, k, l, m, n);
+#endif
 }
 
 static NativeSymbol ns1[] = {

@@ -10,18 +10,35 @@ bool WAMRInstance::get_int3_addr() {
 
     std::string object_file = std::string(aot_file_path) + ".o";
     // if not exist, exit
+#if defined(_WIN32)
+    auto stringToWChar = [](const std::string& s) -> wchar_t* {
+        int len;
+        int slength = static_cast<int>(s.length()) + 1;
+        len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+        wchar_t* buf = new wchar_t[len];
+        MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+        return buf;
+    };
+
+    if (_waccess(stringToWChar(object_file), F_OK) == -1) {
+#else
     if (access(object_file.c_str(), F_OK) == -1) {
+#endif
         fprintf(stderr, "object file %s not exist\n", object_file.c_str());
         return false;
     }
 
     // disassemble object file and get the output
 #ifdef __x86_64__
-    std::string cmd = "objdump -d " + object_file + " | grep -E int3$";
+    auto test_cmd = "objdump -d " + object_file + " | grep -E int3$";
 #elif __aarch64__
-    std::string cmd = "objdump -d " + object_file + " | grep -E svc";
+    std::string test_cmd = "objdump -d " + object_file + " | grep -E svc";
 #endif
-    FILE *fp = popen(cmd.c_str(), "r");
+#if defined(_WIN32)
+    FILE *fp = _popen(("objdump -d " + object_file + " | grep -E int3$").c_str(), "r");
+#else
+    FILE *fp = popen(test_cmd.c_str(), "r");
+#endif
     if (fp == nullptr) {
         fprintf(stderr, "popen failed\n");
         return false;
@@ -31,7 +48,12 @@ bool WAMRInstance::get_int3_addr() {
     while (fgets(buf, sizeof(buf), fp) != nullptr) {
         output += buf;
     }
+#if defined(_WIN32)
+    _pclose(fp);
+#else
     pclose(fp);
+#endif
+
 
     // split the output
     std::vector<std::string> lines;
@@ -54,14 +76,14 @@ bool WAMRInstance::get_int3_addr() {
         auto addr = a;
         auto offset = std::stoul(addr, nullptr, 16);
 #ifdef __x86_64__
-        if (code[offset] != 0xcc && code[offset] != 0x90) {
-            fprintf(stderr, "code[%lu] = %u != 0xcc\n", offset, code[offset]);
-            // return false;
+        if (code[offset] != 0xcc) {
+            fprintf(stderr, "code[%lu] != 0xcc\n", offset);
+            return false;
         }
 #elif __aarch64__
         if (code[offset + 3] != 0xd4) {
             fprintf(stderr, "code[%lu] != 0xd4\n", offset);
-            // return false;
+            return false;
         }
 #endif
         if (offset < code_size) {

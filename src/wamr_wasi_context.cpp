@@ -61,7 +61,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
             }
         }
     }
-#if !defined(__WINCRYPT_H__)
+#if !defined(_WIN32)
     for (auto [fd, socketMetaData] : this->socket_fd_map) {
         // Unfinished recv need to reset, if it's done, remove the socket
         LOGV(INFO) << "fd: " << fd << " SocketMetaData[domain]: "

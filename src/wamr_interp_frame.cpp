@@ -64,8 +64,8 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         env->csp = env->csp_bottom + csp.size();
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
     }
-    LOGV(INFO) << fmt::format("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip,
-                              (void *)env->sp, (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
+//    LOGV(INFO) << fmt::format("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip,
+//                              (void *)env->sp, (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
 }
 
 #if WASM_ENABLE_AOT != 0
