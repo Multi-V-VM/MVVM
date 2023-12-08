@@ -16,6 +16,7 @@
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
 #include <ranges>
+#include <mutex>
 #include <tuple>
 
 class WAMRInstance {

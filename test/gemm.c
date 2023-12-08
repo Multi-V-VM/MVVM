@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
-#include <>
+
+void dgemm(int8_t a, int8_t b, int8_t c, int32_t d, int32_t e, int32_t f,
+    double g, double *h, int32_t i, double *j, int32_t k, double l, double *m, int32_t n);
 
 void init(double* matrix, int row, int column) {
     for (int j = 0; j < column; j++) {
