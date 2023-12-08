@@ -5,6 +5,7 @@
 #include "wamr.h"
 #include "platform_common.h"
 #include "wasm_export.h"
+#include "wamr_export.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"
 #include <semaphore>

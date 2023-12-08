@@ -328,7 +328,6 @@ void register_sigtrap() {
     signal(UVWASI_SIGTRAP, sigtrap_handler);
     signal(UVWASI_SIGSYS, sigtrap_handler);
 #else
-    FILE *fp = popen(cmd.c_str(), "r");
     struct sigaction sa {};
 
     // Clear the structure
