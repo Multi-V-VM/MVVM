@@ -57,6 +57,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     std::unique_lock as_ul(as_mtx);
     as.emplace_back(a);
     if (as.size() == all_count - 1) {
+        checkpoint = true;
         kill(getpid(), SIGINT);
     }
     if (as.size()== all_count){

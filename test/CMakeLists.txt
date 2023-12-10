@@ -103,5 +103,11 @@ endfunction()
 
 wamr_socket_app(server)
 wamr_socket_app(client)
-add_executable(mpi mpi.cpp)
-target_link_libraries(mpi MVVM_export)
+
+# function(wamr_mpi_app input)
+#     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}
+#         COMMAND mpicc -L${CMAKE_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/include -lMVVM_export -O3 -o ${CMAKE_CURRENT_BINARY_DIR}/${input} ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c
+#     )  
+#     add_custom_target(${input}_wamr ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input})
+# endfunction()
+# wamr_mpi_app(mpi)

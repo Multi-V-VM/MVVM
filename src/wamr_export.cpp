@@ -202,10 +202,10 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
     wamr->socket_fd_map_[fd] = metaData;
 }
 
-void insert_lock(char const *, int){}
-void insert_sem(char const *, int){}
-void remove_lock(char const *){}
-void remove_sem(char const *){}
+void insert_lock(char const *, int) {}
+void insert_sem(char const *, int) {}
+void remove_lock(char const *) {}
+void remove_sem(char const *) {}
 #if defined(__APPLE__)
 int gettid() {
     uint64_t tid;
@@ -215,26 +215,26 @@ int gettid() {
 #elif defined(_WIN32)
 int gettid() { return GetCurrentThreadId(); }
 #endif
-void lightweight_checkpoint(WASMExecEnv *exec_env){
+void lightweight_checkpoint(WASMExecEnv *exec_env) {
     int fid = -1;
-    if(((AOTFrame*)exec_env->cur_frame)){
-        fid = (((AOTFrame*)exec_env->cur_frame)->func_index);
+    if (((AOTFrame *)exec_env->cur_frame)) {
+        fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
     }
     LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
-    if(fid == -1){
+    if (fid == -1) {
         LOGV(DEBUG) << "skip checkpoint";
         return;
     }
     std::unique_lock as_ul(wamr->as_mtx);
     wamr->ready++;
 }
-void lightweight_uncheckpoint(WASMExecEnv *exec_env){
+void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     int fid = -1;
-    if(((AOTFrame*)exec_env->cur_frame)){
-        fid = (((AOTFrame*)exec_env->cur_frame)->func_index);
+    if (((AOTFrame *)exec_env->cur_frame)) {
+        fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
     }
     LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
-    if(fid == -1){
+    if (fid == -1) {
         LOGV(DEBUG) << "skip uncheckpoint";
         return;
     }
@@ -242,7 +242,6 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env){
     wamr->ready--;
 }
 
-#ifndef MVVM_DEBUG
 void print_stack(AOTFrame *frame) {
     if (frame) {
         fprintf(stderr, "stack: ");
@@ -310,8 +309,8 @@ void sigtrap_handler(int sig) {
     // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
 
     auto exec_env = wamr->get_exec_env();
-    // print_exec_env_debug_info(exec_env);
-    // print_memory(exec_env);
+    print_exec_env_debug_info(exec_env);
+    print_memory(exec_env);
 
     call_count++;
 
@@ -341,13 +340,15 @@ void register_sigtrap() {
 
     // Register the signal handler for SIGTRAP
     if (sigaction(SIGTRAP, &sa, nullptr) == -1) {
+        perror("Error: cannot handle SIGTRAP");
+        exit(-1);
+    } else {
         if (sigaction(SIGSYS, &sa, nullptr) == -1) {
-            perror("Error: cannot handle SIGTRAP");
+            perror("Error: cannot handle SIGSYS");
             exit(-1);
         } else {
-            LOGV_DEBUG << "SIGTRAP registered";
+            LOGV_DEBUG << "SIGSYS registered";
         }
-    } else {
         LOGV_DEBUG << "SIGTRAP registered";
     }
 #endif
@@ -378,4 +379,3 @@ void sigint_handler(int sig) {
     }
 #endif
 }
-#endif
