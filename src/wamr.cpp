@@ -229,11 +229,10 @@ int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32
         }
 #else
         uint32 i;
-        AOTFunctionInstance *export_funcs =
-            (AOTFunctionInstance *)((AOTModuleInstance*)module_inst)->export_functions;
-        for (i = 0; i < ((AOTModuleInstance*)module_inst)->export_func_count; i++)
+        AOTFunctionInstance *export_funcs = (AOTFunctionInstance *)((AOTModuleInstance *)module_inst)->export_functions;
+        for (i = 0; i < ((AOTModuleInstance *)module_inst)->export_func_count; i++)
             if (!strcmp(export_funcs[i].func_name, name))
-                func= &export_funcs[i];
+                func = &export_funcs[i];
 #endif
     }
     void *buffer_ = nullptr;
@@ -505,10 +504,11 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     // order threads by id (descending)
     std::sort(execEnv->begin(), execEnv->end(),
               [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
-                  return a->frames.back()->function_index > b->frames.back()->function_index;;
+                  return a->frames.back()->function_index > b->frames.back()->function_index;
+                  ;
               });
 
-    for (const auto& exec_ : *execEnv) {
+    for (const auto &exec_ : *execEnv) {
         size_t a = exec_->frames.back()->function_index;
         size_t b = exec_->frames.front()->function_index;
         fprintf(stderr, "exec_env %p, frames %lu %lu, cur_count %d\n", exec_.get(), a, b, exec_->cur_count);
@@ -537,7 +537,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     invoke_init_c();
 #if !defined(_WIN32)
     invoke_preopen(1, "/dev/stdout");
-    for (auto [idx,exec_] : *execEnv|enumerate) {
+    for (auto [idx, exec_] : *execEnv | enumerate) {
         if (idx + 1 == execEnv->size()) {
             // the last one should be the main thread
             break;
@@ -567,16 +567,15 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     // restart main thread execution
 #endif
     if (!is_aot) {
-        wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
-                                       get_exec_env()->cur_frame->function,
+        wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
                                        get_exec_env()->cur_frame->prev_frame);
     } else {
         exec_env = cur_env = main_env;
         module_inst = main_env->module_inst;
 
         fprintf(stderr, "invoke_init_c\n");
-        //invoke_init_c();
-        // invoke_preopen(1, "/dev/stdout");
+        // invoke_init_c();
+        //  invoke_preopen(1, "/dev/stdout");
         fprintf(stderr, "wakeup.release\n");
         wakeup.release(100);
 
@@ -587,7 +586,14 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
         invoke_main();
     }
 }
-
+void WAMRInstance::instantiate() {
+    module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
+    if (!module_inst) {
+        LOGV(ERROR) << fmt::format("Instantiate wasm module failed. error: {}", error_buf);
+        throw;
+    }
+    cur_env = exec_env = wasm_runtime_create_exec_env(module_inst, stack_size);
+}
 WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func); }
 void WAMRInstance::set_func(WASMFunction *f) { func = static_cast<WASMFunction *>(f); }
 void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
@@ -640,13 +646,13 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
                   get_addr_from_context(context), context.ns_lookup_list);
 }
 extern WAMRInstance *wamr;
-extern "C"{ // stop name mangling so it can be linked externally
-void wamr_wait(){
+extern "C" { // stop name mangling so it can be linked externally
+void wamr_wait() {
     fprintf(stderr, "finish child restore\n");
     wakeup.acquire();
     fprintf(stderr, "go child!! %d\n", gettid());
 }
-WASMExecEnv* restore_env(){
+WASMExecEnv *restore_env() {
     auto exec_env = wasm_exec_env_create_internal(wamr->module_inst, wamr->stack_size);
     restore(child_env, exec_env);
 
@@ -669,13 +675,4 @@ WASMExecEnv* restore_env(){
 
     return exec_env;
 }
-}
-
-void WAMRInstance::instantiate() {
-    module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
-    if (!module_inst) {
-        LOGV(ERROR) << fmt::format("Instantiate wasm module failed. error: {}", error_buf);
-        throw;
-    }
-    cur_env = exec_env = wasm_runtime_create_exec_env(module_inst, stack_size);
 }

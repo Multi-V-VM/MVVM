@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 
     printf("Run,Time\n");
 
-    for (i = 0; i < 100; i++) {
+    for (i = 0; i < 1e8; i++) {
         init(A, rowsA, common);
         init(B, common, colsB);
         start = clock();

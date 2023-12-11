@@ -5,9 +5,7 @@
 #ifndef MVVM_WAMR_INTERP_FRAME_H
 #define MVVM_WAMR_INTERP_FRAME_H
 
-#if WASM_ENABLE_AOT != 0
 #include "aot_runtime.h"
-#endif
 #include "wamr_branch_block.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"

@@ -2,7 +2,7 @@
 #include <unistd.h>
 int a(int c){
     static int b=0;
-    printf("%d %d\n",b,c);
+//    printf("\n");
 }
 int main(int argv,char ** argc){
     int c=0;
@@ -14,4 +14,5 @@ int main(int argv,char ** argc){
         if(c==d)
             break;
     }
+//    __wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
 }
