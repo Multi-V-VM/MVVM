@@ -47,24 +47,27 @@ void serialize_to_file(WASMExecEnv *instance) {
             elem = (WASMExecEnv *)bh_list_elem_next(elem);
         }
     } // gets the element index
+#else
+    auto all_count = 1;
 #endif
     auto a = new WAMRExecEnv();
     dump(a, instance);
-#if !defined(_WIN32)
-
     a->cur_count = gettid();
 
     std::unique_lock as_ul(as_mtx);
     as.emplace_back(a);
     if (as.size() == all_count - 1) {
+#if !defined(_WIN32)
         kill(getpid(), SIGINT);
+#else
+        raise(SIGINT);
+#endif
     }
     if (as.size()== all_count){
-#endif
         struct_pack::serialize_to(*writer, as);
         exit(0);
-#if !defined(_WIN32)
     }
+#if !defined(_WIN32)
     // Is there some better way to sleep until exit?
     std::condition_variable as_cv;
     as_cv.wait(as_ul);
@@ -133,10 +136,12 @@ int main(int argc, char *argv[]) {
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
     wamr->get_int3_addr();
-    //    wamr->replace_int3_with_nop();
+    wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 #if defined(_WIN32)
+    // Define the sigaction structure
+    signal(SIGINT, sigint_handler);
 #else
     // Define the sigaction structure
     struct sigaction sa {};
@@ -167,6 +172,6 @@ int main(int argc, char *argv[]) {
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     // print in s
-    std::cout << fmt::format("Execution time: {} s\n", (double)dur.count()/1000000);
+    LOGV(INFO) << fmt::format("Execution time: {} s\n", (double)dur.count()/1000000);
     return 0;
 }

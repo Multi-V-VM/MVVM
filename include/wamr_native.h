@@ -3,7 +3,9 @@
 #pragma once
 
 #if defined(_WIN32)
-#include <cublas.h>
+#include <cublas_v2.h>
+#include <cublas_api.h>
+#include <cuda_runtime_api.h>
 #else
 #include <cblas.h>
 #endif

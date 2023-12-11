@@ -4,12 +4,13 @@
 
 #include "wamr.h"
 #include "platform_common.h"
-#include "wasm_export.h"
 #include "wamr_export.h"
+#include "wamr_native.h"
+#include "wasm_export.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"
-#include <semaphore>
 #include <regex>
+#include <semaphore>
 #if !defined(_WIN32)
 #include "thread_manager.h"
 #endif
@@ -65,6 +66,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
         LOGV(ERROR) << "Init runtime environment failed.\n";
         throw;
     }
+    initialiseWAMRNatives();
     char *buffer{};
     if (!load_wasm_binary(wasm_path, &buffer)) {
         LOGV(ERROR) << "Load wasm binary failed.\n";

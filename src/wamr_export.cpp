@@ -307,12 +307,14 @@ size_t snapshot_threshold;
 size_t call_count = 0;
 bool checkpoint = false;
 void sigtrap_handler(int sig) {
-    // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
 
     auto exec_env = wamr->get_exec_env();
-    // print_exec_env_debug_info(exec_env);
-    // print_memory(exec_env);
-
+//    print_exec_env_debug_info(exec_env);
+//    print_memory(exec_env);
+#if defined (_WIN32)
+    signal(SIGILL , sigtrap_handler);
+#endif
     call_count++;
 
     if (call_count >= snapshot_threshold || checkpoint) {
@@ -325,8 +327,8 @@ void sigtrap_handler(int sig) {
 
 void register_sigtrap() {
 #if defined(_WIN32)
-    signal(UVWASI_SIGTRAP, sigtrap_handler);
-    signal(UVWASI_SIGSYS, sigtrap_handler);
+    signal(SIGILL , sigtrap_handler);
+    LOGV_DEBUG << "SIGILL registered";
 #else
     struct sigaction sa {};
 
@@ -363,7 +365,8 @@ void sigint_handler(int sig) {
     checkpoint = true;
     wamr->replace_nop_with_int3();
 #if defined(_WIN32)
-    signal(UVWASI_SIGINT, SIG_DFL);
+    signal(SIGINT, SIG_DFL);
+    LOGV_DEBUG << "SIGINT registered";
 #else
     struct sigaction sa {};
     // Clear the structure

@@ -64,8 +64,8 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         env->csp = env->csp_bottom + csp.size();
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
     }
-//    LOGV(INFO) << fmt::format("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip,
-//                              (void *)env->sp, (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
+    LOGV(INFO) << fmt::format("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip,
+                              (void *)env->sp, (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
 }
 
 #if WASM_ENABLE_AOT != 0
@@ -74,8 +74,8 @@ void WAMRInterpFrame::dump_impl(AOTFrame *env) {
     ip = env->ip_offset;
     sp = env->sp - env->lp; // offset to the wasm_stack_top
 
-    LOGV(INFO) << fmt::format("function_index {} ip_offset {} lp {} sp {} sp_offset {}", env->func_index, ip,
-                              (void *)env->lp, (void *)env->sp, sp);
+//    LOGV(INFO) << fmt::format("function_index {} ip_offset {} lp {} sp {} sp_offset {}", env->func_index, ip,
+//                              (void *)env->lp, (void *)env->sp, sp);
 
     stack_frame = std::vector(env->lp, env->sp);
 

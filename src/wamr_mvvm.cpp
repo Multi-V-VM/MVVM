@@ -6,7 +6,7 @@ bool WAMRInstance::get_int3_addr() {
     auto module = get_module();
     auto code = static_cast<unsigned char *>(module->code);
     auto code_size = module->code_size;
-    //fprintf(stderr, "code %p code_size %d\n", code, code_size);
+    fprintf(stderr, "code %p code_size %d\n", code, code_size);
 
     std::string object_file = std::string(aot_file_path) + ".o";
     // if not exist, exit
@@ -35,7 +35,7 @@ bool WAMRInstance::get_int3_addr() {
     std::string test_cmd = "objdump -d " + object_file + " | grep -E svc";
 #endif
 #if defined(_WIN32)
-    FILE *fp = _popen(("objdump -d " + object_file + " | grep -E int3$").c_str(), "r");
+    FILE *fp = _popen(("llvm-objdump -d " + object_file + " | grep -E movl\t$0x4").c_str(), "r");
 #else
     FILE *fp = popen(test_cmd.c_str(), "r");
 #endif

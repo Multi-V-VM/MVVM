@@ -6,7 +6,7 @@ int a(int c){
 }
 int main(int argv,char ** argc){
     int c=0;
-    int d = atoi(argc[0]);
+    int d = atoi(argc[1]);
     while (1){
         a(c);
         c++;
