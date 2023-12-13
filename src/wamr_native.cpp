@@ -52,7 +52,7 @@ static void dgemm_wrapper(wasm_exec_env_t exec_env, int8_t layout, int8_t transA
 #endif
 }
 static NativeSymbol ns1[] = {
-    REG_NATIVE_FUNC(dgemm, "(i8i8i8iiiFF*iF*FF*i)"),
+    REG_NATIVE_FUNC(dgemm, "(i8i8i8iiiFF*iF*iFF*i)"),
 };
 
 uint32_t getMVVMDemoApi(NativeSymbol **nativeSymbols) {

@@ -35,7 +35,7 @@ bool WAMRInstance::get_int3_addr() {
     std::string test_cmd = "objdump -d " + object_file + " | grep -E svc";
 #endif
 #if defined(_WIN32)
-    FILE *fp = _popen(("llvm-objdump -d " + object_file + " | grep -E movl\t$0x4").c_str(), "r");
+    FILE *fp = _popen(("llvm-objdump -d " + object_file+  " | grep -E \"ba 04 00 00 00\"").c_str(), "r");
 #else
     FILE *fp = popen(test_cmd.c_str(), "r");
 #endif
@@ -46,7 +46,11 @@ bool WAMRInstance::get_int3_addr() {
     char buf[1024];
     std::string output;
     while (fgets(buf, sizeof(buf), fp) != nullptr) {
-        output += buf;
+#if defined(_WIN32)
+         output += std::string(buf);
+#else
+        output += std::string(buf);
+#endif
     }
 #if defined(_WIN32)
     _pclose(fp);
@@ -66,10 +70,11 @@ bool WAMRInstance::get_int3_addr() {
     // get the address of int3
     std::vector<std::string> addr;
     for (auto &line : lines) {
-        auto pos = line.find(":");
-        if (pos != std::string::npos) {
-            addr.push_back(line.substr(0, pos));
-        }
+                    auto pos = line.find(":");
+                    if (pos != std::string::npos) {
+                        addr.emplace_back(line.substr(0, pos));
+
+                }
     }
 
     for (auto &a : addr) {
@@ -114,6 +119,12 @@ bool WAMRInstance::replace_int3_with_nop() {
 
     // replace int3 with nop
     for (auto offset : int3_addr) {
+#if defined(_WIN32)
+        printf("%lld  ", offset);
+        for(int i=0; i< 5; i++){
+            printf("%02x ", code[offset+i]);
+        }
+#else
 #ifdef __x86_64__
         code[offset] = 0x90;
 #elif __aarch64__
@@ -121,6 +132,7 @@ bool WAMRInstance::replace_int3_with_nop() {
         code[offset + 2] = 0x03;
         code[offset + 1] = 0x20;
         code[offset] = 0x1f;
+#endif
 #endif
     }
 
