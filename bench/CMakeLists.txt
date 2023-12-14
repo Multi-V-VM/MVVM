@@ -17,9 +17,8 @@ ExternalProject_Add(gapbs
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
         -DCMAKE_BUILD_TYPE=Release
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
-        -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
-        -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
-        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all"
+        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all -Wl,--allow-undefined-file=${WASI_SDK}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt"
         -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
         ${CMAKE_CURRENT_SOURCE_DIR}/gapbs
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
@@ -59,9 +58,8 @@ ExternalProject_Add(gapbs-native
         CONFIGURE_COMMAND  ${CMAKE_COMMAND}
         -DCMAKE_BUILD_TYPE=Release
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
-        -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
-        -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
-        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all"
+        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all -Wl,--allow-undefined-file=${WASI_SDK}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt"
         -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
         ${CMAKE_CURRENT_SOURCE_DIR}/redis
         BUILD_COMMAND     ${CMAKE_COMMAND} --build .
@@ -85,10 +83,9 @@ ExternalProject_Add(llama
         PATCH_COMMAND ""
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
         -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
-        -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
-        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all"
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all -Wl,--allow-undefined-file=${WASI_SDK}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt"
         -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
         ${CMAKE_CURRENT_SOURCE_DIR}/llama
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
@@ -101,10 +98,9 @@ ExternalProject_Add(linpack
         PATCH_COMMAND ""
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
         -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
-        -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
-        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all"
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all -Wl,--allow-undefined-file=${WASI_SDK}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt"
         -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
         ${CMAKE_CURRENT_SOURCE_DIR}/linpack
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
@@ -116,11 +112,9 @@ ExternalProject_Add(hdastar
         PATCH_COMMAND ""
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
         -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_C_COMPILER=${WASI_SDK}/bin/clang${WASI_EXE_POSTFIX}
-        -DCMAKE_CXX_COMPILER=${WASI_SDK}/bin/clang++${WASI_EXE_POSTFIX}
-        -DCMAKE_C_FLAGS="-Wl,--allow-undefined-file=${WASI_SDK}/share/wasi-sysroot/share/wasm32-wasi-threads/defined-symbols.txt"
-        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all"
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all -Wl,--allow-undefined-file=${WASI_SDK}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt"
         -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
         ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
         BUILD_COMMAND ${CMAKE_COMMAND} --build .

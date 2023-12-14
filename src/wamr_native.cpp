@@ -1,6 +1,7 @@
 #include "wamr_native.h"
 #include "wasm_export.h"
 #include <wasm_native.h>
+#if defined(_WIN32)
 #define gpuErrchk(ans)                                                                                                 \
     { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort = true) {
@@ -10,6 +11,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
             exit(code);
     }
 }
+#endif
 static void dgemm_wrapper(wasm_exec_env_t exec_env, int8_t layout, int8_t transA, int8_t transB, int32_t m, int32_t n,
                           int32_t k, double alpha, double *a, int32_t lda, double *b, int32_t ldb, double beta,
                           double *c, int32_t ldc) {
@@ -44,10 +46,10 @@ static void dgemm_wrapper(wasm_exec_env_t exec_env, int8_t layout, int8_t transA
 
     fprintf(stderr, "CUBLAS matrix mul took: %f [s]\n", miliseconds / 1000);
 #else
-    begin = clock();
+    auto begin = clock();
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
-    end = clock();
-    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    auto end = clock();
+    auto time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     fprintf(stderr, "CPU matrix mul took: %f [s]\n", time_spent);
 #endif
 }

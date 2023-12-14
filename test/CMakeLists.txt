@@ -9,7 +9,7 @@ set(HOST_PREFIX ${WASI_SDK_DIR}/bin/)
 enable_testing()
 function(wamr_app input)
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-            COMMAND ${HOST_PREFIX}clang -Wno-implicit-function-declaration -O3 -Wno-int-conversion --target=wasm32-unknown-wasi -D_WASI_EMULATED_PROCESS_CLOCKS -lwasi-emulated-process-clocks -g -pthread -z stack-size=65536 -Wl,--initial-memory=655360 -Wl,--max-memory=655360 -Wl,--export-all -Wl,--allow-undefined -Wl,--allow-undefined-file=${WAMR_DIR}/wamr-sdk/app/libc-builtin-sysroot/share/defined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+            COMMAND ${HOST_PREFIX}clang -Wno-implicit-function-declaration -O3 -Wno-int-conversion --target=wasm32-wasi-threads -lwasi-emulated-getpid  -lwasi-emulated-process-clocks -lomp -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -g -pthread -z stack-size=65536 -Wl,--initial-memory=655360 -Wl,--max-memory=655360 -Wl,--export-all -Wl,--allow-undefined -Wl,--allow-undefined-file=${WASI_SDK_DIR}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c
     )
     add_custom_target(${input}_wamr ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
@@ -39,8 +39,6 @@ function(wamr_app input)
         )
         add_custom_target(${input}_ckpt_br_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot)
 
-        # add_custom_target(${input}_ckpt_every_dirty_compile ALL DEPENDS ${input}_wamr COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-every-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
-
         add_custom_target(${input}_compile_all ALL DEPENDS ${input}_pure_compile ${input}_stack_compile ${input}_compile ${input}_ckpt_br_compile)
 
         add_test(NAME ${input}_checkpoint COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_checkpoint --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
@@ -56,6 +54,7 @@ wamr_app(multi-thread)
 wamr_app(read-file)
 wamr_app(gups)
 wamr_app(gemm)
+wamr_app(openmp)
 
 function(wamr_socket_app input)
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm

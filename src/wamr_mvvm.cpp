@@ -144,6 +144,9 @@ bool WAMRInstance::replace_int3_with_nop() {
         uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
         os_mprotect(mmap_addr, total_size, map_prot);
     }
+#if defined(__APPLE__)
+    pthread_jit_write_protect_np(1);
+#endif
     return true;
 }
 
