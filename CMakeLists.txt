@@ -24,7 +24,7 @@ if (APPLE)
         set(BLAS_LIBRARIES /opt/homebrew/opt/openblas/lib/libopenblas.0.dylib)
     else ()
         set(LLVM_LLDB_LIB /usr/local/Cellar/llvm@14/14.0.6/lib/liblldb.dylib)
-        set(BLAS_LIBRARIES /usr/local/opt/openblas/lib/libopenblas.0.dylib)
+        set(BLAS_LIBRARIES -lopenblas)
     endif ()
     find_path(BLAS_INCLUDE_DIRS cblas.h
             /opt/homebrew/opt/openblas/include
@@ -38,7 +38,7 @@ elseif (LINUX)
     set(WAMR_BUILD_LIB_WASI_THREADS 1)
     set(WAMR_BUILD_THREAD_MGR 1)
     set(LLVM_LLDB_LIB /usr/lib/liblldb.so)
-    set(BLAS_LIBRARIES /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblas.so)
+    set(BLAS_LIBRARIES -lopenblas)
     find_path(BLAS_INCLUDE_DIRS cblas.h
             /usr/include
             /usr/local/include
@@ -124,8 +124,8 @@ add_executable(MVVM_restore src/restore.cpp ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_checkpoint src/checkpoint.cpp ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_mpi_test test/mpi.cpp ${UNCOMMON_SHARED_SOURCE})
 
-target_link_libraries(MVVM_export fmt::fmt -lm -ldl -lpthread ${LLVM_LLDB_LIB})
-target_link_libraries(MVVM_restore fmt::fmt cxxopts::cxxopts -lm -ldl -lpthread ${LLVM_LLDB_LIB} ${BLAS_LIBRARIES} MVVM_export vmlib)
-target_link_libraries(MVVM_checkpoint fmt::fmt cxxopts::cxxopts -lm -ldl -lpthread ${LLVM_LLDB_LIB} ${BLAS_LIBRARIES} MVVM_export vmlib)
-#target_link_libraries(MVVM_mpi_test fmt::fmt cxxopts::cxxopts -lm -ldl -lpthread ${LLVM_LLDB_LIB} ${BLAS_LIBRARIES} MVVM_export vmlib)
+target_link_libraries(MVVM_export fmt::fmt -lm -ldl -lpthread ${BLAS_LIBRARIES})
+target_link_libraries(MVVM_restore fmt::fmt cxxopts::cxxopts -lm -ldl -lpthread ${BLAS_LIBRARIES} MVVM_export vmlib)
+target_link_libraries(MVVM_checkpoint fmt::fmt cxxopts::cxxopts -lm -ldl -lpthread ${BLAS_LIBRARIES} MVVM_export vmlib)
+target_link_libraries(MVVM_mpi_test fmt::fmt cxxopts::cxxopts -lm -ldl -lpthread ${BLAS_LIBRARIES} MVVM_export vmlib)
 add_definitions(-DCXXOPTS_NO_RTTI=1)
