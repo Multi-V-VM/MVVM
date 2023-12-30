@@ -110,7 +110,7 @@ include(${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 
 include(${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/wasm-micro-runtime/core/iwasm/aot ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include ${LLVM_INCLUDE_DIRS} ${BLAS_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/wasm-micro-runtime/core/iwasm/aot ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include ${LLVM_INCLUDE_DIRS} ${BLAS_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrafter/libcrafter/)
 
 add_subdirectory(lib/libcrafter/libcrafter)
 add_subdirectory(test)

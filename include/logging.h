@@ -109,8 +109,9 @@ struct mvvm_op_data {
     uint32 client_ip;
     int client_port;
 };
-#define MVVM_SOCK_ADDR "172.18.0.1"
+#define MVVM_SOCK_ADDR "172.17.0.1"
 #define MVVM_SOCK_PORT 1234
+#define MVVM_SOCK_INTERFACE "docker0"
 #define LOG_IF(level) LogWriter(LocationInfo(__FILE__, __LINE__, __FUNCTION__), level) < LogStream()
 #define LOGV(level) LOGV_##level
 #define LOGV_DEBUG LOG_IF(BH_LOG_LEVEL_DEBUG)
