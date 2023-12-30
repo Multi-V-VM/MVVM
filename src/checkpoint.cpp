@@ -20,6 +20,8 @@
 #if !defined(_WIN32)
 #include "thread_manager.h"
 #endif
+#include <arpa/inet.h>
+#include <sys/socket.h>
 // file map, direcotry handle
 
 WAMRInstance *wamr = nullptr;
@@ -31,6 +33,66 @@ void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     if (wamr->addr_.size() != 0) {
         // tell gateway to keep alive the server
+        auto convertAddr =[](const char *addr){
+            struct sockaddr_in addr_in;
+            inet_pton(AF_INET, addr, &addr_in.sin_addr);
+            return addr_in.sin_addr.s_addr;
+        };
+        struct sockaddr_in addr;
+        char buf[100];
+        int fd = 0;
+        int rc;
+        struct mvvm_op_data op_data = {.op = MVVM_SOCK_SUSPEND,
+                                       .server_ip = convertAddr(wamr->addr_[0]),
+                                       .server_port = 0,
+                                       .client_ip = 0,
+                                       .client_port = 0};
+
+        // Create a socket
+        if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+            LOGV(ERROR) << "socket error";
+            throw std::runtime_error("socket error");
+        }
+
+        // Create a socket
+        if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+            std::cerr << "socket error" << std::endl;
+            throw std::runtime_error("socket error");
+        }
+
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(MVVM_SOCK_PORT);
+
+        // Convert IPv4 address from text to binary form
+        if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
+            perror("Invalid address/ Address not supported");
+            exit(EXIT_FAILURE);
+        }
+
+        // Connect to the server
+        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            std::cerr << "Connection Failed" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        std::cout << "Connected successfully" << std::endl;
+
+        memcpy(buf, &op_data, sizeof(mvvm_op_data));
+        rc = send(fd, buf, strlen(buf) + 1, 0);
+        if (rc == -1) {
+            perror("send error");
+            exit(EXIT_FAILURE);
+        }
+
+        // Clean up
+        close(fd);
+
+        // send the fd
+        // struct msghdr msg = {0};
+        if (send(fd, &op_data, sizeof(op_data), 0) == -1) {
+            perror("send error");
+            exit(EXIT_FAILURE);
+        }
     }
 #if !defined(_WIN32)
     auto cluster = wasm_exec_env_get_cluster(instance);
@@ -87,7 +149,7 @@ int main(int argc, char *argv[]) {
         "e,env", "The environment list exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value("a=b"))(
         "a,arg", "The arg list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
-        "p,addr", "The address exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
+        "p,addr", "The address exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value("0.0.0.0/36"))(
         "n,ns_pool", "The ns lookup pool exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value(""))("h,help", "The value for epoch value",
                                                                        cxxopts::value<bool>()->default_value("false"))(
@@ -136,7 +198,7 @@ int main(int argc, char *argv[]) {
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
     wamr->get_int3_addr();
-    wamr->replace_int3_with_nop();
+//    wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 #if defined(_WIN32)

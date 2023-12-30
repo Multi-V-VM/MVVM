@@ -102,12 +102,14 @@ enum opcode {
     MVVM_SOCK_SUSPEND = 0,
     MVVM_SOCK_RESUME = 1,
 };
-struct op_data {
+struct mvvm_op_data {
     enum opcode op;
-    int sever_ip;
-    int port;
+    uint32 server_ip;
+    int server_port;
+    uint32 client_ip;
+    int client_port;
 };
-#define MVVM_SOCK_ADDR INADDR_ANY
+#define MVVM_SOCK_ADDR "172.18.0.1"
 #define MVVM_SOCK_PORT 1234
 #define LOG_IF(level) LogWriter(LocationInfo(__FILE__, __LINE__, __FUNCTION__), level) < LogStream()
 #define LOGV(level) LOGV_##level

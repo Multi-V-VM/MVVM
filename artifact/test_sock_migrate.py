@@ -1,22 +1,18 @@
 #!/bin/python3
 import os
 
-# LOGV=0 ./MVVM_checkpoint -t ./test/read-file.wasm -f write -c 0
-# LOGV=0 ./MVVM_restore -t ./test/read-file.wasm
+# LOGV=0 ./MVVM_checkpoint -t ./test/client.aot -f write -c 0
+# LOGV=0 ./MVVM_restore -t ./test/client.aot
 
 
 def run_sock_once(funcs):
-    os.system("LOGV=0 ./MVVM_checkpoint -t ./test/read-file.wasm -f write -c 0")
+    os.system("LOGV=0 ./MVVM_checkpoint -t ./test/server.aot -f write -c 10000000000")
     os.system("./gateway")
-    for func in funcs.keys():
-        for i in range(0, funcs[func]):
-            os.system(
-                f"LOGV=0 ./MVVM_checkpoint -t ./test/read-file.wasm -f {func} -c {i}"
-            )
-            os.system(f"LOGV=0 ./MVVM_restore -t ./test/read-file.wasm")
+
+    for i in range(0, funcs):
+        os.system(f"LOGV=0 ./MVVM_checkpoint -t ./test/client.aot -c {i}")
+        os.system(f"LOGV=0 ./MVVM_restore -t ./test/client.aot")
 
 
 if __name__ == "__main__":
-    run_sock_once(
-        {"fwrite": 2, "fread": 1, "fclose": 3, "fopen": 3, "fseek": 3, "ftell": 1}
-    )
+    run_sock_once([88])

@@ -12,6 +12,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <arpa/inet.h>
 
 FreadStream *reader;
 WAMRInstance *wamr = nullptr;
@@ -52,6 +53,38 @@ int main(int argc, char **argv) {
     reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
+    if (wamr->addr_.size() != 0) {
+        // tell gateway to keep alive the server
+        struct sockaddr_in addr;
+        char buf[100];
+        int fd = 0;
+
+        // Create a socket
+        if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+            LOGV(ERROR) << "socket error";
+            throw std::runtime_error("socket error");
+        }
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(MVVM_SOCK_PORT);
+        // Convert IPv4 and IPv6 addresses from text to binary form
+        if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
+            perror("Invalid address/ Address not supported");
+            exit(EXIT_FAILURE);
+        }
+        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+            perror("connect error");
+            exit(EXIT_FAILURE);
+        }
+        // send the fd
+        // struct msghdr msg = {0};
+
+        struct mvvm_op_data op_data = {
+            .op = MVVM_SOCK_RESUME, .server_ip = 0, .server_port = 0, .client_ip = 0, .client_port = 0};
+        if (send(fd, &op_data, sizeof(op_data), 0) == -1) {
+            perror("send error");
+            exit(EXIT_FAILURE);
+        }
+    }
     wamr->recover(&a);
     return 0;
 }

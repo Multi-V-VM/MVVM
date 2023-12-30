@@ -21,3 +21,6 @@
 [submodule "bench/hdastar"]
 	path = bench/hdastar
 	url = https://github.com/victoryang00/HDAStar
+[submodule "lib/libcrafter"]
+	path = lib/libcrafter
+	url = https://github.com/victoryang00/libcrafter

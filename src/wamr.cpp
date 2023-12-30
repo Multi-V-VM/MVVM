@@ -156,7 +156,7 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
 
     buffer_for_wasm = wasm_runtime_module_malloc(module_inst, path.size(), (void **)&buffer_);
     if (buffer_for_wasm != 0) {
-        uint32 argv[2];
+        uint32 argv[0];
         argv[0] = buffer_for_wasm; // pass the buffer_ address for WASM space
         argv[1] = option; // the size of buffer_
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
