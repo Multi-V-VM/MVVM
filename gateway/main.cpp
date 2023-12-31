@@ -12,6 +12,9 @@ std::string server_ip;
 pcap_t* handle;
 int linkhdrlen;
 int packets;
+int client_fd;
+int fd;
+bool is_forward = false;
 
 void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char *packetptr) {
     // Analyze packet
@@ -23,61 +26,51 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
     char srcip[256];
     char dstip[256];
 
+    if(!is_forward){ // Skip the datalink layer header and get the IP header fields.
+        packetptr += linkhdrlen;
+        iphdr = (struct ip *)packetptr;
+        strcpy(srcip, inet_ntoa(iphdr->ip_src));
+        strcpy(dstip, inet_ntoa(iphdr->ip_dst));
+        sprintf(iphdrInfo, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d", ntohs(iphdr->ip_id), iphdr->ip_tos,
+                iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
 
-    // Skip the datalink layer header and get the IP header fields.
-    packetptr += linkhdrlen;
-    iphdr = (struct ip*)packetptr;
-    strcpy(srcip, inet_ntoa(iphdr->ip_src));
-    strcpy(dstip, inet_ntoa(iphdr->ip_dst));
-    sprintf(iphdrInfo, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d",
-            ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl,
-            4*iphdr->ip_hl, ntohs(iphdr->ip_len));
+        // Advance to the transport layer header then parse and display
+        // the fields based on the type of hearder: tcp, udp or icmp.
+        packetptr += 4 * iphdr->ip_hl;
+        switch (iphdr->ip_p) {
+        case IPPROTO_TCP:
+            tcphdr = (struct tcphdr *)packetptr;
+            printf("TCP  %s:%d -> %s:%d\n", srcip, ntohs(tcphdr->th_sport), dstip, ntohs(tcphdr->th_dport));
+            printf("%s\n", iphdrInfo);
+            printf("%c%c%c%c%c%c Seq: 0x%x Ack: 0x%x Win: 0x%x TcpLen: %d\n", (tcphdr->th_flags & TH_URG ? 'U' : '*'),
+                   (tcphdr->th_flags & TH_ACK ? 'A' : '*'), (tcphdr->th_flags & TH_PUSH ? 'P' : '*'),
+                   (tcphdr->th_flags & TH_RST ? 'R' : '*'), (tcphdr->th_flags & TH_SYN ? 'S' : '*'),
+                   (tcphdr->th_flags & TH_SYN ? 'F' : '*'), ntohl(tcphdr->th_seq), ntohl(tcphdr->th_ack),
+                   ntohs(tcphdr->th_win), 4 * tcphdr->th_off);
+            printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
+            packets += 1;
+            break;
 
-    // Advance to the transport layer header then parse and display
-    // the fields based on the type of hearder: tcp, udp or icmp.
-    packetptr += 4*iphdr->ip_hl;
-    switch (iphdr->ip_p)
-    {
-    case IPPROTO_TCP:
-        tcphdr = (struct tcphdr*)packetptr;
-        printf("TCP  %s:%d -> %s:%d\n", srcip, ntohs(tcphdr->th_sport),
-               dstip, ntohs(tcphdr->th_dport));
-        printf("%s\n", iphdrInfo);
-        printf("%c%c%c%c%c%c Seq: 0x%x Ack: 0x%x Win: 0x%x TcpLen: %d\n",
-               (tcphdr->th_flags & TH_URG ? 'U' : '*'),
-               (tcphdr->th_flags & TH_ACK ? 'A' : '*'),
-               (tcphdr->th_flags & TH_PUSH ? 'P' : '*'),
-               (tcphdr->th_flags & TH_RST ? 'R' : '*'),
-               (tcphdr->th_flags & TH_SYN ? 'S' : '*'),
-               (tcphdr->th_flags & TH_SYN ? 'F' : '*'),
-               ntohl(tcphdr->th_seq), ntohl(tcphdr->th_ack),
-               ntohs(tcphdr->th_win), 4*tcphdr->th_off);
-        printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
-        packets += 1;
-        break;
+        case IPPROTO_UDP:
+            udphdr = (struct udphdr *)packetptr;
+            printf("UDP  %s:%d -> %s:%d\n", srcip, ntohs(udphdr->uh_sport), dstip, ntohs(udphdr->uh_dport));
+            printf("%s\n", iphdrInfo);
+            printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
+            packets += 1;
+            break;
 
-    case IPPROTO_UDP:
-        udphdr = (struct udphdr*)packetptr;
-        printf("UDP  %s:%d -> %s:%d\n", srcip, ntohs(udphdr->uh_sport),
-               dstip, ntohs(udphdr->uh_dport));
-        printf("%s\n", iphdrInfo);
-        printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
-        packets += 1;
-        break;
-
-    case IPPROTO_ICMP:
-        icmphdr = (struct icmp*)packetptr;
-        printf("ICMP %s -> %s\n", srcip, dstip);
-        printf("%s\n", iphdrInfo);
-        printf("Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->icmp_type, icmphdr->icmp_code,
-               ntohs(icmphdr->icmp_hun.ih_idseq.icd_id), ntohs(icmphdr->icmp_hun.ih_idseq.icd_seq));
-        printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
-        packets += 1;
-        break;
+        case IPPROTO_ICMP:
+            icmphdr = (struct icmp *)packetptr;
+            printf("ICMP %s -> %s\n", srcip, dstip);
+            printf("%s\n", iphdrInfo);
+            printf("Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->icmp_type, icmphdr->icmp_code,
+                   ntohs(icmphdr->icmp_hun.ih_idseq.icd_id), ntohs(icmphdr->icmp_hun.ih_idseq.icd_seq));
+            printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
+            packets += 1;
+            break;
+        }
     }
     // Modify packet if needed
-
-    // Forward packet using raw socket
 }
 
 void keep_alive(std::string source_ip, int source_port, std::string dest_ip, int dest_port) {
@@ -105,9 +98,14 @@ void keep_alive(std::string source_ip, int source_port, std::string dest_ip, int
     // Clean up Libcrafter
     CleanCrafter();
 }
-
+void sigterm_handler(int sig){
+    pcap_close(handle);
+    close(client_fd);
+    close(fd);
+    LOGV(INFO) << "Bye";
+    exit(0);
+}
 int main() {
-    int client_fd;
     struct sockaddr_in address{};
     int opt = 1;
     int rc;
@@ -117,7 +115,9 @@ int main() {
     struct bpf_program fp {};
     struct mvvm_op_data op_data{};
 
-    int fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
+    signal(SIGTERM,sigterm_handler);
+
+    fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
     // ... code to set up the socket address structure and bind the socket ...
 
     // Forcefully attaching socket to the port
@@ -146,6 +146,14 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    handle = pcap_open_live(MVVM_SOCK_INTERFACE, BUFSIZ, 1, 1000, errbuf);
+
+    // Compile and apply the filter
+    pcap_compile(handle, &fp, "tcp", 0, PCAP_NETMASK_UNKNOWN);
+    pcap_setfilter(handle, &fp);
+
+    // Capture packets
+    pcap_loop(handle, -1, packet_handler, nullptr);
 
     while (true) { // Open the device for sniffing
         LOGV(ERROR)<<"accept";
@@ -154,16 +162,7 @@ int main() {
             LOGV(ERROR)<<"accept";
             exit(EXIT_FAILURE);
         }
-        handle = pcap_open_live(MVVM_SOCK_INTERFACE, BUFSIZ, 1, 1000, errbuf);
 
-        // Compile and apply the filter
-        pcap_compile(handle, &fp, "tcp", 0, PCAP_NETMASK_UNKNOWN);
-        pcap_setfilter(handle, &fp);
-
-        // Capture packets
-        pcap_loop(handle, -1, packet_handler, nullptr);
-
-        pcap_close(handle);
 
         // offload info from client
         if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
@@ -186,12 +185,12 @@ int main() {
             case MVVM_SOCK_RESUME:
                 // resume
                 LOGV(ERROR)<<"resume";
+                // drop to new ip
+                // stop keep_alive
                 break;
             }
         }
     }
     // redirect to new client
-    close(client_fd);
-    close(fd);
-    return 0;
+
 }

