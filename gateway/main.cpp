@@ -113,9 +113,11 @@ int main() {
     char buffer[1024] = {0};
     char errbuf[PCAP_ERRBUF_SIZE];
     struct bpf_program fp {};
+    char filter_exp[] = "net 172.17.0.0/24"; // The filter expression
+
     struct mvvm_op_data op_data{};
 
-    signal(SIGTERM,sigterm_handler);
+    signal(SIGTERM,sigterm_handler); // udp
 
     fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
     // ... code to set up the socket address structure and bind the socket ...
@@ -149,8 +151,13 @@ int main() {
     handle = pcap_open_live(MVVM_SOCK_INTERFACE, BUFSIZ, 1, 1000, errbuf);
 
     // Compile and apply the filter
-    pcap_compile(handle, &fp, "tcp", 0, PCAP_NETMASK_UNKNOWN);
-    pcap_setfilter(handle, &fp);
+   if( pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN)==-1){
+        LOGV(ERROR)<<fmt::format("Couldn't parse filter {}: {}\n", filter_exp, pcap_geterr(handle));
+       exit(-1);
+    }
+    if (pcap_setfilter(handle, &fp)==-1) {   LOGV(ERROR)<<fmt::format("Couldn't install filter {}:\n", filter_exp, pcap_geterr(handle));
+   exit(-1);
+}
 
     // Capture packets
     pcap_loop(handle, -1, packet_handler, nullptr);
@@ -162,8 +169,6 @@ int main() {
             LOGV(ERROR)<<"accept";
             exit(EXIT_FAILURE);
         }
-
-
         // offload info from client
         if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
             memcpy(&op_data, buffer, sizeof(op_data));
@@ -191,6 +196,4 @@ int main() {
             }
         }
     }
-    // redirect to new client
-
 }
