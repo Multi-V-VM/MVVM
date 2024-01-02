@@ -24,3 +24,6 @@
 [submodule "lib/libcrafter"]
 	path = lib/libcrafter
 	url = https://github.com/victoryang00/libcrafter
+[submodule "bench/ftpclient"]
+	path = bench/ftpclient
+	url = https://github.com/embeddedmz/ftpclient-cpp
