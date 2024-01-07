@@ -12,7 +12,7 @@ extern "C" {
 #define SNAPSHOT_DEBUG_STEP 0
 #define SNAPSHOT_STEP 1e8
 struct SocketAddrPool {
-    uint16 ip4[4];
+    uint8 ip4[4];
     uint16 ip6[8];
     bool is_4;
     uint16 port;
@@ -53,8 +53,8 @@ void serialize_to_file(struct WASMExecEnv *);
 void insert_fd(int, const char *, int, int, enum fd_op op);
 void remove_fd(int);
 void rename_fd(int, char const *, int, char const *);
-void lightweight_checkpoint(WASMExecEnv*);
-void lightweight_uncheckpoint(WASMExecEnv*);
+void lightweight_checkpoint(WASMExecEnv *);
+void lightweight_uncheckpoint(WASMExecEnv *);
 void wamr_wait();
 void sigint_handler(int sig);
 void register_sigtrap();
@@ -64,6 +64,7 @@ int gettid();
 #endif
 extern size_t snapshot_threshold;
 extern bool checkpoint;
+extern bool is_debug;
 
 #ifdef __cplusplus
 }

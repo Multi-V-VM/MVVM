@@ -8,11 +8,11 @@
 #include "wamr_export.h"
 #include "wamr_read_write.h"
 #include "wasm_runtime.h"
+#include <arpa/inet.h>
 #include <cxxopts.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <arpa/inet.h>
 
 FreadStream *reader;
 WAMRInstance *wamr = nullptr;
@@ -53,9 +53,9 @@ int main(int argc, char **argv) {
     reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
-    if (wamr->addr_.size() != 0) {
-        // tell gateway to keep alive the server
-        struct sockaddr_in addr;
+    if (wamr->socket_fd_map_.size() != 0) { // new ip, old ip // only if tcp requires keepalive
+        // tell gateway to stop keep alive the server
+        struct sockaddr_in addr {};
         char buf[100];
         int fd = 0;
 
@@ -78,8 +78,9 @@ int main(int argc, char **argv) {
         // send the fd
         // struct msghdr msg = {0};
 
-        struct mvvm_op_data op_data = {
-            .op = MVVM_SOCK_RESUME, .server_ip = 0, .server_port = 0, .client_ip = 0, .client_port = 0};
+        SocketAddrPool src_addr = {.ip4 = {0}, .ip6 = {0}, .is_4 = true, .port = 0};
+        SocketAddrPool dest_addr = {.ip4 = {0}, .ip6 = {0}, .is_4 = true, .port = 0};
+        struct mvvm_op_data op_data = {.op = MVVM_SOCK_RESUME, .src_addr = src_addr, .dest_addr = dest_addr};
         if (send(fd, &op_data, sizeof(op_data), 0) == -1) {
             perror("send error");
             exit(EXIT_FAILURE);

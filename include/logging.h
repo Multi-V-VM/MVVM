@@ -5,6 +5,7 @@
 #ifndef MVVM_LOGGING_H
 #define MVVM_LOGGING_H
 
+#include "wamr_export.h"
 #include "wasm_runtime.h"
 #include <algorithm>
 #include <cstdlib>
@@ -17,8 +18,8 @@
 #include <fstream>
 #include <iostream>
 #include <list>
-#include <sstream>
 #include <ranges>
+#include <sstream>
 #include <string>
 
 #ifndef __APPLE__
@@ -104,13 +105,11 @@ enum opcode {
 };
 struct mvvm_op_data {
     enum opcode op;
-    uint32 server_ip;
-    int server_port;
-    uint32 client_ip;
-    int client_port;
+    SocketAddrPool src_addr;
+    SocketAddrPool dest_addr;
 };
 #define MVVM_SOCK_ADDR "172.17.0.1"
-#define MVVM_SOCK_PORT 1234
+#define MVVM_SOCK_PORT 1235
 #define MVVM_SOCK_INTERFACE "docker0"
 #define LOG_IF(level) LogWriter(LocationInfo(__FILE__, __LINE__, __FUNCTION__), level) < LogStream()
 #define LOGV(level) LOGV_##level

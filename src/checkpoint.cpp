@@ -19,6 +19,12 @@
 #include <tuple>
 #if !defined(_WIN32)
 #include "thread_manager.h"
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#else
+#include <winsock2.h>
 #endif
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -29,70 +35,105 @@ std::ostringstream re{};
 FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
+bool is_debug = false;
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
-    if (wamr->addr_.size() != 0) {
+    if (wamr->socket_fd_map_.size() != 0) {
         // tell gateway to keep alive the server
-        auto convertAddr =[](const char *addr){
-            struct sockaddr_in addr_in;
-            inet_pton(AF_INET, addr, &addr_in.sin_addr);
-            return addr_in.sin_addr.s_addr;
-        };
-        struct sockaddr_in addr;
-        char buf[100];
+        struct sockaddr_in addr {};
         int fd = 0;
         int rc;
-        struct mvvm_op_data op_data = {.op = MVVM_SOCK_SUSPEND,
-                                       .server_ip = convertAddr(wamr->addr_[0]),
-                                       .server_port = 0,
-                                       .client_ip = 0,
-                                       .client_port = 0};
+        SocketAddrPool src_addr{};
+        auto op_data = (struct mvvm_op_data **)malloc(sizeof(struct mvvm_op_data)*wamr->socket_fd_map_.size());
 
-        // Create a socket
-        if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-            LOGV(ERROR) << "socket error";
-            throw std::runtime_error("socket error");
+        for (auto [idx , socks] : enumerate(wamr->socket_fd_map_)) {
+             auto [fd, sock_data]=socks;
+             src_addr=sock_data.socketAddress;
+
+             auto tmp_ip4 = fmt::format("{}.{}.{}.{}",src_addr.ip4[0],src_addr.ip4[1],src_addr.ip4[2],src_addr.ip4[3]);
+             auto tmp_ip6 = fmt::format("{}:{}:{}:{}:{}:{}:{}:{}",src_addr.ip6[0],src_addr.ip6[1],src_addr.ip6[2],src_addr.ip6[3],src_addr.ip6[4],src_addr.ip6[5],src_addr.ip6[6],src_addr.ip6[7]);
+             LOGV(INFO) << "addr: " << tmp_ip4 << " port: " << src_addr.port;
+             if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0"){
+#if !defined(_WIN32)
+                 struct ifaddrs *ifaddr, *ifa;
+                 int family, s;
+                 char host[NI_MAXHOST];
+
+                 if (getifaddrs(&ifaddr) == -1) {
+                     LOGV(ERROR)<<"getifaddrs";
+                     exit(EXIT_FAILURE);
+                 }
+
+                 for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+                     if (ifa->ifa_addr == nullptr) continue;
+
+                     if (ifa->ifa_addr->sa_family == AF_INET &&  src_addr.is_4 ) {
+                         // IPv4
+                         struct sockaddr_in *ipv4 = (struct sockaddr_in *)ifa->ifa_addr;
+                         src_addr.port = ntohs(ipv4->sin_port);
+
+                         // Extract IPv4 address
+                         uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
+                         src_addr.ip4[0] = (ip >> 24) & 0xFF;
+                         src_addr.ip4[1] = (ip >> 16) & 0xFF;
+                         src_addr.ip4[2] = (ip >> 8) & 0xFF;
+                         src_addr.ip4[3] = ip & 0xFF;
+
+                     } else if (ifa->ifa_addr->sa_family == AF_INET6 && ! src_addr.is_4) {
+                         // IPv6
+                         struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+                         src_addr.is_4 = false;
+                         src_addr.port = ntohs(ipv6->sin6_port);
+
+                         // Extract IPv6 address
+                         const uint8_t *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
+                         for (int i = 0; i < 16; i += 2) {
+                             src_addr.ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
+                         }
+                     }
+                 }
+
+                 freeifaddrs(ifaddr);
+#endif
+             }
+             op_data[idx]->op = MVVM_SOCK_SUSPEND;
+             op_data[idx]->src_addr = src_addr;
+             op_data[idx]->dest_addr.is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
+             std::memcpy( op_data[idx]->dest_addr.ip4 , sock_data.socketSentToData.dest_addr.ip.ip4,sizeof( sock_data.socketSentToData.dest_addr.ip.ip4));
+             std::memcpy( op_data[idx]->dest_addr.ip6 , sock_data.socketSentToData.dest_addr.ip.ip6,sizeof( sock_data.socketSentToData.dest_addr.ip.ip6));
+             op_data[idx]->dest_addr.port = sock_data.socketSentToData.dest_addr.port;
         }
 
-        // Create a socket
+        // Create a socketÏ
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-            std::cerr << "socket error" << std::endl;
+            LOGV(ERROR) << "socket error";
             throw std::runtime_error("socket error");
         }
 
         addr.sin_family = AF_INET;
         addr.sin_port = htons(MVVM_SOCK_PORT);
 
-        // Convert IPv4 address from text to binary form
+        // Convert IPv4 and IPv6 addresses from text to binary form
         if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
-            perror("Invalid address/ Address not supported");
+            LOGV(ERROR) << "AF_INET not supported";
             exit(EXIT_FAILURE);
         }
-
         // Connect to the server
         if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-            std::cerr << "Connection Failed" << std::endl;
+            LOGV(ERROR) << "Connection Failed" << errno;
             exit(EXIT_FAILURE);
         }
 
-        std::cout << "Connected successfully" << std::endl;
+        LOGV(INFO) << "Connected successfully";
 
-        memcpy(buf, &op_data, sizeof(mvvm_op_data));
-        rc = send(fd, buf, strlen(buf) + 1, 0);
+        rc = send(fd, ((void *)op_data), sizeof(op_data), 0);
         if (rc == -1) {
-            perror("send error");
+            LOGV(ERROR) << "send error";
             exit(EXIT_FAILURE);
         }
 
         // Clean up
         close(fd);
-
-        // send the fd
-        // struct msghdr msg = {0};
-        if (send(fd, &op_data, sizeof(op_data), 0) == -1) {
-            perror("send error");
-            exit(EXIT_FAILURE);
-        }
     }
 #if !defined(_WIN32)
     auto cluster = wasm_exec_env_get_cluster(instance);
@@ -125,9 +166,9 @@ void serialize_to_file(WASMExecEnv *instance) {
         raise(SIGINT);
 #endif
     }
-    if (as.size()== all_count){
+    if (as.size() == all_count) {
         struct_pack::serialize_to(*writer, as);
-        exit(0);
+        exit(EXIT_SUCCESS);
     }
 #if !defined(_WIN32)
     // Is there some better way to sleep until exit?
@@ -149,10 +190,12 @@ int main(int argc, char *argv[]) {
         "e,env", "The environment list exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value("a=b"))(
         "a,arg", "The arg list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value(""))(
-        "p,addr", "The address exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value("0.0.0.0/36"))(
+        "p,addr", "The address exposed to WAMR",
+        cxxopts::value<std::vector<std::string>>()->default_value("0.0.0.0/36"))(
         "n,ns_pool", "The ns lookup pool exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value(""))("h,help", "The value for epoch value",
                                                                        cxxopts::value<bool>()->default_value("false"))(
+        "i,is_debug", "The value for is_debug value", cxxopts::value<bool>()->default_value("true"))(
         "f,function", "The function to test execution",
         cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "c,count", "The function index to test execution", cxxopts::value<int>()->default_value("0"));
@@ -171,7 +214,7 @@ int main(int argc, char *argv[]) {
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {
         std::cout << options.help() << std::endl;
-        exit(0);
+        exit(EXIT_SUCCESS);
     }
     auto target = result["target"].as<std::string>();
     auto is_jit = result["jit"].as<bool>();
@@ -182,6 +225,7 @@ int main(int argc, char *argv[]) {
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
     auto count = result["count"].as<int>();
+    is_debug = result["is_debug"].as<bool>();
 
     if (arg.size() == 1 && arg[0].empty())
         arg.clear();
@@ -198,7 +242,7 @@ int main(int argc, char *argv[]) {
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
     wamr->get_int3_addr();
-//    wamr->replace_int3_with_nop();
+    wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 #if defined(_WIN32)
@@ -219,7 +263,7 @@ int main(int argc, char *argv[]) {
 
     // Register the signal handler for SIGINT
     if (sigaction(SIGINT, &sa, nullptr) == -1) {
-        perror("Error: cannot handle SIGINT");
+        LOGV(ERROR) << "Error: cannot handle SIGINT";
         return 1;
     }
 #endif
@@ -234,6 +278,6 @@ int main(int argc, char *argv[]) {
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     // print in s
-    LOGV(INFO) << fmt::format("Execution time: {} s\n", (double)dur.count()/1000000);
+    LOGV(INFO) << fmt::format("Execution time: {} s\n", (double)dur.count() / 1000000);
     return 0;
 }
