@@ -21,7 +21,14 @@
 #include <ranges>
 #include <sstream>
 #include <string>
-
+#if !defined(_WIN32)
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#else
+#include <winsock2.h>
+#endif
 #ifndef __APPLE__
 /** Barry's work*/
 struct Enumerate : std::ranges::range_adaptor_closure<Enumerate> {
@@ -99,17 +106,12 @@ private:
 string level2string(LogLevel level);
 fmt::color level2color(LogLevel level);
 
-enum opcode {
-    MVVM_SOCK_SUSPEND = 0,
-    MVVM_SOCK_RESUME = 1,
-};
-struct mvvm_op_data {
-    enum opcode op;
-    SocketAddrPool src_addr;
-    SocketAddrPool dest_addr;
-};
 #define MVVM_SOCK_ADDR "172.17.0.1"
+#define MVVM_SOCK_ADDR6 "fe80::42:aeff:fe1f:b579"
+#define MVVM_SOCK_MASK 24
+#define MVVM_SOCK_MASK6 48
 #define MVVM_SOCK_PORT 1235
+#define MVVM_MAX_ADDR 1000
 #define MVVM_SOCK_INTERFACE "docker0"
 #define LOG_IF(level) LogWriter(LocationInfo(__FILE__, __LINE__, __FUNCTION__), level) < LogStream()
 #define LOGV(level) LOGV_##level
@@ -118,5 +120,17 @@ struct mvvm_op_data {
 #define LOGV_WARNING LOG_IF(BH_LOG_LEVEL_WARNING)
 #define LOGV_ERROR LOG_IF(BH_LOG_LEVEL_ERROR)
 #define LOGV_FATAL LOG_IF(BH_LOG_LEVEL_FATAL)
+
+enum opcode {
+    MVVM_SOCK_SUSPEND = 0,
+    MVVM_SOCK_RESUME = 1,
+};
+struct mvvm_op_data {
+    enum opcode op;
+    int size;
+    SocketAddrPool addr[MVVM_MAX_ADDR][2];
+};
+bool is_ip_in_cidr (const char *base_ip, int subnet_mask_len, uint32_t ip);
+bool is_ipv6_in_cidr(const char *base_ip_str, int subnet_mask_len, struct in6_addr *ip);
 
 #endif // MVVM_LOGGING_H

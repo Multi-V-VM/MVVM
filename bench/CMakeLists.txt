@@ -76,7 +76,41 @@ ExternalProject_Add(gapbs-native
         BUILD_COMMAND     ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_if_different ./redis ${CMAKE_CURRENT_BINARY_DIR}/redis
  )
-
+ExternalProject_Add(ftpclient
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ftpclient
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -DCMAKE_BUILD_TYPE=Release
+        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all -Wl,--allow-undefined-file=${WASI_SDK}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt"
+        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1 -DCMAKE_C_COMPILE_OBJECT="${WASI_SDK}/bin/clang -c"
+        ${CMAKE_CURRENT_SOURCE_DIR}/ftpclient
+        BUILD_COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./ftpclient ${CMAKE_CURRENT_BINARY_DIR}/ftpclient.wasm
+)
+ExternalProject_Add(nas
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nas
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -DCMAKE_BUILD_TYPE=Release
+        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all -Wl,--allow-undefined-file=${WASI_SDK}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt"
+        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+        ${CMAKE_CURRENT_SOURCE_DIR}/nas
+        BUILD_COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./bt ${CMAKE_CURRENT_BINARY_DIR}/bt.wasm &&
+        ${CMAKE_COMMAND} -E copy_if_different ./cg ${CMAKE_CURRENT_BINARY_DIR}/cg.wasm &&
+        ${CMAKE_COMMAND} -E copy_if_different ./ep ${CMAKE_CURRENT_BINARY_DIR}/ep.wasm &&
+        ${CMAKE_COMMAND} -E copy_if_different ./ft ${CMAKE_CURRENT_BINARY_DIR}/ft.wasm &&
+        ${CMAKE_COMMAND} -E copy_if_different ./is ${CMAKE_CURRENT_BINARY_DIR}/is.wasm &&
+        ${CMAKE_COMMAND} -E copy_if_different ./lu ${CMAKE_CURRENT_BINARY_DIR}/lu.wasm &&
+        ${CMAKE_COMMAND} -E copy_if_different ./mg ${CMAKE_CURRENT_BINARY_DIR}/mg.wasm &&
+        ${CMAKE_COMMAND} -E copy_if_different ./sp ${CMAKE_CURRENT_BINARY_DIR}/sp.wasm
+)
 ExternalProject_Add(llama
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/llama
         UPDATE_COMMAND ""
@@ -162,6 +196,16 @@ if (WAMR_BUILD_AOT)
     bench_wamr_app(sssp)
     bench_wamr_app(tc)
     bench_wamr_app(redis)
+    bench_wamr_app(ftpclient)
+    bench_wamr_app(bt)
+    bench_wamr_app(cg)
+    bench_wamr_app(ep)
+    bench_wamr_app(ft)
+    bench_wamr_app(is)
+    bench_wamr_app(lu)
+    bench_wamr_app(mg)
+    bench_wamr_app(sp)
+    bench_wamr_app(nginx-module)
     bench_wamr_app(llama)
     bench_wamr_app(hdastar)
 endif ()

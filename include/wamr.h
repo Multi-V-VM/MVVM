@@ -50,9 +50,6 @@ public:
     typedef struct ThreadArgs {
         wasm_exec_env_t exec_env;
     } ThreadArgs;
-    std::vector<ThreadArgs> thread_arg;
-    std::vector<wasm_thread_t> tid;
-    void (*thread_callback)(wasm_exec_env_t, void *){};
 
     explicit WAMRInstance(const char *wasm_path, bool is_jit);
 
@@ -60,9 +57,11 @@ public:
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
     bool load_wasm_binary(const char *wasm_path, char **buffer_ptr);
     bool get_int3_addr();
+    bool get_switch_addr();
     bool replace_int3_with_nop();
     bool replace_mfence_with_nop();
     bool replace_nop_with_int3();
+    bool replace_switch_with_nop();
     WASMFunction *get_func();
     void set_func(WASMFunction *);
 #if WASM_ENABLE_AOT != 0

@@ -17,17 +17,18 @@ void create_wamr_counter(int world_rank) {
     wamr[world_rank]->instantiate();
     wamr[world_rank]->invoke_main();
 };
-void serialize_to_file(WASMExecEnv *instance) {
+void serialize_to_file(WASMExecEnv *instance) { // serialize and restart in the same binary?
     auto writer = new FwriteStream("./test/counter.bin");
     struct_pack::serialize(*writer, *instance);
     exit(0);
-}
+}// migrate from one to the other? MPI run in normal state and forward to another host
 int main(int argc, char **argv) {
     // Initialize the MPI environment
     MPI_Init(&argc, &argv);
 
     // Get the number of processes
     int world_size;
+    // need to export MPIWasm fabric to wasm
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     wamr.resize(world_size);
     // Get the rank of the process

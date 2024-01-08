@@ -48,3 +48,59 @@ fmt::color level2color(LogLevel level) {
         return fmt::color::white;
     }
 }
+bool is_ip_in_cidr (const char *base_ip, int subnet_mask_len, uint32_t ip) {
+    uint32_t base_ip_bin, subnet_mask, network_addr, broadcast_addr;
+    LOGV(DEBUG)<<"base_ip: " « base_ip << " subnet_mask_len: " << subnet_mask_len << "ip: " << ip;
+    // Convert base IP to binary
+    inet_pton(AF_INET, base_ip, &base_ip_bin);
+
+    // Calculate subnet mask in binary
+    subnet_mask = htonl(~((1 << (32 - subnet_mask_len)) - 1));
+
+    // Calculate network and broadcast addresses
+    network_addr = base_ip_bin & subnet_mask;
+    broadcast_addr = network_addr | ~subnet_mask;
+
+    // Check if IP is within range
+    return ip >= network_addr && ip <= broadcast_addr;
+};
+bool is_ipv6_in_cidr(const char *base_ip_str, int subnet_mask_len, struct in6_addr *ip) {
+    struct in6_addr base_ip{}, subnet_mask{}, network_addr{}, ip_min{}, ip_max{};
+    unsigned char mask;
+
+    // Convert base IP to binary
+    inet_pton(AF_INET6, base_ip_str, &base_ip);
+
+    // Clear subnet_mask and network_addr
+    memset(&subnet_mask, 0, sizeof(subnet_mask));
+    memset(&network_addr, 0, sizeof(network_addr));
+
+    // Create the subnet mask and network address
+    for (int i = 0; i < subnet_mask_len / 8; i++) {
+        subnet_mask.s6_addr[i] = 0xff;
+    }
+    if (subnet_mask_len % 8) {
+        mask = (0xff << (8 - (subnet_mask_len % 8)));
+        subnet_mask.s6_addr[subnet_mask_len / 8] = mask;
+    }
+
+    // Apply the subnet mask to the base IP to get the network address
+    for (int i = 0; i < 16; i++) {
+        network_addr.s6_addr[i] = base_ip.s6_addr[i] & subnet_mask.s6_addr[i];
+    }
+
+    // Calculate the first and last IPs in the range
+    ip_min = network_addr;
+    ip_max = network_addr;
+    for (int i = 15; i >= subnet_mask_len / 8; i--) {
+        ip_max.s6_addr[i] = 0xff;
+    }
+
+    // Check if IP is within range
+    for (int i = 0; i < 16; i++) {
+        if (ip->s6_addr[i] < ip_min.s6_addr[i] || ip->s6_addr[i] > ip_max.s6_addr[i]) {
+            return false;
+        }
+    }
+    return true;
+}

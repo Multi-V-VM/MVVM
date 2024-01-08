@@ -16,6 +16,7 @@
 
 FreadStream *reader;
 WAMRInstance *wamr = nullptr;
+bool is_debug = false;
 
 void serialize_to_file(WASMExecEnv *instance) {}
 int main(int argc, char **argv) {
@@ -53,7 +54,7 @@ int main(int argc, char **argv) {
     reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
-    if (wamr->socket_fd_map_.size() != 0) { // new ip, old ip // only if tcp requires keepalive
+    if (!wamr->socket_fd_map_.empty()) { // new ip, old ip // only if tcp requires keepalive
         // tell gateway to stop keep alive the server
         struct sockaddr_in addr {};
         char buf[100];

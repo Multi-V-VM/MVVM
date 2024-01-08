@@ -19,16 +19,9 @@
 #include <tuple>
 #if !defined(_WIN32)
 #include "thread_manager.h"
-#include <ifaddrs.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#else
-#include <winsock2.h>
 #endif
 #include <arpa/inet.h>
 #include <sys/socket.h>
-// file map, direcotry handle
 
 WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
@@ -38,73 +31,78 @@ std::mutex as_mtx;
 bool is_debug = false;
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
-    if (wamr->socket_fd_map_.size() != 0) {
+    if (!wamr->socket_fd_map_.empty()) {
         // tell gateway to keep alive the server
         struct sockaddr_in addr {};
         int fd = 0;
-        int rc;
+        ssize_t rc;
         SocketAddrPool src_addr{};
-        auto op_data = (struct mvvm_op_data **)malloc(sizeof(struct mvvm_op_data)*wamr->socket_fd_map_.size());
+        auto op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
 
-        for (auto [idx , socks] : enumerate(wamr->socket_fd_map_)) {
-             auto [fd, sock_data]=socks;
-             src_addr=sock_data.socketAddress;
-
-             auto tmp_ip4 = fmt::format("{}.{}.{}.{}",src_addr.ip4[0],src_addr.ip4[1],src_addr.ip4[2],src_addr.ip4[3]);
-             auto tmp_ip6 = fmt::format("{}:{}:{}:{}:{}:{}:{}:{}",src_addr.ip6[0],src_addr.ip6[1],src_addr.ip6[2],src_addr.ip6[3],src_addr.ip6[4],src_addr.ip6[5],src_addr.ip6[6],src_addr.ip6[7]);
-             LOGV(INFO) << "addr: " << tmp_ip4 << " port: " << src_addr.port;
-             if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0"){
+        for (auto [idx, socks] : enumerate(wamr->socket_fd_map_)) {
+            auto [tmp_fd, sock_data] = socks;
+            src_addr = sock_data.socketAddress;
+            auto tmp_ip4 =
+                fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);
+            auto tmp_ip6 =
+                fmt::format("{}:{}:{}:{}:{}:{}:{}:{}", src_addr.ip6[0], src_addr.ip6[1], src_addr.ip6[2],
+                            src_addr.ip6[3], src_addr.ip6[4], src_addr.ip6[5], src_addr.ip6[6], src_addr.ip6[7]);
+            if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
 #if !defined(_WIN32)
-                 struct ifaddrs *ifaddr, *ifa;
-                 int family, s;
-                 char host[NI_MAXHOST];
+                struct ifaddrs *ifaddr, *ifa;
+                int family, s;
+                char host[NI_MAXHOST];
 
-                 if (getifaddrs(&ifaddr) == -1) {
-                     LOGV(ERROR)<<"getifaddrs";
-                     exit(EXIT_FAILURE);
-                 }
+                if (getifaddrs(&ifaddr) == -1) {
+                    LOGV(ERROR) << "getifaddrs";
+                    exit(EXIT_FAILURE);
+                }
 
-                 for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
-                     if (ifa->ifa_addr == nullptr) continue;
+                for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+                    if (ifa->ifa_addr == nullptr)
+                        continue;
 
-                     if (ifa->ifa_addr->sa_family == AF_INET &&  src_addr.is_4 ) {
-                         // IPv4
-                         struct sockaddr_in *ipv4 = (struct sockaddr_in *)ifa->ifa_addr;
-                         src_addr.port = ntohs(ipv4->sin_port);
+                    if (ifa->ifa_addr->sa_family == AF_INET && src_addr.is_4) {
+                        // IPv4
+                        auto *ipv4 = (struct sockaddr_in *)ifa->ifa_addr;
+                        uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
+                        if (is_ip_in_cidr(MVVM_SOCK_ADDR, MVVM_SOCK_MASK, ip)) {
+                            // Extract IPv4 address
+                            src_addr.ip4[0] = (ip >> 24) & 0xFF;
+                            src_addr.ip4[1] = (ip >> 16) & 0xFF;
+                            src_addr.ip4[2] = (ip >> 8) & 0xFF;
+                            src_addr.ip4[3] = ip & 0xFF;
+                        }
 
-                         // Extract IPv4 address
-                         uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
-                         src_addr.ip4[0] = (ip >> 24) & 0xFF;
-                         src_addr.ip4[1] = (ip >> 16) & 0xFF;
-                         src_addr.ip4[2] = (ip >> 8) & 0xFF;
-                         src_addr.ip4[3] = ip & 0xFF;
+                    } else if (ifa->ifa_addr->sa_family == AF_INET6 && !src_addr.is_4) {
+                        // IPv6
+                        auto *ipv6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+                        src_addr.is_4 = false;
+                        // Extract IPv6 address
+                        const auto *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
+                        if (is_ipv6_in_cidr(MVVM_SOCK_ADDR6, MVVM_SOCK_MASK6, &ipv6->sin6_addr)) {
+                            for (int i = 0; i < 16; i += 2) {
+                                src_addr.ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
+                            }
+                        }
+                    }
+                }
 
-                     } else if (ifa->ifa_addr->sa_family == AF_INET6 && ! src_addr.is_4) {
-                         // IPv6
-                         struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)ifa->ifa_addr;
-                         src_addr.is_4 = false;
-                         src_addr.port = ntohs(ipv6->sin6_port);
-
-                         // Extract IPv6 address
-                         const uint8_t *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
-                         for (int i = 0; i < 16; i += 2) {
-                             src_addr.ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
-                         }
-                     }
-                 }
-
-                 freeifaddrs(ifaddr);
+                freeifaddrs(ifaddr);
 #endif
-             }
-             op_data[idx]->op = MVVM_SOCK_SUSPEND;
-             op_data[idx]->src_addr = src_addr;
-             op_data[idx]->dest_addr.is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
-             std::memcpy( op_data[idx]->dest_addr.ip4 , sock_data.socketSentToData.dest_addr.ip.ip4,sizeof( sock_data.socketSentToData.dest_addr.ip.ip4));
-             std::memcpy( op_data[idx]->dest_addr.ip6 , sock_data.socketSentToData.dest_addr.ip.ip6,sizeof( sock_data.socketSentToData.dest_addr.ip.ip6));
-             op_data[idx]->dest_addr.port = sock_data.socketSentToData.dest_addr.port;
+            }
+            LOGV(INFO) << "addr: " << tmp_ip4 << " port: " << src_addr.port;
+            op_data->op = MVVM_SOCK_SUSPEND;
+            op_data->addr[idx][0] = src_addr;
+            op_data->addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
+            std::memcpy(op_data->addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
+                        sizeof(sock_data.socketSentToData.dest_addr.ip.ip4));
+            std::memcpy(op_data->addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
+                        sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
+            op_data->addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
         }
 
-        // Create a socketÏ
+        // Create a socket
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
             LOGV(ERROR) << "socket error";
             throw std::runtime_error("socket error");
@@ -126,7 +124,7 @@ void serialize_to_file(WASMExecEnv *instance) {
 
         LOGV(INFO) << "Connected successfully";
 
-        rc = send(fd, ((void *)op_data), sizeof(op_data), 0);
+        rc = send(fd, ((void *)op_data), sizeof(struct mvvm_op_data), 0);
         if (rc == -1) {
             LOGV(ERROR) << "send error";
             exit(EXIT_FAILURE);

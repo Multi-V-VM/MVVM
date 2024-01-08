@@ -66,7 +66,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
         LOGV(ERROR) << "Init runtime environment failed.\n";
         throw;
     }
-// Not working initialiseWAMRNatives();
+    // Not working initialiseWAMRNatives();
     char *buffer{};
     if (!load_wasm_binary(wasm_path, &buffer)) {
         LOGV(ERROR) << "Load wasm binary failed.\n";

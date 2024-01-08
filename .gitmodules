@@ -27,3 +27,9 @@
 [submodule "bench/ftpclient"]
 	path = bench/ftpclient
 	url = https://github.com/embeddedmz/ftpclient-cpp
+[submodule "bench/nas"]
+	path = bench/nas
+	url = https://github.com/victoryang00/NPB3.0-omp-C
+[submodule "bench/nginx-module"]
+	path = bench/nginx-module
+	url = https://github.com/nginx/unit-wasm
