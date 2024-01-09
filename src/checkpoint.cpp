@@ -103,6 +103,8 @@ void serialize_to_file(WASMExecEnv *instance) {
             std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
                         sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
             wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
+            LOGV(INFO) << "dest_addr: " <<  fmt::format("{}.{}.{}.{}", wamr->op_data.addr[idx][1].ip4[0], wamr->op_data.addr[idx][1].ip4[1], wamr->op_data.addr[idx][1].ip4[2], wamr->op_data.addr[idx][1].ip4[3]) << " dest_port: " << wamr->op_data.addr[idx][1].port;
+            wamr->op_data.size+=1;
         }
 
         // Create a socket
@@ -126,8 +128,7 @@ void serialize_to_file(WASMExecEnv *instance) {
         }
 
         LOGV(INFO) << "Connected successfully";
-
-        rc = send(fd, ((void *)&wamr->op_data), sizeof(struct mvvm_op_data), 0);
+        rc = send(fd,&wamr->op_data, sizeof(struct mvvm_op_data), 0);
         if (rc == -1) {
             LOGV(ERROR) << "send error";
             exit(EXIT_FAILURE);

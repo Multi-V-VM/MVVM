@@ -73,7 +73,7 @@ jobs:
 
     - name: Install benchmark
       run: |
-        cp "C:/Program Files/LLVM/bench/*" build/bench
+        cp -r "C:/Program Files/LLVM/bench" build/
         cp -r "C:/Program Files/LLVM/build" lib/wasm-micro-runtime/wamr-compiler
 
     - name: build

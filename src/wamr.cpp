@@ -292,7 +292,7 @@ int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, 
         dest_addr_for_wasm =
             wasm_runtime_module_malloc(module_inst, sizeof(__wasi_addr_t), reinterpret_cast<void **>(&dest_addr_));
         if (dest_addr_for_wasm != 0) {
-            memcpy(dest_addr_, &dest_addr,
+            memcpy(dest_addr_, dest_addr,
                    sizeof(__wasi_addr_t)); // use native address for accessing in runtime
 
             so_data_len_for_wasm =

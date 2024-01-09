@@ -82,8 +82,6 @@ int main(int argc, char **argv) {
         SocketAddrPool src_addr = {.ip4 = {0}, .ip6 = {0}, .is_4 = true, .port = 0}; // get current ip
 #if !defined(_WIN32)
         struct ifaddrs *ifaddr, *ifa;
-        int family, s;
-        char host[NI_MAXHOST];
 
         if (getifaddrs(&ifaddr) == -1) {
             LOGV(ERROR) << "getifaddrs";
@@ -124,7 +122,7 @@ int main(int argc, char **argv) {
 #endif
         wamr->op_data.op = MVVM_SOCK_RESUME;
         wamr->op_data.addr[0][0] = src_addr;
-        if (send(fd, &wamr->op_data, sizeof(wamr->op_data), 0) == -1) {
+        if (send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0) == -1) {
             perror("send error");
             exit(EXIT_FAILURE);
         }

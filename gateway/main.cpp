@@ -125,7 +125,7 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
                     forward(reinterpret_cast<const unsigned char *>(iphdr), header->len);
                     return;
                 }
-                if (destip == inet_ntoa(iphdr->ip_dst)) {
+                if (srcip == inet_ntoa(iphdr->ip_dst)) {
                     iphdr->ip_dst.s_addr = inet_addr(destip.c_str());
                     // Recalculate the IP checksum
                     iphdr->ip_sum = 0;
@@ -195,8 +195,8 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
                     forward(reinterpret_cast<const unsigned char *>(iphdr), header->len);
                     return;
                 }
-                if (destip_ == inet_ntoa(iphdr->ip_dst)) {
-                    iphdr->ip_dst.s_addr = inet_addr(srcip_.c_str());
+                if (srcip_ == inet_ntoa(iphdr->ip_dst)) {
+                    iphdr->ip_dst.s_addr = inet_addr(destip_.c_str());
                     // Recalculate the IP checksum
                     iphdr->ip_sum = 0;
                     iphdr->ip_sum = in_cksum((unsigned short *)iphdr, iphdr->ip_hl * 4);
@@ -268,7 +268,7 @@ int main() {
     // char filter_exp[] = "net 172.17.0.0/24";
     bpf_u_int32 netmask;
 
-    auto op_data = (struct mvvm_op_data *)malloc(sizeof(mvvm_op_data));
+    struct mvvm_op_data op_data {};
 
     signal(SIGTERM, sigterm_handler);
     signal(SIGQUIT, sigterm_handler);
@@ -304,7 +304,7 @@ int main() {
 
     handle = pcap_open_live(MVVM_SOCK_INTERFACE, BUFSIZ, 1, 1000, errbuf);
     if (handle == nullptr) {
-        fprintf(stderr, "pcap_open_live(): {}", errbuf);
+        LOGV(ERROR)<< fmt::format("pcap_open_live(): {}", errbuf);
         exit(EXIT_FAILURE);
     }
 
@@ -329,56 +329,47 @@ int main() {
             exit(EXIT_FAILURE);
         }
         // offload info from client
-
         if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
-            memcpy(op_data, buffer, sizeof(struct mvvm_op_data));
-            for (int idx = 0; idx < op_data->size; idx++) {
-                if (op_data->addr[idx][0].is_4) {
-                    server_ip = fmt::format("{}.{}.{}.{}", op_data->addr[idx][0].ip4[0], op_data->addr[idx][0].ip4[1],
-                                            op_data->addr[idx][0].ip4[2], op_data->addr[idx][0].ip4[3]);
-                    client_ip = fmt::format("{}.{}.{}.{}", op_data->addr[idx][1].ip4[0], op_data->addr[idx][1].ip4[1],
-                                            op_data->addr[idx][1].ip4[2], op_data->addr[idx][1].ip4[3]);
-                } else {
-                    server_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
-                                            op_data->addr[idx][0].ip6[0], op_data->addr[idx][0].ip6[1],
-                                            op_data->addr[idx][0].ip6[2], op_data->addr[idx][0].ip6[3],
-                                            op_data->addr[idx][0].ip6[4], op_data->addr[idx][0].ip6[5],
-                                            op_data->addr[idx][0].ip6[6], op_data->addr[idx][0].ip6[7]);
-                    client_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
-                                            op_data->addr[idx][1].ip6[0], op_data->addr[idx][1].ip6[1],
-                                            op_data->addr[idx][1].ip6[2], op_data->addr[idx][1].ip6[3],
-                                            op_data->addr[idx][1].ip6[4], op_data->addr[idx][1].ip6[5],
-                                            op_data->addr[idx][1].ip6[6], op_data->addr[idx][1].ip6[7]);
-                }
-                LOGV(INFO) << "server_ip:" << server_ip << " client_ip:" << client_ip;
-                switch (op_data->op) {
-                case MVVM_SOCK_SUSPEND:
-                    // suspend
-                    LOGV(ERROR) << "suspend";
-                    if (op_data->is_tcp)
-                        backend_thread.emplace_back(keep_alive, server_ip, op_data->addr[idx][0].port, client_ip,
-                                                    op_data->addr[idx][1].port); // server to client? client to server?
-                    forward_pair.emplace_back(server_ip, "");
-                    break;
-                case MVVM_SOCK_RESUME:
-                    // resume
-                    LOGV(ERROR) << "resume";
+            memcpy(&op_data, buffer, sizeof(op_data));
+            switch (op_data.op) {
+            case MVVM_SOCK_SUSPEND:
+                // suspend
+                LOGV(ERROR) << "suspend";
 
-                    if (op_data->is_tcp)
-                        for (auto [i, thread] : enumerate(backend_thread)) {
-                            if (i != 0)
-                                thread.request_stop();
-                        }
-                    // find the correspnding jthread and join
-                    for (auto &i : forward_pair) {
-                        i.second = server_ip;
+                for (int idx =0;idx <op_data.size;idx++) {
+                    if (op_data.addr[idx][0].is_4) {
+                        server_ip = fmt::format("{}.{}.{}.{}", op_data.addr[idx][0].ip4[0], op_data.addr[idx][0].ip4[1],
+                                                op_data.addr[idx][0].ip4[2], op_data.addr[idx][0].ip4[3]);
+                        client_ip = fmt::format("{}.{}.{}.{}", op_data.addr[idx][1].ip4[0], op_data.addr[idx][1].ip4[1],
+                                                op_data.addr[idx][1].ip4[2], op_data.addr[idx][1].ip4[3]);
+                    } else {
+                        server_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                                                op_data.addr[idx][0].ip6[0], op_data.addr[idx][0].ip6[1],
+                                                op_data.addr[idx][0].ip6[2], op_data.addr[idx][0].ip6[3],
+                                                op_data.addr[idx][0].ip6[4], op_data.addr[idx][0].ip6[5],
+                                                op_data.addr[idx][0].ip6[6], op_data.addr[idx][0].ip6[7]);
+                        client_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                                                op_data.addr[idx][1].ip6[0], op_data.addr[idx][1].ip6[1],
+                                                op_data.addr[idx][1].ip6[2], op_data.addr[idx][1].ip6[3],
+                                                op_data.addr[idx][1].ip6[4], op_data.addr[idx][1].ip6[5],
+                                                op_data.addr[idx][1].ip6[6], op_data.addr[idx][1].ip6[7]);
                     }
-                    is_forward = true;
-                    // for udp forward from source to remote
-                    // drop to new ip
-                    // stop keep_alive
+                    LOGV(INFO) << "server_ip:" << server_ip << " client_ip:" << client_ip; // 且有输入了
+                    if (op_data.is_tcp)
+                        backend_thread.emplace_back(keep_alive, server_ip, op_data.addr[idx][0].port, client_ip,
+                                                    op_data.addr[idx][1].port); // server to client? client to server?
+                    forward_pair.emplace_back(server_ip, "");
+                 }
+
                     break;
-                }
+            case MVVM_SOCK_RESUME:
+                // resume
+                LOGV(ERROR) << "resume";
+                is_forward = true;
+                // for udp forward from source to remote
+                // drop to new ip
+                // stop keep_alive
+                break;
             }
         }
     }

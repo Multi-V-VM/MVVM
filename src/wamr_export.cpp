@@ -41,8 +41,6 @@ void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 
         sendToData.dest_addr.ip.ip4[1] = dest_addr->addr.ip4.addr.n1;
         sendToData.dest_addr.ip.ip4[2] = dest_addr->addr.ip4.addr.n2;
         sendToData.dest_addr.ip.ip4[3] = dest_addr->addr.ip4.addr.n3;
-
-        sendToData.dest_addr.ip.is_4 = true;
         sendToData.dest_addr.port = dest_addr->addr.ip4.port;
     } else {
         sendToData.dest_addr.ip.is_4 = false;
@@ -54,8 +52,6 @@ void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 
         sendToData.dest_addr.ip.ip6[5] = dest_addr->addr.ip6.addr.h1;
         sendToData.dest_addr.ip.ip6[6] = dest_addr->addr.ip6.addr.h2;
         sendToData.dest_addr.ip.ip6[7] = dest_addr->addr.ip6.addr.h3;
-
-        sendToData.dest_addr.ip.is_4 = false;
         sendToData.dest_addr.port = dest_addr->addr.ip6.port;
     }
 
