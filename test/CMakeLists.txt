@@ -102,6 +102,8 @@ endfunction()
 
 wamr_socket_app(server)
 wamr_socket_app(client)
+wamr_socket_app(tcp_server)
+wamr_socket_app(tcp_client)
 
 # function(wamr_mpi_app input)
 #     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}

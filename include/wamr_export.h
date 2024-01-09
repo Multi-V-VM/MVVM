@@ -36,6 +36,7 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
                                 __wasi_addr_t *src_addr, uint32 *ro_data_len);
 void insert_socket(int, int, int, int);
 void update_socket_fd_address(int, struct SocketAddrPool *);
+void set_tcp();
 void insert_lock(char const *, int);
 void insert_sem(char const *, int);
 void remove_lock(char const *);

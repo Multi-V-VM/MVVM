@@ -28,7 +28,7 @@ std::ostringstream re{};
 FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
-bool is_debug = false;
+bool is_debug;
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     if (!wamr->socket_fd_map_.empty()) {
@@ -37,7 +37,6 @@ void serialize_to_file(WASMExecEnv *instance) {
         int fd = 0;
         ssize_t rc;
         SocketAddrPool src_addr{};
-        auto op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
 
         for (auto [idx, socks] : enumerate(wamr->socket_fd_map_)) {
             auto [tmp_fd, sock_data] = socks;
@@ -47,6 +46,9 @@ void serialize_to_file(WASMExecEnv *instance) {
             auto tmp_ip6 =
                 fmt::format("{}:{}:{}:{}:{}:{}:{}:{}", src_addr.ip6[0], src_addr.ip6[1], src_addr.ip6[2],
                             src_addr.ip6[3], src_addr.ip6[4], src_addr.ip6[5], src_addr.ip6[6], src_addr.ip6[7]);
+            if (src_addr.port == 0){
+                src_addr.is_4 = true;
+            }
             if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
 #if !defined(_WIN32)
                 struct ifaddrs *ifaddr, *ifa;
@@ -91,15 +93,16 @@ void serialize_to_file(WASMExecEnv *instance) {
                 freeifaddrs(ifaddr);
 #endif
             }
-            LOGV(INFO) << "addr: " << tmp_ip4 << " port: " << src_addr.port;
-            op_data->op = MVVM_SOCK_SUSPEND;
-            op_data->addr[idx][0] = src_addr;
-            op_data->addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
-            std::memcpy(op_data->addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
+            LOGV(INFO) << "addr: " <<  fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]) << " port: " << src_addr.port;
+
+            wamr->op_data.op = MVVM_SOCK_SUSPEND;
+            wamr->op_data.addr[idx][0] = src_addr;
+            wamr->op_data.addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
+            std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
                         sizeof(sock_data.socketSentToData.dest_addr.ip.ip4));
-            std::memcpy(op_data->addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
+            std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
                         sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
-            op_data->addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
+            wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
         }
 
         // Create a socket
@@ -118,13 +121,13 @@ void serialize_to_file(WASMExecEnv *instance) {
         }
         // Connect to the server
         if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-            LOGV(ERROR) << "Connection Failed" << errno;
+            LOGV(ERROR) << "Connection Failed " << errno;
             exit(EXIT_FAILURE);
         }
 
         LOGV(INFO) << "Connected successfully";
 
-        rc = send(fd, ((void *)op_data), sizeof(struct mvvm_op_data), 0);
+        rc = send(fd, ((void *)&wamr->op_data), sizeof(struct mvvm_op_data), 0);
         if (rc == -1) {
             LOGV(ERROR) << "send error";
             exit(EXIT_FAILURE);
@@ -193,7 +196,7 @@ int main(int argc, char *argv[]) {
         "n,ns_pool", "The ns lookup pool exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value(""))("h,help", "The value for epoch value",
                                                                        cxxopts::value<bool>()->default_value("false"))(
-        "i,is_debug", "The value for is_debug value", cxxopts::value<bool>()->default_value("true"))(
+        "i,is_debug", "The value for is_debug value", cxxopts::value<bool>()->default_value("false"))(
         "f,function", "The function to test execution",
         cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "c,count", "The function index to test execution", cxxopts::value<int>()->default_value("0"));

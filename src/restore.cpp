@@ -79,10 +79,52 @@ int main(int argc, char **argv) {
         // send the fd
         // struct msghdr msg = {0};
 
-        SocketAddrPool src_addr = {.ip4 = {0}, .ip6 = {0}, .is_4 = true, .port = 0};
-        SocketAddrPool dest_addr = {.ip4 = {0}, .ip6 = {0}, .is_4 = true, .port = 0};
-        struct mvvm_op_data op_data = {.op = MVVM_SOCK_RESUME, .src_addr = src_addr, .dest_addr = dest_addr};
-        if (send(fd, &op_data, sizeof(op_data), 0) == -1) {
+        SocketAddrPool src_addr = {.ip4 = {0}, .ip6 = {0}, .is_4 = true, .port = 0}; // get current ip
+#if !defined(_WIN32)
+        struct ifaddrs *ifaddr, *ifa;
+        int family, s;
+        char host[NI_MAXHOST];
+
+        if (getifaddrs(&ifaddr) == -1) {
+            LOGV(ERROR) << "getifaddrs";
+            exit(EXIT_FAILURE);
+        }
+
+        for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+            if (ifa->ifa_addr == nullptr)
+                continue;
+
+            if (ifa->ifa_addr->sa_family == AF_INET && src_addr.is_4) {
+                // IPv4
+                auto *ipv4 = (struct sockaddr_in *)ifa->ifa_addr;
+                uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
+                if (is_ip_in_cidr(MVVM_SOCK_ADDR, MVVM_SOCK_MASK, ip)) {
+                    // Extract IPv4 address
+                    src_addr.ip4[0] = (ip >> 24) & 0xFF;
+                    src_addr.ip4[1] = (ip >> 16) & 0xFF;
+                    src_addr.ip4[2] = (ip >> 8) & 0xFF;
+                    src_addr.ip4[3] = ip & 0xFF;
+                }
+
+            } else if (ifa->ifa_addr->sa_family == AF_INET6 && !src_addr.is_4) {
+                // IPv6
+                auto *ipv6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+                src_addr.is_4 = false;
+                // Extract IPv6 address
+                const auto *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
+                if (is_ipv6_in_cidr(MVVM_SOCK_ADDR6, MVVM_SOCK_MASK6, &ipv6->sin6_addr)) {
+                    for (int i = 0; i < 16; i += 2) {
+                        src_addr.ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
+                    }
+                }
+            }
+        }
+
+        freeifaddrs(ifaddr);
+#endif
+        wamr->op_data.op = MVVM_SOCK_RESUME;
+        wamr->op_data.addr[0][0] = src_addr;
+        if (send(fd, &wamr->op_data, sizeof(wamr->op_data), 0) == -1) {
             perror("send error");
             exit(EXIT_FAILURE);
         }

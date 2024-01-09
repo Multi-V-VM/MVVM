@@ -2,6 +2,7 @@
 * Copyright (C) 2022 Amazon.com Inc. or its affiliates. All rights reserved.
 * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
+#include "socket_utils.h"
 
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -56,7 +57,7 @@ init_sockaddr_inet(struct sockaddr_in *addr)
 {
    /* 0.0.0.0:1234 */
    addr->sin_family = AF_INET;
-   addr->sin_port = htons(1234);
+   addr->sin_port = htons(12346);
    addr->sin_addr.s_addr = htonl(INADDR_ANY);
 }
 

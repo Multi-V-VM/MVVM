@@ -46,6 +46,7 @@ public:
     bool is_jit;
     bool is_aot{};
     char error_buf[128]{};
+    struct mvvm_op_data op_data{};
     uint32 buf_size{}, stack_size = 65536, heap_size = 67108864;
     typedef struct ThreadArgs {
         wasm_exec_env_t exec_env;

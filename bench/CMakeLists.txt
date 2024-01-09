@@ -76,8 +76,8 @@ ExternalProject_Add(gapbs-native
         BUILD_COMMAND     ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_if_different ./redis ${CMAKE_CURRENT_BINARY_DIR}/redis
  )
-ExternalProject_Add(ftpclient
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ftpclient
+ExternalProject_Add(ftp
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ftp
         UPDATE_COMMAND ""
         PATCH_COMMAND ""
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
@@ -85,10 +85,10 @@ ExternalProject_Add(ftpclient
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
         -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
         -DCMAKE_EXE_LINKER_FLAGS="-Wl,--export-all -Wl,--allow-undefined-file=${WASI_SDK}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt"
-        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1 -DCMAKE_C_COMPILE_OBJECT="${WASI_SDK}/bin/clang -c"
-        ${CMAKE_CURRENT_SOURCE_DIR}/ftpclient
+        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+        ${CMAKE_CURRENT_SOURCE_DIR}/ftp
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./ftpclient ${CMAKE_CURRENT_BINARY_DIR}/ftpclient.wasm
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./dataServer ${CMAKE_CURRENT_BINARY_DIR}/dataServer.wasm && ${CMAKE_COMMAND} -E copy_if_different ./remoteClient ${CMAKE_CURRENT_BINARY_DIR}/remoteClient.wasm
 )
 ExternalProject_Add(nas
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nas
@@ -196,7 +196,8 @@ if (WAMR_BUILD_AOT)
     bench_wamr_app(sssp)
     bench_wamr_app(tc)
     bench_wamr_app(redis)
-    bench_wamr_app(ftpclient)
+    bench_wamr_app(remoteClient)
+    bench_wamr_app(dataServer)
     bench_wamr_app(bt)
     bench_wamr_app(cg)
     bench_wamr_app(ep)
@@ -205,7 +206,6 @@ if (WAMR_BUILD_AOT)
     bench_wamr_app(lu)
     bench_wamr_app(mg)
     bench_wamr_app(sp)
-    bench_wamr_app(nginx-module)
     bench_wamr_app(llama)
     bench_wamr_app(hdastar)
 endif ()

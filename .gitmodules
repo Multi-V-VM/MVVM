@@ -24,12 +24,18 @@
 [submodule "lib/libcrafter"]
 	path = lib/libcrafter
 	url = https://github.com/victoryang00/libcrafter
-[submodule "bench/ftpclient"]
-	path = bench/ftpclient
-	url = https://github.com/embeddedmz/ftpclient-cpp
 [submodule "bench/nas"]
 	path = bench/nas
 	url = https://github.com/victoryang00/NPB3.0-omp-C
 [submodule "bench/nginx-module"]
 	path = bench/nginx-module
 	url = https://github.com/nginx/unit-wasm
+[submodule "opendal"]
+	path = opendal
+	url = https://github.com/apache/incubator-opendal
+[submodule "bench/opendal"]
+	path = bench/opendal
+	url = https://github.com/apache/incubator-opendal
+[submodule "bench/ftp"]
+	path = bench/ftp
+	url = https://github.com/victoryang00/FTP-implementation-over-TCP

@@ -48,11 +48,23 @@ fmt::color level2color(LogLevel level) {
         return fmt::color::white;
     }
 }
-bool is_ip_in_cidr (const char *base_ip, int subnet_mask_len, uint32_t ip) {
+
+bool is_ip_in_cidr(const char *base_ip, int subnet_mask_len, uint32_t ip) {
     uint32_t base_ip_bin, subnet_mask, network_addr, broadcast_addr;
-    LOGV(DEBUG)<<"base_ip: " « base_ip << " subnet_mask_len: " << subnet_mask_len << "ip: " << ip;
+    LOGV(DEBUG) << "base_ip: " << base_ip << " subnet_mask_len: " << subnet_mask_len << "ip: "
+                << fmt::format("{}.{}.{}.{}", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF);
+
     // Convert base IP to binary
-    inet_pton(AF_INET, base_ip, &base_ip_bin);
+    if (inet_pton(AF_INET, base_ip, &base_ip_bin) != 1) {
+        fprintf(stderr, "Error converting base IP to binary\n");
+        return false;
+    }
+
+    // Ensure that the subnet mask length is valid
+    if (subnet_mask_len < 0 || subnet_mask_len > 32) {
+        fprintf(stderr, "Invalid subnet mask length\n");
+        return false;
+    }
 
     // Calculate subnet mask in binary
     subnet_mask = htonl(~((1 << (32 - subnet_mask_len)) - 1));
@@ -61,11 +73,15 @@ bool is_ip_in_cidr (const char *base_ip, int subnet_mask_len, uint32_t ip) {
     network_addr = base_ip_bin & subnet_mask;
     broadcast_addr = network_addr | ~subnet_mask;
 
+    // Ensure ip is in network byte order
+    uint32_t ip_net_order = htonl(ip);
+
     // Check if IP is within range
-    return ip >= network_addr && ip <= broadcast_addr;
-};
+    return ip_net_order >= network_addr && ip_net_order <= broadcast_addr;
+}
 bool is_ipv6_in_cidr(const char *base_ip_str, int subnet_mask_len, struct in6_addr *ip) {
-    struct in6_addr base_ip{}, subnet_mask{}, network_addr{}, ip_min{}, ip_max{};
+    struct in6_addr base_ip {
+    }, subnet_mask{}, network_addr{}, ip_min{}, ip_max{};
     unsigned char mask;
 
     // Convert base IP to binary

@@ -105,7 +105,9 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
     wamr->socket_fd_map_[sock] = newSocketData;
 }
 #endif
-
+void set_tcp(){
+    wamr->op_data.is_tcp = true;
+}
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
@@ -121,6 +123,7 @@ void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
             wamr->fd_map_[fd] = std::make_tuple(path_, ops_);
     }
 }
+
 /** frename */
 void rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) {
     LOGV(INFO) << fmt::format("rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) old:{} "
@@ -154,7 +157,7 @@ void remove_fd(int fd) {
     create fd-socketmetadata map and store the "domain", "type", "protocol" value
 */
 void insert_socket(int fd, int domain, int type, int protocol) {
-    // LOGV(INFO) << fmt::format("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
+     LOGV(INFO) << fmt::format("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
 
     if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end()) {
         LOGV(ERROR) << "socket_fd already exist" << fd;

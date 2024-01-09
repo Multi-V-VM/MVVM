@@ -111,7 +111,7 @@ fmt::color level2color(LogLevel level);
 #define MVVM_SOCK_MASK 24
 #define MVVM_SOCK_MASK6 48
 #define MVVM_SOCK_PORT 1235
-#define MVVM_MAX_ADDR 1000
+#define MVVM_MAX_ADDR 5
 #define MVVM_SOCK_INTERFACE "docker0"
 #define LOG_IF(level) LogWriter(LocationInfo(__FILE__, __LINE__, __FUNCTION__), level) < LogStream()
 #define LOGV(level) LOGV_##level
@@ -127,6 +127,7 @@ enum opcode {
 };
 struct mvvm_op_data {
     enum opcode op;
+    bool is_tcp;
     int size;
     SocketAddrPool addr[MVVM_MAX_ADDR][2];
 };

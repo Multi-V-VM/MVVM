@@ -3,11 +3,13 @@
 #include <crafter.h>
 #include <cstddef>
 #include <cstdlib>
+#include <net/ethernet.h>
+#include <netinet/icmp6.h>
+#include <netinet/ip6.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <pcap/pcap.h>
-#include <net/ethernet.h?
 #include <thread>
 
 using namespace Crafter;
@@ -22,7 +24,6 @@ int fd;
 std::vector<std::jthread> backend_thread;
 std::vector<std::pair<std::string, std::string>> forward_pair;
 bool is_forward = false;
-bool is_tcp = false;
 
 // Function to recalculate the IP checksum
 unsigned short in_cksum(unsigned short *buf, int len) {
@@ -37,9 +38,26 @@ unsigned short in_cksum(unsigned short *buf, int len) {
     sum += (sum >> 16);
     return (unsigned short)(~sum);
 }
+void forward(const unsigned char *buf, int len) {
+    int sock;
+    struct sockaddr_in dst {};
 
+    memset(&dst, 0, sizeof(dst));
+    dst.sin_family = AF_INET;
+    dst.sin_addr.s_addr = ((const struct iphdr *)buf)->daddr;
+    sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    if (sendto(sock, buf, len, 0, (struct sockaddr *)&dst, sizeof(dst)) != len) {
+        LOGV(ERROR) << "forward: sending failed.";
+        return;
+    } else {
+        LOGV(INFO) << "DEBUG: forward: sending succeeded.";
+        return;
+    }
+}
 void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char *packetptr) {
     // Analyze packet
+    struct ip6_hdr *ipv6hdr;
+    struct icmp6_hdr *icmp6hdr;
     struct ip *iphdr;
     struct icmp *icmphdr;
     struct tcphdr *tcphdr;
@@ -48,63 +66,147 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
     char dstip[256];
     packetptr += linkhdrlen;
     iphdr = (struct ip *)packetptr;
-    strcpy(srcip, inet_ntoa(iphdr->ip_src));
-    strcpy(dstip, inet_ntoa(iphdr->ip_dst));
+    if (iphdr->ip_v == 6) {
+        LOGV(INFO) << "ipv6";
+        packetptr += linkhdrlen;
+        ipv6hdr = (struct ip6_hdr *)packetptr;
+        inet_ntop(AF_INET6, &ipv6hdr->ip6_src, srcip, sizeof(srcip));
+        inet_ntop(AF_INET6, &ipv6hdr->ip6_dst, dstip, sizeof(dstip));
 
-    // Advance to the transport layer header then parse and display
-    // the fields based on the type of hearder: tcp, udp or icmp.
-    packetptr += 4 * iphdr->ip_hl;
-    switch (iphdr->ip_p) {
-    case IPPROTO_TCP:
-        tcphdr = (struct tcphdr *)packetptr;
-        LOGV(INFO) << fmt::format("TCP  {}:{} -> {}:{}", srcip, ntohs(tcphdr->th_sport), dstip,
-                                  ntohs(tcphdr->th_dport));
-        LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
-                                  iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
-        LOGV(INFO) << fmt::format("{}{}{}{}{}{} Seq: 0x{} Ack: 0x{} Win: 0x{} TcpLen: {}",
-                                  (tcphdr->th_flags & TH_URG ? 'U' : '*'), (tcphdr->th_flags & TH_ACK ? 'A' : '*'),
-                                  (tcphdr->th_flags & TH_PUSH ? 'P' : '*'), (tcphdr->th_flags & TH_RST ? 'R' : '*'),
-                                  (tcphdr->th_flags & TH_SYN ? 'S' : '*'), (tcphdr->th_flags & TH_SYN ? 'F' : '*'),
-                                  ntohl(tcphdr->th_seq), ntohl(tcphdr->th_ack), ntohs(tcphdr->th_win),
-                                  4 * tcphdr->th_off);
-        LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-        packets += 1;
-        is_tcp = true;
-        break;
+        // Advance to the transport layer header then parse and display
+        // the fields based on the type of header: TCP, UDP, or ICMPv6.
+        packetptr += sizeof(struct ip6_hdr);
+        switch (ipv6hdr->ip6_nxt) {
+        case IPPROTO_TCP:
+            tcphdr = (struct tcphdr *)packetptr;
+            LOGV(INFO) << fmt::format("TCP6  {}:{} -> {}:{}", srcip, ntohs(tcphdr->th_sport), dstip,
+                                      ntohs(tcphdr->th_dport));
+            LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
+                                      iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
+            LOGV(INFO) << fmt::format("{}{}{}{}{}{} Seq: 0x{} Ack: 0x{} Win: 0x{} TcpLen: {}",
+                                      (tcphdr->th_flags & TH_URG ? 'U' : '*'), (tcphdr->th_flags & TH_ACK ? 'A' : '*'),
+                                      (tcphdr->th_flags & TH_PUSH ? 'P' : '*'), (tcphdr->th_flags & TH_RST ? 'R' : '*'),
+                                      (tcphdr->th_flags & TH_SYN ? 'S' : '*'), (tcphdr->th_flags & TH_SYN ? 'F' : '*'),
+                                      ntohl(tcphdr->th_seq), ntohl(tcphdr->th_ack), ntohs(tcphdr->th_win),
+                                      4 * tcphdr->th_off);
+            LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+            packets += 1;
+            break;
 
-    case IPPROTO_UDP:
-        udphdr = (struct udphdr *)packetptr;
-        LOGV(INFO) << fmt::format("UDP  {}:{} -> {}:{}", srcip, ntohs(udphdr->uh_sport), dstip,
-                                  ntohs(udphdr->uh_dport));
-        LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
-                                  iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
-        LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-        packets += 1;
-        break;
+        case IPPROTO_UDP:
+            udphdr = (struct udphdr *)packetptr;
+            LOGV(INFO) << fmt::format("UDP6  {}:{} -> {}:{}", srcip, ntohs(udphdr->uh_sport), dstip,
+                                      ntohs(udphdr->uh_dport));
+            LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
+                                      iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
+            LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+            packets += 1;
+            break;
 
-    case IPPROTO_ICMP:
-        icmphdr = (struct icmp *)packetptr;
-        LOGV(INFO) << fmt::format("ICMP {} -> {}", srcip, dstip);
-        LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
-                                  iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
-        LOGV(INFO) << fmt::format("Type:{} Code:{} ID:{} Seq:{}", icmphdr->icmp_type, icmphdr->icmp_code,
-                                  ntohs(icmphdr->icmp_hun.ih_idseq.icd_id), ntohs(icmphdr->icmp_hun.ih_idseq.icd_seq));
-        LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-        packets += 1;
-        break;
-    }
-    if (is_forward) { // Skip the datalink layer header and get the IP header fields.
-        for (auto [srcip, destip] : forward_pair) {
-            if (iphdr->ip_v == 4) {
-                if ()
-            } else if (iphdr->ip_v == 6) {
+        case IPPROTO_ICMPV6:
+            icmp6hdr = (struct icmp6_hdr *)packetptr;
+            LOGV(INFO) << fmt::format("ICMP6 {} -> {}", srcip, dstip);
+            LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
+                                      iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
+            LOGV(INFO) << fmt::format("Type:{} Code:{}", icmp6hdr->icmp6_type, icmp6hdr->icmp6_code);
+            LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+            packets += 1;
+            break;
+        }
+        if (is_forward) { // Skip the datalink layer header and get the IP header fields.
+            // init the socket
+            for (auto [srcip, destip] : forward_pair) {
+                if (srcip == inet_ntoa(iphdr->ip_src)) {
+                    iphdr->ip_src.s_addr = inet_addr(destip.c_str());
+                    // Recalculate the IP checksum
+                    iphdr->ip_sum = 0;
+                    iphdr->ip_sum = in_cksum((unsigned short *)iphdr, iphdr->ip_hl * 4);
 
-            } else {
-                LOGV(ERROR) << "Unknown IP version";
+                    forward(reinterpret_cast<const unsigned char *>(iphdr), header->len);
+                    return;
+                }
+                if (destip == inet_ntoa(iphdr->ip_dst)) {
+                    iphdr->ip_dst.s_addr = inet_addr(destip.c_str());
+                    // Recalculate the IP checksum
+                    iphdr->ip_sum = 0;
+                    iphdr->ip_sum = in_cksum((unsigned short *)iphdr, iphdr->ip_hl * 4);
+
+                    forward(reinterpret_cast<const unsigned char *>(iphdr), header->len);
+                    return;
+                }
+            }
+        }
+
+    } else {
+        strcpy(srcip, inet_ntoa(iphdr->ip_src));
+        strcpy(dstip, inet_ntoa(iphdr->ip_dst));
+
+        // Advance to the transport layer header then parse and display
+        // the fields based on the type of hearder: tcp, udp or icmp.
+        packetptr += 4 * iphdr->ip_hl;
+        switch (iphdr->ip_p) {
+        case IPPROTO_TCP:
+            tcphdr = (struct tcphdr *)packetptr;
+            LOGV(INFO) << fmt::format("TCP  {}:{} -> {}:{}", srcip, ntohs(tcphdr->th_sport), dstip,
+                                      ntohs(tcphdr->th_dport));
+            LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
+                                      iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
+            LOGV(INFO) << fmt::format("{}{}{}{}{}{} Seq: 0x{} Ack: 0x{} Win: 0x{} TcpLen: {}",
+                                      (tcphdr->th_flags & TH_URG ? 'U' : '*'), (tcphdr->th_flags & TH_ACK ? 'A' : '*'),
+                                      (tcphdr->th_flags & TH_PUSH ? 'P' : '*'), (tcphdr->th_flags & TH_RST ? 'R' : '*'),
+                                      (tcphdr->th_flags & TH_SYN ? 'S' : '*'), (tcphdr->th_flags & TH_SYN ? 'F' : '*'),
+                                      ntohl(tcphdr->th_seq), ntohl(tcphdr->th_ack), ntohs(tcphdr->th_win),
+                                      4 * tcphdr->th_off);
+            LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+            packets += 1;
+            break;
+
+        case IPPROTO_UDP:
+            udphdr = (struct udphdr *)packetptr;
+            LOGV(INFO) << fmt::format("UDP  {}:{} -> {}:{}", srcip, ntohs(udphdr->uh_sport), dstip,
+                                      ntohs(udphdr->uh_dport));
+            LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
+                                      iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
+            LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+            packets += 1;
+            break;
+
+        case IPPROTO_ICMP:
+            icmphdr = (struct icmp *)packetptr;
+            LOGV(INFO) << fmt::format("ICMP {} -> {}", srcip, dstip);
+            LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
+                                      iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
+            LOGV(INFO) << fmt::format("Type:{} Code:{} ID:{} Seq:{}", icmphdr->icmp_type, icmphdr->icmp_code,
+                                      ntohs(icmphdr->icmp_hun.ih_idseq.icd_id),
+                                      ntohs(icmphdr->icmp_hun.ih_idseq.icd_seq));
+            LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+            packets += 1;
+            break;
+        }
+        if (is_forward) { // Skip the datalink layer header and get the IP header fields.
+            // init the socket
+            for (auto [srcip_, destip_] : forward_pair) {
+                if (srcip_ == inet_ntoa(iphdr->ip_src)) {
+                    iphdr->ip_src.s_addr = inet_addr(destip_.c_str());
+                    // Recalculate the IP checksum
+                    iphdr->ip_sum = 0;
+                    iphdr->ip_sum = in_cksum((unsigned short *)iphdr, iphdr->ip_hl * 4);
+
+                    forward(reinterpret_cast<const unsigned char *>(iphdr), header->len);
+                    return;
+                }
+                if (destip_ == inet_ntoa(iphdr->ip_dst)) {
+                    iphdr->ip_dst.s_addr = inet_addr(srcip_.c_str());
+                    // Recalculate the IP checksum
+                    iphdr->ip_sum = 0;
+                    iphdr->ip_sum = in_cksum((unsigned short *)iphdr, iphdr->ip_hl * 4);
+
+                    forward(reinterpret_cast<const unsigned char *>(iphdr), header->len);
+                    return;
+                }
             }
         }
     }
-    // Modify packet if needed
 }
 void pcap_loop_wrapper(const std::stop_token &stopToken, pcap_t *handle, pcap_handler packet_handler) {
     while (!stopToken.stop_requested())
@@ -173,7 +275,6 @@ int main() {
     signal(SIGINT, sigterm_handler);
 
     fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
-    // ... code to set up the socket address structure and bind the socket ...
 
     // Forcefully attaching socket to the port
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
@@ -254,23 +355,25 @@ int main() {
                 case MVVM_SOCK_SUSPEND:
                     // suspend
                     LOGV(ERROR) << "suspend";
-                    if (is_tcp)
+                    if (op_data->is_tcp)
                         backend_thread.emplace_back(keep_alive, server_ip, op_data->addr[idx][0].port, client_ip,
-                                                    op_data->addr[idx][1].port);
+                                                    op_data->addr[idx][1].port); // server to client? client to server?
                     forward_pair.emplace_back(server_ip, "");
                     break;
                 case MVVM_SOCK_RESUME:
                     // resume
                     LOGV(ERROR) << "resume";
 
-                    if (is_tcp)
+                    if (op_data->is_tcp)
                         for (auto [i, thread] : enumerate(backend_thread)) {
                             if (i != 0)
                                 thread.request_stop();
                         }
                     // find the correspnding jthread and join
+                    for (auto &i : forward_pair) {
+                        i.second = server_ip;
+                    }
                     is_forward = true;
-                    forward_pair[idx].second = server_ip;
                     // for udp forward from source to remote
                     // drop to new ip
                     // stop keep_alive

@@ -12,7 +12,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
     }
 }
 #endif
-static void dgemm_wrapper(wasm_exec_env_t exec_env, int8_t layout, int8_t transA, int8_t transB, int32_t m, int32_t n,
+static void dgemm_wrapper(wasm_exec_env_t exec_env, int32_t m, int32_t n,
                           int32_t k, double alpha, double *a, int32_t lda, double *b, int32_t ldb, double beta,
                           double *c, int32_t ldc) {
 #if defined(_WIN32)
@@ -54,7 +54,7 @@ static void dgemm_wrapper(wasm_exec_env_t exec_env, int8_t layout, int8_t transA
 #endif
 }
 static NativeSymbol ns1[] = {
-    REG_NATIVE_FUNC(dgemm, "(i8i8i8iiiFF*iF*iFF*i)"),
+    REG_NATIVE_FUNC(dgemm, "(iiiFF*iF*iFF*i)"),
 };
 
 uint32_t getMVVMDemoApi(NativeSymbol **nativeSymbols) {
