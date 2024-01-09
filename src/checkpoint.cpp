@@ -7,6 +7,11 @@
 #include "wamr.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
+#if !defined(_WIN32)
+#include "thread_manager.h"
+#endif
+
+#include <arpa/inet.h>
 #include <condition_variable>
 #include <cstdio>
 #include <cxxopts.hpp>
@@ -15,13 +20,9 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <sys/socket.h>
 #include <thread>
 #include <tuple>
-#if !defined(_WIN32)
-#include "thread_manager.h"
-#endif
-#include <arpa/inet.h>
-#include <sys/socket.h>
 
 WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
@@ -46,7 +47,7 @@ void serialize_to_file(WASMExecEnv *instance) {
             auto tmp_ip6 =
                 fmt::format("{}:{}:{}:{}:{}:{}:{}:{}", src_addr.ip6[0], src_addr.ip6[1], src_addr.ip6[2],
                             src_addr.ip6[3], src_addr.ip6[4], src_addr.ip6[5], src_addr.ip6[6], src_addr.ip6[7]);
-            if (src_addr.port == 0){
+            if (src_addr.port == 0) {
                 src_addr.is_4 = true;
             }
             if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
@@ -93,7 +94,9 @@ void serialize_to_file(WASMExecEnv *instance) {
                 freeifaddrs(ifaddr);
 #endif
             }
-            LOGV(INFO) << "addr: " <<  fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]) << " port: " << src_addr.port;
+            LOGV(INFO) << "addr: "
+                       << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3])
+                       << " port: " << src_addr.port;
 
             wamr->op_data.op = MVVM_SOCK_SUSPEND;
             wamr->op_data.addr[idx][0] = src_addr;
@@ -103,8 +106,12 @@ void serialize_to_file(WASMExecEnv *instance) {
             std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
                         sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
             wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
-            LOGV(INFO) << "dest_addr: " <<  fmt::format("{}.{}.{}.{}", wamr->op_data.addr[idx][1].ip4[0], wamr->op_data.addr[idx][1].ip4[1], wamr->op_data.addr[idx][1].ip4[2], wamr->op_data.addr[idx][1].ip4[3]) << " dest_port: " << wamr->op_data.addr[idx][1].port;
-            wamr->op_data.size+=1;
+            LOGV(INFO) << "dest_addr: "
+                       << fmt::format("{}.{}.{}.{}", wamr->op_data.addr[idx][1].ip4[0],
+                                      wamr->op_data.addr[idx][1].ip4[1], wamr->op_data.addr[idx][1].ip4[2],
+                                      wamr->op_data.addr[idx][1].ip4[3])
+                       << " dest_port: " << wamr->op_data.addr[idx][1].port;
+            wamr->op_data.size += 1;
         }
 
         // Create a socket
@@ -128,7 +135,7 @@ void serialize_to_file(WASMExecEnv *instance) {
         }
 
         LOGV(INFO) << "Connected successfully";
-        rc = send(fd,&wamr->op_data, sizeof(struct mvvm_op_data), 0);
+        rc = send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0);
         if (rc == -1) {
             LOGV(ERROR) << "send error";
             exit(EXIT_FAILURE);

@@ -24,7 +24,7 @@ if (APPLE)
         set(BLAS_LIBRARIES /opt/homebrew/opt/openblas/lib/libopenblas.0.dylib)
     else ()
         set(LLVM_LLDB_LIB /usr/local/Cellar/llvm@14/14.0.6/lib/liblldb.dylib)
-        set(BLAS_LIBRARIES -lopenblas)
+        set(BLAS_LIBRARIES /usr/local/opt/openblas/lib/libopenblas.0.dylib)
     endif ()
     find_path(BLAS_INCLUDE_DIRS cblas.h
             /opt/homebrew/opt/openblas/include
@@ -112,10 +112,12 @@ add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 include(${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/wasm-micro-runtime/core/iwasm/aot ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include ${LLVM_INCLUDE_DIRS} ${BLAS_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrafter/libcrafter/)
 
-add_subdirectory(lib/libcrafter/libcrafter)
+if (MVVM_BUILD_BENCH)
+    add_subdirectory(bench)
+endif()
 add_subdirectory(test)
-add_subdirectory(bench)
 if (NOT WIN32)
+    add_subdirectory(lib/libcrafter/libcrafter)
     add_subdirectory(gateway)
 endif ()
 

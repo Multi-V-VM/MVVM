@@ -54,30 +54,10 @@ int main(int argc, char **argv) {
     reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
-    if (!wamr->socket_fd_map_.empty()) { // new ip, old ip // only if tcp requires keepalive
+    if (!a[0]->module_inst.wasi_ctx.socket_fd_map.empty()) { // new ip, old ip // only if tcp requires keepalive
         // tell gateway to stop keep alive the server
         struct sockaddr_in addr {};
-        char buf[100];
         int fd = 0;
-
-        // Create a socket
-        if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-            LOGV(ERROR) << "socket error";
-            throw std::runtime_error("socket error");
-        }
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(MVVM_SOCK_PORT);
-        // Convert IPv4 and IPv6 addresses from text to binary form
-        if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
-            perror("Invalid address/ Address not supported");
-            exit(EXIT_FAILURE);
-        }
-        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-            perror("connect error");
-            exit(EXIT_FAILURE);
-        }
-        // send the fd
-        // struct msghdr msg = {0};
 
         SocketAddrPool src_addr = {.ip4 = {0}, .ip6 = {0}, .is_4 = true, .port = 0}; // get current ip
 #if !defined(_WIN32)
@@ -120,12 +100,36 @@ int main(int argc, char **argv) {
 
         freeifaddrs(ifaddr);
 #endif
+        LOGV(INFO) << "new ip is "
+                   << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);
         wamr->op_data.op = MVVM_SOCK_RESUME;
         wamr->op_data.addr[0][0] = src_addr;
-        if (send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0) == -1) {
-            perror("send error");
+        // Create a socket
+        if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+            LOGV(ERROR) << "socket error";
+            throw std::runtime_error("socket error");
+        }
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(MVVM_SOCK_PORT);
+
+        // Convert IPv4 and IPv6 addresses from text to binary form
+        if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
+            LOGV(ERROR) << "Invalid address/ Address not supported";
             exit(EXIT_FAILURE);
         }
+
+        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+            LOGV(ERROR) << "Connection Failed " << errno;
+            exit(EXIT_FAILURE);
+        }
+        // send the fd
+        // struct msghdr msg = {0};
+
+        if (send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0) == -1) {
+            LOGV(ERROR) << "Send Error";
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
     }
     wamr->recover(&a);
     return 0;

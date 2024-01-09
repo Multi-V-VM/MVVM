@@ -439,7 +439,7 @@ int WAMRInstance::invoke_ftell(uint32 fd, uint32 offset, uint32 whench) {
 int WAMRInstance::invoke_preopen(uint32 fd, const std::string &path) {
     auto name = "__wasilibc_nocwd_openat_nomode";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        LOGV(ERROR) << "The wasi\"" << name <<"\"function is not found.";
+        LOGV(ERROR) << "The wasi\"" << name << "\"function is not found.";
         auto target_module = get_module_instance()->e;
         for (int i = 0; i < target_module->function_count; i++) {
             auto cur_func = &target_module->functions[i];
@@ -504,10 +504,11 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     // order threads by id (descending)
     std::sort(execEnv->begin(), execEnv->end(),
               [](const std::unique_ptr<WAMRExecEnv> &a, const std::unique_ptr<WAMRExecEnv> &b) {
-                  return a->frames.back()->function_index > b->frames.back()->function_index;;
+                  return a->frames.back()->function_index > b->frames.back()->function_index;
+                  ;
               });
 
-    for (const auto& exec_ : *execEnv) {
+    for (const auto &exec_ : *execEnv) {
         size_t a = exec_->frames.back()->function_index;
         size_t b = exec_->frames.front()->function_index;
         fprintf(stderr, "exec_env %p, frames %lu %lu, cur_count %d\n", exec_.get(), a, b, exec_->cur_count);
@@ -535,8 +536,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
 
     invoke_init_c();
 #if !defined(_WIN32)
-    invoke_preopen(1, "/dev/stdout");
-    for (auto [idx,exec_] : *execEnv|enumerate) {
+    for (auto [idx, exec_] : *execEnv | enumerate) {
         if (idx + 1 == execEnv->size()) {
             // the last one should be the main thread
             break;
@@ -566,16 +566,15 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     // restart main thread execution
 #endif
     if (!is_aot) {
-        wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(),
-                                       get_exec_env()->cur_frame->function,
+        wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
                                        get_exec_env()->cur_frame->prev_frame);
     } else {
         exec_env = cur_env = main_env;
         module_inst = main_env->module_inst;
 
         fprintf(stderr, "invoke_init_c\n");
-        //invoke_init_c();
-        // invoke_preopen(1, "/dev/stdout");
+        // invoke_init_c();
+        //  invoke_preopen(1, "/dev/stdout");
         fprintf(stderr, "wakeup.release\n");
         wakeup.release(100);
 
@@ -639,13 +638,13 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
                   get_addr_from_context(context), context.ns_lookup_list);
 }
 extern WAMRInstance *wamr;
-extern "C"{ // stop name mangling so it can be linked externally
-void wamr_wait(){
+extern "C" { // stop name mangling so it can be linked externally
+void wamr_wait() {
     fprintf(stderr, "finish child restore\n");
     wakeup.acquire();
     fprintf(stderr, "go child!! %d\n", gettid());
 }
-WASMExecEnv* restore_env(){
+WASMExecEnv *restore_env() {
     auto exec_env = wasm_exec_env_create_internal(wamr->module_inst, wamr->stack_size);
     restore(child_env, exec_env);
 

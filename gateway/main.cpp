@@ -186,6 +186,8 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
         if (is_forward) { // Skip the datalink layer header and get the IP header fields.
             // init the socket
             for (auto [srcip_, destip_] : forward_pair) {
+                LOGV(DEBUG) << header->len << "srcip:" << srcip_ << " destip:" << destip_;
+
                 if (srcip_ == inet_ntoa(iphdr->ip_src)) {
                     iphdr->ip_src.s_addr = inet_addr(destip_.c_str());
                     // Recalculate the IP checksum
@@ -304,7 +306,7 @@ int main() {
 
     handle = pcap_open_live(MVVM_SOCK_INTERFACE, BUFSIZ, 1, 1000, errbuf);
     if (handle == nullptr) {
-        LOGV(ERROR)<< fmt::format("pcap_open_live(): {}", errbuf);
+        LOGV(ERROR) << fmt::format("pcap_open_live(): {}", errbuf);
         exit(EXIT_FAILURE);
     }
 
@@ -336,7 +338,7 @@ int main() {
                 // suspend
                 LOGV(ERROR) << "suspend";
 
-                for (int idx =0;idx <op_data.size;idx++) {
+                for (int idx = 0; idx < op_data.size; idx++) {
                     if (op_data.addr[idx][0].is_4) {
                         server_ip = fmt::format("{}.{}.{}.{}", op_data.addr[idx][0].ip4[0], op_data.addr[idx][0].ip4[1],
                                                 op_data.addr[idx][0].ip4[2], op_data.addr[idx][0].ip4[3]);
@@ -359,12 +361,15 @@ int main() {
                         backend_thread.emplace_back(keep_alive, server_ip, op_data.addr[idx][0].port, client_ip,
                                                     op_data.addr[idx][1].port); // server to client? client to server?
                     forward_pair.emplace_back(server_ip, "");
-                 }
+                }
 
-                    break;
+                break;
             case MVVM_SOCK_RESUME:
                 // resume
                 LOGV(ERROR) << "resume";
+                forward_pair[forward_pair.size()].second =
+                    fmt::format("{}.{}.{}.{}", op_data.addr[0][0].ip4[0], op_data.addr[0][0].ip4[1],
+                                op_data.addr[0][0].ip4[2], op_data.addr[0][0].ip4[3]);
                 is_forward = true;
                 // for udp forward from source to remote
                 // drop to new ip

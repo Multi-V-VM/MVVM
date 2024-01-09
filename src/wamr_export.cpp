@@ -101,9 +101,7 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
     wamr->socket_fd_map_[sock] = newSocketData;
 }
 #endif
-void set_tcp(){
-    wamr->op_data.is_tcp = true;
-}
+void set_tcp() { wamr->op_data.is_tcp = true; }
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
@@ -153,7 +151,7 @@ void remove_fd(int fd) {
     create fd-socketmetadata map and store the "domain", "type", "protocol" value
 */
 void insert_socket(int fd, int domain, int type, int protocol) {
-     LOGV(INFO) << fmt::format("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
+    LOGV(INFO) << fmt::format("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
 
     if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end()) {
         LOGV(ERROR) << "socket_fd already exist" << fd;
@@ -305,13 +303,13 @@ size_t snapshot_threshold;
 size_t call_count = 0;
 bool checkpoint = false;
 void sigtrap_handler(int sig) {
-     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+    fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
 
     auto exec_env = wamr->get_exec_env();
 //    print_exec_env_debug_info(exec_env);
 //    print_memory(exec_env);
-#if defined (_WIN32)
-    signal(SIGILL , sigtrap_handler);
+#if defined(_WIN32)
+    signal(SIGILL, sigtrap_handler);
 #endif
     call_count++;
 
@@ -325,7 +323,7 @@ void sigtrap_handler(int sig) {
 
 void register_sigtrap() {
 #if defined(_WIN32)
-    signal(SIGILL , sigtrap_handler);
+    signal(SIGILL, sigtrap_handler);
     LOGV_DEBUG << "SIGILL registered";
 #else
     struct sigaction sa {};

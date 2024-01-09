@@ -12,9 +12,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
     }
 }
 #endif
-static void dgemm_wrapper(wasm_exec_env_t exec_env, int32_t m, int32_t n,
-                          int32_t k, double alpha, double *a, int32_t lda, double *b, int32_t ldb, double beta,
-                          double *c, int32_t ldc) {
+static void dgemm_wrapper(wasm_exec_env_t exec_env, int32_t m, int32_t n, int32_t k, double alpha, double *a,
+                          int32_t lda, double *b, int32_t ldb, double beta, double *c, int32_t ldc) {
 #if defined(_WIN32)
     cudaSetDevice(0);
     cudaEvent_t start, stop;

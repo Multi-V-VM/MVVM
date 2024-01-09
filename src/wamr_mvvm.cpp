@@ -11,11 +11,11 @@ bool WAMRInstance::get_int3_addr() {
     std::string object_file = std::string(aot_file_path) + ".o";
     // if not exist, exit
 #if defined(_WIN32)
-    auto stringToWChar = [](const std::string& s) -> wchar_t* {
+    auto stringToWChar = [](const std::string &s) -> wchar_t * {
         int len;
         int slength = static_cast<int>(s.length()) + 1;
         len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-        wchar_t* buf = new wchar_t[len];
+        wchar_t *buf = new wchar_t[len];
         MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
         return buf;
     };
@@ -35,7 +35,7 @@ bool WAMRInstance::get_int3_addr() {
     std::string test_cmd = "objdump -d " + object_file + " | grep -E svc";
 #endif
 #if defined(_WIN32)
-    FILE *fp = _popen(("llvm-objdump -d " + object_file+  " | grep -E \"ba 04 00 00 00\"").c_str(), "r");
+    FILE *fp = _popen(("llvm-objdump -d " + object_file + " | grep -E \"ba 04 00 00 00\"").c_str(), "r");
 #else
     FILE *fp = popen(test_cmd.c_str(), "r");
 #endif
@@ -47,7 +47,7 @@ bool WAMRInstance::get_int3_addr() {
     std::string output;
     while (fgets(buf, sizeof(buf), fp) != nullptr) {
 #if defined(_WIN32)
-         output += std::string(buf);
+        output += std::string(buf);
 #else
         output += std::string(buf);
 #endif
@@ -57,7 +57,6 @@ bool WAMRInstance::get_int3_addr() {
 #else
     pclose(fp);
 #endif
-
 
     // split the output
     std::vector<std::string> lines;
@@ -70,11 +69,10 @@ bool WAMRInstance::get_int3_addr() {
     // get the address of int3
     std::vector<std::string> addr;
     for (auto &line : lines) {
-                    auto pos = line.find(":");
-                    if (pos != std::string::npos) {
-                        addr.emplace_back(line.substr(0, pos));
-
-                }
+        auto pos = line.find(":");
+        if (pos != std::string::npos) {
+            addr.emplace_back(line.substr(0, pos));
+        }
     }
 
     for (auto &a : addr) {
@@ -121,8 +119,8 @@ bool WAMRInstance::replace_int3_with_nop() {
     for (auto offset : int3_addr) {
 #if defined(_WIN32)
         printf("%lld  ", offset);
-        for(int i=0; i< 5; i++){
-            printf("%02x ", code[offset+i]);
+        for (int i = 0; i < 5; i++) {
+            printf("%02x ", code[offset + i]);
         }
 #else
 #ifdef __x86_64__
@@ -168,10 +166,10 @@ bool WAMRInstance::replace_mfence_with_nop() {
 
     // replace int3 with nop
     for (auto offset : int3_addr) {
-        if (code[offset-3] == 0x0f && code[offset-2] == 0xae && code[offset-1] == 0xf0) {
-            code[offset-3] = 0x90;
-            code[offset-2] = 0x90;
-            code[offset-1] = 0x90;
+        if (code[offset - 3] == 0x0f && code[offset - 2] == 0xae && code[offset - 1] == 0xf0) {
+            code[offset - 3] = 0x90;
+            code[offset - 2] = 0x90;
+            code[offset - 1] = 0x90;
         }
     }
 

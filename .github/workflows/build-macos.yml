@@ -4,7 +4,7 @@ on: push
 
 jobs:
   test:
-    runs-on: macos-latest
+    runs-on: macos-13
 
     strategy:
       fail-fast: false
@@ -19,6 +19,12 @@ jobs:
     name: "${{matrix.standard}}-${{matrix.build}}"
     steps:
     - uses: actions/checkout@v2
+
+    - name: List Xcode installations
+      run: sudo ls -1 /Applications | grep "Xcode"
+      
+    - name: Select Xcode 15.1
+      run: sudo xcode-select -s /Applications/Xcode_15.1.app/Contents/Developer
 
     - name: Install Dependency
       run: brew install cxxopts fmt llvm@14 google-benchmark ninja libpcap openblas

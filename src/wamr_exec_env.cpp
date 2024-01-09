@@ -1,6 +1,6 @@
+#include "wamr_exec_env.h"
 #include "aot_runtime.h"
 #include "wamr.h"
-#include "wamr_exec_env.h"
 extern WAMRInstance *wamr;
 void WAMRExecEnv::dump_impl(WASMExecEnv *env) {
     dump(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
@@ -23,9 +23,9 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
     env->suspend_flags.flags = flags;
     env->aux_stack_boundary.boundary = aux_boundary;
     env->aux_stack_bottom.bottom = aux_bottom;
+    restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
 
     if (wamr->is_aot) {
-        auto module_inst = (WASMModuleInstance *)env->module_inst;
         std::reverse(frames.begin(), frames.end());
         std::vector<AOTFrame *> replay_frames;
         for (const auto &dump_frame : frames) {
@@ -99,5 +99,4 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
         }
         env->cur_frame = prev_frame;
     }
-    restore(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
 }
