@@ -124,6 +124,7 @@ fmt::color level2color(LogLevel level);
 enum opcode {
     MVVM_SOCK_SUSPEND = 0,
     MVVM_SOCK_RESUME = 1,
+    MVVM_SOCK_ACK = 2,
 };
 struct mvvm_op_data {
     enum opcode op;

@@ -39,3 +39,9 @@
 [submodule "bench/ftp"]
 	path = bench/ftp
 	url = https://github.com/victoryang00/FTP-implementation-over-TCP
+[submodule "bench/orb_slam3"]
+	path = bench/orb_slam3
+	url = https://github.com/victoryang00/orb-slam-expts/
+[submodule "bench/lammps"]
+	path = bench/lammps
+	url = https://github.com/victoryang00/lammps

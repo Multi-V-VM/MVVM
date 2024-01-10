@@ -11,6 +11,7 @@
 #include <netinet/udp.h>
 #include <pcap/pcap.h>
 #include <thread>
+#include <tuple>
 
 using namespace Crafter;
 
@@ -22,7 +23,10 @@ int packets = 0;
 int client_fd;
 int fd;
 std::vector<std::jthread> backend_thread;
-std::vector<std::pair<std::string, std::string>> forward_pair;
+// 1 cached_packet for each socket connection is enogh? every package need an ack to remove this // construct ack
+// package
+std::map<int, struct ip> cached_packets; // seq
+std::vector<std::tuple<std::string, std::string, std::string>> forward_pair;
 bool is_forward = false;
 
 // Function to recalculate the IP checksum
@@ -38,6 +42,7 @@ unsigned short in_cksum(unsigned short *buf, int len) {
     sum += (sum >> 16);
     return (unsigned short)(~sum);
 }
+void send_all_packets() {}
 void forward(const unsigned char *buf, int len) {
     int sock;
     struct sockaddr_in dst {};
@@ -115,9 +120,9 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
         }
         if (is_forward) { // Skip the datalink layer header and get the IP header fields.
             // init the socket
-            for (auto [srcip, destip] : forward_pair) {
-                if (srcip == inet_ntoa(iphdr->ip_src)) {
-                    iphdr->ip_src.s_addr = inet_addr(destip.c_str());
+            for (auto [srcip, destip, new_srcip] : forward_pair) {
+                if (srcip == inet_ntoa(iphdr->ip_src) && destip == inet_ntoa(iphdr->ip_dst)) {
+                    iphdr->ip_src.s_addr = inet_addr(new_srcip.c_str());
                     // Recalculate the IP checksum
                     iphdr->ip_sum = 0;
                     iphdr->ip_sum = in_cksum((unsigned short *)iphdr, iphdr->ip_hl * 4);
@@ -125,8 +130,8 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
                     forward(reinterpret_cast<const unsigned char *>(iphdr), header->len);
                     return;
                 }
-                if (srcip == inet_ntoa(iphdr->ip_dst)) {
-                    iphdr->ip_dst.s_addr = inet_addr(destip.c_str());
+                if (srcip == inet_ntoa(iphdr->ip_dst) && destip == inet_ntoa(iphdr->ip_src)) {
+                    iphdr->ip_dst.s_addr = inet_addr(new_srcip.c_str());
                     // Recalculate the IP checksum
                     iphdr->ip_sum = 0;
                     iphdr->ip_sum = in_cksum((unsigned short *)iphdr, iphdr->ip_hl * 4);
@@ -185,11 +190,11 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
         }
         if (is_forward) { // Skip the datalink layer header and get the IP header fields.
             // init the socket
-            for (auto [srcip_, destip_] : forward_pair) {
+            for (auto [srcip_, destip_, new_srcip] : forward_pair) {
                 LOGV(DEBUG) << header->len << "srcip:" << srcip_ << " destip:" << destip_;
 
-                if (srcip_ == inet_ntoa(iphdr->ip_src)) {
-                    iphdr->ip_src.s_addr = inet_addr(destip_.c_str());
+                if (srcip_ == inet_ntoa(iphdr->ip_src) && destip_ == inet_ntoa(iphdr->ip_dst)) {
+                    iphdr->ip_src.s_addr = inet_addr(new_srcip.c_str());
                     // Recalculate the IP checksum
                     iphdr->ip_sum = 0;
                     iphdr->ip_sum = in_cksum((unsigned short *)iphdr, iphdr->ip_hl * 4);
@@ -197,8 +202,8 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
                     forward(reinterpret_cast<const unsigned char *>(iphdr), header->len);
                     return;
                 }
-                if (srcip_ == inet_ntoa(iphdr->ip_dst)) {
-                    iphdr->ip_dst.s_addr = inet_addr(destip_.c_str());
+                if (srcip_ == inet_ntoa(iphdr->ip_dst) && destip_ == inet_ntoa(iphdr->ip_src)) {
+                    iphdr->ip_dst.s_addr = inet_addr(new_srcip.c_str());
                     // Recalculate the IP checksum
                     iphdr->ip_sum = 0;
                     iphdr->ip_sum = in_cksum((unsigned short *)iphdr, iphdr->ip_hl * 4);
@@ -266,8 +271,8 @@ int main() {
     char buffer[1024] = {0};
     char errbuf[PCAP_ERRBUF_SIZE];
     struct bpf_program fp {};
-    char filter_exp[] = ""; // The filter expression
-    // char filter_exp[] = "net 172.17.0.0/24";
+    // char filter_exp[] = ""; // The filter expression
+    char filter_exp[] = "net 172.17.0.0/24";
     bpf_u_int32 netmask;
 
     struct mvvm_op_data op_data {};
@@ -334,9 +339,15 @@ int main() {
         if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
             memcpy(&op_data, buffer, sizeof(op_data));
             switch (op_data.op) {
+            case MVVM_SOCK_ACK:
+                // ack
+                LOGV(ERROR) << "ack";
+                // remove the cached packet
+                cached_packets.erase(op_data.size);
+                break;
             case MVVM_SOCK_SUSPEND:
                 // suspend
-                LOGV(ERROR) << "suspend";
+                LOGV(ERROR) << "suspend"; // capture all the packets from dest to source
 
                 for (int idx = 0; idx < op_data.size; idx++) {
                     if (op_data.addr[idx][0].is_4) {
@@ -356,24 +367,31 @@ int main() {
                                                 op_data.addr[idx][1].ip6[4], op_data.addr[idx][1].ip6[5],
                                                 op_data.addr[idx][1].ip6[6], op_data.addr[idx][1].ip6[7]);
                     }
-                    LOGV(INFO) << "server_ip:" << server_ip << " client_ip:" << client_ip; // 且有输入了
+                    LOGV(INFO) << "server_ip:" << server_ip << " client_ip:" << client_ip;
                     if (op_data.is_tcp)
                         backend_thread.emplace_back(keep_alive, server_ip, op_data.addr[idx][0].port, client_ip,
                                                     op_data.addr[idx][1].port); // server to client? client to server?
-                    forward_pair.emplace_back(server_ip, "");
+                    forward_pair.emplace_back(server_ip, client_ip, "");
                 }
 
                 break;
             case MVVM_SOCK_RESUME:
                 // resume
                 LOGV(ERROR) << "resume";
-                forward_pair[forward_pair.size()].second =
+                auto tmp_tuple =forward_pair[forward_pair.size() - 1];
+                std::get<2>(tmp_tuple) =
                     fmt::format("{}.{}.{}.{}", op_data.addr[0][0].ip4[0], op_data.addr[0][0].ip4[1],
                                 op_data.addr[0][0].ip4[2], op_data.addr[0][0].ip4[3]);
+                LOGV(ERROR) << "forward_pair[forward_pair.size()]" << std::get<0>(forward_pair[forward_pair.size() - 1])
+                            << std::get<1>(forward_pair[forward_pair.size() - 1]);
                 is_forward = true;
                 // for udp forward from source to remote
-                // drop to new ip
                 // stop keep_alive
+                if (op_data.is_tcp) {
+                    backend_thread.pop_back();
+                }
+                sleep(1);
+                send_all_packets();
                 break;
             }
         }

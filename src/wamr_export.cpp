@@ -303,7 +303,7 @@ size_t snapshot_threshold;
 size_t call_count = 0;
 bool checkpoint = false;
 void sigtrap_handler(int sig) {
-    fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+    // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
 
     auto exec_env = wamr->get_exec_env();
 //    print_exec_env_debug_info(exec_env);
@@ -359,7 +359,7 @@ void sigint_handler(int sig) {
         serialize_to_file(wamr->exec_env);
         return;
     }
-    fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+    // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     checkpoint = true;
     wamr->replace_nop_with_int3();
 #if defined(_WIN32)

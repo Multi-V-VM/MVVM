@@ -17,6 +17,7 @@
 FreadStream *reader;
 WAMRInstance *wamr = nullptr;
 bool is_debug = false;
+int stop_func_index;
 
 void serialize_to_file(WASMExecEnv *instance) {}
 int main(int argc, char **argv) {
@@ -105,7 +106,7 @@ int main(int argc, char **argv) {
         wamr->op_data.op = MVVM_SOCK_RESUME;
         wamr->op_data.addr[0][0] = src_addr;
         // Create a socket
-        if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+        if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
             LOGV(ERROR) << "socket error";
             throw std::runtime_error("socket error");
         }

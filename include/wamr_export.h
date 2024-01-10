@@ -66,6 +66,7 @@ int gettid();
 extern size_t snapshot_threshold;
 extern bool checkpoint;
 extern bool is_debug;
+extern int stop_func_index;
 
 #ifdef __cplusplus
 }

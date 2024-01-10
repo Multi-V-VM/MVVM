@@ -30,6 +30,7 @@ FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 bool is_debug;
+int stop_func_index;
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     if (!wamr->socket_fd_map_.empty()) {
@@ -205,8 +206,7 @@ int main(int argc, char *argv[]) {
         cxxopts::value<std::vector<std::string>>()->default_value(""))("h,help", "The value for epoch value",
                                                                        cxxopts::value<bool>()->default_value("false"))(
         "i,is_debug", "The value for is_debug value", cxxopts::value<bool>()->default_value("false"))(
-        "f,function", "The function to test execution",
-        cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
+        "f,function", "The function to test execution", cxxopts::value<int>()->default_value("0"))(
         "c,count", "The function index to test execution", cxxopts::value<int>()->default_value("0"));
     auto removeExtension = [](std::string &filename) {
         size_t dotPos = filename.find_last_of('.');
@@ -235,6 +235,7 @@ int main(int argc, char *argv[]) {
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
     auto count = result["count"].as<int>();
     is_debug = result["is_debug"].as<bool>();
+    stop_func_index = result["function"].as<int>();
 
     if (arg.size() == 1 && arg[0].empty())
         arg.clear();
@@ -251,7 +252,7 @@ int main(int argc, char *argv[]) {
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
     wamr->get_int3_addr();
-    wamr->replace_int3_with_nop();
+    // wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 #if defined(_WIN32)
