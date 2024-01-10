@@ -506,8 +506,9 @@ WAMRInstance::register_tid_map(){
     tid_map[cur_thread] = gettid();
 }
 
-extern int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32*);
-extern int32 pthread_mutex_unlock_wrapper(wasm_exec_env_t, uint32*);
+
+extern "C" int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32*);
+extern "C" int32 pthread_mutex_unlock_wrapper(wasm_exec_env_t, uint32*);
 void
 WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env){
     if(main){
