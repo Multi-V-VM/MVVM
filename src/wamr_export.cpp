@@ -203,6 +203,8 @@ void insert_lock(char const *, int) {}
 void insert_sem(char const *, int) {}
 void remove_lock(char const *) {}
 void remove_sem(char const *) {}
+
+
 #if defined(__APPLE__)
 int gettid() {
     uint64_t tid;
@@ -212,6 +214,12 @@ int gettid() {
 #elif defined(_WIN32)
 int gettid() { return GetCurrentThreadId(); }
 #endif
+
+void insert_sync_op(wasm_exec_env_t exec_env, uint32* mutex, enum sync_op locking){
+    struct sync_op_t sync_op = {.tid = gettid(), .ref = *mutex, .sync_op = locking};
+    wamr->sync_ops.push_back(sync_op);
+}
+
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {

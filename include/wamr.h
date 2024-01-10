@@ -16,6 +16,9 @@
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
 #include <mutex>
+#include <condition_variable>
+#include <semaphore>
+#include <iterator>
 #include <ranges>
 #include <tuple>
 
@@ -42,6 +45,16 @@ public:
     // lwcp is LightWeight CheckPoint
     size_t ready = 0;
     std::mutex as_mtx;
+
+    std::vector<struct sync_op_t> sync_ops;
+    void replay_sync_ops(bool, wasm_exec_env_t);
+    void register_tid_map();
+    std::vector<struct sync_op_t>::iterator sync_iter;
+    std::mutex sync_op_mutex;
+    std::condition_variable sync_op_cv;
+    std::map<ssize_t, ssize_t> tid_map;
+    ssize_t cur_thread;
+
 
     bool is_jit;
     bool is_aot{};

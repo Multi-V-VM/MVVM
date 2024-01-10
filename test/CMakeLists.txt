@@ -51,6 +51,7 @@ endfunction()
 
 wamr_app(counter)
 wamr_app(multi-thread)
+wamr_app(mutex)
 wamr_app(read-file)
 wamr_app(gups)
 wamr_app(gemm)
