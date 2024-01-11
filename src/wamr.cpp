@@ -587,6 +587,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     main_env->restore_call_chain = nullptr;
 
     invoke_init_c();
+    invoke_preopen(1, "/dev/stdout");
+
 #if !defined(_WIN32)
     for (auto [idx, exec_] : *execEnv | enumerate) {
         if (idx + 1 == execEnv->size()) {
@@ -696,6 +698,7 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
 extern WAMRInstance *wamr;
 extern "C" { // stop name mangling so it can be linked externally
 void wamr_wait(wasm_exec_env_t exec_env) {
+    fprintf(stderr, "child getting ready to wait\n");
     // register thread id mapping
     wamr->register_tid_map();
     thread_init.release(1);
@@ -703,6 +706,7 @@ void wamr_wait(wasm_exec_env_t exec_env) {
     wakeup.acquire();
     fprintf(stderr, "go child!! %d\n", gettid());
     wamr->replay_sync_ops(false, exec_env);
+    fprintf(stderr, "finish syncing\n");
 }
 WASMExecEnv *restore_env() {
     auto exec_env = wasm_exec_env_create_internal(wamr->module_inst, wamr->stack_size);

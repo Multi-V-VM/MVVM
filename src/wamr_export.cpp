@@ -230,9 +230,12 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
         LOGV(DEBUG) << "skip checkpoint";
         return;
     }
+
     std::unique_lock as_ul(wamr->as_mtx);
+    wamr->lwcp_list[gettid()]++;
     wamr->ready++;
 }
+
 void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {
@@ -244,6 +247,14 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
         return;
     }
     std::unique_lock as_ul(wamr->as_mtx);
+    if(wamr->lwcp_list[gettid()] == 0){
+        // someone has reset our counter
+	// which means we've been serialized
+	// so we shouldn't return back to the wasm state
+        std::condition_variable cv;
+        cv.wait(as_ul);
+    }
+    wamr->lwcp_list[gettid()]--;
     wamr->ready--;
 }
 
