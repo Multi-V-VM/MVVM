@@ -65,8 +65,8 @@ struct SocketMetaData {
     SocketAddrPool socketAddress{};
     WasiSockOpenData socketOpenData{};
 #if !defined(_WIN32)
-    WasiSockSendToData socketSentToData{}; // on the fly
-    WasiSockRecvFromData socketRecvFromData{}; // on the fly
+    WasiSockSendToData socketSentToData{}; // 
+    std::vector<WasiSockRecvFromData> socketRecvFromDatas;
 #endif
 };
 struct WAMRWASIContext {

@@ -58,7 +58,7 @@ wamr_app(openmp)
 
 function(wamr_socket_app input)
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-            COMMAND ${HOST_PREFIX}clang --target=wasm32-unknown-wasi -g -O3 -pthread -Wl,--export-all -Wl,--allow-undefined-file=${WAMR_DIR}/wamr-sdk/app/libc-builtin-sysroot/share/defined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${WAMR_DIR}/samples/socket-api/wasm-app-prefix/src/wasm-app-build/libsocket_wasi_ext.a -I${WAMR_DIR}/core/iwasm/libraries/lib-socket/inc/ ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+            COMMAND ${HOST_PREFIX}clang --target=wasm32-wasi-threads -g -O3 -pthread -Wl,--export-all -Wl,--allow-undefined-file=${WAMR_DIR}/wamr-sdk/app/libc-builtin-sysroot/share/defined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${WAMR_DIR}/samples/socket-api/wasm-app-prefix/src/wasm-app-build/libsocket_wasi_ext.a -I${WAMR_DIR}/core/iwasm/libraries/lib-socket/inc/ ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c
     )
     add_custom_target(${input}_wamr ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)

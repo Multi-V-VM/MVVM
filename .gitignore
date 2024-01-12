@@ -24,3 +24,4 @@ cmake-*
 .cache
 .DS_Store
 foo
+__pycache__

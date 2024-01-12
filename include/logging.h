@@ -22,10 +22,10 @@
 #include <sstream>
 #include <string>
 #if !defined(_WIN32)
-#include <ifaddrs.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <ifaddrs.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #else
 #include <winsock2.h>
 #endif
@@ -121,18 +121,14 @@ fmt::color level2color(LogLevel level);
 #define LOGV_ERROR LOG_IF(BH_LOG_LEVEL_ERROR)
 #define LOGV_FATAL LOG_IF(BH_LOG_LEVEL_FATAL)
 
-enum opcode {
-    MVVM_SOCK_SUSPEND = 0,
-    MVVM_SOCK_RESUME = 1,
-    MVVM_SOCK_ACK = 2,
-};
+enum opcode { MVVM_SOCK_SUSPEND = 0, MVVM_SOCK_RESUME = 1, MVVM_SOCK_FIN = 2 };
 struct mvvm_op_data {
     enum opcode op;
     bool is_tcp;
     int size;
     SocketAddrPool addr[MVVM_MAX_ADDR][2];
 };
-bool is_ip_in_cidr (const char *base_ip, int subnet_mask_len, uint32_t ip);
+bool is_ip_in_cidr(const char *base_ip, int subnet_mask_len, uint32_t ip);
 bool is_ipv6_in_cidr(const char *base_ip_str, int subnet_mask_len, struct in6_addr *ip);
 
 #endif // MVVM_LOGGING_H

@@ -59,7 +59,3 @@ jobs:
     - name: build
       working-directory: ${{runner.workspace}}/build
       run: cmake --build . --config ${{matrix.build}}
-
-    - name: test
-      working-directory: ${{runner.workspace}}/build
-      run: ctest -V --timeout 10

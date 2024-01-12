@@ -21,8 +21,7 @@ enum fd_op {
     MVVM_FOPEN = 0,
     MVVM_FWRITE = 1,
     MVVM_FREAD = 2,
-    MVVM_FSEEK = 4,
-    MVVM_FTELL = 5,
+    MVVM_FSEEK = 3
 };
 #if !defined(_WIN32)
 typedef struct iovec_app {
@@ -30,10 +29,10 @@ typedef struct iovec_app {
     uint32 buf_len;
 } iovec_app_t;
 void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
-                              const __wasi_addr_t *dest_addr, uint32 *so_data_len);
+                              const __wasi_addr_t *dest_addr);
 void insert_sock_open_data(uint32_t, int, int, uint32_t);
 void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,
-                                __wasi_addr_t *src_addr, uint32 *ro_data_len);
+                                __wasi_addr_t *src_addr);
 void insert_socket(int, int, int, int);
 void update_socket_fd_address(int, struct SocketAddrPool *);
 void set_tcp();

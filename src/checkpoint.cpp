@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
     auto arg = result["arg"].as<std::vector<std::string>>();
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
-    auto count = result["count"].as<int>();
+   snapshot_threshold = result["count"].as<int>();
     is_debug = result["is_debug"].as<bool>();
     stop_func_index = result["function"].as<int>();
 
@@ -244,7 +244,6 @@ int main(int argc, char *argv[]) {
     for (const auto &e : arg) {
         LOGV(INFO) << "arg " << e;
     }
-    snapshot_threshold = count;
     register_sigtrap();
 
     writer = new FwriteStream((removeExtension(target) + ".bin").c_str());

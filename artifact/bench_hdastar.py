@@ -2,9 +2,12 @@ import pickle
 import common_util
 from multiprocessing import Pool
 
-cmd = ["redis"]
+cmd = ["hdastar","hdastar","hdastar","hdastar"]
 arg = [
-    [],
+    ["maze-4821.txt", "1"],
+    ["maze-4821.txt", "2"],
+    ["maze-233.txt", "1"],
+    ["maze-233.txt", "2"],
 ]
 
 
@@ -23,7 +26,7 @@ pool.join()
 # print the results
 results = [x.get() for x in results]
 # serialize the results
-with open("bench_redis_results.pickle", "wb") as f:
+with open("bench_hdastar_results.pickle", "wb") as f:
     pickle.dump(results, f)
 for exec, output in results:
     print(exec)
@@ -33,5 +36,5 @@ for exec, output in results:
             print(line)
 
 # read the results
-with open("bench_redis_results.pickle", "rb") as f:
+with open("bench_hdastar_results.pickle", "rb") as f:
     results = pickle.load(f)

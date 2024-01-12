@@ -4,9 +4,11 @@
 
 #include "wamr.h"
 #include "wamr_wasi_context.h"
-
 #include <condition_variable>
 extern WAMRInstance *wamr;
+size_t snapshot_threshold;
+size_t call_count = 0;
+bool checkpoint = false;
 
 void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockfd) {
     SocketMetaData newSocketData{};
@@ -23,7 +25,7 @@ void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockf
 }
 #if !defined(_WIN32)
 void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
-                              const __wasi_addr_t *dest_addr, uint32 *so_data_len) {
+                              const __wasi_addr_t *dest_addr) {
     SocketMetaData newSocketData{};
     newSocketData = wamr->socket_fd_map_[sock];
 
@@ -61,7 +63,7 @@ void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 
 }
 
 void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,
-                                __wasi_addr_t *src_addr, uint32 *ro_data_len) {
+                                __wasi_addr_t *src_addr) {
     SocketMetaData newSocketData{};
     newSocketData = wamr->socket_fd_map_[sock];
 
@@ -97,11 +99,12 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
         recvFromData.src_addr.port = src_addr->addr.ip6.port;
     }
 
-    newSocketData.socketRecvFromData = recvFromData;
+    newSocketData.socketRecvFromDatas.emplace_back(recvFromData);
     wamr->socket_fd_map_[sock] = newSocketData;
 }
 #endif
-void set_tcp() { wamr->op_data.is_tcp = true; }
+// only support one type of requests at a time
+void set_tcp() { wamr->op_data.is_tcp = true; } 
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
@@ -299,9 +302,7 @@ void print_memory(WASMExecEnv *exec_env) {
         }
     }
 }
-size_t snapshot_threshold;
-size_t call_count = 0;
-bool checkpoint = false;
+
 void sigtrap_handler(int sig) {
     // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
 
@@ -312,13 +313,13 @@ void sigtrap_handler(int sig) {
     signal(SIGILL, sigtrap_handler);
 #endif
     call_count++;
-
-    if (call_count >= snapshot_threshold || checkpoint) {
-        fprintf(stderr, "serializing\n");
-        serialize_to_file(exec_env);
-        fprintf(stderr, "serialized\n");
-        exit(-1);
-    }
+    if (snapshot_threshold != 0)
+        if (call_count >= snapshot_threshold || checkpoint) {
+            fprintf(stderr, "serializing\n");
+            serialize_to_file(exec_env);
+            fprintf(stderr, "serialized\n");
+            exit(-1);
+        }
 }
 
 void register_sigtrap() {

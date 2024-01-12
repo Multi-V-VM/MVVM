@@ -23,9 +23,6 @@ int packets = 0;
 int client_fd;
 int fd;
 std::vector<std::jthread> backend_thread;
-// 1 cached_packet for each socket connection is enogh? every package need an ack to remove this // construct ack
-// package
-std::map<int, struct ip> cached_packets; // seq
 std::vector<std::tuple<std::string, std::string, std::string>> forward_pair;
 bool is_forward = false;
 
@@ -42,7 +39,6 @@ unsigned short in_cksum(unsigned short *buf, int len) {
     sum += (sum >> 16);
     return (unsigned short)(~sum);
 }
-void send_all_packets() {}
 void forward(const unsigned char *buf, int len) {
     int sock;
     struct sockaddr_in dst {};
@@ -59,6 +55,7 @@ void forward(const unsigned char *buf, int len) {
         return;
     }
 }
+// can be rewrite by libcraft?
 void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char *packetptr) {
     // Analyze packet
     struct ip6_hdr *ipv6hdr;
@@ -339,12 +336,6 @@ int main() {
         if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
             memcpy(&op_data, buffer, sizeof(op_data));
             switch (op_data.op) {
-            case MVVM_SOCK_ACK:
-                // ack
-                LOGV(ERROR) << "ack";
-                // remove the cached packet
-                cached_packets.erase(op_data.size);
-                break;
             case MVVM_SOCK_SUSPEND:
                 // suspend
                 LOGV(ERROR) << "suspend"; // capture all the packets from dest to source
@@ -372,13 +363,21 @@ int main() {
                         backend_thread.emplace_back(keep_alive, server_ip, op_data.addr[idx][0].port, client_ip,
                                                     op_data.addr[idx][1].port); // server to client? client to server?
                     forward_pair.emplace_back(server_ip, client_ip, "");
+                    // send the fin to server
                 }
-
+                // send fin
+                op_data.op = MVVM_SOCK_FIN;
+                if (op_data.is_tcp) {
+                    // send (client_fd, &op_data, sizeof(op_data), 0);
+                    sendto(client_fd, &op_data, sizeof(op_data), 0, (struct sockaddr *)&address, sizeof(address));
+                } else {
+                    send(client_fd, &op_data, sizeof(op_data), 0);
+                }
                 break;
             case MVVM_SOCK_RESUME:
                 // resume
                 LOGV(ERROR) << "resume";
-                auto tmp_tuple =forward_pair[forward_pair.size() - 1];
+                auto tmp_tuple = forward_pair[forward_pair.size() - 1];
                 std::get<2>(tmp_tuple) =
                     fmt::format("{}.{}.{}.{}", op_data.addr[0][0].ip4[0], op_data.addr[0][0].ip4[1],
                                 op_data.addr[0][0].ip4[2], op_data.addr[0][0].ip4[3]);
@@ -391,7 +390,8 @@ int main() {
                     backend_thread.pop_back();
                 }
                 sleep(1);
-                send_all_packets();
+                break;
+            case MVVM_SOCK_FIN:
                 break;
             }
         }
