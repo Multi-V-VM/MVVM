@@ -17,8 +17,6 @@
 FreadStream *reader;
 FwriteStream *writer;
 WAMRInstance *wamr = nullptr;
-bool is_debug = false;
-int stop_func_index;
 
 void serialize_to_file(WASMExecEnv *instance) {}
 

@@ -15,4 +15,5 @@ def run_fd_once(funcs):
 if __name__ == "__main__":
     funcs = ["open", "read", "write", "close"]
     func_idxs = [common_util.get_func_index(x, "test/read-file.wasm") for x in funcs]
+    print(func_idxs)
     run_fd_once(func_idxs)

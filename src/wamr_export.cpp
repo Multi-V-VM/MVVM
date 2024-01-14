@@ -9,6 +9,10 @@ extern WAMRInstance *wamr;
 size_t snapshot_threshold;
 size_t call_count = 0;
 bool checkpoint = false;
+int stop_func_index;
+int stop_func_threshold = 0;
+int cur_func_count = 0;
+bool is_debug;
 
 void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockfd) {
     SocketMetaData newSocketData{};

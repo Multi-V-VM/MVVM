@@ -127,7 +127,7 @@ void WAMRInstance::invoke_init_c() {
     wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
 int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
-    auto name = "o_";
+    auto name = "open";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi " << name << " function is not found.";
         auto target_module = get_module_instance()->e;

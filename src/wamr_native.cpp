@@ -1,7 +1,8 @@
 #include "wamr_native.h"
 #include "wasm_export.h"
 #include <wasm_native.h>
-#if defined(_WIN32)
+
+#if defined(_WIN32) && defined(MVVM_BUILD_TEST)
 #define gpuErrchk(ans)                                                                                                 \
     { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort = true) {
@@ -14,6 +15,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 #endif
 static void dgemm_wrapper(wasm_exec_env_t exec_env, int32_t m, int32_t n, int32_t k, double alpha, double *a,
                           int32_t lda, double *b, int32_t ldb, double beta, double *c, int32_t ldc) {
+#if defined(MVVM_BUILD_TEST)
 #if defined(_WIN32)
     cudaSetDevice(0);
     cudaEvent_t start, stop;
@@ -50,6 +52,7 @@ static void dgemm_wrapper(wasm_exec_env_t exec_env, int32_t m, int32_t n, int32_
     auto end = clock();
     auto time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     fprintf(stderr, "CPU matrix mul took: %f [s]\n", time_spent);
+#endif
 #endif
 }
 static NativeSymbol ns1[] = {

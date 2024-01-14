@@ -76,23 +76,22 @@ main(int argc, char *argv[])
    while (connections < MAX_CONNECTIONS_COUNT) {
        addrlen = sizeof(addr);
        /* make sure there is space for the string terminator */
-       int ret = recvfrom(socket_fd, buffer, sizeof(buffer) - 1, 0,
-                          (struct sockaddr *)&addr, &addrlen);
-       if (ret < 0) {
-           perror("Read failed");
-           goto fail;
-       }
-       buffer[ret] = '\0';
+        for (int i = 0; i < 10; i++) {
+            sleep(1);
+           int ret = recvfrom(socket_fd, buffer, sizeof(buffer) - 1, 0, (struct sockaddr *)&addr, &addrlen);
+           if (ret < 0) {
+               perror("Read failed");
+               goto fail;
+           }
+           buffer[ret] = '\0';
 
-       if (sockaddr_to_string((struct sockaddr *)&addr, ip_string,
-                              sizeof(ip_string) / sizeof(ip_string[0]))
-           != 0) {
-           printf("[Server] failed to parse client address\n");
-           goto fail;
-       }
+           if (sockaddr_to_string((struct sockaddr *)&addr, ip_string, sizeof(ip_string) / sizeof(ip_string[0])) != 0) {
+               printf("[Server] failed to parse client address\n");
+               goto fail;
+           }
 
-       printf("[Server] received %d bytes from %s: %s\n", ret, ip_string,
-              buffer);
+           printf("[Server] received %d bytes from %s: %s\n", ret, ip_string, buffer);
+       }
 
        if (sendto(socket_fd, reply_message, strlen(reply_message), 0,
                   (struct sockaddr *)&addr, addrlen)

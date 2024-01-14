@@ -54,4 +54,32 @@ jobs:
     - name: build
       working-directory: ${{runner.workspace}}/build
       run: cmake --build . --config ${{matrix.build}}
-      
+
+    - uses: actions/upload-artifact@v2
+      if: ${{matrix.build}} == "Release"
+      with:
+        name: MVVM_checkpoint-ubuntu
+        path: ${{runner.workspace}}/build/MVVM_checkpoint
+
+    - uses: actions/upload-artifact@v2
+      if: ${{matrix.build}} == "Release"
+      with:
+        name: MVVM_restore-ubuntu
+        path: ${{runner.workspace}}/build/MVVM_restore
+
+    - uses: actions/upload-artifact@v2
+      if: ${{matrix.build}} == "Release"
+      with:
+        name: gateway
+        path: ${{runner.workspace}}/build/gateway
+
+    - name: Publish
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
+      with:
+        files: |
+          ${{runner.workspace}}/build/MVVM_checkpoint
+          ${{runner.workspace}}/build/MVVM_restore
+          ${{runner.workspace}}/build/gateway
+        generate_release_notes: true
+        draft: true

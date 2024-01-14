@@ -59,14 +59,14 @@ main(int argc, char *argv[])
        perror("Create socket failed");
        return EXIT_FAILURE;
    }
-
-   printf("[Client] Client send\n");
-   ret = sendto(socket_fd, message, strlen(message), 0,
-                (struct sockaddr *)&server_address, serverlen);
-   if (ret < 0) {
-       close(socket_fd);
-       perror("Send FAAAAAILED");
-       return EXIT_FAILURE;
+   for (int i = 0; i < 10; i++) {
+       printf("[Client] Client send\n");
+       ret = sendto(socket_fd, message, strlen(message), 0, (struct sockaddr *)&server_address, serverlen);
+       if (ret < 0) {
+           close(socket_fd);
+           perror("Send FAAAAAILED");
+           return EXIT_FAILURE;
+       }
    }
 
    printf("[Client] Client receive\n");

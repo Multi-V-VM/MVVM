@@ -29,8 +29,6 @@ std::ostringstream re{};
 FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
-bool is_debug;
-int stop_func_index;
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     if (!wamr->socket_fd_map_.empty()) {

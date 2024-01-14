@@ -14,8 +14,13 @@ def get_func_index(func, file):
     process.stdout.close()
     output = grep_process.communicate()[0].decode("utf-8")
     output = output.split("\n")
-    for i in range(len(output)):
-        if func in output[i]:
+    output1 = [
+        x
+        for x in output
+        if not x.__contains__("(type (;") and not x.__contains__("(table (;")
+    ]
+    for i in range(len(output1)):
+        if func in output1[i]:
             return i
 
 
@@ -33,11 +38,13 @@ def run(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output = result.stdout.decode("utf-8")
-    exec = " ".join([env]+ [aot_file] + arg)
+    exec = " ".join([env] + [aot_file] + arg)
     # print(exec)
     # print(output)
     return (exec, output)
 
 
 if __name__ == "__main__":
+    print(get_func_index("recvfrom", "./test/server.wasm"))
     print(get_func_index("poll_oneoff", "./test/counter.wasm"))
+    print(get_func_index("sendto", "./test/client.wasm"))

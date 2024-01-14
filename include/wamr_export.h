@@ -53,9 +53,11 @@ void sigtrap_handler(int sig);
 int gettid();
 #endif
 extern size_t snapshot_threshold;
+extern int stop_func_threshold;
 extern bool checkpoint;
 extern bool is_debug;
 extern int stop_func_index;
+extern int cur_func_count;
 
 #ifdef __cplusplus
 }
