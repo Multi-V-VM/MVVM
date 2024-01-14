@@ -391,8 +391,6 @@ int main() {
                 }
                 sleep(1);
                 break;
-            case MVVM_SOCK_FIN:
-                break;
             }
         }
     }

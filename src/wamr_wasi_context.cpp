@@ -27,7 +27,7 @@ struct sockaddr_in6 sockaddr_from_ip6(const SocketAddrPool &addr) {
 }
 
 void WAMRWASIContext::dump_impl(WASIArguments *env) {
-    char buf[1024];
+    uint8 buf[1024];
     for (auto &i : wamr->dir_) {
         dir.emplace_back(i);
     }
@@ -45,43 +45,40 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
         this->socket_fd_map[fd] = socketMetaDataCopy;
         // dump from
         bool packet_is_fin = false;
-        //
         if (wamr->op_data.is_tcp) {
             while (!packet_is_fin) { // drain udp socket
                 // fd got from the virtual machine
                 recv(fd, buf, sizeof(buf), 0);
-                auto ri_data = (iovec_app_t *)malloc(sizeof(iovec_app_t));
-                int ri_data_len = 0;
                 auto fin_packet = (mvvm_op_data *)(buf);
                 // emunate the recvfrom syscall
-                if (fin_packet->op != MVVM_SOCK_FIN) {
-                    insert_sock_recv_from_data(fd, ri_data, ri_data_len, 0, nullptr);
+
+                // get the buffer size
+                if (fin_packet->op != MVVM_SOCK_FIN) { 
+                    insert_sock_recv_from_data(fd, buf, sizeof(buf), 0, nullptr);
                 } else {
                     packet_is_fin = true;
                 }
             }
         } else {
-            while (!packet_is_fin) { // drain tcp socket whether it's tcp or udp
-                // fd got from the virtual machine
-                if (socketMetaData.socketAddress.is_4) {
-                    struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
-                    socklen_t sockaddr4_size = sizeof(sockaddr4);
-                    recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr*)&sockaddr4, &sockaddr4_size);
+            // while (!packet_is_fin) { // drain tcp socket whether it's tcp or udp
+            //     // fd got from the virtual machine
+            //     if (socketMetaData.socketAddress.is_4) {
+            //         struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
+            //         socklen_t sockaddr4_size = sizeof(sockaddr4);
+            //         recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&sockaddr4, &sockaddr4_size);
 
-                } else {
-                    struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
-                    socklen_t sockaddr6_size = sizeof(sockaddr6);
-                    recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr*)&sockaddr6, &sockaddr6_size);
-                }
-                auto ri_data = (iovec_app_t *)malloc(sizeof(iovec_app_t));
-                int ri_data_len = 0;
-                auto fin_packet = (mvvm_op_data *)(buf);
-                if (fin_packet->op != MVVM_SOCK_FIN) {
-                    insert_sock_recv_from_data(fd, ri_data, ri_data_len, 0, nullptr);
-                } else {
-                    packet_is_fin = true;
-                }
-            }
+            //     } else {
+            //         struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
+            //         socklen_t sockaddr6_size = sizeof(sockaddr6);
+            //         recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&sockaddr6, &sockaddr6_size);
+            //     }
+            //     auto fin_packet = (mvvm_op_data *)(buf);
+            //     if (fin_packet->op != MVVM_SOCK_FIN) {
+            //         insert_sock_recv_from_data(fd, ri_data, ri_data_len, 0, nullptr);
+            //     } else {
+            //         packet_is_fin = true;
+            //     }
+            // }
         }
     }
 }

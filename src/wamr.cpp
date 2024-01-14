@@ -125,7 +125,6 @@ void WAMRInstance::invoke_init_c() {
         LOGV(ERROR) << "The wasi " << name1 << " function is not found.";
     }
     wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
-    return;
 }
 int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
     auto name = "o_";
@@ -248,138 +247,6 @@ int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32
     }
     return -1;
 }
-#if !defined(_WIN32)
-int WAMRInstance::invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
-                                     const __wasi_addr_t *dest_addr, uint32 *so_data_len) {
-    auto name = "sendto";
-    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        LOGV(ERROR) << "The wasi fopen function is not found.";
-        auto target_module = get_module_instance()->e;
-        for (int i = 0; i < target_module->function_count; i++) {
-            auto cur_func = &target_module->functions[i];
-            if (cur_func->is_import_func) {
-                LOGV(DEBUG) << cur_func->u.func_import->field_name;
-                if (!strcmp(cur_func->u.func_import->field_name, name)) {
-
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-
-            } else {
-                LOGV(DEBUG) << cur_func->u.func->field_name;
-
-                if (!strcmp(cur_func->u.func->field_name, name)) {
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-            }
-        }
-    }
-
-    void *si_data_ = nullptr;
-    uint32_t si_data_for_wasm;
-    void *dest_addr_ = nullptr;
-    uint32_t dest_addr_for_wasm;
-    void *so_data_len_ = nullptr;
-    uint32_t so_data_len_for_wasm;
-    int res = -1;
-
-    si_data_for_wasm =
-        wasm_runtime_module_malloc(module_inst, sizeof(iovec_app_t), reinterpret_cast<void **>(&si_data_));
-    if (si_data_for_wasm != 0) {
-        memcpy(si_data_, &si_data, sizeof(iovec_app_t)); // use native address for accessing in runtime
-
-        dest_addr_for_wasm =
-            wasm_runtime_module_malloc(module_inst, sizeof(__wasi_addr_t), reinterpret_cast<void **>(&dest_addr_));
-        if (dest_addr_for_wasm != 0) {
-            memcpy(dest_addr_, dest_addr,
-                   sizeof(__wasi_addr_t)); // use native address for accessing in runtime
-
-            so_data_len_for_wasm =
-                wasm_runtime_module_malloc(module_inst, sizeof(uint32), reinterpret_cast<void **>(&so_data_len_));
-            if (so_data_len_for_wasm != 0) {
-                memcpy(so_data_len_, &so_data_len,
-                       sizeof(uint32)); // use native address for accessing in runtime
-                uint32 argv[6] = {sock,     si_data_for_wasm,   si_data_len,
-                                  si_flags, dest_addr_for_wasm, so_data_len_for_wasm};
-
-                wasm_runtime_call_wasm(exec_env, func, 6, argv);
-                res = argv[0];
-                wasm_runtime_module_free(module_inst, si_data_for_wasm);
-            }
-            wasm_runtime_module_free(module_inst, dest_addr_for_wasm);
-        }
-        wasm_runtime_module_free(module_inst, so_data_len_for_wasm);
-        return res;
-    }
-    return -1;
-}
-
-int WAMRInstance::invoke_sock_recvfrom(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,
-                                       __wasi_addr_t *src_addr, uint32 *ro_data_len) {
-    auto name = "recvfrom";
-    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        LOGV(ERROR) << "The wasi fopen function is not found.";
-        auto target_module = get_module_instance()->e;
-        for (int i = 0; i < target_module->function_count; i++) {
-            auto cur_func = &target_module->functions[i];
-            if (cur_func->is_import_func) {
-                LOGV(DEBUG) << cur_func->u.func_import->field_name;
-                if (!strcmp(cur_func->u.func_import->field_name, name)) {
-
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-
-            } else {
-                LOGV(DEBUG) << cur_func->u.func->field_name;
-
-                if (!strcmp(cur_func->u.func->field_name, name)) {
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-            }
-        }
-    }
-
-    void *ri_data_ = nullptr;
-    uint32_t ri_data_for_wasm;
-    void *src_addr_ = nullptr;
-    uint32_t src_addr_for_wasm;
-    void *ro_data_len_ = nullptr;
-    uint32_t ro_data_len_for_wasm;
-    int res = -1;
-
-    ri_data_for_wasm =
-        wasm_runtime_module_malloc(module_inst, sizeof(iovec_app_t), reinterpret_cast<void **>(&ri_data_));
-    if (ri_data_for_wasm != 0) {
-        memcpy(ri_data_, ((void *)ri_data), sizeof(iovec_app_t)); // use native address for accessing in runtime
-
-        src_addr_for_wasm =
-            wasm_runtime_module_malloc(module_inst, sizeof(__wasi_addr_t), reinterpret_cast<void **>(&src_addr_));
-        if (src_addr_for_wasm != 0) {
-            memcpy(src_addr_, ((void *)src_addr), sizeof(__wasi_addr_t)); // use native address for accessing in runtime
-
-            ro_data_len_for_wasm =
-                wasm_runtime_module_malloc(module_inst, sizeof(uint32), reinterpret_cast<void **>(&ro_data_len_));
-            if (ro_data_len_for_wasm != 0) {
-                memcpy(ro_data_len_, ((void *)ro_data_len),
-                       sizeof(uint32)); // use native address for accessing in runtime
-                uint32 argv[6] = {sock,     ri_data_for_wasm,  ri_data_len,
-                                  ri_flags, src_addr_for_wasm, ro_data_len_for_wasm};
-
-                wasm_runtime_call_wasm(exec_env, func, 6, argv);
-                res = argv[0];
-                wasm_runtime_module_free(module_inst, ri_data_for_wasm);
-            }
-            wasm_runtime_module_free(module_inst, src_addr_for_wasm);
-        }
-        wasm_runtime_module_free(module_inst, ro_data_len_for_wasm);
-        return res;
-    }
-    return -1;
-}
-#endif
 int WAMRInstance::invoke_fseek(uint32 fd, uint32 offset) {
     auto name = "__wasi_fd_seek";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
@@ -667,6 +534,7 @@ WASMExecEnv *restore_env() {
 
     return exec_env;
 }
+int check_recvbuffer(int fd, char *buf) { return 0; };
 }
 
 void WAMRInstance::instantiate() {

@@ -24,18 +24,15 @@ void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockf
     wamr->socket_fd_map_[sockfd] = newSocketData;
 }
 #if !defined(_WIN32)
-void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
-                              const __wasi_addr_t *dest_addr) {
+void insert_sock_send_to_data(uint32_t sock, uint8 *si_data, uint32 si_data_len, uint16_t si_flags,
+                              __wasi_addr_t *dest_addr) {
     SocketMetaData newSocketData{};
     newSocketData = wamr->socket_fd_map_[sock];
 
     WasiSockSendToData sendToData{};
     sendToData.sock = sock;
-    sendToData.si_data_len = si_data_len;
+    sendToData.si_data = std::vector<uint8_t>(si_data, si_data + si_data_len);
     sendToData.si_flags = si_flags;
-
-    sendToData.si_data.buf_offset = si_data->buf_offset;
-    sendToData.si_data.buf_len = si_data->buf_len;
 
     if (dest_addr->kind == IPv4) {
         sendToData.dest_addr.ip.is_4 = true;
@@ -62,18 +59,15 @@ void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 
     wamr->socket_fd_map_[sock] = newSocketData;
 }
 
-void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,
+void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_len, uint16_t ri_flags,
                                 __wasi_addr_t *src_addr) {
     SocketMetaData newSocketData{};
     newSocketData = wamr->socket_fd_map_[sock];
 
     WasiSockRecvFromData recvFromData{};
     recvFromData.sock = sock;
-    recvFromData.ri_data_len = ri_data_len;
+    recvFromData.ri_data = std::vector<uint8_t>(ri_data, ri_data + ri_data_len);
     recvFromData.ri_flags = ri_flags;
-
-    recvFromData.ri_data.buf_offset = ri_data->buf_offset;
-    recvFromData.ri_data.buf_len = ri_data->buf_len;
 
     if (src_addr->kind == IPv4) {
         recvFromData.src_addr.ip.is_4 = true;
@@ -102,9 +96,23 @@ void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_d
     newSocketData.socketRecvFromDatas.emplace_back(recvFromData);
     wamr->socket_fd_map_[sock] = newSocketData;
 }
+void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, uint32 *ri_data_len) {
+    // check from wamr->socket_fd_map_[sock] and drain one
+    // should be in the same order
+    if (wamr->socket_fd_map_[sock].socketRecvFromDatas.empty()) {
+        LOGV(ERROR) << "no recvfrom data";
+        *ri_data_len = 0;
+        return;
+    }
+    // shoud we check the src_addr?
+    auto recvFromData = wamr->socket_fd_map_[sock].socketRecvFromDatas.front();
+    wamr->socket_fd_map_[sock].socketRecvFromDatas.erase(wamr->socket_fd_map_[sock].socketRecvFromDatas.begin());
+    *ri_data = recvFromData.ri_data.data();
+    *ri_data_len = recvFromData.ri_data.size();
+}
 #endif
 // only support one type of requests at a time
-void set_tcp() { wamr->op_data.is_tcp = true; } 
+void set_tcp() { wamr->op_data.is_tcp = true; }
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {

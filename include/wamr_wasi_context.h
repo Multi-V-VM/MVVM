@@ -42,8 +42,7 @@ struct WasiSockOpenData {
 #if !defined(_WIN32)
 struct WasiSockSendToData {
     uint32 sock;
-    iovec_app_t si_data;
-    uint32 si_data_len;
+    std::vector<uint8_t> si_data;
     uint16_t si_flags;
     WAMRWasiAddr dest_addr;
     uint32 so_data_len;
@@ -51,7 +50,7 @@ struct WasiSockSendToData {
 
 struct WasiSockRecvFromData {
     uint32_t sock;
-    iovec_app_t ri_data;
+    std::vector<uint8_t> ri_data;
     uint32 ri_data_len;
     uint16_t ri_flags;
     WAMRWasiAddr src_addr;

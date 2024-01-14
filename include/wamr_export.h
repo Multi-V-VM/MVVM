@@ -17,22 +17,14 @@ struct SocketAddrPool {
     bool is_4;
     uint16 port;
 };
-enum fd_op {
-    MVVM_FOPEN = 0,
-    MVVM_FWRITE = 1,
-    MVVM_FREAD = 2,
-    MVVM_FSEEK = 3
-};
+enum fd_op { MVVM_FOPEN = 0, MVVM_FWRITE = 1, MVVM_FREAD = 2, MVVM_FSEEK = 3 };
 #if !defined(_WIN32)
-typedef struct iovec_app {
-    uint32 buf_offset;
-    uint32 buf_len;
-} iovec_app_t;
-void insert_sock_send_to_data(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
-                              const __wasi_addr_t *dest_addr);
+void insert_sock_send_to_data(uint32_t sock, uint8 *si_data, uint32 si_data_len, uint16_t si_flags,
+                              __wasi_addr_t *dest_addr);
 void insert_sock_open_data(uint32_t, int, int, uint32_t);
-void insert_sock_recv_from_data(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,
+void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_len, uint16_t ri_flags,
                                 __wasi_addr_t *src_addr);
+void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, uint32* ri_data_len);
 void insert_socket(int, int, int, int);
 void update_socket_fd_address(int, struct SocketAddrPool *);
 void set_tcp();
@@ -41,11 +33,8 @@ void insert_sem(char const *, int);
 void remove_lock(char const *);
 void remove_sem(char const *);
 void restart_execution(uint32 targs);
-extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, /* thread_handle */
-                                  const void *attr, /* not supported */
-                                  uint32 elem_index, /* entry function */
-                                  uint32 arg) /* arguments buffer */
-    ;
+extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, const void *attr, uint32 elem_index,
+                                  uint32 arg);
 #endif
 void serialize_to_file(struct WASMExecEnv *);
 #endif
@@ -56,6 +45,7 @@ void rename_fd(int, char const *, int, char const *);
 void lightweight_checkpoint(WASMExecEnv *);
 void lightweight_uncheckpoint(WASMExecEnv *);
 void wamr_wait();
+int check_recvbuffer(int fd, char *buf);
 void sigint_handler(int sig);
 void register_sigtrap();
 void sigtrap_handler(int sig);

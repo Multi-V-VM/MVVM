@@ -27,18 +27,18 @@ public:
     WASMModuleCommon *module;
     WASMFunctionInstanceCommon *func{};
 
-    std::string aot_file_path;
-    std::string wasm_file_path;
-    std::vector<std::size_t> int3_addr;
-    std::vector<const char *> dir_;
-    std::vector<const char *> map_dir_;
-    std::vector<const char *> env_;
-    std::vector<const char *> arg_;
-    std::vector<const char *> addr_;
-    std::vector<const char *> ns_pool_;
-    std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_;
+    std::string aot_file_path{};
+    std::string wasm_file_path{};
+    std::vector<std::size_t> int3_addr{};
+    std::vector<const char *> dir_{};
+    std::vector<const char *> map_dir_{};
+    std::vector<const char *> env_{};
+    std::vector<const char *> arg_{};
+    std::vector<const char *> addr_{};
+    std::vector<const char *> ns_pool_{};
+    std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_{};
     // add offset to pair->tuple, 3rd param 'int'
-    std::map<int, SocketMetaData> socket_fd_map_;
+    std::map<int, SocketMetaData> socket_fd_map_{};
     // lwcp is LightWeight CheckPoint
     size_t ready = 0;
     std::mutex as_mtx;
@@ -88,12 +88,6 @@ public:
     int invoke_fseek(uint32 fd, uint32 offset);
     int invoke_ftell(uint32 fd, uint32 offset, uint32 whench);
     int invoke_preopen(uint32 fd, const std::string &path);
-#if !defined(_WIN32)
-    int invoke_sock_sendto(uint32_t sock, const iovec_app_t *si_data, uint32 si_data_len, uint16_t si_flags,
-                           const __wasi_addr_t *dest_addr, uint32 *so_data_len);
-    int invoke_sock_recvfrom(uint32_t sock, iovec_app_t *ri_data, uint32 ri_data_len, uint16_t ri_flags,
-                             __wasi_addr_t *src_addr, uint32 *ro_data_len);
-#endif
     int invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32_t *sockfd);
     ~WAMRInstance();
 };
