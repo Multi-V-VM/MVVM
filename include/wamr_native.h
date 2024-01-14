@@ -2,12 +2,14 @@
 #define MVVM_WAMR_NATIVE_H
 #pragma once
 
+#if defined (MVVM_BUILD_TEST)
 #if defined(_WIN32)
 #include <cublas_v2.h>
 #include <cublas_api.h>
 #include <cuda_runtime_api.h>
 #else
 #include <cblas.h>
+#endif
 #endif
 #include <cstddef>
 #include <cstdint>

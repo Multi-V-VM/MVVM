@@ -79,26 +79,26 @@ jobs:
     - name: build
       working-directory: ${{runner.workspace}}/build
       run: |
-        cmake --build . --config ${{matrix.build}}
+        cmake --build . --config ${{matrix.build}} && cp ${{runner.workspace}}/build/MVVM_checkpoint.exe ${{runner.workspace}}/build/MVVM_checkpoint-windows.exe && cp ${{runner.workspace}}/build/MVVM_restore.exe ${{runner.workspace}}/build/MVVM_restore-windows.exe
 
     - uses: actions/upload-artifact@v2
-      if: ${{matrix.build}} == "Release"
+      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         name: MVVM_checkpoint-windows
-        path: ${{runner.workspace}}/build/MVVM_checkpoint.exe
+        path: ${{runner.workspace}}/build/MVVM_checkpoint-windows.exe 
 
     - uses: actions/upload-artifact@v2
-      if: ${{matrix.build}} == "Release"
+      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         name: MVVM_restore-windows
-        path: ${{runner.workspace}}/build/MVVM_restore.exe
+        path: ${{runner.workspace}}/build/MVVM_restore-windows.exe
 
     - name: Publish
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         files: |
-          ${{runner.workspace}}/build/MVVM_checkpoint.exe
-          ${{runner.workspace}}/build/MVVM_restore.exe
+          ${{runner.workspace}}/build/MVVM_checkpoint-windows.exe
+          ${{runner.workspace}}/build/MVVM_restore-windows.exe
         generate_release_notes: true
         draft: true

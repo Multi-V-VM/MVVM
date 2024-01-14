@@ -8,11 +8,13 @@
 #include "wamr_export.h"
 #include "wamr_read_write.h"
 #include "wasm_runtime.h"
-#include <arpa/inet.h>
 #include <cxxopts.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
+#if !defined(_WIN32)
+#include <arpa/inet.h>
+#endif
 
 FreadStream *reader;
 FwriteStream *writer;
@@ -55,13 +57,13 @@ int main(int argc, char **argv) {
     reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
+#if !defined(_WIN32)
     if (!a[0]->module_inst.wasi_ctx.socket_fd_map.empty()) { // new ip, old ip // only if tcp requires keepalive
         // tell gateway to stop keep alive the server
         struct sockaddr_in addr {};
         int fd = 0;
 
         SocketAddrPool src_addr = {.ip4 = {0}, .ip6 = {0}, .is_4 = true, .port = 0}; // get current ip
-#if !defined(_WIN32)
         struct ifaddrs *ifaddr, *ifa;
 
         if (getifaddrs(&ifaddr) == -1) {
@@ -100,7 +102,6 @@ int main(int argc, char **argv) {
         }
 
         freeifaddrs(ifaddr);
-#endif
         LOGV(INFO) << "new ip is "
                    << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);
         wamr->op_data.op = MVVM_SOCK_RESUME;
@@ -132,6 +133,8 @@ int main(int argc, char **argv) {
         }
         close(fd);
     }
+#endif
+    // do iptables here
     wamr->recover(&a);
     return 0;
 }

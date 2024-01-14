@@ -9,9 +9,9 @@
 #include "wasm_runtime.h"
 #if !defined(_WIN32)
 #include "thread_manager.h"
-#endif
-
+#include <sys/socket.h>
 #include <arpa/inet.h>
+#endif
 #include <condition_variable>
 #include <cstdio>
 #include <cxxopts.hpp>
@@ -20,7 +20,6 @@
 #include <mutex>
 #include <sstream>
 #include <string>
-#include <sys/socket.h>
 #include <thread>
 #include <tuple>
 
@@ -31,6 +30,7 @@ std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
+#if !defined(_WIN32)
     if (!wamr->socket_fd_map_.empty()) {
         // tell gateway to keep alive the server
         struct sockaddr_in addr {};
@@ -50,7 +50,6 @@ void serialize_to_file(WASMExecEnv *instance) {
                 src_addr.is_4 = true;
             }
             if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
-#if !defined(_WIN32)
                 struct ifaddrs *ifaddr, *ifa;
                 int family, s;
                 char host[NI_MAXHOST];
@@ -91,7 +90,6 @@ void serialize_to_file(WASMExecEnv *instance) {
                 }
 
                 freeifaddrs(ifaddr);
-#endif
             }
             LOGV(INFO) << "addr: "
                        << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3])
@@ -112,7 +110,6 @@ void serialize_to_file(WASMExecEnv *instance) {
                        << " dest_port: " << wamr->op_data.addr[idx][1].port;
             wamr->op_data.size += 1;
         }
-
         // Create a socket
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
             LOGV(ERROR) << "socket error";
@@ -143,7 +140,6 @@ void serialize_to_file(WASMExecEnv *instance) {
         // Clean up
         close(fd);
     }
-#if !defined(_WIN32)
     auto cluster = wasm_exec_env_get_cluster(instance);
     // wasm_cluster_suspend_all_except_self(cluster, instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);

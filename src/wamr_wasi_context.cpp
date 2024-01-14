@@ -5,9 +5,9 @@
 #include "logging.h"
 #include "wamr.h"
 #include <string>
-#include <sys/socket.h>
 extern WAMRInstance *wamr;
-
+#if !defined(_WIN32)
+#include <sys/socket.h>
 struct sockaddr_in sockaddr_from_ip4(const SocketAddrPool &addr) {
     struct sockaddr_in sockaddr4;
     memset(&sockaddr4, 0, sizeof(sockaddr4));
@@ -25,6 +25,7 @@ struct sockaddr_in6 sockaddr_from_ip6(const SocketAddrPool &addr) {
     memcpy(&sockaddr6.sin6_addr.s6_addr, addr.ip6, sizeof(addr.ip6));
     return sockaddr6;
 }
+#endif
 
 void WAMRWASIContext::dump_impl(WASIArguments *env) {
     uint8 buf[1024];
@@ -39,7 +40,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
         auto dumped_res = std::make_tuple(path, op);
         this->fd_map[fd] = dumped_res;
     }
-
+#if !defined(_WIN32)
     for (auto [fd, socketMetaData] : wamr->socket_fd_map_) {
         SocketMetaData socketMetaDataCopy = socketMetaData;
         this->socket_fd_map[fd] = socketMetaDataCopy;
@@ -81,6 +82,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
             // }
         }
     }
+#endif
 }
 void WAMRWASIContext::restore_impl(WASIArguments *env) {
     int r;

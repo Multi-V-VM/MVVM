@@ -53,33 +53,33 @@ jobs:
 
     - name: build
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config ${{matrix.build}}
+      run: cmake --build . --config ${{matrix.build}} &&  cp ${{runner.workspace}}/build/MVVM_checkpoint ${{runner.workspace}}/build/MVVM_checkpoint-ubuntu && cp ${{runner.workspace}}/build/MVVM_restore ${{runner.workspace}}/build/MVVM_restore-ubuntu
 
     - uses: actions/upload-artifact@v2
-      if: ${{matrix.build}} == "Release"
+      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         name: MVVM_checkpoint-ubuntu
-        path: ${{runner.workspace}}/build/MVVM_checkpoint
+        path: ${{runner.workspace}}/build/MVVM_checkpoint-ubuntu
 
     - uses: actions/upload-artifact@v2
-      if: ${{matrix.build}} == "Release"
+      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         name: MVVM_restore-ubuntu
-        path: ${{runner.workspace}}/build/MVVM_restore
+        path: ${{runner.workspace}}/build/MVVM_restore-ubuntu
 
     - uses: actions/upload-artifact@v2
-      if: ${{matrix.build}} == "Release"
+      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         name: gateway
-        path: ${{runner.workspace}}/build/gateway
+        path: ${{runner.workspace}}/build/gateway/gateway
 
     - name: Publish
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         files: |
-          ${{runner.workspace}}/build/MVVM_checkpoint
-          ${{runner.workspace}}/build/MVVM_restore
-          ${{runner.workspace}}/build/gateway
+          ${{runner.workspace}}/build/MVVM_checkpoint-ubuntu
+          ${{runner.workspace}}/build/MVVM_restore-ubuntu
+          ${{runner.workspace}}/build/gateway/gateway
         generate_release_notes: true
         draft: true
