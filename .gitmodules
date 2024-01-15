@@ -14,34 +14,27 @@
 [submodule "lib/wasm-micro-runtime"]
 	path = lib/wasm-micro-runtime
 	url = https://github.com/Multi-V-VM/wasm-micro-runtime.git
-	branch = pthread
 [submodule "bench/linpack"]
 	path = bench/linpack
-	url = https://github.com/victoryang00/linpack
+	url = https://github.com/Multi-V-VM/linpack
 [submodule "bench/hdastar"]
 	path = bench/hdastar
-	url = https://github.com/victoryang00/HDAStar
+	url = https://github.com/Multi-V-VM/HDAStar
 [submodule "lib/libcrafter"]
 	path = lib/libcrafter
-	url = https://github.com/victoryang00/libcrafter
+	url = https://github.com/Multi-V-VM/libcrafter
 [submodule "bench/nas"]
 	path = bench/nas
-	url = https://github.com/victoryang00/NPB3.0-omp-C
+	url = https://github.com/Multi-V-VM/NPB3.0-omp-C
 [submodule "bench/nginx-module"]
 	path = bench/nginx-module
 	url = https://github.com/nginx/unit-wasm
-[submodule "opendal"]
-	path = opendal
-	url = https://github.com/apache/incubator-opendal
-[submodule "bench/opendal"]
-	path = bench/opendal
-	url = https://github.com/apache/incubator-opendal
 [submodule "bench/ftp"]
 	path = bench/ftp
-	url = https://github.com/victoryang00/FTP-implementation-over-TCP
+	url = https://github.com/Multi-V-VM/FTP-implementation-over-TCP
 [submodule "bench/orb_slam3"]
 	path = bench/orb_slam3
-	url = https://github.com/victoryang00/orb-slam-expts/
+	url = https://github.com/Multi-V-VM/orb-slam-expts/
 [submodule "bench/lammps"]
 	path = bench/lammps
-	url = https://github.com/victoryang00/lammps
+	url = https://github.com/Multi-V-VM/lammps

@@ -31,15 +31,15 @@ std::mutex as_mtx;
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
 #if !defined(_WIN32)
-    if (!wamr->socket_fd_map_.empty()) {
+    if (!wamr->socket_fd_map_.empty() && gettid() == getpid()) {
         // tell gateway to keep alive the server
         struct sockaddr_in addr {};
         int fd = 0;
         ssize_t rc;
         SocketAddrPool src_addr{};
-
-        for (auto [idx, socks] : enumerate(wamr->socket_fd_map_)) {
-            auto [tmp_fd, sock_data] = socks;
+        
+        for (auto [tmp_fd, sock_data] : wamr->socket_fd_map_) {
+            int idx =wamr->op_data.size;
             src_addr = sock_data.socketAddress;
             auto tmp_ip4 =
                 fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);

@@ -1,3 +1,4 @@
+#include "crafter/Protocols/RawLayer.h"
 #include "logging.h"
 #include <chrono>
 #include <crafter.h>
@@ -25,7 +26,7 @@ int fd;
 std::vector<std::jthread> backend_thread;
 std::vector<std::tuple<std::string, std::string, std::string>> forward_pair;
 bool is_forward = false;
-
+int id = 0;
 // Function to recalculate the IP checksum
 unsigned short in_cksum(unsigned short *buf, int len) {
     unsigned long sum = 0;
@@ -39,6 +40,7 @@ unsigned short in_cksum(unsigned short *buf, int len) {
     sum += (sum >> 16);
     return (unsigned short)(~sum);
 }
+// https://github.com/pellegre/libcrafter-examples/blob/03832c5c6f68b55a714877bf53aaba2fc33c43ff/SimpleHijackConnection/main.cpp#L113
 void forward(const unsigned char *buf, int len) {
     int sock;
     struct sockaddr_in dst {};
@@ -169,8 +171,11 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
                                       ntohs(udphdr->uh_dport));
             LOGV(INFO) << fmt::format("ID:{} TOS:0x{}, TTL:{} IpLen:{} DgLen:{}", ntohs(iphdr->ip_id), iphdr->ip_tos,
                                       iphdr->ip_ttl, 4 * iphdr->ip_hl, ntohs(iphdr->ip_len));
+            id = ntohs(iphdr->ip_id) + 1;
+            LOGV(ERROR) << "id" << id;
             LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
             packets += 1;
+
             break;
 
         case IPPROTO_ICMP:
@@ -221,7 +226,6 @@ void keep_alive(const std::stop_token &stopToken, std::string source_ip, int sou
                 int dest_port) {
     // Send keep alive message to socket
     // Initialize Libcrafter
-    InitCrafter();
 
     while (!stopToken.stop_requested()) {
         // Create an IP layer
@@ -243,10 +247,8 @@ void keep_alive(const std::stop_token &stopToken, std::string source_ip, int sou
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     // Clean up Libcrafter
-    CleanCrafter();
 }
-void send_fin(std::string source_ip, int source_port, std::string dest_ip,
-              int dest_port, const char * payload) {
+void send_fin(std::string source_ip, int source_port, std::string dest_ip, int dest_port, const char *payload) {
     // Send keep alive message to socket
     // Initialize Libcrafter
     InitCrafter();
@@ -254,7 +256,7 @@ void send_fin(std::string source_ip, int source_port, std::string dest_ip,
     IP ip_layer;
     ip_layer.SetSourceIP(source_ip);
     ip_layer.SetDestinationIP(dest_ip);
-
+    ip_layer.SetIdentification(21180);
     // Create a UDP layer
     UDP udp_layer;
     udp_layer.SetSrcPort(source_port);
@@ -263,23 +265,21 @@ void send_fin(std::string source_ip, int source_port, std::string dest_ip,
 
     // Craft the packet
     Packet packet = ip_layer / udp_layer;
-
+    ip_layer.SetCheckSum(in_cksum((unsigned short *)packet.GetRawPtr(), packet.GetSize()));
     // Send the packet
-    packet.Send();
+    packet.Send(MVVM_SOCK_INTERFACE);
     // Clean up Libcrafter
     CleanCrafter();
 }
-void send_fin_tcp(std::string source_ip, int source_port, std::string dest_ip,
-              int dest_port, const char * payload) {
+void send_fin_tcp(std::string source_ip, int source_port, std::string dest_ip, int dest_port, const char *payload) {
     // Send keep alive message to socket
     // Initialize Libcrafter
-    InitCrafter();
     // Create an IP layer
     IP ip_layer;
     ip_layer.SetSourceIP(source_ip);
     ip_layer.SetDestinationIP(dest_ip);
 
-    // Create a UDP layer
+    // Create a TCP layer
     TCP tcp_layer;
     tcp_layer.SetSrcPort(source_port);
     tcp_layer.SetDstPort(dest_port);
@@ -290,9 +290,8 @@ void send_fin_tcp(std::string source_ip, int source_port, std::string dest_ip,
     Packet packet = ip_layer / tcp_layer;
 
     // Send the packet
-    packet.Send();
+    packet.Send(MVVM_SOCK_INTERFACE);
     // Clean up Libcrafter
-    CleanCrafter();
 }
 void sigterm_handler(int sig) {
     struct pcap_stat stats {};
@@ -308,7 +307,11 @@ void sigterm_handler(int sig) {
     LOGV(INFO) << "Bye";
     exit(0);
 }
-
+// int main(){
+//     struct mvvm_op_data *op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
+//     op_data->op = MVVM_SOCK_FIN;
+//     send_fin("172.17.0.2",42466,"172.17.0.3",12346,((char *)op_data));
+// }
 int main() {
     struct sockaddr_in address {};
     int opt = 1;
@@ -321,7 +324,7 @@ int main() {
     char filter_exp[] = "net 172.17.0.0/24";
     bpf_u_int32 netmask;
 
-    struct mvvm_op_data op_data {};
+    auto op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
 
     signal(SIGTERM, sigterm_handler);
     signal(SIGQUIT, sigterm_handler);
@@ -383,61 +386,69 @@ int main() {
         }
         // offload info from client
         if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
-            memcpy(&op_data, buffer, sizeof(op_data));
-            switch (op_data.op) {
+            memcpy(op_data, buffer, sizeof(*op_data));
+            switch (op_data->op) {
             case MVVM_SOCK_SUSPEND:
                 // suspend
                 LOGV(ERROR) << "suspend"; // capture all the packets from dest to source
 
-                for (int idx = 0; idx < op_data.size; idx++) {
-                    if (op_data.addr[idx][0].is_4) {
-                        server_ip = fmt::format("{}.{}.{}.{}", op_data.addr[idx][0].ip4[0], op_data.addr[idx][0].ip4[1],
-                                                op_data.addr[idx][0].ip4[2], op_data.addr[idx][0].ip4[3]);
-                        client_ip = fmt::format("{}.{}.{}.{}", op_data.addr[idx][1].ip4[0], op_data.addr[idx][1].ip4[1],
-                                                op_data.addr[idx][1].ip4[2], op_data.addr[idx][1].ip4[3]);
+                for (int idx = 0; idx < op_data->size; idx++) {
+                    if (op_data->addr[idx][0].is_4) {
+                        server_ip =
+                            fmt::format("{}.{}.{}.{}", op_data->addr[idx][0].ip4[0], op_data->addr[idx][0].ip4[1],
+                                        op_data->addr[idx][0].ip4[2], op_data->addr[idx][0].ip4[3]);
+                        client_ip =
+                            fmt::format("{}.{}.{}.{}", op_data->addr[idx][1].ip4[0], op_data->addr[idx][1].ip4[1],
+                                        op_data->addr[idx][1].ip4[2], op_data->addr[idx][1].ip4[3]);
                     } else {
                         server_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
-                                                op_data.addr[idx][0].ip6[0], op_data.addr[idx][0].ip6[1],
-                                                op_data.addr[idx][0].ip6[2], op_data.addr[idx][0].ip6[3],
-                                                op_data.addr[idx][0].ip6[4], op_data.addr[idx][0].ip6[5],
-                                                op_data.addr[idx][0].ip6[6], op_data.addr[idx][0].ip6[7]);
+                                                op_data->addr[idx][0].ip6[0], op_data->addr[idx][0].ip6[1],
+                                                op_data->addr[idx][0].ip6[2], op_data->addr[idx][0].ip6[3],
+                                                op_data->addr[idx][0].ip6[4], op_data->addr[idx][0].ip6[5],
+                                                op_data->addr[idx][0].ip6[6], op_data->addr[idx][0].ip6[7]);
                         client_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
-                                                op_data.addr[idx][1].ip6[0], op_data.addr[idx][1].ip6[1],
-                                                op_data.addr[idx][1].ip6[2], op_data.addr[idx][1].ip6[3],
-                                                op_data.addr[idx][1].ip6[4], op_data.addr[idx][1].ip6[5],
-                                                op_data.addr[idx][1].ip6[6], op_data.addr[idx][1].ip6[7]);
+                                                op_data->addr[idx][1].ip6[0], op_data->addr[idx][1].ip6[1],
+                                                op_data->addr[idx][1].ip6[2], op_data->addr[idx][1].ip6[3],
+                                                op_data->addr[idx][1].ip6[4], op_data->addr[idx][1].ip6[5],
+                                                op_data->addr[idx][1].ip6[6], op_data->addr[idx][1].ip6[7]);
                     }
-                    LOGV(INFO) << "server_ip:" << server_ip << " client_ip:" << client_ip;
-                    if (op_data.is_tcp)
-                        backend_thread.emplace_back(keep_alive, server_ip, op_data.addr[idx][0].port, client_ip,
-                                                    op_data.addr[idx][1].port); // server to client? client to server?
+                    LOGV(INFO) << "server_ip:" << server_ip << ":" << op_data->addr[idx][0].port
+                               << " client_ip:" << client_ip << ":" << op_data->addr[idx][1].port;
+                    if (op_data->is_tcp)
+                        backend_thread.emplace_back(keep_alive, server_ip, op_data->addr[idx][0].port, client_ip,
+                                                    op_data->addr[idx][1].port); // server to client? client to server?
                     forward_pair.emplace_back(server_ip, client_ip, "");
                     // send the fin to server
+                    op_data->op = MVVM_SOCK_FIN;
+                    sleep(2);
+                    if (!op_data->is_tcp) {
+                        LOGV(INFO) << "send fin";
+                        // send (client_fd, &op_data, sizeof(op_data), 0);
+                        // sendto(, &op_data, sizeof(op_data), 0, (struct sockaddr *)&address, sizeof(address));
+                        send_fin(client_ip, op_data->addr[idx][1].port, server_ip, op_data->addr[idx][0].port,
+                                 (char *)op_data);
+                    } else {
+                        // send(, &op_data, sizeof(op_data), 0); // if tcp, require continue the syn?
+                        send_fin_tcp(client_ip, op_data->addr[idx][1].port, server_ip, op_data->addr[idx][0].port,
+                                     (char *)op_data);
+                    }
                 }
                 // send fin
-                op_data.op = MVVM_SOCK_FIN;
-                if (!op_data.is_tcp) {
-                    // send (client_fd, &op_data, sizeof(op_data), 0);
-                    // sendto(, &op_data, sizeof(op_data), 0, (struct sockaddr *)&address, sizeof(address));
-                    send_fin(client_ip, op_data.addr[0][1].port, server_ip, op_data.addr[0][0].port, (char*)&op_data);
-                } else {
-                    // send(, &op_data, sizeof(op_data), 0); // if tcp, require continue the syn?
-                    send_fin_tcp(client_ip, op_data.addr[0][1].port, server_ip, op_data.addr[0][0].port, (char*)&op_data);
-                }
+
                 break;
             case MVVM_SOCK_RESUME:
                 // resume
                 LOGV(ERROR) << "resume";
                 auto tmp_tuple = forward_pair[forward_pair.size() - 1];
                 std::get<2>(tmp_tuple) =
-                    fmt::format("{}.{}.{}.{}", op_data.addr[0][0].ip4[0], op_data.addr[0][0].ip4[1],
-                                op_data.addr[0][0].ip4[2], op_data.addr[0][0].ip4[3]);
+                    fmt::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0], op_data->addr[0][0].ip4[1],
+                                op_data->addr[0][0].ip4[2], op_data->addr[0][0].ip4[3]);
                 LOGV(ERROR) << "forward_pair[forward_pair.size()]" << std::get<0>(forward_pair[forward_pair.size() - 1])
                             << std::get<1>(forward_pair[forward_pair.size() - 1]);
                 is_forward = true;
                 // for udp forward from source to remote
                 // stop keep_alive
-                if (op_data.is_tcp) {
+                if (op_data->is_tcp) {
                     backend_thread.pop_back();
                 }
                 sleep(1);

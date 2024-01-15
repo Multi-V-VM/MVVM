@@ -2,6 +2,7 @@
 // Created by victoryang00 on 10/19/23.
 //
 
+#include "logging.h"
 #include "wamr.h"
 #include "wamr_wasi_context.h"
 #include <condition_variable>
@@ -15,64 +16,57 @@ int cur_func_count = 0;
 bool is_debug;
 
 void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockfd) {
-    SocketMetaData newSocketData{};
-    newSocketData = wamr->socket_fd_map_[sockfd];
-
-    WasiSockOpenData openData{};
-    openData.poolfd = poolfd;
-    openData.af = af;
-    openData.socktype = socktype;
-    openData.sockfd = sockfd;
-
-    newSocketData.socketOpenData = openData;
-    wamr->socket_fd_map_[sockfd] = newSocketData;
+    if (wamr->socket_fd_map_.find(sockfd) != wamr->socket_fd_map_.end()) {
+        wamr->socket_fd_map_[sockfd].socketOpenData.poolfd = poolfd;
+        wamr->socket_fd_map_[sockfd].socketOpenData.af = af;
+        wamr->socket_fd_map_[sockfd].socketOpenData.socktype = socktype;
+        wamr->socket_fd_map_[sockfd].socketOpenData.sockfd = sockfd;
+    } else {
+        LOGV(ERROR) << "socket_fd" << sockfd << " not found";
+    }
 }
 #if !defined(_WIN32)
 void insert_sock_send_to_data(uint32_t sock, uint8 *si_data, uint32 si_data_len, uint16_t si_flags,
                               __wasi_addr_t *dest_addr) {
-    SocketMetaData newSocketData{};
-    newSocketData = wamr->socket_fd_map_[sock];
+    if (wamr->socket_fd_map_.find(sock) != wamr->socket_fd_map_.end()) {
+        wamr->socket_fd_map_[sock].socketSentToData.sock = sock;
+        wamr->socket_fd_map_[sock].socketSentToData.si_data = std::vector<uint8_t>(si_data, si_data + si_data_len);
+        wamr->socket_fd_map_[sock].socketSentToData.si_flags = si_flags;
 
-    WasiSockSendToData sendToData{};
-    sendToData.sock = sock;
-    sendToData.si_data = std::vector<uint8_t>(si_data, si_data + si_data_len);
-    sendToData.si_flags = si_flags;
-
-    if (dest_addr->kind == IPv4) {
-        sendToData.dest_addr.ip.is_4 = true;
-        sendToData.dest_addr.ip.ip4[0] = dest_addr->addr.ip4.addr.n0;
-        sendToData.dest_addr.ip.ip4[1] = dest_addr->addr.ip4.addr.n1;
-        sendToData.dest_addr.ip.ip4[2] = dest_addr->addr.ip4.addr.n2;
-        sendToData.dest_addr.ip.ip4[3] = dest_addr->addr.ip4.addr.n3;
-        sendToData.dest_addr.port = dest_addr->addr.ip4.port;
+        if (dest_addr->kind == IPv4) {
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.is_4 = true;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip4[0] = dest_addr->addr.ip4.addr.n0;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip4[1] = dest_addr->addr.ip4.addr.n1;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip4[2] = dest_addr->addr.ip4.addr.n2;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip4[3] = dest_addr->addr.ip4.addr.n3;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.port = dest_addr->addr.ip4.port;
+        } else {
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.is_4 = false;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip6[0] = dest_addr->addr.ip6.addr.n0;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip6[1] = dest_addr->addr.ip6.addr.n1;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip6[2] = dest_addr->addr.ip6.addr.n2;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip6[3] = dest_addr->addr.ip6.addr.n3;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip6[4] = dest_addr->addr.ip6.addr.h0;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip6[5] = dest_addr->addr.ip6.addr.h1;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip6[6] = dest_addr->addr.ip6.addr.h2;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.ip.ip6[7] = dest_addr->addr.ip6.addr.h3;
+            wamr->socket_fd_map_[sock].socketSentToData.dest_addr.port = dest_addr->addr.ip6.port;
+        }
     } else {
-        sendToData.dest_addr.ip.is_4 = false;
-        sendToData.dest_addr.ip.ip6[0] = dest_addr->addr.ip6.addr.n0;
-        sendToData.dest_addr.ip.ip6[1] = dest_addr->addr.ip6.addr.n1;
-        sendToData.dest_addr.ip.ip6[2] = dest_addr->addr.ip6.addr.n2;
-        sendToData.dest_addr.ip.ip6[3] = dest_addr->addr.ip6.addr.n3;
-        sendToData.dest_addr.ip.ip6[4] = dest_addr->addr.ip6.addr.h0;
-        sendToData.dest_addr.ip.ip6[5] = dest_addr->addr.ip6.addr.h1;
-        sendToData.dest_addr.ip.ip6[6] = dest_addr->addr.ip6.addr.h2;
-        sendToData.dest_addr.ip.ip6[7] = dest_addr->addr.ip6.addr.h3;
-        sendToData.dest_addr.port = dest_addr->addr.ip6.port;
+        LOGV(ERROR) << "socket_fd" << sock << " not found";
     }
-
-    newSocketData.socketSentToData = sendToData;
-
-    wamr->socket_fd_map_[sock] = newSocketData;
 }
 
 void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_len, uint16_t ri_flags,
                                 __wasi_addr_t *src_addr) {
-    SocketMetaData newSocketData{};
-    newSocketData = wamr->socket_fd_map_[sock];
-
-    WasiSockRecvFromData recvFromData{};
-    recvFromData.sock = sock;
-    recvFromData.ri_data = std::vector<uint8_t>(ri_data, ri_data + ri_data_len);
-    recvFromData.ri_flags = ri_flags;
-    if (src_addr) {
+    if (wamr->socket_fd_map_.find(sock) != wamr->socket_fd_map_.end()) {
+        WasiSockRecvFromData recvFromData{};
+        recvFromData.sock = sock;
+        recvFromData.ri_data = std::vector<uint8_t>(ri_data, ri_data + ri_data_len);
+        recvFromData.ri_flags = ri_flags;
+        if (wamr->socket_fd_map_[sock].is_collection) {
+            wamr->socket_fd_map_[sock].replay_start_index += 1;
+        }
         if (src_addr->kind == IPv4) {
             recvFromData.src_addr.ip.is_4 = true;
             recvFromData.src_addr.ip.ip4[0] = src_addr->addr.ip4.addr.n0;
@@ -95,14 +89,15 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
 
             recvFromData.src_addr.ip.is_4 = false;
             recvFromData.src_addr.port = src_addr->addr.ip6.port;
-            newSocketData.replay_start_index += 1;
+        }
+        wamr->socket_fd_map_[sock].socketRecvFromDatas.emplace_back(recvFromData);
+        LOGV(ERROR) << "insert_sock_recv_from_data " << sock << " " << ((struct mvvm_op_data *)ri_data)->op;
+        if (((struct mvvm_op_data *)ri_data)->op == MVVM_SOCK_FIN) {
+            wamr->socket_fd_map_[sock].is_collection = false;
         }
     } else {
-        recvFromData.src_addr = wamr->socket_fd_map_[sock].socketRecvFromDatas[0].src_addr;
-        LOGV(ERROR)<< recvFromData.src_addr.ip.ip4[0] << "." << recvFromData.src_addr.ip.ip4[1] << "." << recvFromData.src_addr.ip.ip4[2] << "." << recvFromData.src_addr.ip.ip4[3];
+        LOGV(ERROR) << "socket_fd" << sock << " not found";
     }
-    newSocketData.socketRecvFromDatas.emplace_back(recvFromData);
-    wamr->socket_fd_map_[sock] = newSocketData;
 }
 void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, uint32 *ri_data_len) {
     // check from wamr->socket_fd_map_[sock] and drain one
@@ -180,7 +175,7 @@ void insert_socket(int fd, int domain, int type, int protocol) {
         metaData.domain = domain;
         metaData.type = type;
         metaData.protocol = protocol;
-        wamr->socket_fd_map_.insert(std::make_pair(fd, metaData));
+        wamr->socket_fd_map_[fd] = metaData;
     }
 }
 
@@ -192,31 +187,28 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
         // set default value
         insert_socket(fd, 0, 0, 0);
     }
+    wamr->socket_fd_map_[fd].domain = wamr->socket_fd_map_[fd].domain;
+    wamr->socket_fd_map_[fd].type = wamr->socket_fd_map_[fd].type;
+    wamr->socket_fd_map_[fd].protocol = wamr->socket_fd_map_[fd].protocol;
 
-    SocketMetaData metaData{};
-    metaData.domain = wamr->socket_fd_map_[fd].domain;
-    metaData.type = wamr->socket_fd_map_[fd].type;
-    metaData.protocol = wamr->socket_fd_map_[fd].protocol;
-
-    metaData.socketAddress.port = address->port;
+    wamr->socket_fd_map_[fd].socketAddress.port = address->port;
     if (address->is_4) {
-        metaData.socketAddress.is_4 = true;
-        metaData.socketAddress.ip4[0] = address->ip4[0];
-        metaData.socketAddress.ip4[1] = address->ip4[1];
-        metaData.socketAddress.ip4[2] = address->ip4[2];
-        metaData.socketAddress.ip4[3] = address->ip4[3];
+        wamr->socket_fd_map_[fd].socketAddress.is_4 = true;
+        wamr->socket_fd_map_[fd].socketAddress.ip4[0] = address->ip4[0];
+        wamr->socket_fd_map_[fd].socketAddress.ip4[1] = address->ip4[1];
+        wamr->socket_fd_map_[fd].socketAddress.ip4[2] = address->ip4[2];
+        wamr->socket_fd_map_[fd].socketAddress.ip4[3] = address->ip4[3];
 
     } else {
-        metaData.socketAddress.ip6[0] = address->ip6[0];
-        metaData.socketAddress.ip6[1] = address->ip6[1];
-        metaData.socketAddress.ip6[2] = address->ip6[2];
-        metaData.socketAddress.ip6[3] = address->ip6[3];
-        metaData.socketAddress.ip6[4] = address->ip6[4];
-        metaData.socketAddress.ip6[5] = address->ip6[5];
-        metaData.socketAddress.ip6[6] = address->ip6[6];
-        metaData.socketAddress.ip6[7] = address->ip6[7];
+        wamr->socket_fd_map_[fd].socketAddress.ip6[0] = address->ip6[0];
+        wamr->socket_fd_map_[fd].socketAddress.ip6[1] = address->ip6[1];
+        wamr->socket_fd_map_[fd].socketAddress.ip6[2] = address->ip6[2];
+        wamr->socket_fd_map_[fd].socketAddress.ip6[3] = address->ip6[3];
+        wamr->socket_fd_map_[fd].socketAddress.ip6[4] = address->ip6[4];
+        wamr->socket_fd_map_[fd].socketAddress.ip6[5] = address->ip6[5];
+        wamr->socket_fd_map_[fd].socketAddress.ip6[6] = address->ip6[6];
+        wamr->socket_fd_map_[fd].socketAddress.ip6[7] = address->ip6[7];
     }
-    wamr->socket_fd_map_[fd] = metaData;
 }
 
 void insert_lock(char const *, int) {}

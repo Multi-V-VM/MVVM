@@ -89,6 +89,8 @@ public:
     int invoke_ftell(uint32 fd, uint32 offset, uint32 whench);
     int invoke_preopen(uint32 fd, const std::string &path);
     int invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32_t *sockfd);
+    int invoke_recv(int sockfd, uint8 **buf, size_t len, int flags);
+    int invoke_recvfrom(int sockfd, uint8 **buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
     ~WAMRInstance();
 };
 #endif // MVVM_WAMR_H
