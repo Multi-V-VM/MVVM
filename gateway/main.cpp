@@ -293,6 +293,48 @@ void send_fin_tcp(std::string source_ip, int source_port, std::string dest_ip, i
     packet.Send(MVVM_SOCK_INTERFACE);
     // Clean up Libcrafter
 }
+
+void ip_forward() {
+    std::system("/bin/echo 1 > /proc/sys/net/ipv4/ip_forward");
+    std::system("/bin/echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects");
+    std::system((std::string("iptables --append FORWARD --in-interface ")+MVVM_SOCK_INTERFACE+" --jump ACCEPT").c_str());
+}
+
+void start_block(const string& dst_ip, const string& src_ip, int dst_port, int src_port) {
+
+	/* Delete the forwarding... */
+	std::system("iptables --delete FORWARD --in-interface eth0 --jump ACCEPT");
+
+	/* Drop packets received from the spoofed connection */
+	std::system(string("/sbin/iptables -A FORWARD -s " + dst_ip + " -d " + src_ip +
+			      " -p tcp --sport " + StrPort(dst_port) + " --dport " + StrPort(src_port) +
+			      " -j DROP").c_str());
+
+	std::system(string("/sbin/iptables -A FORWARD -s " + src_ip + " -d " + dst_ip +
+			      " -p tcp --sport " + StrPort(src_port) + " --dport " + StrPort(dst_port) +
+			      " -j DROP").c_str());
+
+	/* Append again the forwarding, so the victim can establish a new connection... */
+	std::system("iptables --append FORWARD --in-interface eth0 --jump ACCEPT");
+
+}
+
+void clear_block(const string& dst_ip, const string& src_ip, int dst_port, int src_port) {
+    std::system("/bin/echo 0 > /proc/sys/net/ipv4/ip_forward");
+
+	std::system(string("/sbin/iptables -D FORWARD -s " + dst_ip + " -d " + src_ip +
+			      " -p tcp --sport " + StrPort(dst_port) + " --dport " + StrPort(src_port) +
+			      " -j DROP").c_str());
+
+	std::system(string("/sbin/iptables -D FORWARD -s " + src_ip + " -d " + dst_ip +
+			      " -p tcp --sport " + StrPort(src_port) + " --dport " + StrPort(dst_port) +
+			      " -j DROP").c_str());
+}
+
+void clear_forward() {
+    std::system("/bin/echo 0 > /proc/sys/net/ipv4/ip_forward");
+    std::system("iptables --delete FORWARD --in-interface eth0 --jump ACCEPT");
+}
 void sigterm_handler(int sig) {
     struct pcap_stat stats {};
 
@@ -305,6 +347,7 @@ void sigterm_handler(int sig) {
     close(client_fd);
     close(fd);
     LOGV(INFO) << "Bye";
+    clear_forward();
     exit(0);
 }
 // int main(){

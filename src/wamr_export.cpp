@@ -90,11 +90,12 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
             recvFromData.src_addr.ip.is_4 = false;
             recvFromData.src_addr.port = src_addr->addr.ip6.port;
         }
-        wamr->socket_fd_map_[sock].socketRecvFromDatas.emplace_back(recvFromData);
         LOGV(ERROR) << "insert_sock_recv_from_data " << sock << " " << ((struct mvvm_op_data *)ri_data)->op;
         if (((struct mvvm_op_data *)ri_data)->op == MVVM_SOCK_FIN) {
             wamr->socket_fd_map_[sock].is_collection = false;
+            return;
         }
+        wamr->socket_fd_map_[sock].socketRecvFromDatas.emplace_back(recvFromData);
     } else {
         LOGV(ERROR) << "socket_fd" << sock << " not found";
     }
@@ -103,7 +104,7 @@ void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, uint32 *ri_data_
     // check from wamr->socket_fd_map_[sock] and drain one
     // should be in the same order
     if (wamr->socket_fd_map_[sock].socketRecvFromDatas.empty()) {
-        LOGV(ERROR) << "no recvfrom data";
+        LOGV(ERROR) << "no recvfrom data " << sock;
         *ri_data_len = 0;
         return;
     }
@@ -111,8 +112,8 @@ void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, uint32 *ri_data_
     auto recvFromData = wamr->socket_fd_map_[sock].socketRecvFromDatas[wamr->socket_fd_map_[sock].replay_start_index];
     wamr->socket_fd_map_[sock].socketRecvFromDatas.erase(wamr->socket_fd_map_[sock].socketRecvFromDatas.begin() +
                                                          wamr->socket_fd_map_[sock].replay_start_index);
-    *ri_data = recvFromData.ri_data.data();
-    *ri_data_len = recvFromData.ri_data.size();
+    std::memcpy(*ri_data, recvFromData.ri_data.data(), recvFromData.ri_data_len);
+    *ri_data_len = recvFromData.ri_data_len;
 }
 #endif
 // only support one type of requests at a time

@@ -87,6 +87,9 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
                     }
                 }
             }
+                // LOGV(ERROR) << "recv error";
+
+            this->socket_fd_map[fd] = socketMetaData;
         }
     }
 #endif
@@ -133,6 +136,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
         LOGV(INFO) << "tmp_sock_fd " << tmp_sock_fd << " fd" << fd;
         if (tmp_sock_fd != fd)
             wamr->invoke_frenumber(tmp_sock_fd, fd);
+        wamr->socket_fd_map_[fd] = socketMetaData;
     }
 #endif
 };
