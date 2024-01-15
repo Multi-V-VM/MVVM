@@ -19,12 +19,10 @@ struct SocketAddrPool {
 };
 enum fd_op { MVVM_FOPEN = 0, MVVM_FWRITE = 1, MVVM_FREAD = 2, MVVM_FSEEK = 3 };
 #if !defined(_WIN32)
-void insert_sock_send_to_data(uint32_t sock, uint8 *si_data, uint32 si_data_len, uint16_t si_flags,
-                              __wasi_addr_t *dest_addr);
+void insert_sock_send_to_data(uint32_t, uint8 *, uint32, uint16_t, __wasi_addr_t *);
 void insert_sock_open_data(uint32_t, int, int, uint32_t);
-void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_len, uint16_t ri_flags,
-                                __wasi_addr_t *src_addr);
-void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, uint32* ri_data_len);
+void insert_sock_recv_from_data(uint32_t, uint8 *, uint32, uint16_t, __wasi_addr_t *);
+void replay_sock_recv_from_data(uint32_t, uint8 **, unsigned long *, __wasi_addr_t *);
 void insert_socket(int, int, int, int);
 void update_socket_fd_address(int, struct SocketAddrPool *);
 void set_tcp();
@@ -45,7 +43,6 @@ void rename_fd(int, char const *, int, char const *);
 void lightweight_checkpoint(WASMExecEnv *);
 void lightweight_uncheckpoint(WASMExecEnv *);
 void wamr_wait();
-int check_recvbuffer(int fd, char *buf);
 void sigint_handler(int sig);
 void register_sigtrap();
 void sigtrap_handler(int sig);

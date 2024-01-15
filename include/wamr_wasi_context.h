@@ -17,12 +17,6 @@
 #include <string>
 #include <vector>
 
-struct WAMRArgvEnvironValues {
-    std::vector<std::string> argv_list;
-    std::vector<std::string> env_list;
-};
-// need to serialize the opened file in the file descripter and the socket opened also.
-
 struct WAMRAddrPool {
     uint8 ip4[4];
     uint16 ip6[8];
@@ -51,7 +45,6 @@ struct WasiSockSendToData {
 struct WasiSockRecvFromData {
     uint32_t sock;
     std::vector<uint8_t> ri_data;
-    uint32 ri_data_len;
     uint16_t ri_flags;
     WAMRWasiAddr src_addr;
     uint32 ro_data_len;
@@ -64,19 +57,21 @@ struct SocketMetaData {
     SocketAddrPool socketAddress{};
     WasiSockOpenData socketOpenData{};
     int replay_start_index{};
-   bool is_collection=false;
+    bool is_collection = false;
 #if !defined(_WIN32)
-    WasiSockSendToData socketSentToData{}; // 
+    WasiSockSendToData socketSentToData{}; //
     std::vector<WasiSockRecvFromData> socketRecvFromDatas;
 #endif
 };
 struct WAMRWASIContext {
-    std::map<int, std::tuple<std::string, std::vector<std::tuple<int,int,fd_op>>>>  fd_map;
+    std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map;
     std::map<int, SocketMetaData> socket_fd_map;
     std::vector<std::string> dir;
     std::vector<std::string> map_dir;
-    WAMRArgvEnvironValues argv_environ;
-    std::vector<WAMRAddrPool> addr_pool;
+    std::vector<std::string> arg;
+    std::vector<std::string> argv_list;
+    std::vector<std::string> env_list;
+    std::vector<std::string> addr_pool;
     std::vector<std::string> ns_lookup_list;
     uint32_t exit_code;
     void dump_impl(WASIArguments *env);

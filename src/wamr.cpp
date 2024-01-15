@@ -163,12 +163,6 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
         return ((int)argv[0]);
     }
-    // auto name1 = "o_";
-    // uint32 argv[0];
-    // if (!(func = wasm_runtime_lookup_function(module_inst, name1, nullptr))) {
-    //     LOGV(ERROR) << "The wasi " << name1 << " function is not found.";
-    // }
-    // wasm_runtime_call_wasm(exec_env, func, 0, argv);
     return -1;
 };
 int WAMRInstance::invoke_frenumber(uint32 fd, uint32 to) {
@@ -235,7 +229,7 @@ int WAMRInstance::invoke_sock_open(uint32_t poolfd, int af, int socktype, uint32
         uint32 argv[4] = {poolfd, static_cast<uint32>(af), static_cast<uint32>(socktype), buffer_for_wasm};
         auto res = wasm_runtime_call_wasm(exec_env, func, 4, argv);
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
-        return res;
+        return argv[0];
     }
     return -1;
 }
@@ -466,16 +460,9 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
                   ;
               });
 
-    for (const auto &exec_ : *execEnv) {
-        size_t a = exec_->frames.back()->function_index;
-        size_t b = exec_->frames.front()->function_index;
-        fprintf(stderr, "exec_env %p, frames %lu %lu, cur_count %d\n", exec_.get(), a, b, exec_->cur_count);
-    }
-
     argptr = (ThreadArgs **)malloc(sizeof(void *) * execEnv->size());
     uint32 id = 0;
-    auto main_exec_env = execEnv->back().get();
-    set_wasi_args(main_exec_env->module_inst.wasi_ctx);
+    set_wasi_args(execEnv->back()->module_inst.wasi_ctx);
 
     instantiate();
     auto mi = module_inst;
@@ -483,7 +470,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     get_int3_addr();
     replace_int3_with_nop();
 
-    restore(main_exec_env, cur_env);
+    restore(execEnv->back().get(), cur_env);
     auto main_env = cur_env;
     auto main_saved_call_chain = main_env->restore_call_chain;
     fprintf(stderr, "main_env created %p %p\n\n", main_env, main_saved_call_chain);
@@ -565,35 +552,8 @@ void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const
     wasm_runtime_set_wasi_ns_lookup_pool(module, ns_pool_.data(), ns_pool_.size());
 }
 void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
-    // TODO: some handmade directory after recovery dir
-    auto get_addr_from_context = [](const WAMRWASIContext &wasiContext) {
-        auto addr_pool = std::vector<std::string>(wasiContext.addr_pool.size());
-        std::transform(wasiContext.addr_pool.begin(), wasiContext.addr_pool.end(), addr_pool.begin(),
-                       [](const WAMRAddrPool &addrs) {
-                           std::string addr_str;
-                           if (addrs.is_4) {
-                               addr_str = fmt::format("{}.{}.{}.{}/{}", addrs.ip4[0], addrs.ip4[1], addrs.ip4[2],
-                                                      addrs.ip4[3], addrs.mask);
-                               if (addrs.mask != UINT8_MAX) {
-                                   addr_str += fmt::format("/{}", addrs.mask);
-                               }
-                           } else {
-                               addr_str =
-
-                                   fmt::format("{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}", addrs.ip6[0], addrs.ip6[1],
-                                               addrs.ip6[2], addrs.ip6[3], addrs.ip6[4], addrs.ip6[5], addrs.ip6[6],
-                                               addrs.ip6[7], addrs.mask);
-                               if (addrs.mask != UINT8_MAX) {
-                                   addr_str += fmt::format("/{}", addrs.mask);
-                               }
-                           }
-                           return addr_str;
-                       });
-
-        return addr_pool;
-    };
-    set_wasi_args(context.dir, context.map_dir, context.argv_environ.env_list, context.argv_environ.argv_list,
-                  get_addr_from_context(context), context.ns_lookup_list);
+    set_wasi_args(context.dir, context.map_dir, context.env_list, context.argv_list,
+                  context.addr_pool, context.ns_lookup_list);
 }
 extern WAMRInstance *wamr;
 extern "C" { // stop name mangling so it can be linked externally
@@ -625,7 +585,6 @@ WASMExecEnv *restore_env() {
 
     return exec_env;
 }
-int check_recvbuffer(int fd, char *buf) { return 0; };
 }
 
 void WAMRInstance::instantiate() {

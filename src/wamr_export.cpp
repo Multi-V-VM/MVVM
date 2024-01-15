@@ -73,8 +73,6 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
             recvFromData.src_addr.ip.ip4[1] = src_addr->addr.ip4.addr.n1;
             recvFromData.src_addr.ip.ip4[2] = src_addr->addr.ip4.addr.n2;
             recvFromData.src_addr.ip.ip4[3] = src_addr->addr.ip4.addr.n3;
-
-            recvFromData.src_addr.ip.is_4 = true;
             recvFromData.src_addr.port = src_addr->addr.ip4.port;
         } else {
             recvFromData.src_addr.ip.is_4 = false;
@@ -86,8 +84,6 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
             recvFromData.src_addr.ip.ip6[5] = src_addr->addr.ip6.addr.h1;
             recvFromData.src_addr.ip.ip6[6] = src_addr->addr.ip6.addr.h2;
             recvFromData.src_addr.ip.ip6[7] = src_addr->addr.ip6.addr.h3;
-
-            recvFromData.src_addr.ip.is_4 = false;
             recvFromData.src_addr.port = src_addr->addr.ip6.port;
         }
         LOGV(ERROR) << "insert_sock_recv_from_data " << sock << " " << ((struct mvvm_op_data *)ri_data)->op;
@@ -100,20 +96,41 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
         LOGV(ERROR) << "socket_fd" << sock << " not found";
     }
 }
-void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, uint32 *ri_data_len) {
+void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, unsigned long *recv_size, __wasi_addr_t *src_addr) {
     // check from wamr->socket_fd_map_[sock] and drain one
     // should be in the same order
     if (wamr->socket_fd_map_[sock].socketRecvFromDatas.empty()) {
         LOGV(ERROR) << "no recvfrom data " << sock;
-        *ri_data_len = 0;
+        *recv_size = 0;
         return;
     }
     // shoud we check the src_addr?
+    if (wamr->socket_fd_map_[sock].replay_start_index >= wamr->socket_fd_map_[sock].socketRecvFromDatas.size()) {
+        LOGV(ERROR) << "replay index out of bound " << sock;
+        *recv_size = 0;
+        return;
+    }
     auto recvFromData = wamr->socket_fd_map_[sock].socketRecvFromDatas[wamr->socket_fd_map_[sock].replay_start_index];
-    wamr->socket_fd_map_[sock].socketRecvFromDatas.erase(wamr->socket_fd_map_[sock].socketRecvFromDatas.begin() +
-                                                         wamr->socket_fd_map_[sock].replay_start_index);
-    std::memcpy(*ri_data, recvFromData.ri_data.data(), recvFromData.ri_data_len);
-    *ri_data_len = recvFromData.ri_data_len;
+    wamr->socket_fd_map_[sock].replay_start_index;
+    std::memcpy(*ri_data, recvFromData.ri_data.data(), recvFromData.ri_data.size());
+    *recv_size = recvFromData.ri_data.size();
+    if (src_addr->kind == IPv4) {
+        src_addr->addr.ip4.addr.n0 = recvFromData.src_addr.ip.ip4[0];
+        src_addr->addr.ip4.addr.n1 = recvFromData.src_addr.ip.ip4[1];
+        src_addr->addr.ip4.addr.n2 = recvFromData.src_addr.ip.ip4[2];
+        src_addr->addr.ip4.addr.n3 = recvFromData.src_addr.ip.ip4[3];
+        src_addr->addr.ip4.port = recvFromData.src_addr.port;
+    } else {
+        src_addr->addr.ip6.addr.n0 = recvFromData.src_addr.ip.ip6[0];
+        src_addr->addr.ip6.addr.n1 = recvFromData.src_addr.ip.ip6[1];
+        src_addr->addr.ip6.addr.n2 = recvFromData.src_addr.ip.ip6[2];
+        src_addr->addr.ip6.addr.n3 = recvFromData.src_addr.ip.ip6[3];
+        src_addr->addr.ip6.addr.h0 = recvFromData.src_addr.ip.ip6[4];
+        src_addr->addr.ip6.addr.h1 = recvFromData.src_addr.ip.ip6[5];
+        src_addr->addr.ip6.addr.h2 = recvFromData.src_addr.ip.ip6[6];
+        src_addr->addr.ip6.addr.h3 = recvFromData.src_addr.ip.ip6[7];
+        src_addr->addr.ip6.port = recvFromData.src_addr.port;
+    }
 }
 #endif
 // only support one type of requests at a time

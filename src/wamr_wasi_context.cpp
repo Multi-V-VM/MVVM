@@ -45,6 +45,18 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
     for (auto &i : wamr->map_dir_) {
         map_dir.emplace_back(i);
     }
+    for (auto &i : wamr->env_) {
+        env_list.emplace_back(i);
+    }
+    for (auto &i : wamr->arg_) {
+        arg.emplace_back(i);
+    }
+    for (auto &i : wamr->addr_) {
+        addr_pool.emplace_back(i);
+    }
+    for (auto &i : wamr->ns_pool_) {
+        ns_lookup_list.emplace_back(i);
+    }
     for (auto [fd, res] : wamr->fd_map_) {
         auto [path, op] = res;
         auto dumped_res = std::make_tuple(path, op);
@@ -87,7 +99,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
                     }
                 }
             }
-                // LOGV(ERROR) << "recv error";
+            // LOGV(ERROR) << "recv error";
 
             this->socket_fd_map[fd] = socketMetaData;
         }
@@ -128,12 +140,12 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
                    //    << " SocketMetaData[socketAddress]: " << socketMetaData.socketAddress
                    << " SocketMetaData[protocol]: " << socketMetaData.protocol
                    << " SocketMetaData[type]: " << socketMetaData.type;
-        uint32 tmp_sock_fd = socketMetaData.socketOpenData.sockfd;
-        wamr->invoke_sock_open(socketMetaData.socketOpenData.poolfd, socketMetaData.socketOpenData.af,
+        uint32 tmp_sock_fd ;
+        auto res = wamr->invoke_sock_open(socketMetaData.socketOpenData.poolfd, socketMetaData.socketOpenData.af,
                                socketMetaData.socketOpenData.socktype,
                                &tmp_sock_fd); // should be done after restore call chain
         // renumber or not?
-        LOGV(INFO) << "tmp_sock_fd " << tmp_sock_fd << " fd" << fd;
+        LOGV(INFO) << "tmp_sock_fd " << tmp_sock_fd << " fd" << fd << " res " << res;
         if (tmp_sock_fd != fd)
             wamr->invoke_frenumber(tmp_sock_fd, fd);
         wamr->socket_fd_map_[fd] = socketMetaData;

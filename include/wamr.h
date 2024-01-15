@@ -30,6 +30,7 @@ public:
     std::string aot_file_path{};
     std::string wasm_file_path{};
     std::vector<std::size_t> int3_addr{};
+    std::vector<std::pair<std::size_t,std::size_t>> switch_addr{};
     std::vector<const char *> dir_{};
     std::vector<const char *> map_dir_{};
     std::vector<const char *> env_{};
