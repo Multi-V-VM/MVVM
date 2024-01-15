@@ -9,8 +9,8 @@
 #include "wasm_runtime.h"
 #if !defined(_WIN32)
 #include "thread_manager.h"
-#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #endif
 #include <condition_variable>
 #include <cstdio>
@@ -97,12 +97,33 @@ void serialize_to_file(WASMExecEnv *instance) {
 
             wamr->op_data.op = MVVM_SOCK_SUSPEND;
             wamr->op_data.addr[idx][0] = src_addr;
-            wamr->op_data.addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
-            std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
-                        sizeof(sock_data.socketSentToData.dest_addr.ip.ip4));
-            std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
-                        sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
-            wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
+            tmp_ip4 = fmt::format("{}.{}.{}.{}", sock_data.socketSentToData.dest_addr.ip.ip4[0],
+                                  sock_data.socketSentToData.dest_addr.ip.ip4[1],
+                                  sock_data.socketSentToData.dest_addr.ip.ip4[2],
+                                  sock_data.socketSentToData.dest_addr.ip.ip4[3]);
+            tmp_ip6 = fmt::format(
+                "{}:{}:{}:{}:{}:{}:{}:{}", sock_data.socketSentToData.dest_addr.ip.ip6[0],
+                sock_data.socketSentToData.dest_addr.ip.ip6[1], sock_data.socketSentToData.dest_addr.ip.ip6[2],
+                sock_data.socketSentToData.dest_addr.ip.ip6[3], sock_data.socketSentToData.dest_addr.ip.ip6[4],
+                sock_data.socketSentToData.dest_addr.ip.ip6[5], sock_data.socketSentToData.dest_addr.ip.ip6[6],
+                sock_data.socketSentToData.dest_addr.ip.ip6[7]);
+            if (sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip4 == "0.0.0.0" ||
+                !sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
+                wamr->op_data.addr[idx][1].is_4 = sock_data.socketRecvFromDatas[0].src_addr.ip.is_4;
+                std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketRecvFromDatas[0].src_addr.ip.ip4,
+                            sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip4));
+                std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketRecvFromDatas[0].src_addr.ip.ip6,
+                            sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip6));
+                wamr->op_data.addr[idx][1].port = sock_data.socketRecvFromDatas[0].src_addr.port;
+
+            } else {
+                wamr->op_data.addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
+                std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
+                            sizeof(sock_data.socketSentToData.dest_addr.ip.ip4));
+                std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
+                            sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
+                wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
+            }
             LOGV(INFO) << "dest_addr: "
                        << fmt::format("{}.{}.{}.{}", wamr->op_data.addr[idx][1].ip4[0],
                                       wamr->op_data.addr[idx][1].ip4[1], wamr->op_data.addr[idx][1].ip4[2],
@@ -200,8 +221,9 @@ int main(int argc, char *argv[]) {
         cxxopts::value<std::vector<std::string>>()->default_value(""))("h,help", "The value for epoch value",
                                                                        cxxopts::value<bool>()->default_value("false"))(
         "i,is_debug", "The value for is_debug value", cxxopts::value<bool>()->default_value("false"))(
-        "f,function", "The function to test execution", cxxopts::value<int>()->default_value("0"))(
-        "c,count", "The function index to test execution", cxxopts::value<int>()->default_value("0"));
+        "f,function", "The function index to test execution", cxxopts::value<int>()->default_value("0"))(
+        "x,function_count", "The function count to stop", cxxopts::value<int>()->default_value("0"))(
+        "c,count", "The step index to test execution", cxxopts::value<int>()->default_value("0"));
     auto removeExtension = [](std::string &filename) {
         size_t dotPos = filename.find_last_of('.');
         std::string res;
@@ -227,9 +249,14 @@ int main(int argc, char *argv[]) {
     auto arg = result["arg"].as<std::vector<std::string>>();
     auto addr = result["addr"].as<std::vector<std::string>>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
-   snapshot_threshold = result["count"].as<int>();
+    snapshot_threshold = result["count"].as<int>();
+    stop_func_threshold = result["function_count"].as<int>();
     is_debug = result["is_debug"].as<bool>();
     stop_func_index = result["function"].as<int>();
+    if (snapshot_threshold != 0 && stop_func_index != 0) {
+        LOGV(ERROR) << "Conflict arguments, please choose either count or function";
+        exit(EXIT_FAILURE);
+    }
 
     if (arg.size() == 1 && arg[0].empty())
         arg.clear();
@@ -245,7 +272,7 @@ int main(int argc, char *argv[]) {
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
     wamr->get_int3_addr();
-    // wamr->replace_int3_with_nop();
+    wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 #if defined(_WIN32)

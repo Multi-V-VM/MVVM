@@ -72,31 +72,35 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
     recvFromData.sock = sock;
     recvFromData.ri_data = std::vector<uint8_t>(ri_data, ri_data + ri_data_len);
     recvFromData.ri_flags = ri_flags;
+    if (src_addr) {
+        if (src_addr->kind == IPv4) {
+            recvFromData.src_addr.ip.is_4 = true;
+            recvFromData.src_addr.ip.ip4[0] = src_addr->addr.ip4.addr.n0;
+            recvFromData.src_addr.ip.ip4[1] = src_addr->addr.ip4.addr.n1;
+            recvFromData.src_addr.ip.ip4[2] = src_addr->addr.ip4.addr.n2;
+            recvFromData.src_addr.ip.ip4[3] = src_addr->addr.ip4.addr.n3;
 
-    if (src_addr->kind == IPv4) {
-        recvFromData.src_addr.ip.is_4 = true;
-        recvFromData.src_addr.ip.ip4[0] = src_addr->addr.ip4.addr.n0;
-        recvFromData.src_addr.ip.ip4[1] = src_addr->addr.ip4.addr.n1;
-        recvFromData.src_addr.ip.ip4[2] = src_addr->addr.ip4.addr.n2;
-        recvFromData.src_addr.ip.ip4[3] = src_addr->addr.ip4.addr.n3;
+            recvFromData.src_addr.ip.is_4 = true;
+            recvFromData.src_addr.port = src_addr->addr.ip4.port;
+        } else {
+            recvFromData.src_addr.ip.is_4 = false;
+            recvFromData.src_addr.ip.ip6[0] = src_addr->addr.ip6.addr.n0;
+            recvFromData.src_addr.ip.ip6[1] = src_addr->addr.ip6.addr.n1;
+            recvFromData.src_addr.ip.ip6[2] = src_addr->addr.ip6.addr.n2;
+            recvFromData.src_addr.ip.ip6[3] = src_addr->addr.ip6.addr.n3;
+            recvFromData.src_addr.ip.ip6[4] = src_addr->addr.ip6.addr.h0;
+            recvFromData.src_addr.ip.ip6[5] = src_addr->addr.ip6.addr.h1;
+            recvFromData.src_addr.ip.ip6[6] = src_addr->addr.ip6.addr.h2;
+            recvFromData.src_addr.ip.ip6[7] = src_addr->addr.ip6.addr.h3;
 
-        recvFromData.src_addr.ip.is_4 = true;
-        recvFromData.src_addr.port = src_addr->addr.ip4.port;
+            recvFromData.src_addr.ip.is_4 = false;
+            recvFromData.src_addr.port = src_addr->addr.ip6.port;
+            newSocketData.replay_start_index += 1;
+        }
     } else {
-        recvFromData.src_addr.ip.is_4 = false;
-        recvFromData.src_addr.ip.ip6[0] = src_addr->addr.ip6.addr.n0;
-        recvFromData.src_addr.ip.ip6[1] = src_addr->addr.ip6.addr.n1;
-        recvFromData.src_addr.ip.ip6[2] = src_addr->addr.ip6.addr.n2;
-        recvFromData.src_addr.ip.ip6[3] = src_addr->addr.ip6.addr.n3;
-        recvFromData.src_addr.ip.ip6[4] = src_addr->addr.ip6.addr.h0;
-        recvFromData.src_addr.ip.ip6[5] = src_addr->addr.ip6.addr.h1;
-        recvFromData.src_addr.ip.ip6[6] = src_addr->addr.ip6.addr.h2;
-        recvFromData.src_addr.ip.ip6[7] = src_addr->addr.ip6.addr.h3;
-
-        recvFromData.src_addr.ip.is_4 = false;
-        recvFromData.src_addr.port = src_addr->addr.ip6.port;
+        recvFromData.src_addr = wamr->socket_fd_map_[sock].socketRecvFromDatas[0].src_addr;
+        LOGV(ERROR)<< recvFromData.src_addr.ip.ip4[0] << "." << recvFromData.src_addr.ip.ip4[1] << "." << recvFromData.src_addr.ip.ip4[2] << "." << recvFromData.src_addr.ip.ip4[3];
     }
-
     newSocketData.socketRecvFromDatas.emplace_back(recvFromData);
     wamr->socket_fd_map_[sock] = newSocketData;
 }
@@ -109,8 +113,9 @@ void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, uint32 *ri_data_
         return;
     }
     // shoud we check the src_addr?
-    auto recvFromData = wamr->socket_fd_map_[sock].socketRecvFromDatas.front();
-    wamr->socket_fd_map_[sock].socketRecvFromDatas.erase(wamr->socket_fd_map_[sock].socketRecvFromDatas.begin());
+    auto recvFromData = wamr->socket_fd_map_[sock].socketRecvFromDatas[wamr->socket_fd_map_[sock].replay_start_index];
+    wamr->socket_fd_map_[sock].socketRecvFromDatas.erase(wamr->socket_fd_map_[sock].socketRecvFromDatas.begin() +
+                                                         wamr->socket_fd_map_[sock].replay_start_index);
     *ri_data = recvFromData.ri_data.data();
     *ri_data_len = recvFromData.ri_data.size();
 }

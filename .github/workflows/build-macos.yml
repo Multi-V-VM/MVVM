@@ -58,7 +58,7 @@ jobs:
 
     - name: build
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config ${{matrix.build}} && cp ${{runner.workspace}}/build/MVVM_checkpoint ${{runner.workspace}}/build/MVVM_checkpoint-macos && cp ${{runner.workspace}}/build/MVVM_restore ${{runner.workspace}}/build/MVVM_restore-macos
+      run: cmake --build . --config ${{matrix.build}} && cp MVVM_checkpoint MVVM_checkpoint-macos && cp MVVM_restore MVVM_restore-macos
 
     - uses: actions/upload-artifact@v2
       if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"

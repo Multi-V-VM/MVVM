@@ -245,6 +245,55 @@ void keep_alive(const std::stop_token &stopToken, std::string source_ip, int sou
     // Clean up Libcrafter
     CleanCrafter();
 }
+void send_fin(std::string source_ip, int source_port, std::string dest_ip,
+              int dest_port, const char * payload) {
+    // Send keep alive message to socket
+    // Initialize Libcrafter
+    InitCrafter();
+    // Create an IP layer
+    IP ip_layer;
+    ip_layer.SetSourceIP(source_ip);
+    ip_layer.SetDestinationIP(dest_ip);
+
+    // Create a UDP layer
+    UDP udp_layer;
+    udp_layer.SetSrcPort(source_port);
+    udp_layer.SetDstPort(dest_port);
+    udp_layer.SetPayload(payload);
+
+    // Craft the packet
+    Packet packet = ip_layer / udp_layer;
+
+    // Send the packet
+    packet.Send();
+    // Clean up Libcrafter
+    CleanCrafter();
+}
+void send_fin_tcp(std::string source_ip, int source_port, std::string dest_ip,
+              int dest_port, const char * payload) {
+    // Send keep alive message to socket
+    // Initialize Libcrafter
+    InitCrafter();
+    // Create an IP layer
+    IP ip_layer;
+    ip_layer.SetSourceIP(source_ip);
+    ip_layer.SetDestinationIP(dest_ip);
+
+    // Create a UDP layer
+    TCP tcp_layer;
+    tcp_layer.SetSrcPort(source_port);
+    tcp_layer.SetDstPort(dest_port);
+    tcp_layer.SetPayload(payload);
+    // maybe no need for syn?
+
+    // Craft the packet
+    Packet packet = ip_layer / tcp_layer;
+
+    // Send the packet
+    packet.Send();
+    // Clean up Libcrafter
+    CleanCrafter();
+}
 void sigterm_handler(int sig) {
     struct pcap_stat stats {};
 
@@ -367,11 +416,13 @@ int main() {
                 }
                 // send fin
                 op_data.op = MVVM_SOCK_FIN;
-                if (op_data.is_tcp) {
+                if (!op_data.is_tcp) {
                     // send (client_fd, &op_data, sizeof(op_data), 0);
-                    sendto(client_fd, &op_data, sizeof(op_data), 0, (struct sockaddr *)&address, sizeof(address));
+                    // sendto(, &op_data, sizeof(op_data), 0, (struct sockaddr *)&address, sizeof(address));
+                    send_fin(client_ip, op_data.addr[0][1].port, server_ip, op_data.addr[0][0].port, (char*)&op_data);
                 } else {
-                    send(client_fd, &op_data, sizeof(op_data), 0);
+                    // send(, &op_data, sizeof(op_data), 0); // if tcp, require continue the syn?
+                    send_fin_tcp(client_ip, op_data.addr[0][1].port, server_ip, op_data.addr[0][0].port, (char*)&op_data);
                 }
                 break;
             case MVVM_SOCK_RESUME:
