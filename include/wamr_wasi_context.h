@@ -57,6 +57,7 @@ struct SocketMetaData {
     SocketAddrPool socketAddress{};
     WasiSockOpenData socketOpenData{};
     int replay_start_index{};
+    bool is_server = false;
     bool is_collection = false;
 #if !defined(_WIN32)
     WasiSockSendToData socketSentToData{}; //

@@ -30,7 +30,7 @@ public:
     std::string aot_file_path{};
     std::string wasm_file_path{};
     std::vector<std::size_t> int3_addr{};
-    std::vector<std::pair<std::size_t,std::size_t>> switch_addr{};
+    std::vector<std::pair<std::size_t, std::size_t>> switch_addr{};
     std::vector<const char *> dir_{};
     std::vector<const char *> map_dir_{};
     std::vector<const char *> env_{};
@@ -90,8 +90,8 @@ public:
     int invoke_ftell(uint32 fd, uint32 offset, uint32 whench);
     int invoke_preopen(uint32 fd, const std::string &path);
     int invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t protocol, uint32_t sockfd);
-    int invoke_sock_listen();
-    int invoke_bind(uint32_t sockfd, const struct sockaddr *addr, socklen_t addrlen);
+    int invoke_sock_listen(uint32_t sockfd, uint32_t fd);
+    int invoke_sock_bind(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);
     int invoke_recv(int sockfd, uint8 **buf, size_t len, int flags);
     int invoke_recvfrom(int sockfd, uint8 **buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
     ~WAMRInstance();

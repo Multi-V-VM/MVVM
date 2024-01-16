@@ -199,11 +199,7 @@ void insert_socket(int fd, int domain, int type, int protocol) {
 
 void update_socket_fd_address(int fd, SocketAddrPool *address) {
     printf("\n #update_socket_fd_address(fd, address) %d \n\n", fd);
-
-    wamr->socket_fd_map_[fd].domain = wamr->socket_fd_map_[fd].domain;
-    wamr->socket_fd_map_[fd].type = wamr->socket_fd_map_[fd].type;
-    wamr->socket_fd_map_[fd].protocol = wamr->socket_fd_map_[fd].protocol;
-
+    wamr->socket_fd_map_[fd].is_server = true;
     wamr->socket_fd_map_[fd].socketAddress.port = address->port;
     if (address->is_4) {
         wamr->socket_fd_map_[fd].socketAddress.is_4 = true;

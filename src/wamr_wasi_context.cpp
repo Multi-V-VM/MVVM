@@ -141,13 +141,22 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     for (auto [fd, socketMetaData] : this->socket_fd_map) {
         auto res = wamr->invoke_sock_open(socketMetaData.domain, socketMetaData.type, socketMetaData.protocol, fd);
         // whether need to listen
-        // if (socketMetaData.type == SOCK_STREAM) {
-        //     wamr->invoke_sock_listen();
-        // }
-        // whether need to bind
-        // if (socketMetaData.type == SOCK_STREAM) {
-        //     wamr->invoke_sock_bind();
-        // }
+        if (socketMetaData.is_server) {
+            if (socketMetaData.socketAddress.is_4) {
+                struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
+                socklen_t sockaddr4_size = sizeof(sockaddr4);
+                wamr->invoke_sock_bind(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
+
+            } else {
+                struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
+                socklen_t sockaddr6_size = sizeof(sockaddr6);
+                wamr->invoke_sock_bind(fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
+            }
+            // whether need to bind
+            if (wamr->op_data.is_tcp) {
+                wamr->invoke_sock_listen(fd, 3);
+            }
+        }
         // renumber or not?
         LOGV(INFO) << "tmp_sock_fd " << res << " fd" << fd;
         wamr->socket_fd_map_[fd] = socketMetaData;
