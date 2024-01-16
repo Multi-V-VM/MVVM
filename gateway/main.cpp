@@ -28,6 +28,7 @@ std::vector<std::jthread> backend_thread;
 std::vector<std::tuple<std::string, std::string, std::string>> forward_pair;
 bool is_forward = false;
 int id = 0;
+struct mvvm_op_data *op_data;
 // Function to recalculate the IP checksum
 unsigned short in_cksum(unsigned short *buf, int len) {
     unsigned long sum = 0;
@@ -175,6 +176,11 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
             id = ntohs(iphdr->ip_id) + 1;
             LOGV(ERROR) << "id" << id;
             LOGV(INFO) << fmt::format("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+
+            for (int idx = 0; idx < op_data->size; idx++)
+                if (op_data->addr[idx][0].port == 0) {
+                    op_data->addr[idx][0].port = udphdr->uh_sport;
+                }
             packets += 1;
 
             break;
@@ -297,44 +303,43 @@ void send_fin_tcp(std::string source_ip, int source_port, std::string dest_ip, i
 
 void ip_forward() {
     std::system("/bin/echo 1 > /proc/sys/net/ipv4/ip_forward");
-    std::system("/bin/echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects");
-    std::system((std::string("iptables --append FORWARD --in-interface ")+MVVM_SOCK_INTERFACE+" --jump ACCEPT").c_str());
+    std::system("/bin/echo 0 > /proc/sys/net/ipv4/conf/docker0/send_redirects");
+    std::system("iptables --append FORWARD --in-interface docker0 --jump ACCEPT");
 }
 
-void start_block(const string& dst_ip, const string& src_ip, int dst_port, int src_port) {
+void start_block(const string &dst_ip, const string &src_ip, int dst_port, int src_port) {
 
-	/* Delete the forwarding... */
-	std::system("iptables --delete FORWARD --in-interface eth0 --jump ACCEPT");
+    /* Delete the forwarding... */
+    std::system("iptables --delete FORWARD --in-interface docker0 --jump ACCEPT");
 
-	/* Drop packets received from the spoofed connection */
-	std::system(string("/sbin/iptables -A FORWARD -s " + dst_ip + " -d " + src_ip +
-			      " -p tcp --sport " + StrPort(dst_port) + " --dport " + StrPort(src_port) +
-			      " -j DROP").c_str());
+    /* Drop packets received from the spoofed connection */
+    std::system(string("/sbin/iptables -A FORWARD -s " + dst_ip + " -d " + src_ip + " -p tcp --sport " +
+                       StrPort(dst_port) + " --dport " + StrPort(src_port) + " -j DROP")
+                    .c_str());
 
-	std::system(string("/sbin/iptables -A FORWARD -s " + src_ip + " -d " + dst_ip +
-			      " -p tcp --sport " + StrPort(src_port) + " --dport " + StrPort(dst_port) +
-			      " -j DROP").c_str());
+    std::system(string("/sbin/iptables -A FORWARD -s " + src_ip + " -d " + dst_ip + " -p tcp --sport " +
+                       StrPort(src_port) + " --dport " + StrPort(dst_port) + " -j DROP")
+                    .c_str());
 
-	/* Append again the forwarding, so the victim can establish a new connection... */
-	std::system("iptables --append FORWARD --in-interface eth0 --jump ACCEPT");
-
+    /* Append again the forwarding, so the victim can establish a new connection... */
+    std::system("iptables --append FORWARD --in-interface docker0 --jump ACCEPT");
 }
 
-void clear_block(const string& dst_ip, const string& src_ip, int dst_port, int src_port) {
+void clear_block(const string &dst_ip, const string &src_ip, int dst_port, int src_port) {
     std::system("/bin/echo 0 > /proc/sys/net/ipv4/ip_forward");
 
-	std::system(string("/sbin/iptables -D FORWARD -s " + dst_ip + " -d " + src_ip +
-			      " -p tcp --sport " + StrPort(dst_port) + " --dport " + StrPort(src_port) +
-			      " -j DROP").c_str());
+    std::system(string("/sbin/iptables -D FORWARD -s " + dst_ip + " -d " + src_ip + " -p tcp --sport " +
+                       StrPort(dst_port) + " --dport " + StrPort(src_port) + " -j DROP")
+                    .c_str());
 
-	std::system(string("/sbin/iptables -D FORWARD -s " + src_ip + " -d " + dst_ip +
-			      " -p tcp --sport " + StrPort(src_port) + " --dport " + StrPort(dst_port) +
-			      " -j DROP").c_str());
+    std::system(string("/sbin/iptables -D FORWARD -s " + src_ip + " -d " + dst_ip + " -p tcp --sport " +
+                       StrPort(src_port) + " --dport " + StrPort(dst_port) + " -j DROP")
+                    .c_str());
 }
 
 void clear_forward() {
     std::system("/bin/echo 0 > /proc/sys/net/ipv4/ip_forward");
-    std::system("iptables --delete FORWARD --in-interface eth0 --jump ACCEPT");
+    std::system("iptables --delete FORWARD --in-interface docker0 --jump ACCEPT");
 }
 void sigterm_handler(int sig) {
     struct pcap_stat stats {};
@@ -354,7 +359,7 @@ void sigterm_handler(int sig) {
 // int main(){
 //     struct mvvm_op_data *op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
 //     op_data->op = MVVM_SOCK_FIN;
-//     send_fin("172.17.0.2",42466,"172.17.0.3",12346,((char *)op_data));
+//     send_fin("172.17.0.3",12346,"172.17.0.2",15772,((char *)op_data));
 // }
 int main() {
     struct sockaddr_in address {};
@@ -368,7 +373,7 @@ int main() {
     char filter_exp[] = "net 172.17.0.0/24";
     bpf_u_int32 netmask;
 
-    auto op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
+    op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
 
     signal(SIGTERM, sigterm_handler);
     signal(SIGQUIT, sigterm_handler);
@@ -475,7 +480,8 @@ int main() {
                     }
                 }
                 // send fin
-
+                // block the connection
+                start_block(client_ip, server_ip, op_data->addr[0][1].port, op_data->addr[0][0].port);
                 break;
             case MVVM_SOCK_RESUME:
                 // resume
@@ -491,8 +497,8 @@ int main() {
                 // stop keep_alive
                 if (op_data->is_tcp) {
                     // TCPConnection tcpConnection(client_ip, op_data->addr[0][1].port, server_ip,
-                                                // op_data->addr[0][0].port);
-                    
+                    // op_data->addr[0][0].port);
+
                     backend_thread.pop_back();
                 }
                 sleep(1);

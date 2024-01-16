@@ -89,7 +89,7 @@ public:
     int invoke_fseek(uint32 fd, uint32 offset);
     int invoke_ftell(uint32 fd, uint32 offset, uint32 whench);
     int invoke_preopen(uint32 fd, const std::string &path);
-    int invoke_sock_open(int domain, int socktype, int protocol, uint32_t sockfd);
+    int invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t protocol, uint32_t sockfd);
     int invoke_sock_listen();
     int invoke_bind(uint32_t sockfd, const struct sockaddr *addr, socklen_t addrlen);
     int invoke_recv(int sockfd, uint8 **buf, size_t len, int flags);

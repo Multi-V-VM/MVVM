@@ -201,7 +201,7 @@ int WAMRInstance::invoke_frenumber(uint32 fd, uint32 to) {
     return argv[0];
 };
 
-int WAMRInstance::invoke_sock_open(int domain, int socktype, int protocol, uint32_t sockfd) {
+int WAMRInstance::invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t protocol, uint32_t sockfd) {
     auto name = "s_";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi " << name << " function is not found.";

@@ -53,8 +53,9 @@ main(int argc, char *argv[])
        serverlen = sizeof(struct sockaddr_in);
    }
 
-   printf("[Client] Create socket\n");
+   printf("[Client] Create socket%d %d\n",AF_INET, SOCK_DGRAM);
    socket_fd = socket(af, SOCK_DGRAM, 0);
+
    if (socket_fd == -1) {
        perror("Create socket failed");
        return EXIT_FAILURE;
