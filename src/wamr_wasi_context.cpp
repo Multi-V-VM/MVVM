@@ -69,6 +69,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
         for (auto [fd, socketMetaData] : wamr->socket_fd_map_) {
             ssize_t rc;
             if (wamr->socket_fd_map_[fd].socketRecvFromDatas.empty()) {
+                this->socket_fd_map[fd] = socketMetaData;
                 continue;
             }
             wamr->socket_fd_map_[fd].is_collection = true;

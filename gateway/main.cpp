@@ -29,6 +29,10 @@ std::vector<std::tuple<std::string, std::string, std::string>> forward_pair;
 bool is_forward = false;
 int id = 0;
 struct mvvm_op_data *op_data;
+/* TCP connection server to victim */
+TCPConnection *tcp_v_to_s;
+TCPConnection *tcp_s_to_v;
+ARPContext *arp_context;
 // Function to recalculate the IP checksum
 unsigned short in_cksum(unsigned short *buf, int len) {
     unsigned long sum = 0;
@@ -439,7 +443,7 @@ int main() {
             switch (op_data->op) {
             case MVVM_SOCK_SUSPEND:
                 // suspend
-                LOGV(ERROR) << "suspend"; // capture all the packets from dest to source
+                LOGV(ERROR) << "suspend";
 
                 for (int idx = 0; idx < op_data->size; idx++) {
                     if (op_data->addr[idx][0].is_4) {
@@ -477,11 +481,19 @@ int main() {
                     } else {
                         send_fin_tcp(client_ip, op_data->addr[idx][1].port, server_ip, op_data->addr[idx][0].port,
                                      (char *)op_data);
+                        /* Begin the spoofing */
+                        arp_context = ARPSpoofingReply(client_ip, server_ip, MVVM_SOCK_INTERFACE);
+                        PrintARPContext(*arp_context);
+                        /* TCP connection victim to server */
+                        tcp_v_to_s =
+                            new TCPConnection(server_ip, client_ip, op_data->addr[0][1].port, op_data->addr[0][0].port,
+                                              MVVM_SOCK_INTERFACE, TCPConnection::TIME_WAIT);
+                        // block the connection
+                        start_block(client_ip, server_ip, op_data->addr[0][1].port, op_data->addr[0][0].port);
                     }
                 }
                 // send fin
-                // block the connection
-                start_block(client_ip, server_ip, op_data->addr[0][1].port, op_data->addr[0][0].port);
+
                 break;
             case MVVM_SOCK_RESUME:
                 // resume
@@ -496,10 +508,16 @@ int main() {
                 // for udp forward from source to remote
                 // stop keep_alive
                 if (op_data->is_tcp) {
-                    // TCPConnection tcpConnection(client_ip, op_data->addr[0][1].port, server_ip,
-                    // op_data->addr[0][0].port);
-
                     backend_thread.pop_back();
+                    tcp_s_to_v =
+                        new TCPConnection(client_ip, server_ip, op_data->addr[0][0].port, op_data->addr[0][1].port,
+                                          MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
+                    /* Both connection are already established... */
+                    tcp_v_to_s->Sync();
+                    tcp_s_to_v->Sync();
+                    // stop SYN
+                    LOGV(ERROR) << "Connections synchronized ";
+                    
                 }
                 sleep(1);
                 break;

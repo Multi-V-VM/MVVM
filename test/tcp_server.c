@@ -122,7 +122,7 @@ main(int argc, char *argv[])
         if (pthread_create(&workers[connections], NULL, run,
                            &client_sock_fds[connections])) {
             perror("Create a worker thread failed");
-            shutdown(client_sock_fds[connections], SHUT_RDWR);
+            shutdown(client_sock_fds[connections], SHUT_RDWR); // close
             break;
         }
 
