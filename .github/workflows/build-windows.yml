@@ -85,20 +85,20 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         name: MVVM_checkpoint-windows
-        path: ${{runner.workspace}}/build/MVVM_checkpoint-windows.exe 
+        path: ${{runner.workspace}}/build/${{matrix.build}}/MVVM_checkpoint-windows.exe 
 
     - uses: actions/upload-artifact@v2
       if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         name: MVVM_restore-windows
-        path: ${{runner.workspace}}/build/MVVM_restore-windows.exe
+        path: ${{runner.workspace}}/build/${{matrix.build}}/MVVM_restore-windows.exe
 
     - name: Publish
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
       with:
         files: |
-          ${{runner.workspace}}/build/MVVM_checkpoint-windows.exe
-          ${{runner.workspace}}/build/MVVM_restore-windows.exe
+          ${{runner.workspace}}/build/${{matrix.build}}/MVVM_checkpoint-windows.exe
+          ${{runner.workspace}}/build/${{matrix.build}}/MVVM_restore-windows.exe
         generate_release_notes: true
         draft: true

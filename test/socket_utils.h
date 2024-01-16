@@ -9,6 +9,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+#ifdef __wasi__
+#include <wasi_socket_ext.h>
+#endif
 
 static uint32_t my_inet_addr(const char *ip) {
     uint32_t result = 0;
@@ -72,4 +75,13 @@ sockaddr_to_string(struct sockaddr *addr, char *str, size_t len)
     return ret > 0 && (size_t)ret < len ? 0 : -1;
 }
 
+int
+s_(int domain, int socktype, int protocol, uint32_t sockfd)
+{
+    int ret = socket(AF_INET, SOCK_DGRAM, 0);
+    printf("%d %d",AF_INET, SOCK_DGRAM);
+    while (ret != sockfd)
+        ret = socket(AF_INET, SOCK_DGRAM, 0);
+    return ret;
+}
 #endif /* TCP_UTILS_H */

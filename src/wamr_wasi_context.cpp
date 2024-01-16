@@ -5,10 +5,13 @@
 #include "logging.h"
 #include "platform_wasi_types.h"
 #include "wamr.h"
+#include <fmt/core.h>
 #include <string>
 #include <sys/types.h>
 extern WAMRInstance *wamr;
 #if !defined(_WIN32)
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 struct sockaddr_in sockaddr_from_ip4(const SocketAddrPool &addr) {
     struct sockaddr_in sockaddr4;
@@ -24,21 +27,19 @@ struct sockaddr_in6 sockaddr_from_ip6(const SocketAddrPool &addr) {
     memset(&sockaddr6, 0, sizeof(sockaddr6));
     sockaddr6.sin6_family = AF_INET6;
     sockaddr6.sin6_port = addr.port;
-    sockaddr6.sin6_addr.s6_addr16[0] = addr.ip6[0];
-    sockaddr6.sin6_addr.s6_addr16[1] = addr.ip6[1];
-    sockaddr6.sin6_addr.s6_addr16[2] = addr.ip6[2];
-    sockaddr6.sin6_addr.s6_addr16[3] = addr.ip6[3];
-    sockaddr6.sin6_addr.s6_addr16[4] = addr.ip6[4];
-    sockaddr6.sin6_addr.s6_addr16[5] = addr.ip6[5];
-    sockaddr6.sin6_addr.s6_addr16[6] = addr.ip6[6];
-    sockaddr6.sin6_addr.s6_addr16[7] = addr.ip6[7];
+    std::string ipv6_addr_str =
+        fmt::format("{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}", addr.ip6[0], addr.ip6[1], addr.ip6[2], addr.ip6[3],
+                    addr.ip6[4], addr.ip6[5], addr.ip6[6], addr.ip6[7]);
+    if (inet_pton(AF_INET6, ipv6_addr_str.c_str(), &sockaddr6.sin6_addr) != 1) {
+        exit(EXIT_FAILURE);
+    }
 
     return sockaddr6;
 }
 #endif
 
 void WAMRWASIContext::dump_impl(WASIArguments *env) {
-    uint8 *buf = (uint8 *)malloc(1024);
+    auto buf = (uint8 *)malloc(1024);
     for (auto &i : wamr->dir_) {
         dir.emplace_back(i);
     }
@@ -134,20 +135,17 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     }
 #if !defined(_WIN32)
     for (auto [fd, socketMetaData] : this->socket_fd_map) {
-        // Unfinished recv need to reset, if it's done, remove the socket
-        LOGV(INFO) << "fd: " << fd << " SocketMetaData[domain]: "
-                   << socketMetaData.domain
-                   //    << " SocketMetaData[socketAddress]: " << socketMetaData.socketAddress
-                   << " SocketMetaData[protocol]: " << socketMetaData.protocol
-                   << " SocketMetaData[type]: " << socketMetaData.type;
-        uint32 tmp_sock_fd ;
-        auto res = wamr->invoke_sock_open(socketMetaData.socketOpenData.poolfd, socketMetaData.socketOpenData.af,
-                               socketMetaData.socketOpenData.socktype,
-                               &tmp_sock_fd); // should be done after restore call chain
+        auto res = wamr->invoke_sock_open(socketMetaData.domain, socketMetaData.type, socketMetaData.protocol, fd);
+        // whether need to listen
+        // if (socketMetaData.type == SOCK_STREAM) {
+        //     wamr->invoke_sock_listen();
+        // }
+        // whether need to bind
+        // if (socketMetaData.type == SOCK_STREAM) {
+        //     wamr->invoke_sock_bind();
+        // }
         // renumber or not?
-        LOGV(INFO) << "tmp_sock_fd " << tmp_sock_fd << " fd" << fd << " res " << res;
-        if (tmp_sock_fd != fd)
-            wamr->invoke_frenumber(tmp_sock_fd, fd);
+        LOGV(INFO) << "tmp_sock_fd " << res << " fd" << fd;
         wamr->socket_fd_map_[fd] = socketMetaData;
     }
 #endif

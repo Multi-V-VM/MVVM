@@ -200,11 +200,6 @@ void insert_socket(int fd, int domain, int type, int protocol) {
 void update_socket_fd_address(int fd, SocketAddrPool *address) {
     printf("\n #update_socket_fd_address(fd, address) %d \n\n", fd);
 
-    if (wamr->socket_fd_map_.find(fd) == wamr->socket_fd_map_.end()) {
-        // note: ? fd here is not same as insert_socket?
-        // set default value
-        insert_socket(fd, 0, 0, 0);
-    }
     wamr->socket_fd_map_[fd].domain = wamr->socket_fd_map_[fd].domain;
     wamr->socket_fd_map_[fd].type = wamr->socket_fd_map_[fd].type;
     wamr->socket_fd_map_[fd].protocol = wamr->socket_fd_map_[fd].protocol;

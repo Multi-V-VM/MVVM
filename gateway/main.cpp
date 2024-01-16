@@ -1,4 +1,5 @@
 #include "crafter/Protocols/RawLayer.h"
+#include "crafter/Utils/TCPConnection.h"
 #include "logging.h"
 #include <chrono>
 #include <crafter.h>
@@ -466,12 +467,9 @@ int main() {
                     sleep(2);
                     if (!op_data->is_tcp) {
                         LOGV(INFO) << "send fin";
-                        // send (client_fd, &op_data, sizeof(op_data), 0);
-                        // sendto(, &op_data, sizeof(op_data), 0, (struct sockaddr *)&address, sizeof(address));
                         send_fin(client_ip, op_data->addr[idx][1].port, server_ip, op_data->addr[idx][0].port,
                                  (char *)op_data);
                     } else {
-                        // send(, &op_data, sizeof(op_data), 0); // if tcp, require continue the syn?
                         send_fin_tcp(client_ip, op_data->addr[idx][1].port, server_ip, op_data->addr[idx][0].port,
                                      (char *)op_data);
                     }
@@ -492,6 +490,9 @@ int main() {
                 // for udp forward from source to remote
                 // stop keep_alive
                 if (op_data->is_tcp) {
+                    // TCPConnection tcpConnection(client_ip, op_data->addr[0][1].port, server_ip,
+                                                // op_data->addr[0][0].port);
+                    
                     backend_thread.pop_back();
                 }
                 sleep(1);

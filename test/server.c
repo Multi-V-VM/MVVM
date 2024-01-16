@@ -10,9 +10,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#ifdef __wasi__
-#include <wasi_socket_ext.h>
-#endif
+
 
 #define MAX_CONNECTIONS_COUNT 5
 
