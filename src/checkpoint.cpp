@@ -37,9 +37,9 @@ void serialize_to_file(WASMExecEnv *instance) {
         int fd = 0;
         ssize_t rc;
         SocketAddrPool src_addr{};
-        
+
         for (auto [tmp_fd, sock_data] : wamr->socket_fd_map_) {
-            int idx =wamr->op_data.size;
+            int idx = wamr->op_data.size;
             src_addr = sock_data.socketAddress;
             auto tmp_ip4 =
                 fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);
@@ -107,22 +107,46 @@ void serialize_to_file(WASMExecEnv *instance) {
                 sock_data.socketSentToData.dest_addr.ip.ip6[3], sock_data.socketSentToData.dest_addr.ip.ip6[4],
                 sock_data.socketSentToData.dest_addr.ip.ip6[5], sock_data.socketSentToData.dest_addr.ip.ip6[6],
                 sock_data.socketSentToData.dest_addr.ip.ip6[7]);
-            if (sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip4 == "0.0.0.0" ||
-                !sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
-                wamr->op_data.addr[idx][1].is_4 = sock_data.socketRecvFromDatas[0].src_addr.ip.is_4;
-                std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketRecvFromDatas[0].src_addr.ip.ip4,
-                            sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip4));
-                std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketRecvFromDatas[0].src_addr.ip.ip6,
-                            sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip6));
-                wamr->op_data.addr[idx][1].port = sock_data.socketRecvFromDatas[0].src_addr.port;
+            if ((tmp_ip4 == "0.0.0.0" || tmp_ip6 == "0:0:0:0:0:0:0:0") && !wamr->op_data.is_tcp) {
+                if (sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip4 == "0.0.0.0" ||
+                    !sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
 
+                    wamr->op_data.addr[idx][1].is_4 = sock_data.socketRecvFromDatas[0].src_addr.ip.is_4;
+                    std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketRecvFromDatas[0].src_addr.ip.ip4,
+                                sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip4));
+                    std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketRecvFromDatas[0].src_addr.ip.ip6,
+                                sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip6));
+                    wamr->op_data.addr[idx][1].port = sock_data.socketRecvFromDatas[0].src_addr.port;
+
+                } else {
+                    wamr->op_data.addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
+                    std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
+                                sizeof(sock_data.socketSentToData.dest_addr.ip.ip4));
+                    std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
+                                sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
+                    wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
+                }
             } else {
-                wamr->op_data.addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
-                std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
-                            sizeof(sock_data.socketSentToData.dest_addr.ip.ip4));
-                std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
-                            sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
-                wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
+                sockaddr *ss = (sockaddr *)malloc(sizeof(sockaddr));
+                wamr->invoke_sock_getsockname(fd, &ss, sizeof(*ss));
+                if (ss->sa_family == AF_INET) {
+                    auto *ipv4 = (struct sockaddr_in *)ss;
+                    uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
+                    wamr->op_data.addr[idx][1].is_4 = true;
+                    wamr->op_data.addr[idx][1].ip4[0] = (ip >> 24) & 0xFF;
+                    wamr->op_data.addr[idx][1].ip4[1] = (ip >> 16) & 0xFF;
+                    wamr->op_data.addr[idx][1].ip4[2] = (ip >> 8) & 0xFF;
+                    wamr->op_data.addr[idx][1].ip4[3] = ip & 0xFF;
+                    wamr->op_data.addr[idx][1].port = ntohs(ipv4->sin_port);
+                } else if (ss->sa_family == AF_INET6) {
+                    auto *ipv6 = (struct sockaddr_in6 *)ss;
+                    wamr->op_data.addr[idx][1].is_4 = false;
+                    const auto *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
+                    for (int i = 0; i < 16; i += 2) {
+                        wamr->op_data.addr[idx][1].ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
+                    }
+                    wamr->op_data.addr[idx][1].port = ntohs(ipv6->sin6_port);
+                }
             }
             LOGV(INFO) << "dest_addr: "
                        << fmt::format("{}.{}.{}.{}", wamr->op_data.addr[idx][1].ip4[0],
