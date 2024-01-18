@@ -92,7 +92,7 @@ public:
     int invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t protocol, uint32_t sockfd);
     int invoke_sock_listen(uint32_t sockfd, uint32_t fd);
     int invoke_sock_bind(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);
-    int invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **sock, socklen_t sock_size);
+    int invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **sock, socklen_t *sock_size);
     int invoke_recv(int sockfd, uint8 **buf, size_t len, int flags);
     int invoke_recvfrom(int sockfd, uint8 **buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
     ~WAMRInstance();

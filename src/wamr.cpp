@@ -285,7 +285,7 @@ int WAMRInstance::invoke_sock_bind(uint32_t sockfd, struct sockaddr *sock, sockl
     char *buffer_ = nullptr;
     uint32_t buffer_for_wasm;
 
-    buffer_for_wasm = wasm_runtime_module_malloc(module_inst, 100, reinterpret_cast<void **>(&buffer_));
+    buffer_for_wasm = wasm_runtime_module_malloc(module_inst, sock_size, reinterpret_cast<void **>(&buffer_));
     if (buffer_for_wasm != 0) {
         uint32 argv[3];
         memcpy(buffer_, sock, sizeof(sockaddr)); // use native address for accessing in runtime
@@ -299,7 +299,7 @@ int WAMRInstance::invoke_sock_bind(uint32_t sockfd, struct sockaddr *sock, sockl
     }
     return -1;
 }
-int WAMRInstance::invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **sock, socklen_t sock_size) {
+int WAMRInstance::invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **sock, socklen_t *sock_size) {
     auto name = "getsockname";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi " << name << " function is not found.";
@@ -323,20 +323,23 @@ int WAMRInstance::invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **soc
         }
     }
 
-    char *buffer_ = nullptr;
-    uint32_t buffer_for_wasm;
+    char *buffer1_ = nullptr;
+    uint32_t buffer1_for_wasm;
+    char *buffer2_ = nullptr;
+    uint32_t buffer2_for_wasm;
 
-    buffer_for_wasm = wasm_runtime_module_malloc(module_inst, 100, reinterpret_cast<void **>(&buffer_));
-    if (buffer_for_wasm != 0) {
+    buffer1_for_wasm = wasm_runtime_module_malloc(module_inst, *sock_size, reinterpret_cast<void **>(&buffer1_));
+    buffer2_for_wasm = wasm_runtime_module_malloc(module_inst, sizeof(socklen_t), reinterpret_cast<void **>(&buffer2_));
+    if (buffer1_for_wasm != 0) {
         uint32 argv[3];
-        memcpy(buffer_, *sock, sizeof(struct sockaddr_storage)); // use native address for accessing in runtime
-        argv[0] = sockfd; // pass the buffer_ address for WASM space
-        argv[1] = buffer_for_wasm; // the size of buffer_
-        argv[2] = sock_size; // O_RW | O_CREATE
+        memcpy(buffer1_, *sock, sizeof(struct sockaddr));
+        argv[0] = sockfd;
+        argv[1] = buffer1_for_wasm;
+        argv[2] = buffer2_for_wasm;
         wasm_runtime_call_wasm(exec_env, func, 3, argv);
-        memcpy(*sock, buffer_, sizeof(struct sockaddr));
+        memcpy(*sock, buffer1_, sizeof(struct sockaddr));
         int res = argv[0];
-        wasm_runtime_module_free(module_inst, buffer_for_wasm);
+        wasm_runtime_module_free(module_inst, buffer1_for_wasm);
         return res;
     }
     return -1;

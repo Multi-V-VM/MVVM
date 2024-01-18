@@ -15,40 +15,33 @@
 #include <wasi_socket_ext.h>
 #endif
 
-static void
-init_sockaddr_inet(struct sockaddr_in *addr)
-{
+static void init_sockaddr_inet(struct sockaddr_in *addr) {
     /* 127.0.0.1:1234 */
     addr->sin_family = AF_INET;
     addr->sin_port = htons(1234);
-    addr->sin_addr.s_addr = my_inet_addr("172.17.0.1");
+    addr->sin_addr.s_addr = my_inet_addr("172.17.0.2");
 }
 
-static void
-init_sockaddr_inet6(struct sockaddr_in6 *addr)
-{
+static void init_sockaddr_inet6(struct sockaddr_in6 *addr) {
     /* [::1]:1234 */
     addr->sin6_family = AF_INET6;
     addr->sin6_port = htons(1234);
     addr->sin6_addr = in6addr_loopback;
 }
 
-int
-main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     int socket_fd, ret, total_size = 0, af;
-    char buffer[1024] = { 0 };
-    char ip_string[64] = { 0 };
+    char buffer[1024] = {0};
+    char ip_string[64] = {0};
     socklen_t len;
-    struct sockaddr_storage server_address = { 0 };
-    struct sockaddr_storage local_address = { 0 };
+    struct sockaddr_storage server_address = {0};
+    struct sockaddr_storage local_address = {0};
 
     if (argc > 1 && strcmp(argv[1], "inet6") == 0) {
         af = AF_INET6;
         len = sizeof(struct sockaddr_in6);
         init_sockaddr_inet6((struct sockaddr_in6 *)&server_address);
-    }
-    else {
+    } else {
         af = AF_INET;
         len = sizeof(struct sockaddr_in);
         init_sockaddr_inet((struct sockaddr_in *)&server_address);
@@ -76,9 +69,8 @@ main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    if (sockaddr_to_string((struct sockaddr *)&local_address, ip_string,
-                           sizeof(ip_string) / sizeof(ip_string[0]))
-        != 0) {
+    if (sockaddr_to_string((struct sockaddr *)&local_address, ip_string, sizeof(ip_string) / sizeof(ip_string[0])) !=
+        0) {
         printf("[Client] failed to parse local address\n");
         close(socket_fd);
         return EXIT_FAILURE;
@@ -87,11 +79,12 @@ main(int argc, char *argv[])
     printf("[Client] Local address is: %s\n", ip_string);
 
     printf("[Client] Client receive\n");
-    while (1) {
-        ret = recv(socket_fd, buffer + total_size, sizeof(buffer) - total_size,
-                   0);
-        if (ret <= 0)
-            break;
+    for (int i = 0; i < 1024; i++) {
+        ret = recv(socket_fd, buffer + total_size, sizeof(buffer) - total_size, 0);
+        if (ret <= 0) {
+            sleep(1);
+            continue;
+        }
         total_size += ret;
     }
 
@@ -99,6 +92,7 @@ main(int argc, char *argv[])
     if (total_size > 0) {
         printf("Buffer recieved:\n%s\n", buffer);
     }
+    send(socket_fd, "Hello from client", 17, 0);
 
     close(socket_fd);
     printf("[Client] BYE \n");

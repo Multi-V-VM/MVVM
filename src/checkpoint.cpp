@@ -7,11 +7,6 @@
 #include "wamr.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
-#if !defined(_WIN32)
-#include "thread_manager.h"
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#endif
 #include <condition_variable>
 #include <cstdio>
 #include <cxxopts.hpp>
@@ -22,6 +17,11 @@
 #include <string>
 #include <thread>
 #include <tuple>
+#if !defined(_WIN32)
+#include "thread_manager.h"
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#endif
 
 WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
@@ -127,9 +127,10 @@ void serialize_to_file(WASMExecEnv *instance) {
                     wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
                 }
             } else {
-                sockaddr *ss = (sockaddr *)malloc(sizeof(sockaddr));
-                wamr->invoke_sock_getsockname(fd, &ss, sizeof(*ss));
-                if (ss->sa_family == AF_INET) {
+                unsigned int size_ =sizeof(sockaddr_in);
+                sockaddr_in *ss = (sockaddr_in *)malloc(size_);
+                wamr->invoke_sock_getsockname(tmp_fd, (sockaddr**)&ss, &size_);
+                if (ss->sin_family <= AF_INET) {
                     auto *ipv4 = (struct sockaddr_in *)ss;
                     uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
                     wamr->op_data.addr[idx][1].is_4 = true;
@@ -138,7 +139,7 @@ void serialize_to_file(WASMExecEnv *instance) {
                     wamr->op_data.addr[idx][1].ip4[2] = (ip >> 8) & 0xFF;
                     wamr->op_data.addr[idx][1].ip4[3] = ip & 0xFF;
                     wamr->op_data.addr[idx][1].port = ntohs(ipv4->sin_port);
-                } else if (ss->sa_family == AF_INET6) {
+                } else if (ss->sin_family > AF_INET) {
                     auto *ipv6 = (struct sockaddr_in6 *)ss;
                     wamr->op_data.addr[idx][1].is_4 = false;
                     const auto *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
@@ -181,7 +182,7 @@ void serialize_to_file(WASMExecEnv *instance) {
             LOGV(ERROR) << "send error";
             exit(EXIT_FAILURE);
         }
-
+        
         // Clean up
         close(fd);
     }

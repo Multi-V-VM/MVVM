@@ -32,12 +32,18 @@ run(void *arg)
     printf("[Server] Communicate with the new connection #%u @ %p ..\n",
            new_socket, (void *)(uintptr_t)pthread_self());
 
-    for (i = 0; i < 1000; i++) {
+    for (i = 0; i < 1024; i++) {
         if (send(new_socket, message, strlen(message), 0) < 0) {
             perror("Send failed");
             break;
         }
+        sleep(10);
     }
+    if(recv(new_socket, message, 1024, 0) < 0)
+    {
+        perror("recv failed");
+    }
+    printf("recv: %s\n", message);
 
     printf("[Server] Shuting down the new connection #%u ..\n", new_socket);
     shutdown(new_socket, SHUT_RDWR);

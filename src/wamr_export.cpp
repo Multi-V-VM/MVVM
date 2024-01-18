@@ -87,7 +87,7 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
             recvFromData.src_addr.port = src_addr->addr.ip6.port;
         }
         LOGV(ERROR) << "insert_sock_recv_from_data " << sock << " " << ((struct mvvm_op_data *)ri_data)->op;
-        if (((struct mvvm_op_data *)ri_data)->op == MVVM_SOCK_FIN) {
+        if (((struct mvvm_op_data *)ri_data)->op <= MVVM_SOCK_FIN) {
             wamr->socket_fd_map_[sock].is_collection = false;
             return;
         }
@@ -184,6 +184,7 @@ void remove_fd(int fd) {
     create fd-socketmetadata map and store the "domain", "type", "protocol" value
 */
 void insert_socket(int fd, int domain, int type, int protocol) {
+    // if protocol == 1, is the remote protocol, we need to getsockname?
     LOGV(INFO) << fmt::format("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
 
     if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end()) {
