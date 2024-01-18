@@ -79,20 +79,20 @@ int main(int argc, char *argv[]) {
     printf("[Client] Local address is: %s\n", ip_string);
 
     printf("[Client] Client receive\n");
-    for (int i = 0; i < 1024; i++) {
-        ret = recv(socket_fd, buffer + total_size, sizeof(buffer) - total_size, 0);
-        if (ret <= 0) {
-            sleep(1);
-            continue;
+    while (1) {
+        while (1) {
+            ret = recv(socket_fd, buffer + total_size, sizeof(buffer) - total_size, 0);
+            if (ret <= 0)
+                break;
+            total_size += ret;
         }
-        total_size += ret;
+        printf("[Client] %d bytes received:\n", total_size);
+        sleep(10);
+        if (total_size > 0) {
+            printf("Buffer recieved:\n%s\n", buffer);
+        }
+        send(socket_fd, "Hello from client", 17, 0);
     }
-
-    printf("[Client] %d bytes received:\n", total_size);
-    if (total_size > 0) {
-        printf("Buffer recieved:\n%s\n", buffer);
-    }
-    send(socket_fd, "Hello from client", 17, 0);
 
     close(socket_fd);
     printf("[Client] BYE \n");

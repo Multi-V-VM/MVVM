@@ -5,10 +5,14 @@
 #include "logging.h"
 #include "platform_wasi_types.h"
 #include "wamr.h"
+#include <chrono>
 #include <fmt/core.h>
+#include <functional>
+#include <future>
 #include <string>
 #include <sys/types.h>
 extern WAMRInstance *wamr;
+using namespace std::chrono_literals;
 #if !defined(_WIN32)
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -95,13 +99,23 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
                     }
                 }
             } else {
-                while (wamr->socket_fd_map_[fd].is_collection) { // drain tcp socket whether it's tcp or udp
-                    // fd got from the virtual machine
-                    rc = wamr->invoke_recv(fd, &buf, sizeof(buf), 0);
-                    if (rc == -1) {
-                        LOGV(ERROR) << "recv error";
-                        return;
+                std::packaged_task<void()> task([&]() {
+                    while (true) {
+                        rc = wamr->invoke_recv(fd, &buf, sizeof(buf), 0);
+                        if (rc == -1) {
+                            LOGV(ERROR) << "recv error";
+                            return;
+                        }
+                        sleep(1);
                     }
+                });
+                auto future = task.get_future();
+                std::thread thr(std::move(task));
+                if (future.wait_for(10s) != std::future_status::timeout) {
+                    thr.join();
+                    future.get(); // this will propagate exception from f() if any
+                } else {
+                    thr.detach(); // we leave the thread still running
                 }
             }
             // LOGV(ERROR) << "recv error";

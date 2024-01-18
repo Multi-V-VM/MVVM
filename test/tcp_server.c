@@ -8,9 +8,9 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -20,71 +20,64 @@
 
 #define WORKER_NUM 5
 
-void *
-run(void *arg)
-{
-    char *message = (char *)malloc(1024);
+void *run(void *arg) {
     int new_socket = *(int *)arg;
-    int i;
-    for (i = 0; i < 1024; i++) {
-        message[i] = 'a';
-    }
-    printf("[Server] Communicate with the new connection #%u @ %p ..\n",
-           new_socket, (void *)(uintptr_t)pthread_self());
 
-    for (i = 0; i < 1024; i++) {
-        if (send(new_socket, message, strlen(message), 0) < 0) {
+    printf("[Server] Communicate with the new connection #%u @ %p ..\n", new_socket, (void *)(uintptr_t)pthread_self());
+    char *message1 = (char *)malloc(1024);
+
+    while(1) {
+        int j;
+        for (j = 0; j < 1024; j++) {
+            message1[j] = 'a';
+        }
+        if (send(new_socket, message1, strlen(message1), 0) < 0) {
             perror("Send failed");
             break;
         }
-        sleep(10);
+        // sleep(10);
+        while (1) {
+            if (recv(new_socket, message1, 1024, 0) < 0) {
+                sleep(1);
+            } else {
+                break;
+            }
+        }
+        printf("recv: %s\n", message1);
     }
-    if(recv(new_socket, message, 1024, 0) < 0)
-    {
-        perror("recv failed");
-    }
-    printf("recv: %s\n", message);
-
     printf("[Server] Shuting down the new connection #%u ..\n", new_socket);
     shutdown(new_socket, SHUT_RDWR);
 
     return NULL;
 }
 
-static void
-init_sockaddr_inet(struct sockaddr_in *addr)
-{
+static void init_sockaddr_inet(struct sockaddr_in *addr) {
     /* 0.0.0.0:1234 */
     addr->sin_family = AF_INET;
     addr->sin_port = htons(1234);
     addr->sin_addr.s_addr = htonl(INADDR_ANY);
 }
 
-static void
-init_sockaddr_inet6(struct sockaddr_in6 *addr)
-{
+static void init_sockaddr_inet6(struct sockaddr_in6 *addr) {
     /* [::]:1234 */
     addr->sin6_family = AF_INET6;
     addr->sin6_port = htons(1234);
     addr->sin6_addr = in6addr_any;
 }
 
-int
-main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     int socket_fd = -1, addrlen = 0, af;
-    struct sockaddr_storage addr = { 0 };
+    struct sockaddr_storage addr = {0};
     unsigned connections = 0;
-    pthread_t workers[WORKER_NUM] = { 0 };
-    int client_sock_fds[WORKER_NUM] = { 0 };
+    pthread_t workers[WORKER_NUM] = {0};
+    int client_sock_fds[WORKER_NUM] = {0};
     char ip_string[64];
 
     if (argc > 1 && strcmp(argv[1], "inet6") == 0) {
         af = AF_INET6;
         addrlen = sizeof(struct sockaddr_in6);
         init_sockaddr_inet6((struct sockaddr_in6 *)&addr);
-    }
-    else {
+    } else {
         af = AF_INET;
         addrlen = sizeof(struct sockaddr_in6);
         init_sockaddr_inet((struct sockaddr_in *)&addr);
@@ -112,23 +105,19 @@ main(int argc, char *argv[])
     printf("[Server] Wait for clients to connect ..\n");
     while (connections < WORKER_NUM) {
         addrlen = sizeof(struct sockaddr);
-        client_sock_fds[connections] =
-            accept(socket_fd, (struct sockaddr *)&addr, (socklen_t *)&addrlen);
+        client_sock_fds[connections] = accept(socket_fd, (struct sockaddr *)&addr, (socklen_t *)&addrlen);
         if (client_sock_fds[connections] < 0) {
             perror("Accept failed");
             break;
         }
 
-        if (sockaddr_to_string((struct sockaddr *)&addr, ip_string,
-                               sizeof(ip_string) / sizeof(ip_string[0]))
-            != 0) {
+        if (sockaddr_to_string((struct sockaddr *)&addr, ip_string, sizeof(ip_string) / sizeof(ip_string[0])) != 0) {
             printf("[Server] failed to parse client address\n");
             goto fail;
         }
 
         printf("[Server] Client connected (%s)\n", ip_string);
-        if (pthread_create(&workers[connections], NULL, run,
-                           &client_sock_fds[connections])) {
+        if (pthread_create(&workers[connections], NULL, run, &client_sock_fds[connections])) {
             perror("Create a worker thread failed");
             shutdown(client_sock_fds[connections], SHUT_RDWR); // close
             break;

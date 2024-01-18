@@ -261,32 +261,6 @@ void pcap_loop_wrapper(const std::stop_token &stopToken, pcap_t *handle, pcap_ha
         pcap_loop(handle, -1, packet_handler, nullptr);
 }
 
-void keep_alive(const std::stop_token &stopToken, std::string source_ip, int source_port, std::string dest_ip,
-                int dest_port) {
-    // Send keep alive message to socket
-    // Initialize Libcrafter
-
-    while (!stopToken.stop_requested()) {
-        // Create an IP layer
-        IP ip_layer;
-        ip_layer.SetSourceIP(source_ip);
-        ip_layer.SetDestinationIP(dest_ip);
-
-        // Create a TCP layer
-        TCP tcp_layer;
-        tcp_layer.SetSrcPort(source_port);
-        tcp_layer.SetDstPort(dest_port);
-        tcp_layer.SetFlags(TCP::ACK);
-
-        // Craft the packet
-        Packet packet = ip_layer / tcp_layer;
-
-        // Send the packet
-        packet.Send();
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-    // Clean up Libcrafter
-}
 void send_fin(std::string source_ip, int source_port, std::string dest_ip, int dest_port, const char *payload) {
     // Send keep alive message to socket
     // Initialize Libcrafter
@@ -309,28 +283,6 @@ void send_fin(std::string source_ip, int source_port, std::string dest_ip, int d
     packet.Send(MVVM_SOCK_INTERFACE);
     // Clean up Libcrafter
     CleanCrafter();
-}
-void send_fin_tcp(std::string source_ip, int source_port, std::string dest_ip, int dest_port, const char *payload) {
-    // Send keep alive message to socket
-    // Initialize Libcrafter
-    // Create an IP layer
-    IP ip_layer;
-    ip_layer.SetSourceIP(source_ip);
-    ip_layer.SetDestinationIP(dest_ip);
-
-    // Create a TCP layer
-    TCP tcp_layer;
-    tcp_layer.SetSrcPort(source_port);
-    tcp_layer.SetDstPort(dest_port);
-    tcp_layer.SetPayload(payload);
-    // maybe no need for syn?
-
-    // Craft the packet
-    Packet packet = ip_layer / tcp_layer;
-
-    // Send the packet
-    packet.Send(MVVM_SOCK_INTERFACE);
-    // Clean up Libcrafter
 }
 
 void ip_forward() {
@@ -393,278 +345,184 @@ void sigterm_handler(int sig) {
 //     op_data->op = MVVM_SOCK_FIN;
 //     send_fin("172.17.0.3",12346,"172.17.0.2",15772,((char *)op_data));
 // }
-// int main() {
-//     struct sockaddr_in address {};
-//     int opt = 1;
-//     ssize_t rc;
-//     int addrlen = sizeof(address);
-//     char buffer[1024] = {0};
-//     char errbuf[PCAP_ERRBUF_SIZE];
-//     struct bpf_program fp {};
-//     // char filter_exp[] = ""; // The filter expression
-//     char filter_exp[] = "net 172.17.0.0/24";
-//     bpf_u_int32 netmask;
-
-//     op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
-
-//     signal(SIGTERM, sigterm_handler);
-//     signal(SIGQUIT, sigterm_handler);
-//     signal(SIGINT, sigterm_handler);
-
-//     fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
-
-//     // Forcefully attaching socket to the port
-//     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-//         LOGV(ERROR) << "setsockopt";
-//         exit(EXIT_FAILURE);
-//     }
-
-//     address.sin_family = AF_INET;
-//     address.sin_port = htons(MVVM_SOCK_PORT);
-//     // Convert IPv4 and IPv6 addresses from text to binary form
-//     if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &address.sin_addr) <= 0) {
-//         LOGV(ERROR) << "Invalid address/ Address not supported";
-//         exit(EXIT_FAILURE);
-//     }
-
-//     // Bind the socket to the network address and port
-//     if (bind(fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-//         LOGV(ERROR) << "bind failed";
-//         exit(EXIT_FAILURE);
-//     }
-
-//     // Start listening for connections
-//     if (listen(fd, 3) < 0) {
-//         LOGV(ERROR) << "listen";
-//         exit(EXIT_FAILURE);
-//     }
-
-//     handle = pcap_open_live(MVVM_SOCK_INTERFACE, BUFSIZ, 1, 1000, errbuf);
-//     if (handle == nullptr) {
-//         LOGV(ERROR) << fmt::format("pcap_open_live(): {}", errbuf);
-//         exit(EXIT_FAILURE);
-//     }
-
-//     // Compile and apply the filter
-//     if (pcap_compile(handle, &fp, filter_exp, 1, PCAP_NETMASK_UNKNOWN) == -1) {
-//         LOGV(ERROR) << fmt::format("Couldn't parse filter {}: {}", filter_exp, pcap_geterr(handle));
-//         exit(-1);
-//     }
-
-//     if (pcap_setfilter(handle, &fp) == -1) {
-//         LOGV(ERROR) << fmt::format("Couldn't install filter {}:", filter_exp, pcap_geterr(handle));
-//         exit(-1);
-//     }
-
-//     // Capture packets
-//     backend_thread.emplace_back(pcap_loop_wrapper, handle, packet_handler);
-
-//     while (true) { // Open the device for sniffing
-//         client_fd = accept(fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-//         if (client_fd < 0) {
-//             LOGV(ERROR) << "accept";
-//             exit(EXIT_FAILURE);
-//         }
-//         // offload info from client
-//         if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
-//             memcpy(op_data, buffer, sizeof(*op_data));
-//             switch (op_data->op) {
-//             case MVVM_SOCK_SUSPEND:
-//                 // suspend
-//                 LOGV(ERROR) << "suspend";
-
-//                 for (int idx = 0; idx < op_data->size; idx++) {
-//                     if (op_data->addr[idx][0].is_4) {
-//                         server_ip =
-//                             fmt::format("{}.{}.{}.{}", op_data->addr[idx][0].ip4[0], op_data->addr[idx][0].ip4[1],
-//                                         op_data->addr[idx][0].ip4[2], op_data->addr[idx][0].ip4[3]);
-//                         client_ip =
-//                             fmt::format("{}.{}.{}.{}", op_data->addr[idx][1].ip4[0], op_data->addr[idx][1].ip4[1],
-//                                         op_data->addr[idx][1].ip4[2], op_data->addr[idx][1].ip4[3]);
-//                     } else {
-//                         server_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
-//                                                 op_data->addr[idx][0].ip6[0], op_data->addr[idx][0].ip6[1],
-//                                                 op_data->addr[idx][0].ip6[2], op_data->addr[idx][0].ip6[3],
-//                                                 op_data->addr[idx][0].ip6[4], op_data->addr[idx][0].ip6[5],
-//                                                 op_data->addr[idx][0].ip6[6], op_data->addr[idx][0].ip6[7]);
-//                         client_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
-//                                                 op_data->addr[idx][1].ip6[0], op_data->addr[idx][1].ip6[1],
-//                                                 op_data->addr[idx][1].ip6[2], op_data->addr[idx][1].ip6[3],
-//                                                 op_data->addr[idx][1].ip6[4], op_data->addr[idx][1].ip6[5],
-//                                                 op_data->addr[idx][1].ip6[6], op_data->addr[idx][1].ip6[7]);
-//                     }
-//                     LOGV(INFO) << "server_ip:" << server_ip << ":" << op_data->addr[idx][0].port
-//                                << " client_ip:" << client_ip << ":" << op_data->addr[idx][1].port;
-//                     if (op_data->is_tcp)
-//                         backend_thread.emplace_back(keep_alive, server_ip, op_data->addr[idx][0].port, client_ip,
-//                                                     op_data->addr[idx][1].port); // server to client? client to
-//                                                     server?
-//                     forward_pair.emplace_back(server_ip, client_ip, "");
-//                     // send the fin to server
-//                     op_data->op = MVVM_SOCK_FIN;
-//                     start_block(client_ip, server_ip, op_data->addr[0][1].port, op_data->addr[0][0].port);
-
-//                     sleep(2);
-//                     if (!op_data->is_tcp) {
-//                         LOGV(INFO) << "send fin";
-//                         send_fin(client_ip, op_data->addr[idx][1].port, server_ip, op_data->addr[idx][0].port,
-//                                  (char *)op_data);
-//                     } else {
-//                         LOGV(INFO) << "send fin";
-//                         send_fin_tcp(client_ip, op_data->addr[idx][1].port, server_ip, op_data->addr[idx][0].port,
-//                                      (char *)op_data);
-//                         /* Begin the spoofing */
-//                         // arp_context = ARPSpoofingReply(server_ip ,client_ip , MVVM_SOCK_INTERFACE);
-//                         // PrintARPContext(*arp_context);
-//                         /* TCP connection victim to server */
-//                         tcp_v_to_s =
-//                             new TCPConnection(server_ip, client_ip, op_data->addr[0][1].port,
-//                             op_data->addr[0][0].port,
-//                                               MVVM_SOCK_INTERFACE, TCPConnection::TIME_WAIT);
-//                         tcp_v_to_s->Sync();
-
-//                         // block the connection
-//                     }
-//                 }
-//                 // send fin
-
-//                 break;
-//             case MVVM_SOCK_RESUME:
-//                 // resume
-//                 LOGV(ERROR) << "resume";
-//                 auto tmp_tuple = forward_pair[forward_pair.size() - 1];
-//                 std::get<2>(tmp_tuple) =
-//                     fmt::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0], op_data->addr[0][0].ip4[1],
-//                                 op_data->addr[0][0].ip4[2], op_data->addr[0][0].ip4[3]);
-//                 LOGV(ERROR) << "forward_pair[forward_pair.size()]" << std::get<0>(forward_pair[forward_pair.size() -
-//                 1])
-//                             << std::get<1>(forward_pair[forward_pair.size() - 1]);
-//                 is_forward = true;
-//                 // for udp forward from source to remote
-//                 // stop keep_alive
-//                 if (op_data->is_tcp) {
-//                     backend_thread.pop_back();
-//                     tcp_v_to_s =
-//                         new TCPConnection(server_ip, client_ip, op_data->addr[0][1].port, op_data->addr[0][0].port,
-//                                           MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
-//                     tcp_s_to_v =
-//                         new TCPConnection(client_ip, server_ip, op_data->addr[0][0].port, op_data->addr[0][1].port,
-//                                           MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED); // need
-//                     /* Both connection are already established... */
-//                     tcp_v_to_s->Sync();
-//                     tcp_s_to_v->Sync();
-
-//                     // stop SYN
-//                     LOGV(ERROR) << "Connections synchronized ";
-//                 }
-//                 sleep(1);
-//                 break;
-//             }
-//         }
-//     }
-// }
-#include <crafter.h>
-#include <crafter/Utils/TCPConnection.h>
-#include <iostream>
-#include <string>
-
-/* Collapse namespaces */
-using namespace std;
-using namespace Crafter;
-
-/* Source port that we have to find out */
-short_word srcport = 0;
-
-void PacketHandler(Packet *sniff_packet, void *user) {
-
-    /* Get the TCP layer from the packet */
-    TCP *tcp_header = GetTCP(*sniff_packet);
-
-    srcport = tcp_header->GetSrcPort();
-}
 int main() {
+    struct sockaddr_in address {};
+    int opt = 1;
+    ssize_t rc;
+    int addrlen = sizeof(address);
+    char buffer[1024] = {0};
+    char errbuf[PCAP_ERRBUF_SIZE];
+    struct bpf_program fp {};
+    // char filter_exp[] = ""; // The filter expression
+    char filter_exp[] = "net 172.17.0.0/24";
+    bpf_u_int32 netmask;
 
-    /* Set the interface */
-    string iface = "docker0";
+    op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
 
+    signal(SIGTERM, sigterm_handler);
+    signal(SIGQUIT, sigterm_handler);
+    signal(SIGINT, sigterm_handler);
     ip_forward();
 
-    /* Set connection data */
-    string dst_ip = "172.17.0.2"; // <-- Destination IP
-    string src_ip = "172.17.0.3"; // <-- Spoof IP
-    short_word dstport = 1234; // <-- We know the spoofed IP connects to this port
+    fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
 
-    /* Begin the spoofing */
-    ARPContext *arp_context = ARPSpoofingReply(dst_ip, src_ip, iface);
-
-    /* Print some info */
-    PrintARPContext(*arp_context);
-    string filter = "tcp and host " + dst_ip + " and host " + src_ip;
-    /* TCP stuff */
-    filter += " and dst port " + StrPort(dstport);
-    /* Launch the sniffer */
-    Sniffer sniff(filter, iface, PacketHandler);
-    sniff.Capture(1);
-    cout << "[@] Detected a source port: " << srcport << endl;
-
-    /* ------------------------------------- */
-
-    /* TCP connection victim to server */
-    tcp_v_to_s = new TCPConnection(src_ip, dst_ip, srcport, dstport, iface, TCPConnection::ESTABLISHED);
-    /* TCP connection server to victim */
-    tcp_s_to_v = new TCPConnection(dst_ip, src_ip, dstport, srcport, iface, TCPConnection::ESTABLISHED);
-    /* Both connection are already established... */
-
-    /* [+] Synchronize the ACK and SEQ numbers
-     * This will block the program until some TCP packets from the spoofed connection
-     * pass through your computer...
-     */
-    tcp_v_to_s->Sync();
-    tcp_s_to_v->Sync();
-
-    cout << "[@] Connections synchronized " << endl;
-
-    /* Give all this a second... */
-    // sleep(1);
-
-    /* Start blocking the traffic of the spoofed connection */
-    start_block(dst_ip, src_ip, dstport, srcport);
-
-    /* Reset the connection to the victim */
-    // tcp_s_to_v.Reset();
-    // tcp_s_to_v.KeepAlive();
-    backend_thread.emplace_back(keep_alive, dst_ip, dstport, src_ip, srcport);
-
-    auto op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
-    op_data->op = MVVM_SOCK_FIN;
-    tcp_v_to_s->Send(((const byte_ *)op_data), sizeof(*op_data));
-    backend_thread.clear();
-    /* Close the spoofed connection with the server after we send our commands */
-    tcp_v_to_s->Close();
-
-    sleep(10);
-    /* Clear everything */
-    // new dest_ip;
-    string dest_ip = "172.17.0.5";
-    // new port
-    // clear_block(dst_ip, src_ip, dstport, srcport);
-
-
-    tcp_v_to_s = new TCPConnection(src_ip, dst_ip, srcport, dstport, iface, TCPConnection::ESTABLISHED);
-
-    while(true){
-        sleep(1);
-        auto payload = Payload();
-        tcp_v_to_s->Read(
-            payload
-        );
-        if (payload.GetSize() == 0)
-            continue;
-        tcp_v_to_s->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
+    // Forcefully attaching socket to the port
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        LOGV(ERROR) << "setsockopt";
+        exit(EXIT_FAILURE);
     }
 
-    clear_forward();
-    CleanARPContext(arp_context);
+    address.sin_family = AF_INET;
+    address.sin_port = htons(MVVM_SOCK_PORT);
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &address.sin_addr) <= 0) {
+        LOGV(ERROR) << "Invalid address/ Address not supported";
+        exit(EXIT_FAILURE);
+    }
 
-    return 0;
+    // Bind the socket to the network address and port
+    if (bind(fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        LOGV(ERROR) << "bind failed";
+        exit(EXIT_FAILURE);
+    }
+
+    // Start listening for connections
+    if (listen(fd, 3) < 0) {
+        LOGV(ERROR) << "listen";
+        exit(EXIT_FAILURE);
+    }
+
+    handle = pcap_open_live(MVVM_SOCK_INTERFACE, BUFSIZ, 1, 1000, errbuf);
+    if (handle == nullptr) {
+        LOGV(ERROR) << fmt::format("pcap_open_live(): {}", errbuf);
+        exit(EXIT_FAILURE);
+    }
+
+    // Compile and apply the filter
+    if (pcap_compile(handle, &fp, filter_exp, 1, PCAP_NETMASK_UNKNOWN) == -1) {
+        LOGV(ERROR) << fmt::format("Couldn't parse filter {}: {}", filter_exp, pcap_geterr(handle));
+        exit(-1);
+    }
+
+    if (pcap_setfilter(handle, &fp) == -1) {
+        LOGV(ERROR) << fmt::format("Couldn't install filter {}:", filter_exp, pcap_geterr(handle));
+        exit(-1);
+    }
+
+    // Capture packets
+    backend_thread.emplace_back(pcap_loop_wrapper, handle, packet_handler);
+
+    while (true) { // Open the device for sniffing
+        client_fd = accept(fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+        if (client_fd < 0) {
+            LOGV(ERROR) << "accept";
+            exit(EXIT_FAILURE);
+        }
+        // offload info from client
+        if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
+            memcpy(op_data, buffer, sizeof(*op_data));
+            switch (op_data->op) {
+            case MVVM_SOCK_SUSPEND:
+                // suspend
+                LOGV(ERROR) << "suspend";
+
+                for (int idx = 0; idx < op_data->size; idx++) {
+                    if (op_data->addr[idx][0].is_4) {
+                        server_ip =
+                            fmt::format("{}.{}.{}.{}", op_data->addr[idx][0].ip4[0], op_data->addr[idx][0].ip4[1],
+                                        op_data->addr[idx][0].ip4[2], op_data->addr[idx][0].ip4[3]);
+                        client_ip =
+                            fmt::format("{}.{}.{}.{}", op_data->addr[idx][1].ip4[0], op_data->addr[idx][1].ip4[1],
+                                        op_data->addr[idx][1].ip4[2], op_data->addr[idx][1].ip4[3]);
+                    } else {
+                        server_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                                                op_data->addr[idx][0].ip6[0], op_data->addr[idx][0].ip6[1],
+                                                op_data->addr[idx][0].ip6[2], op_data->addr[idx][0].ip6[3],
+                                                op_data->addr[idx][0].ip6[4], op_data->addr[idx][0].ip6[5],
+                                                op_data->addr[idx][0].ip6[6], op_data->addr[idx][0].ip6[7]);
+                        client_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                                                op_data->addr[idx][1].ip6[0], op_data->addr[idx][1].ip6[1],
+                                                op_data->addr[idx][1].ip6[2], op_data->addr[idx][1].ip6[3],
+                                                op_data->addr[idx][1].ip6[4], op_data->addr[idx][1].ip6[5],
+                                                op_data->addr[idx][1].ip6[6], op_data->addr[idx][1].ip6[7]);
+                    }
+                    LOGV(INFO) << "server_ip:" << server_ip << ":" << op_data->addr[idx][0].port
+                               << " client_ip:" << client_ip << ":" << op_data->addr[idx][1].port;
+
+                    forward_pair.emplace_back(server_ip, client_ip, "");
+                    // send the fin to server
+                    op_data->op = MVVM_SOCK_FIN;
+                    sleep(2);
+                    if (!op_data->is_tcp) {
+                        LOGV(INFO) << "send fin";
+                        send_fin(client_ip, op_data->addr[idx][1].port, server_ip, op_data->addr[idx][0].port,
+                                 (char *)op_data);
+                    } else {
+                        LOGV(INFO) << "send fin";
+                        /* Begin the spoofing */
+                        arp_context = ARPSpoofingReply(server_ip, client_ip, MVVM_SOCK_INTERFACE);
+                        PrintARPContext(*arp_context);
+                        // block the connection
+                        start_block(client_ip, server_ip, op_data->addr[0][1].port, op_data->addr[0][0].port);
+
+                        /* TCP connection victim to server */
+                        tcp_v_to_s =
+                            new TCPConnection(server_ip, client_ip, op_data->addr[0][1].port, op_data->addr[0][0].port,
+                                              MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
+                        tcp_s_to_v =
+                            new TCPConnection(client_ip, server_ip, op_data->addr[0][0].port, op_data->addr[0][1].port,
+                                              MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED); // need
+                        /* Both connection are already established... */
+                        // tcp_v_to_s->Sync();
+
+                        LOGV(ERROR) << "Connections synchronized ";
+                        sleep(1);
+                        tcp_s_to_v->Sync();
+                        tcp_s_to_v->Close();
+                        tcp_v_to_s->Sync();
+                    }
+                }
+                // send fin
+
+                break;
+            case MVVM_SOCK_RESUME:
+                // resume
+                LOGV(ERROR) << "resume";
+                auto tmp_tuple = forward_pair[forward_pair.size() - 1];
+                std::get<2>(tmp_tuple) =
+                    fmt::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0], op_data->addr[0][0].ip4[1],
+                                op_data->addr[0][0].ip4[2], op_data->addr[0][0].ip4[3]);
+                LOGV(ERROR) << "forward_pair[forward_pair.size()]" << std::get<0>(forward_pair[forward_pair.size() - 1])
+                            << std::get<1>(forward_pair[forward_pair.size() - 1]);
+                // for udp forward from source to remote
+                // stop keep_alive
+                if (op_data->is_tcp) {
+                    tcp_s_to_v = new TCPConnection(fmt::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0],
+                                                               op_data->addr[0][0].ip4[1], op_data->addr[0][0].ip4[2],
+                                                               op_data->addr[0][0].ip4[3]),
+                                                   server_ip, op_data->addr[0][0].port, op_data->addr[0][1].port,
+                                                   MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED); // need
+                    /* Both connection are already established... */
+                    // tcp_v_to_s->Sync();
+                    tcp_s_to_v->Sync();
+
+                    // stop SYN
+                    LOGV(ERROR) << "Connections synchronized ";
+
+                    while (true) {
+                        sleep(1);
+                        auto payload = Payload();
+                        tcp_v_to_s->Read(payload);
+                        if (payload.GetSize() == 0)
+                            continue;
+                        tcp_v_to_s->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
+                    }
+
+                } else
+                    is_forward = true;
+                sleep(1);
+                break;
+            }
+        }
+    }
 }

@@ -87,7 +87,7 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
             recvFromData.src_addr.port = src_addr->addr.ip6.port;
         }
         LOGV(ERROR) << "insert_sock_recv_from_data " << sock << " " << ((struct mvvm_op_data *)ri_data)->op;
-        if (((struct mvvm_op_data *)ri_data)->op <= MVVM_SOCK_FIN) {
+        if (((struct mvvm_op_data *)ri_data)->op == MVVM_SOCK_FIN) {
             wamr->socket_fd_map_[sock].is_collection = false;
             return;
         }
