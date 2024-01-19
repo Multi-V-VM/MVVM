@@ -2,15 +2,15 @@ import pickle
 import common_util
 from multiprocessing import Pool
 
-cmd = ["hdastar", "hdastar", "hdastar"]
+cmd = [
+   "lammps",
+]
 arg = [
-    ["maze-6404.txt", "2"],
-    ["maze-6404.txt", "4"],
-    ["maze-6404.txt", "8"],
+    [],
 ]
 
 
-pool = Pool(processes=5)
+pool = Pool(processes=40)
 
 # run the benchmarks
 results = []
@@ -25,7 +25,7 @@ pool.join()
 # print the results
 results = [x.get() for x in results]
 # serialize the results
-with open("bench_hdastar_results.pickle", "wb") as f:
+with open("bench_lammps_results.pickle", "wb") as f:
     pickle.dump(results, f)
 for exec, output in results:
     print(exec)
@@ -35,5 +35,5 @@ for exec, output in results:
             print(line)
 
 # read the results
-with open("bench_hdastar_results.pickle", "rb") as f:
+with open("bench_lammps_results.pickle", "rb") as f:
     results = pickle.load(f)

@@ -106,12 +106,12 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
                             LOGV(ERROR) << "recv error";
                             return;
                         }
-                        sleep(1);
+                        sleep(10);
                     }
                 });
                 auto future = task.get_future();
                 std::thread thr(std::move(task));
-                if (future.wait_for(10s) != std::future_status::timeout) {
+                if (future.wait_for(40s) != std::future_status::timeout) {
                     thr.join();
                     future.get(); // this will propagate exception from f() if any
                 } else {
@@ -158,10 +158,13 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
         if (socketMetaData.is_server) {
             if (socketMetaData.socketAddress.is_4) {
                 struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
+                inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr4.sin_addr);
                 socklen_t sockaddr4_size = sizeof(sockaddr4);
                 wamr->invoke_sock_bind(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
             } else {
                 struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
+                inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr6.sin6_addr);
+
                 socklen_t sockaddr6_size = sizeof(sockaddr6);
                 wamr->invoke_sock_bind(fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
             }
@@ -169,10 +172,26 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
             if (wamr->op_data.is_tcp) {
                 wamr->invoke_sock_listen(fd, 3);
             }
+        } else {
+            if (socketMetaData.socketAddress.is_4) {
+                struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
+                inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr4.sin_addr);
+
+                socklen_t sockaddr4_size = sizeof(sockaddr4);
+                wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
+            } else {
+                struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
+                inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr6.sin6_addr);
+
+                socklen_t sockaddr6_size = sizeof(sockaddr6);
+                wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
+            }
         }
         // renumber or not?
         LOGV(INFO) << "tmp_sock_fd " << res << " fd" << fd;
         wamr->socket_fd_map_[fd] = socketMetaData;
+        fprintf(stderr, "replay start indec%d %d", wamr->socket_fd_map_[fd].replay_start_index,
+                wamr->socket_fd_map_[fd].socketRecvFromDatas.size());
     }
 #endif
 };

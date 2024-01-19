@@ -106,12 +106,12 @@ void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, unsigned long *r
     }
     // shoud we check the src_addr?
     if (wamr->socket_fd_map_[sock].replay_start_index >= wamr->socket_fd_map_[sock].socketRecvFromDatas.size()) {
-        LOGV(ERROR) << "replay index out of bound " << sock;
+        LOGV(INFO) << "replay index out of bound " << sock;
         *recv_size = 0;
         return;
     }
     auto recvFromData = wamr->socket_fd_map_[sock].socketRecvFromDatas[wamr->socket_fd_map_[sock].replay_start_index];
-    wamr->socket_fd_map_[sock].replay_start_index;
+    wamr->socket_fd_map_[sock].replay_start_index++;
     std::memcpy(*ri_data, recvFromData.ri_data.data(), recvFromData.ri_data.size());
     *recv_size = recvFromData.ri_data.size();
     if (src_addr->kind == IPv4) {
@@ -190,6 +190,9 @@ void insert_socket(int fd, int domain, int type, int protocol) {
     if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end()) {
         LOGV(ERROR) << "socket_fd already exist" << fd;
     } else {
+        if (protocol == 1) {
+            wamr->socket_fd_map_[fd].is_server = true;
+        }
         SocketMetaData metaData{};
         metaData.domain = domain;
         metaData.type = type;
@@ -200,7 +203,6 @@ void insert_socket(int fd, int domain, int type, int protocol) {
 
 void update_socket_fd_address(int fd, SocketAddrPool *address) {
     printf("\n #update_socket_fd_address(fd, address) %d \n\n", fd);
-    wamr->socket_fd_map_[fd].is_server = true;
     wamr->socket_fd_map_[fd].socketAddress.port = address->port;
     if (address->is_4) {
         wamr->socket_fd_map_[fd].socketAddress.is_4 = true;

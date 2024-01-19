@@ -106,6 +106,10 @@ int main(int argc, char **argv) {
                    << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);
         wamr->op_data.op = MVVM_SOCK_RESUME;
         wamr->op_data.addr[0][0] = src_addr;
+        for (auto &[fd,socketMetaData] : a[0]->module_inst.wasi_ctx.socket_fd_map) {
+            wamr->op_data.is_tcp |= socketMetaData.type;
+        }
+
         // Create a socket
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
             LOGV(ERROR) << "socket error";

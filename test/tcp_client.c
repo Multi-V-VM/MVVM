@@ -21,12 +21,37 @@ static void init_sockaddr_inet(struct sockaddr_in *addr) {
     addr->sin_port = htons(1234);
     addr->sin_addr.s_addr = my_inet_addr("172.17.0.2");
 }
-
+static void init_sockaddr_inet1(struct sockaddr_in *addr) {
+    /* 127.0.0.1:1234 */
+    addr->sin_family = AF_INET;
+    addr->sin_port = htons(1234);
+    addr->sin_addr.s_addr = my_inet_addr("172.17.0.1");
+}
 static void init_sockaddr_inet6(struct sockaddr_in6 *addr) {
     /* [::1]:1234 */
     addr->sin6_family = AF_INET6;
     addr->sin6_port = htons(1234);
     addr->sin6_addr = in6addr_loopback;
+}
+
+void init_connect() {
+    struct sockaddr_storage server_address = {0};
+
+    int af = AF_INET;
+    int len = sizeof(struct sockaddr_in);
+    init_sockaddr_inet1((struct sockaddr_in *)&server_address);
+
+    printf("[Client] Create socket\n");
+    int socket_fd = socket(af, SOCK_STREAM, 0);
+    if (socket_fd == -1) {
+        perror("Create socket failed");
+    }
+
+    printf("[Client] Connect socket\n");
+    if (connect(socket_fd, (struct sockaddr *)&server_address, len) == -1) {
+        perror("Connect failed");
+        close(socket_fd);
+    }
 }
 
 int main(int argc, char *argv[]) {

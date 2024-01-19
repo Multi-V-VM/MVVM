@@ -182,7 +182,7 @@ void serialize_to_file(WASMExecEnv *instance) {
             LOGV(ERROR) << "send error";
             exit(EXIT_FAILURE);
         }
-        
+
         // Clean up
         close(fd);
     }

@@ -20,11 +20,14 @@ using namespace Crafter;
 
 std::string client_ip;
 std::string server_ip;
+int client_port;
+int server_port;
 pcap_t *handle;
 int linkhdrlen = 14;
 int packets = 0;
 int client_fd;
 int fd;
+int new_fd;
 std::vector<std::jthread> backend_thread;
 std::vector<std::tuple<std::string, std::string, std::string>> forward_pair;
 bool is_forward = false;
@@ -151,7 +154,7 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
             packets += 1;
             break;
         }
-        if (is_forward) { // Skip the datalink layer header and get the IP header fields.
+        if (is_forward && !op_data->is_tcp) { // Skip the datalink layer header and get the IP header fields.
             // init the socket
             for (auto [srcip, destip, new_srcip] : forward_pair) {
                 if (srcip == inet_ntoa(iphdr->ip_src) && destip == inet_ntoa(iphdr->ip_dst)) {
@@ -229,7 +232,7 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *header, const u_char
             packets += 1;
             break;
         }
-        if (is_forward) { // Skip the datalink layer header and get the IP header fields.
+        if (is_forward && !op_data->is_tcp) { // Skip the datalink layer header and get the IP header fields.
             // init the socket
             for (auto [srcip_, destip_, new_srcip] : forward_pair) {
                 LOGV(DEBUG) << header->len << "srcip:" << srcip_ << " destip:" << destip_;
@@ -446,8 +449,10 @@ int main() {
                                                 op_data->addr[idx][1].ip6[4], op_data->addr[idx][1].ip6[5],
                                                 op_data->addr[idx][1].ip6[6], op_data->addr[idx][1].ip6[7]);
                     }
-                    LOGV(INFO) << "server_ip:" << server_ip << ":" << op_data->addr[idx][0].port
-                               << " client_ip:" << client_ip << ":" << op_data->addr[idx][1].port;
+                    server_port = op_data->addr[0][0].port;
+                    client_port = op_data->addr[0][1].port;
+                    LOGV(INFO) << "server_ip:" << server_ip << ":" << server_port << " client_ip:" << client_ip << ":"
+                               << client_port;
 
                     forward_pair.emplace_back(server_ip, client_ip, "");
                     // send the fin to server
@@ -455,26 +460,50 @@ int main() {
                     sleep(2);
                     if (!op_data->is_tcp) {
                         LOGV(INFO) << "send fin";
-                        send_fin(client_ip, op_data->addr[idx][1].port, server_ip, op_data->addr[idx][0].port,
-                                 (char *)op_data);
+                        send_fin(client_ip, client_port, server_ip, server_port, (char *)op_data);
                     } else {
                         LOGV(INFO) << "send fin";
+
                         /* Begin the spoofing */
                         arp_context = ARPSpoofingReply(server_ip, client_ip, MVVM_SOCK_INTERFACE);
                         PrintARPContext(*arp_context);
                         // block the connection
-                        start_block(client_ip, server_ip, op_data->addr[0][1].port, op_data->addr[0][0].port);
+                        start_block(client_ip, server_ip, client_port, server_port);
 
                         /* TCP connection victim to server */
-                        tcp_v_to_s =
-                            new TCPConnection(server_ip, client_ip, op_data->addr[0][1].port, op_data->addr[0][0].port,
-                                              MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
-                        tcp_s_to_v =
-                            new TCPConnection(client_ip, server_ip, op_data->addr[0][0].port, op_data->addr[0][1].port,
-                                              MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED); // need
+                        tcp_v_to_s = new TCPConnection(server_ip, client_ip, client_port, server_port,
+                                                       MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
+                        tcp_s_to_v = new TCPConnection(client_ip, server_ip, server_port, client_port,
+                                                       MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED); // need
                         /* Both connection are already established... */
-                        // tcp_v_to_s->Sync();
 
+                        new_fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
+
+                        // Forcefully attaching socket to the port
+                        if (setsockopt(new_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+                            LOGV(ERROR) << "setsockopt";
+                            exit(EXIT_FAILURE);
+                        }
+
+                        address.sin_family = AF_INET;
+                        address.sin_port = htons(server_port);
+                        // Convert IPv4 and IPv6 addresses from text to binary form
+                        if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &address.sin_addr) <= 0) {
+                            LOGV(ERROR) << "Invalid address/ Address not supported";
+                            exit(EXIT_FAILURE);
+                        }
+
+                        // Bind the socket to the network address and port
+                        if (bind(new_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+                            LOGV(ERROR) << "bind failed" << errno;
+                            exit(EXIT_FAILURE);
+                        }
+
+                        // Start listening for connections
+                        if (listen(new_fd, 3) < 0) {
+                            LOGV(ERROR) << "listen";
+                            exit(EXIT_FAILURE);
+                        }
                         LOGV(ERROR) << "Connections synchronized ";
                         sleep(1);
                         tcp_s_to_v->Sync();
@@ -489,9 +518,8 @@ int main() {
                 // resume
                 LOGV(ERROR) << "resume";
                 auto tmp_tuple = forward_pair[forward_pair.size() - 1];
-                std::get<2>(tmp_tuple) =
-                    fmt::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0], op_data->addr[0][0].ip4[1],
-                                op_data->addr[0][0].ip4[2], op_data->addr[0][0].ip4[3]);
+		auto &&tmp_ip4 = op_data->addr[0][0].ip4;
+                std::get<2>(tmp_tuple) = fmt::format("{}.{}.{}.{}", tmp_ip4[0], tmp_ip4[1], tmp_ip4[2], tmp_ip4[3]);
                 LOGV(ERROR) << "forward_pair[forward_pair.size()]" << std::get<0>(forward_pair[forward_pair.size() - 1])
                             << std::get<1>(forward_pair[forward_pair.size() - 1]);
                 // for udp forward from source to remote
@@ -500,8 +528,8 @@ int main() {
                     tcp_s_to_v = new TCPConnection(fmt::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0],
                                                                op_data->addr[0][0].ip4[1], op_data->addr[0][0].ip4[2],
                                                                op_data->addr[0][0].ip4[3]),
-                                                   server_ip, op_data->addr[0][0].port, op_data->addr[0][1].port,
-                                                   MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED); // need
+                                                   server_ip, server_port, client_port, MVVM_SOCK_INTERFACE,
+                                                   TCPConnection::ESTABLISHED); // need port
                     /* Both connection are already established... */
                     // tcp_v_to_s->Sync();
                     tcp_s_to_v->Sync();
@@ -509,14 +537,33 @@ int main() {
                     // stop SYN
                     LOGV(ERROR) << "Connections synchronized ";
 
-                    while (true) {
-                        sleep(1);
+		    bool closed = false;
+		    backend_thread..emplace_back([](){
+                    while (!closed) {
+                        auto payload = Payload();
+                        tcp_s_to_v->Read(payload);
+			if (tcp_s_to_v->GetStatus() == IS_CLOSED){
+			    closed = true;
+			    return;
+			}
+                        if (payload.GetSize() == 0)
+                            continue;
+                        tcp_s_to_v->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
+                    }
+                    });
+		    backend_thread..emplace_back([](){
+                    while (!closed) {
                         auto payload = Payload();
                         tcp_v_to_s->Read(payload);
+			if (tcp_v_to_s->GetStatus() == IS_CLOSED){
+			    closed = true;
+			    return;
+			}
                         if (payload.GetSize() == 0)
                             continue;
                         tcp_v_to_s->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
                     }
+                    });
 
                 } else
                     is_forward = true;

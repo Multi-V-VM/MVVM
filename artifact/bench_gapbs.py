@@ -12,6 +12,8 @@ cmd = [
     "bfs",
     "bfs",
     "bfs",
+    "bfs",
+    "bc",
     "bc",
     "bfs",
     "cc",
@@ -22,34 +24,29 @@ cmd = [
     "tc",
 ]
 arg = [
-    ["-g20", "-n30"],
-    ["-u20", "-n30"],
-    # ["-f", "./4.gr", "-n1000"],
-    # ["-f", "./4.el", "-n1000"],
-    # ["-f", "./4.wel", "-n1000"],
-    # ["-f", "./4.graph", "-n1000"],
-    # ["-f", "./4w.graph", "-n1000"],
-    # ["-f", "./4.mtx", "-n1000"],
-    # ["-f", "./4w.mtx", "-n1000"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-n30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-vn30"],
-    ["-g20", "-n2"],
+    ["-g15", "-n300"],
+    ["-u15", "-n300"],
+    ["-f", "./road.sg", "-n300"],
+    ["-g15", "-n300"],
+    ["-g15", "-n300"],
+    ["-g15", "-n300"],
+    ["-g15", "-n300"],
+    ["-g15", "-n300"],
+    ["-g15", "-n300"],
+    ["-g15", "-n300"],
+    ["-g15", "-vn300"],
+    ["-g15", "-vn300"],
+    ["-f", "./road.sg", "-n300"],
+    ["-g15", "-vn300"],
+    ["-g15", "-vn300"],
+    ["-g15", "-vn300"],
+    ["-g15", "-vn300"],
+    ["-g15", "-vn300"],
+    ["-g15", "-n300"],
 ]
 
 
-pool = Pool(processes=40)
+pool = Pool(processes=5)
 
 # run the benchmarks
 results = []
@@ -62,17 +59,25 @@ pool.close()
 pool.join()
 
 # print the results
-results = [x.get() for x in results]
 # serialize the results
+results = [x.get() for x in results]
+
 with open("bench_gapbs_results.pickle", "wb") as f:
     pickle.dump(results, f)
+
 for exec, output in results:
     print(exec)
-    lines = output.split("\n")
-    for line in lines:
-        if line.startswith("Execution time:"):
-            print(line)
+    try:
+        lines = output.decode("ISO-8859-1").split("\n")
+        for line in lines:
+            if line.__contains__("Execution time:"):
+                print(line)
+    except:
+        lines = output.split("\n")
+        for line in lines:
+            if line.__contains__("Execution time:"):
+                print(line)
 
 # read the results
-# with open("bench_gapbs_results.pickle", "rb") as f:
-#     results = pickle.load(f)
+with open("bench_gapbs_results.pickle", "rb") as f:
+    results = pickle.load(f)

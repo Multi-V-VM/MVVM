@@ -27,8 +27,10 @@ def get_func_index(func, file):
 list_of_arg = [
     "OMP_NUM_THREADS=1",
     "OMP_NUM_THREADS=2",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=8",
 ]
-aot_variant = [".aot", "-pure.aot", "-stack.aot", "-ckpt.aot", "-ckpt-br.aot"]
+aot_variant = [".aot", "-pure.aot", "-stack.aot", "-ckpt-br.aot"]
 # aot_variant = ["-ckpt-every-dirty.aot"]
 
 
@@ -37,7 +39,10 @@ def run(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output = result.stdout.decode("utf-8")
+    try:
+        output = result.stdout.decode("utf-8")
+    except:
+        output = result.stdout
     exec = " ".join([env] + [aot_file] + arg)
     # print(exec)
     # print(output)
@@ -45,6 +50,6 @@ def run(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
 
 
 if __name__ == "__main__":
-    print(get_func_index("recvfrom", "./test/server.wasm"))
+    print(get_func_index("$recv ", "./test/tcp_client.wasm"))
     print(get_func_index("poll_oneoff", "./test/counter.wasm"))
     print(get_func_index("sendto", "./test/client.wasm"))
