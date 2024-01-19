@@ -111,7 +111,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
                 });
                 auto future = task.get_future();
                 std::thread thr(std::move(task));
-                if (future.wait_for(40s) != std::future_status::timeout) {
+                if (future.wait_for(10s) != std::future_status::timeout) {
                     thr.join();
                     future.get(); // this will propagate exception from f() if any
                 } else {
@@ -153,9 +153,10 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     }
 #if !defined(_WIN32)
     for (auto [fd, socketMetaData] : this->socket_fd_map) {
-        auto res = wamr->invoke_sock_open(socketMetaData.domain, socketMetaData.type, socketMetaData.protocol, fd);
         // whether need to listen
         if (socketMetaData.is_server) {
+            auto res = wamr->invoke_sock_open(socketMetaData.domain, socketMetaData.type, socketMetaData.protocol,
+            fd);
             if (socketMetaData.socketAddress.is_4) {
                 struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
                 inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr4.sin_addr);
@@ -188,7 +189,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
             }
         }
         // renumber or not?
-        LOGV(INFO) << "tmp_sock_fd " << res << " fd" << fd;
+        // LOGV(INFO) << "tmp_sock_fd " << res << " fd" << fd;
         wamr->socket_fd_map_[fd] = socketMetaData;
         fprintf(stderr, "replay start indec%d %d", wamr->socket_fd_map_[fd].replay_start_index,
                 wamr->socket_fd_map_[fd].socketRecvFromDatas.size());

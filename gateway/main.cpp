@@ -15,6 +15,7 @@
 #include <pcap/pcap.h>
 #include <thread>
 #include <tuple>
+#include <unistd.h>
 
 using namespace Crafter;
 
@@ -458,11 +459,11 @@ int main() {
                     // send the fin to server
                     op_data->op = MVVM_SOCK_FIN;
                     sleep(2);
+                    LOGV(INFO) << "send fin";
+
                     if (!op_data->is_tcp) {
-                        LOGV(INFO) << "send fin";
                         send_fin(client_ip, client_port, server_ip, server_port, (char *)op_data);
                     } else {
-                        LOGV(INFO) << "send fin";
 
                         /* Begin the spoofing */
                         arp_context = ARPSpoofingReply(server_ip, client_ip, MVVM_SOCK_INTERFACE);
@@ -473,8 +474,6 @@ int main() {
                         /* TCP connection victim to server */
                         tcp_v_to_s = new TCPConnection(server_ip, client_ip, client_port, server_port,
                                                        MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
-                        tcp_s_to_v = new TCPConnection(client_ip, server_ip, server_port, client_port,
-                                                       MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED); // need
                         /* Both connection are already established... */
 
                         new_fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
@@ -504,11 +503,13 @@ int main() {
                             LOGV(ERROR) << "listen";
                             exit(EXIT_FAILURE);
                         }
+
                         LOGV(ERROR) << "Connections synchronized ";
                         sleep(1);
-                        tcp_s_to_v->Sync();
-                        tcp_s_to_v->Close();
-                        tcp_v_to_s->Sync();
+                        backend_thread.emplace_back([&]() {
+                            tcp_v_to_s->Sync();
+			});
+                        LOGV(ERROR) << "Connections synchronized finished";
                     }
                 }
                 // send fin
@@ -518,10 +519,13 @@ int main() {
                 // resume
                 LOGV(ERROR) << "resume";
                 auto tmp_tuple = forward_pair[forward_pair.size() - 1];
-		auto &&tmp_ip4 = op_data->addr[0][0].ip4;
+                auto &&tmp_ip4 = op_data->addr[0][0].ip4;
                 std::get<2>(tmp_tuple) = fmt::format("{}.{}.{}.{}", tmp_ip4[0], tmp_ip4[1], tmp_ip4[2], tmp_ip4[3]);
                 LOGV(ERROR) << "forward_pair[forward_pair.size()]" << std::get<0>(forward_pair[forward_pair.size() - 1])
                             << std::get<1>(forward_pair[forward_pair.size() - 1]);
+
+                socklen_t size = sizeof(address);
+                auto new_client = accept(new_fd, (struct sockaddr *)&address, &size);
                 // for udp forward from source to remote
                 // stop keep_alive
                 if (op_data->is_tcp) {
@@ -532,37 +536,31 @@ int main() {
                                                    TCPConnection::ESTABLISHED); // need port
                     /* Both connection are already established... */
                     // tcp_v_to_s->Sync();
+                    backend_thread.emplace_back([&]() {
                     tcp_s_to_v->Sync();
+		    });
 
                     // stop SYN
                     LOGV(ERROR) << "Connections synchronized ";
 
-		    bool closed = false;
-		    backend_thread..emplace_back([](){
-                    while (!closed) {
-                        auto payload = Payload();
-                        tcp_s_to_v->Read(payload);
-			if (tcp_s_to_v->GetStatus() == IS_CLOSED){
-			    closed = true;
-			    return;
-			}
-                        if (payload.GetSize() == 0)
-                            continue;
-                        tcp_s_to_v->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
-                    }
+                    bool closed = false;
+                    backend_thread.emplace_back([&]() {
+                        while (!closed) {
+                            auto payload = Payload();
+                            tcp_v_to_s->Read(payload);
+                            if (tcp_v_to_s->GetStatus() == TCPConnection::CLOSING) {
+                                closed = true;
+                                return;
+                            }
+                            send(new_client, payload.GetRawPointer(), sizeof(*payload.GetRawPointer()),0);
+                        }
                     });
-		    backend_thread..emplace_back([](){
-                    while (!closed) {
-                        auto payload = Payload();
-                        tcp_v_to_s->Read(payload);
-			if (tcp_v_to_s->GetStatus() == IS_CLOSED){
-			    closed = true;
-			    return;
-			}
-                        if (payload.GetSize() == 0)
-                            continue;
-                        tcp_v_to_s->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
-                    }
+                    backend_thread.emplace_back([&]() {
+                        while (!closed) {
+                            if ((rc = recv(new_client, buffer, sizeof(buffer), 0)) > 0) {
+                                tcp_v_to_s->Send(((byte_ *)buffer), sizeof(buffer));
+                            }
+                        }
                     });
 
                 } else

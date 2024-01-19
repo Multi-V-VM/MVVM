@@ -332,7 +332,7 @@ int WAMRInstance::invoke_sock_connect(uint32_t sockfd, struct sockaddr *sock, so
     // if (buffer_for_wasm != 0) {
     uint32 argv[1];
     //     memcpy(buffer_, sock, sizeof(sockaddr)); // use native address for accessing in runtime
-    //     argv[0] = sockfd; // pass the buffer_ address for WASM space
+    argv[0] = sockfd; // pass the buffer_ address for WASM space
     //     argv[1] = buffer_for_wasm; // the size of buffer_
     //     argv[2] = sock_size; // O_RW | O_CREATE
     //     wasm_runtime_call_wasm(exec_env, func, 3, argv);
@@ -340,7 +340,7 @@ int WAMRInstance::invoke_sock_connect(uint32_t sockfd, struct sockaddr *sock, so
     //     wasm_runtime_module_free(module_inst, buffer_for_wasm);
     //     return res;
     // }
-    wasm_runtime_call_wasm(exec_env, func, 0, argv);
+    wasm_runtime_call_wasm(exec_env, func, 1, argv);
     int res = argv[0];
     return -1;
 }

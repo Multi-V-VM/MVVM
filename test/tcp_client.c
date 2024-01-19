@@ -34,16 +34,19 @@ static void init_sockaddr_inet6(struct sockaddr_in6 *addr) {
     addr->sin6_addr = in6addr_loopback;
 }
 
-void init_connect() {
+void init_connect(int socket_fd) {
     struct sockaddr_storage server_address = {0};
 
-    int af = AF_INET;
     int len = sizeof(struct sockaddr_in);
     init_sockaddr_inet1((struct sockaddr_in *)&server_address);
 
     printf("[Client] Create socket\n");
-    int socket_fd = socket(af, SOCK_STREAM, 0);
-    if (socket_fd == -1) {
+    // s_(af, SOCK_STREAM, 0,socket_fd);
+    int ret = socket(AF_INET, SOCK_STREAM, 0);
+    while (ret != socket_fd){
+        ret = socket(AF_INET, SOCK_STREAM, 0);
+        printf("connect %d %d\n",ret,socket_fd);
+   } if (socket_fd == -1) {
         perror("Create socket failed");
     }
 
@@ -105,18 +108,23 @@ int main(int argc, char *argv[]) {
 
     printf("[Client] Client receive\n");
     while (1) {
-        while (1) {
+        int i=0;
+	total_size = 0;
+        while (i<10) {
             ret = recv(socket_fd, buffer + total_size, sizeof(buffer) - total_size, 0);
+            i++;
             if (ret <= 0)
                 break;
             total_size += ret;
         }
         printf("[Client] %d bytes received:\n", total_size);
         sleep(10);
+        printf("[Client] finished sleeping\n");
         if (total_size > 0) {
             printf("Buffer recieved:\n%s\n", buffer);
         }
-        send(socket_fd, "Hello from client", 17, 0);
+        int rc = send(socket_fd, "Hello from client", 17, 0);
+	printf("[Client] %d bytes sent\n", rc);
     }
 
     close(socket_fd);
