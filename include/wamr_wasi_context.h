@@ -72,6 +72,7 @@ struct SocketMetaData {
 struct WAMRWASIContext {
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int,int,fd_op>>>>  fd_map;
     std::map<int, SocketMetaData> socket_fd_map;
+    std::vector<struct sync_op_t> sync_ops;
     std::vector<std::string> dir;
     std::vector<std::string> map_dir;
     WAMRArgvEnvironValues argv_environ;

@@ -22,6 +22,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
         SocketMetaData socketMetaDataCopy = socketMetaData;
         this->socket_fd_map[fd] = socketMetaDataCopy;
     }
+    this->sync_ops.assign(wamr->sync_ops.begin(), wamr->sync_ops.end());
 }
 void WAMRWASIContext::restore_impl(WASIArguments *env) {
     int r;
@@ -79,4 +80,5 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
             wamr->invoke_frenumber(tmp_sock_fd, fd);
     }
 #endif
+    wamr->sync_ops.assign(this->sync_ops.begin(), this->sync_ops.end());
 };

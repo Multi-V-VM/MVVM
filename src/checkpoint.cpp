@@ -145,7 +145,6 @@ void serialize_to_file(WASMExecEnv *instance) {
         close(fd);
     }
     auto all_count = 1;
-    auto cur_count = 0;
     // fill vector
 #if !defined(_WIN32)
     std::unique_lock as_ul(wamr->as_mtx);
@@ -184,9 +183,7 @@ void serialize_to_file(WASMExecEnv *instance) {
 #endif // windows has no threads so only does it once
         auto a = new WAMRExecEnv();
         dump(a, instance);
-        a->cur_count = cur_count;
         as.emplace_back(a);
-        cur_count++;
 #if !defined(_WIN32)
         elem = (WASMExecEnv *)bh_list_elem_next(elem);
     }

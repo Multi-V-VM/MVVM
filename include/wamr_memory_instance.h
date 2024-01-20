@@ -33,7 +33,7 @@ struct WAMRMemoryInstance {
 
     void dump_impl(WASMMemoryInstance *env) {
         module_type = env->module_type;
-        ref_count = env->ref_count+1;
+        ref_count = env->ref_count;
         LOGV(ERROR)<< "ref_count:" << ref_count;
         num_bytes_per_page = env->num_bytes_per_page;
         cur_page_count = env->cur_page_count;
@@ -49,7 +49,7 @@ struct WAMRMemoryInstance {
     };
     void restore_impl(WASMMemoryInstance *env) {
         env->module_type = module_type;
-        env->ref_count = ref_count;
+        env->ref_count = ref_count+1;
         LOGV(ERROR)<< "ref_count:" << env->ref_count;
         env->num_bytes_per_page = num_bytes_per_page;
         env->cur_page_count = cur_page_count;

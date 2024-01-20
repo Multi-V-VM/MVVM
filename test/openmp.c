@@ -4,10 +4,10 @@
 int g_count = 0;
 
 int main(int argc, char **argv) {
-#pragma omp parallel num_threads(8)
+#pragma omp parallel
     {
         printf("Hello World... from thread = %d\n", omp_get_thread_num());
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 100000; i++) {
             __atomic_fetch_add(&g_count, 1, __ATOMIC_SEQ_CST);
             printf("print!!!%d\n", i);
         }

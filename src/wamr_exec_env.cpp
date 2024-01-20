@@ -18,6 +18,7 @@ void WAMRExecEnv::dump_impl(WASMExecEnv *env) {
         this->frames.emplace_back(dumped_frame);
         cur_frame = cur_frame->prev_frame;
     }
+    this->cur_count = env->cur_count;
 }
 void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
     env->suspend_flags.flags = flags;
@@ -99,4 +100,5 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
         }
         env->cur_frame = prev_frame;
     }
+    env->cur_count = this->cur_count;
 }

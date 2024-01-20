@@ -24,6 +24,7 @@ static void *thread(void *arg) {
 }
 
 int main(int argc, char **argv) {
+	pthread_mutex_init(&m,NULL);
     pthread_t tids[MAX_NUM_THREADS];
 
     for (int i = 0; i < MAX_NUM_THREADS; i++) {
