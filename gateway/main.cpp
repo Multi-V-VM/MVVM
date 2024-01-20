@@ -474,7 +474,13 @@ int main() {
                         /* TCP connection victim to server */
                         tcp_v_to_s = new TCPConnection(server_ip, client_ip, client_port, server_port,
                                                        MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
+                        tcp_s_to_v = new TCPConnection(client_ip, server_ip, server_port, client_port,
+                                                       MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
                         /* Both connection are already established... */
+                        LOGV(ERROR) << "Connections synchronized ";
+                        tcp_v_to_s->Sync();
+                        tcp_s_to_v->Sync();
+                        LOGV(ERROR) << "Connections synchronized finished";
 
                         new_fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
 
@@ -503,13 +509,6 @@ int main() {
                             LOGV(ERROR) << "listen";
                             exit(EXIT_FAILURE);
                         }
-
-                        LOGV(ERROR) << "Connections synchronized ";
-                        sleep(1);
-                        backend_thread.emplace_back([&]() {
-                            tcp_v_to_s->Sync();
-			});
-                        LOGV(ERROR) << "Connections synchronized finished";
                     }
                 }
                 // send fin
@@ -526,43 +525,32 @@ int main() {
 
                 socklen_t size = sizeof(address);
                 auto new_client = accept(new_fd, (struct sockaddr *)&address, &size);
+                LOGV(ERROR)<< "new_client" << new_client;
                 // for udp forward from source to remote
                 // stop keep_alive
                 if (op_data->is_tcp) {
-                    tcp_s_to_v = new TCPConnection(fmt::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0],
-                                                               op_data->addr[0][0].ip4[1], op_data->addr[0][0].ip4[2],
-                                                               op_data->addr[0][0].ip4[3]),
-                                                   server_ip, server_port, client_port, MVVM_SOCK_INTERFACE,
-                                                   TCPConnection::ESTABLISHED); // need port
-                    /* Both connection are already established... */
-                    // tcp_v_to_s->Sync();
-                    backend_thread.emplace_back([&]() {
-                    tcp_s_to_v->Sync();
-		    });
-
-                    // stop SYN
-                    LOGV(ERROR) << "Connections synchronized ";
-
                     bool closed = false;
                     backend_thread.emplace_back([&]() {
                         while (!closed) {
                             auto payload = Payload();
+                            LOGV(ERROR) << payload.GetString();
+
                             tcp_v_to_s->Read(payload);
                             if (tcp_v_to_s->GetStatus() == TCPConnection::CLOSING) {
                                 closed = true;
                                 return;
                             }
-                            send(new_client, payload.GetRawPointer(), sizeof(*payload.GetRawPointer()),0);
+                            send(new_client, payload.GetRawPointer(), sizeof(*payload.GetRawPointer()), 0);
                         }
                     });
                     backend_thread.emplace_back([&]() {
                         while (!closed) {
                             if ((rc = recv(new_client, buffer, sizeof(buffer), 0)) > 0) {
+                                LOGV(ERROR) << "recv" << buffer;
                                 tcp_v_to_s->Send(((byte_ *)buffer), sizeof(buffer));
                             }
                         }
                     });
-
                 } else
                     is_forward = true;
                 sleep(1);

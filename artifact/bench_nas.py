@@ -27,7 +27,7 @@ for exec, output in results:
     print(exec)
     lines = output.split("\n")
     for line in lines:
-        if line.startswith("Execution time:"):
+        if line.__contains__("Execution time:"):
             print(line)
 
 # read the results
