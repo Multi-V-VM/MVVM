@@ -334,7 +334,7 @@ void sigtrap_handler(int sig) {
     signal(SIGILL, sigtrap_handler);
 #endif
     call_count++;
-    if (snapshot_threshold != 0)
+    if (snapshot_threshold != 0 || checkpoint)
         if (call_count >= snapshot_threshold || checkpoint) {
             fprintf(stderr, "serializing\n");
             serialize_to_file(exec_env);
