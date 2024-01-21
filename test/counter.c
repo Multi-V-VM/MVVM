@@ -2,6 +2,8 @@
 #include <unistd.h>
 int a(int c){
     static int b=0;
+    b++;
+    printf("%d %d\n",c,b);
 //    printf("\n");
 }
 int main(int argv,char ** argc){
