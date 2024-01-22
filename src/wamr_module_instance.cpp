@@ -12,10 +12,10 @@ void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
         memories.push_back(local_mem);
     }
     global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
-    LOGV(DEBUG) << env->global_data_size;
-    for (int i = 0; i < env->global_data_size; i++) {
-        LOGV(DEBUG) << env->global_data[i];
-    }
+    // LOGV(DEBUG) << env->global_data_size;
+    // for (int i = 0; i < env->global_data_size; i++) {
+    //     LOGV(DEBUG) << env->global_data[i];
+    // }
     dump(&wasi_ctx, &env->module->wasi_args);
 
     if (wamr->is_aot) {
