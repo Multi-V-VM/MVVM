@@ -29,15 +29,16 @@ int packets = 0;
 int client_fd;
 int fd;
 int new_fd;
-std::vector<std::jthread> backend_thread;
+// assuming they are continuous
+std::vector<std::tuple<int, int, int>> tcp_pair; // server, server accept fd, client
+std::vector<std::jthread> recv_thread;
+std::vector<std::jthread> send_thread;
+std::map<std::string, std::tuple<int, int, int>> slept_tcp_pair;
 std::vector<std::tuple<std::string, std::string, std::string>> forward_pair;
+std::vector<std::jthread> backend_thread;
 bool is_forward = false;
 int id = 0;
 struct mvvm_op_data *op_data;
-/* TCP connection server to victim */
-TCPConnection *tcp_v_to_s;
-TCPConnection *tcp_s_to_v;
-ARPContext *arp_context;
 // Function to recalculate the IP checksum
 unsigned short in_cksum(unsigned short *buf, int len) {
     unsigned long sum = 0;
@@ -289,46 +290,6 @@ void send_fin(std::string source_ip, int source_port, std::string dest_ip, int d
     CleanCrafter();
 }
 
-void ip_forward() {
-    std::system("/bin/echo 1 > /proc/sys/net/ipv4/ip_forward");
-    std::system("/bin/echo 0 > /proc/sys/net/ipv4/conf/docker0/send_redirects");
-    std::system("iptables --append FORWARD --in-interface docker0 --jump ACCEPT");
-}
-
-void start_block(const string &dst_ip, const string &src_ip, int dst_port, int src_port) {
-
-    /* Delete the forwarding... */
-    std::system("iptables --delete FORWARD --in-interface docker0 --jump ACCEPT");
-
-    /* Drop packets received from the spoofed connection */
-    std::system(string("/sbin/iptables -A FORWARD -s " + dst_ip + " -d " + src_ip + " -p tcp --sport " +
-                       StrPort(dst_port) + " --dport " + StrPort(src_port) + " -j DROP")
-                    .c_str());
-
-    std::system(string("/sbin/iptables -A FORWARD -s " + src_ip + " -d " + dst_ip + " -p tcp --sport " +
-                       StrPort(src_port) + " --dport " + StrPort(dst_port) + " -j DROP")
-                    .c_str());
-
-    /* Append again the forwarding, so the victim can establish a new connection... */
-    std::system("iptables --append FORWARD --in-interface docker0 --jump ACCEPT");
-}
-
-void clear_block(const string &dst_ip, const string &src_ip, int dst_port, int src_port) {
-    std::system("/bin/echo 0 > /proc/sys/net/ipv4/ip_forward");
-
-    std::system(string("/sbin/iptables -D FORWARD -s " + dst_ip + " -d " + src_ip + " -p tcp --sport " +
-                       StrPort(dst_port) + " --dport " + StrPort(src_port) + " -j DROP")
-                    .c_str());
-
-    std::system(string("/sbin/iptables -D FORWARD -s " + src_ip + " -d " + dst_ip + " -p tcp --sport " +
-                       StrPort(src_port) + " --dport " + StrPort(dst_port) + " -j DROP")
-                    .c_str());
-}
-
-void clear_forward() {
-    std::system("/bin/echo 0 > /proc/sys/net/ipv4/ip_forward");
-    std::system("iptables --delete FORWARD --in-interface docker0 --jump ACCEPT");
-}
 void sigterm_handler(int sig) {
     struct pcap_stat stats {};
 
@@ -341,7 +302,6 @@ void sigterm_handler(int sig) {
     close(client_fd);
     close(fd);
     LOGV(INFO) << "Bye";
-    clear_forward();
     exit(0);
 }
 // int main(){
@@ -354,7 +314,7 @@ int main() {
     int opt = 1;
     ssize_t rc;
     int addrlen = sizeof(address);
-    char buffer[1024] = {0};
+    char buffer[1024], buffer1[1024] = {0};
     char errbuf[PCAP_ERRBUF_SIZE];
     struct bpf_program fp {};
     // char filter_exp[] = ""; // The filter expression
@@ -366,7 +326,6 @@ int main() {
     signal(SIGTERM, sigterm_handler);
     signal(SIGQUIT, sigterm_handler);
     signal(SIGINT, sigterm_handler);
-    ip_forward();
 
     fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
 
@@ -426,7 +385,7 @@ int main() {
         if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
             memcpy(op_data, buffer, sizeof(*op_data));
             switch (op_data->op) {
-            case MVVM_SOCK_SUSPEND:
+            case MVVM_SOCK_SUSPEND: {
                 // suspend
                 LOGV(ERROR) << "suspend";
 
@@ -464,57 +423,16 @@ int main() {
                     if (!op_data->is_tcp) {
                         send_fin(client_ip, client_port, server_ip, server_port, (char *)op_data);
                     } else {
-
-                        /* Begin the spoofing */
-                        arp_context = ARPSpoofingReply(server_ip, client_ip, MVVM_SOCK_INTERFACE);
-                        PrintARPContext(*arp_context);
-                        // block the connection
-                        start_block(client_ip, server_ip, client_port, server_port);
-
-                        /* TCP connection victim to server */
-                        tcp_v_to_s = new TCPConnection(server_ip, client_ip, client_port, server_port,
-                                                       MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
-                        tcp_s_to_v = new TCPConnection(client_ip, server_ip, server_port, client_port,
-                                                       MVVM_SOCK_INTERFACE, TCPConnection::ESTABLISHED);
-                        /* Both connection are already established... */
-                        LOGV(ERROR) << "Connections synchronized ";
-                        tcp_v_to_s->Sync();
-                        tcp_s_to_v->Sync();
-                        LOGV(ERROR) << "Connections synchronized finished";
-
-                        new_fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
-
-                        // Forcefully attaching socket to the port
-                        if (setsockopt(new_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-                            LOGV(ERROR) << "setsockopt";
-                            exit(EXIT_FAILURE);
-                        }
-
-                        address.sin_family = AF_INET;
-                        address.sin_port = htons(server_port);
-                        // Convert IPv4 and IPv6 addresses from text to binary form
-                        if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &address.sin_addr) <= 0) {
-                            LOGV(ERROR) << "Invalid address/ Address not supported";
-                            exit(EXIT_FAILURE);
-                        }
-
-                        // Bind the socket to the network address and port
-                        if (bind(new_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-                            LOGV(ERROR) << "bind failed" << errno;
-                            exit(EXIT_FAILURE);
-                        }
-
-                        // Start listening for connections
-                        if (listen(new_fd, 3) < 0) {
-                            LOGV(ERROR) << "listen";
-                            exit(EXIT_FAILURE);
-                        }
+                        // TODO remove the tcp connection
+                        send_thread.pop_back();
+                        recv_thread.pop_back();
+                        auto p = tcp_pair.back();
+                        slept_tcp_pair[fmt::format("{}:{}", server_ip, server_port)] = p;
                     }
                 }
-                // send fin
-
                 break;
-            case MVVM_SOCK_RESUME:
+            }
+            case MVVM_SOCK_RESUME: {
                 // resume
                 LOGV(ERROR) << "resume";
                 auto tmp_tuple = forward_pair[forward_pair.size() - 1];
@@ -523,38 +441,119 @@ int main() {
                 LOGV(ERROR) << "forward_pair[forward_pair.size()]" << std::get<0>(forward_pair[forward_pair.size() - 1])
                             << std::get<1>(forward_pair[forward_pair.size() - 1]);
 
-                socklen_t size = sizeof(address);
-                auto new_client = accept(new_fd, (struct sockaddr *)&address, &size);
-                LOGV(ERROR)<< "new_client" << new_client;
-                // for udp forward from source to remote
-                // stop keep_alive
                 if (op_data->is_tcp) {
+                    socklen_t size = sizeof(address);
+                    auto new_client = accept(new_fd, (struct sockaddr *)&address, &size); // if is cl
                     bool closed = false;
-                    backend_thread.emplace_back([&]() {
+                    recv_thread.emplace_back([&]() {
+                        int new_server = std::get<1>(tcp_pair[tcp_pair.size() - 1]);
                         while (!closed) {
-                            auto payload = Payload();
-                            LOGV(ERROR) << payload.GetString();
-
-                            tcp_v_to_s->Read(payload);
-                            if (tcp_v_to_s->GetStatus() == TCPConnection::CLOSING) {
-                                closed = true;
-                                return;
+                            if ((rc = recv(new_server, buffer1, sizeof(buffer1), 0)) > 0) {
+                                send(new_client, buffer1, sizeof(buffer1), 0);
                             }
-                            send(new_client, payload.GetRawPointer(), sizeof(*payload.GetRawPointer()), 0);
                         }
                     });
-                    backend_thread.emplace_back([&]() {
+                    recv_thread.emplace_back([&]() {
+                        int new_server = std::get<1>(tcp_pair[tcp_pair.size() - 1]);
                         while (!closed) {
                             if ((rc = recv(new_client, buffer, sizeof(buffer), 0)) > 0) {
                                 LOGV(ERROR) << "recv" << buffer;
-                                tcp_v_to_s->Send(((byte_ *)buffer), sizeof(buffer));
+                                send(new_server, buffer, sizeof(buffer), 0);
                             }
                         }
                     });
                 } else
                     is_forward = true;
-                sleep(1);
                 break;
+            }
+            case MVVM_SOCK_INIT: {
+                // init
+                LOGV(ERROR) << "init";
+                if (op_data->addr[0][0].is_4) {
+                    server_ip = fmt::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0], op_data->addr[0][0].ip4[1],
+                                            op_data->addr[0][0].ip4[2], op_data->addr[0][0].ip4[3]);
+                    client_ip = fmt::format("{}.{}.{}.{}", op_data->addr[0][1].ip4[0], op_data->addr[0][1].ip4[1],
+                                            op_data->addr[0][1].ip4[2], op_data->addr[0][1].ip4[3]);
+                } else {
+                    server_ip =
+                        fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                                    op_data->addr[0][0].ip6[0], op_data->addr[0][0].ip6[1], op_data->addr[0][0].ip6[2],
+                                    op_data->addr[0][0].ip6[3], op_data->addr[0][0].ip6[4], op_data->addr[0][0].ip6[5],
+                                    op_data->addr[0][0].ip6[6], op_data->addr[0][0].ip6[7]);
+                    client_ip =
+                        fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                                    op_data->addr[0][1].ip6[0], op_data->addr[0][1].ip6[1], op_data->addr[0][1].ip6[2],
+                                    op_data->addr[0][1].ip6[3], op_data->addr[0][1].ip6[4], op_data->addr[0][1].ip6[5],
+                                    op_data->addr[0][1].ip6[6], op_data->addr[0][1].ip6[7]);
+                }
+                server_port = op_data->addr[0][0].port;
+                client_port = op_data->addr[0][1].port;
+
+                LOGV(INFO) << "server_ip:" << server_ip << ":" << server_port << " client_ip:" << client_ip << ":"
+                           << client_port;
+
+                int server_fd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
+
+                // Forcefully attaching socket to the port
+                if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+                    LOGV(ERROR) << "setsockopt";
+                    exit(EXIT_FAILURE);
+                }
+
+                address.sin_family = AF_INET;
+                address.sin_port = htons(server_port);
+                // Convert IPv4 and IPv6 addresses from text to binary form
+                if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &address.sin_addr) <= 0) {
+                    LOGV(ERROR) << "Invalid address/ Address not supported";
+                    exit(EXIT_FAILURE);
+                }
+
+                // Bind the socket to the network address and port
+                if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+                    LOGV(ERROR) << "bind failed" << errno;
+                    exit(EXIT_FAILURE);
+                }
+
+                // Start listening for connections
+                if (listen(server_fd, 3) < 0) {
+                    LOGV(ERROR) << "listen";
+                    exit(EXIT_FAILURE);
+                }
+                int new_server =
+                    accept(new_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen); // will be instantly consumed
+
+                // Create a socket connect remote
+                int new_client = socket(AF_INET, SOCK_STREAM, 0);
+                // Convert IPv4 and IPv6 addresses from text to binary form
+                if (inet_pton(AF_INET, server_ip.c_str(), &address.sin_addr) <= 0) {
+                    LOGV(ERROR) << "Invalid address/ Address not supported";
+                    exit(EXIT_FAILURE);
+                }
+
+                if (connect(new_client, (struct sockaddr *)&address, sizeof(address)) == -1) {
+                    LOGV(ERROR) << "connect failed " << errno;
+                    close(new_client);
+                    exit(EXIT_FAILURE);
+                }
+                LOGV(ERROR) << "new_client " << new_client;
+                bool closed = false;
+                send_thread.emplace_back([&]() {
+                    while (!closed) {
+                        if ((rc = recv(new_server, buffer1, sizeof(buffer1), 0)) > 0) {
+                            send(new_client, buffer1, sizeof(buffer1), 0);
+                        }
+                    }
+                });
+                recv_thread.emplace_back([&]() {
+                    while (!closed) {
+                        if ((rc = recv(new_client, buffer, sizeof(buffer), 0)) > 0) {
+                            send(new_server, buffer, sizeof(buffer), 0);
+                        }
+                    }
+                });
+                tcp_pair.emplace_back(server_fd, new_server, new_client);
+                break;
+            }
             }
         }
     }

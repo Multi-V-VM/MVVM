@@ -40,6 +40,7 @@ public:
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_{};
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, SocketMetaData> socket_fd_map_{};
+    SocketAddrPool local_addr{};
     // lwcp is LightWeight CheckPoint
     size_t ready = 0;
     std::mutex as_mtx;

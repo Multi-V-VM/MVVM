@@ -78,6 +78,46 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
         LOGV(ERROR) << fmt::format("Load wasm module failed. error: {}", error_buf);
         throw;
     }
+    struct ifaddrs *ifaddr, *ifa;
+    int family, s;
+    char host[NI_MAXHOST];
+
+    if (getifaddrs(&ifaddr) == -1) {
+        LOGV(ERROR) << "getifaddrs";
+        exit(EXIT_FAILURE);
+    }
+
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == nullptr)
+            continue;
+
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+            // IPv4
+            auto *ipv4 = (struct sockaddr_in *)ifa->ifa_addr;
+            uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
+            if (is_ip_in_cidr(MVVM_SOCK_ADDR, MVVM_SOCK_MASK, ip)) {
+                // Extract IPv4 address
+                local_addr.ip4[0] = (ip >> 24) & 0xFF;
+                local_addr.ip4[1] = (ip >> 16) & 0xFF;
+                local_addr.ip4[2] = (ip >> 8) & 0xFF;
+                local_addr.ip4[3] = ip & 0xFF;
+            }
+
+        } else if (ifa->ifa_addr->sa_family == AF_INET6) {
+            // IPv6
+            auto *ipv6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+            // Extract IPv6 address
+            const auto *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
+            if (is_ipv6_in_cidr(MVVM_SOCK_ADDR6, MVVM_SOCK_MASK6, &ipv6->sin6_addr)) {
+                for (int i = 0; i < 16; i += 2) {
+                    local_addr.ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
+                }
+            }
+        }
+    }
+    local_addr.is_4 = true;
+
+    freeifaddrs(ifaddr);
 }
 
 bool WAMRInstance::load_wasm_binary(const char *wasm_path, char **buffer_ptr) {

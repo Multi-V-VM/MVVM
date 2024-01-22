@@ -223,6 +223,46 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
     }
 }
 
+void init_gateway(SocketAddrPool *address) {
+    // tell gateway to keep alive the server
+    struct sockaddr_in addr {};
+    int fd = 0;
+    ssize_t rc;
+    wamr->op_data.op = MVVM_SOCK_INIT;
+    wamr->op_data.addr[0][0] = wamr->local_addr;
+    std::memcpy(&wamr->op_data.addr[0][1], address, sizeof(SocketAddrPool));
+
+    // Create a socket
+    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        LOGV(ERROR) << "socket error";
+        throw std::runtime_error("socket error");
+    }
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(MVVM_SOCK_PORT);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
+        LOGV(ERROR) << "AF_INET not supported";
+        exit(EXIT_FAILURE);
+    }
+    // Connect to the server
+    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        LOGV(ERROR) << "Connection Failed " << errno;
+        exit(EXIT_FAILURE);
+    }
+
+    LOGV(INFO) << "Connected successfully";
+    rc = send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0);
+    if (rc == -1) {
+        LOGV(ERROR) << "send error";
+        exit(EXIT_FAILURE);
+    }
+
+    // Clean up
+    close(fd);
+}
+
 void insert_lock(char const *, int) {}
 void insert_sem(char const *, int) {}
 void remove_lock(char const *) {}

@@ -25,6 +25,7 @@ void insert_sock_recv_from_data(uint32_t, uint8 *, uint32, uint16_t, __wasi_addr
 void replay_sock_recv_from_data(uint32_t, uint8 **, unsigned long *, __wasi_addr_t *);
 void insert_socket(int, int, int, int);
 void update_socket_fd_address(int, struct SocketAddrPool *);
+void init_gateway(struct SocketAddrPool *address);
 void set_tcp();
 void insert_lock(char const *, int);
 void insert_sem(char const *, int);

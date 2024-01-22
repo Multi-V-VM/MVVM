@@ -46,50 +46,8 @@ void serialize_to_file(WASMExecEnv *instance) {
             auto tmp_ip6 =
                 fmt::format("{}:{}:{}:{}:{}:{}:{}:{}", src_addr.ip6[0], src_addr.ip6[1], src_addr.ip6[2],
                             src_addr.ip6[3], src_addr.ip6[4], src_addr.ip6[5], src_addr.ip6[6], src_addr.ip6[7]);
-            if (src_addr.port == 0) {
-                src_addr.is_4 = true;
-            }
             if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
-                struct ifaddrs *ifaddr, *ifa;
-                int family, s;
-                char host[NI_MAXHOST];
-
-                if (getifaddrs(&ifaddr) == -1) {
-                    LOGV(ERROR) << "getifaddrs";
-                    exit(EXIT_FAILURE);
-                }
-
-                for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
-                    if (ifa->ifa_addr == nullptr)
-                        continue;
-
-                    if (ifa->ifa_addr->sa_family == AF_INET && src_addr.is_4) {
-                        // IPv4
-                        auto *ipv4 = (struct sockaddr_in *)ifa->ifa_addr;
-                        uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
-                        if (is_ip_in_cidr(MVVM_SOCK_ADDR, MVVM_SOCK_MASK, ip)) {
-                            // Extract IPv4 address
-                            src_addr.ip4[0] = (ip >> 24) & 0xFF;
-                            src_addr.ip4[1] = (ip >> 16) & 0xFF;
-                            src_addr.ip4[2] = (ip >> 8) & 0xFF;
-                            src_addr.ip4[3] = ip & 0xFF;
-                        }
-
-                    } else if (ifa->ifa_addr->sa_family == AF_INET6 && !src_addr.is_4) {
-                        // IPv6
-                        auto *ipv6 = (struct sockaddr_in6 *)ifa->ifa_addr;
-                        src_addr.is_4 = false;
-                        // Extract IPv6 address
-                        const auto *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
-                        if (is_ipv6_in_cidr(MVVM_SOCK_ADDR6, MVVM_SOCK_MASK6, &ipv6->sin6_addr)) {
-                            for (int i = 0; i < 16; i += 2) {
-                                src_addr.ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
-                            }
-                        }
-                    }
-                }
-
-                freeifaddrs(ifaddr);
+                src_addr = wamr->local_addr;
             }
             LOGV(INFO) << "addr: "
                        << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3])
@@ -110,14 +68,12 @@ void serialize_to_file(WASMExecEnv *instance) {
             if ((tmp_ip4 == "0.0.0.0" || tmp_ip6 == "0:0:0:0:0:0:0:0") && !wamr->op_data.is_tcp) {
                 if (sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip4 == "0.0.0.0" ||
                     !sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
-
                     wamr->op_data.addr[idx][1].is_4 = sock_data.socketRecvFromDatas[0].src_addr.ip.is_4;
                     std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketRecvFromDatas[0].src_addr.ip.ip4,
                                 sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip4));
                     std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketRecvFromDatas[0].src_addr.ip.ip6,
                                 sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip6));
                     wamr->op_data.addr[idx][1].port = sock_data.socketRecvFromDatas[0].src_addr.port;
-
                 } else {
                     wamr->op_data.addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
                     std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
@@ -127,9 +83,9 @@ void serialize_to_file(WASMExecEnv *instance) {
                     wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
                 }
             } else {
-                unsigned int size_ =sizeof(sockaddr_in);
+                unsigned int size_ = sizeof(sockaddr_in);
                 sockaddr_in *ss = (sockaddr_in *)malloc(size_);
-                wamr->invoke_sock_getsockname(tmp_fd, (sockaddr**)&ss, &size_);
+                wamr->invoke_sock_getsockname(tmp_fd, (sockaddr **)&ss, &size_);
                 if (ss->sin_family <= AF_INET) {
                     auto *ipv4 = (struct sockaddr_in *)ss;
                     uint32_t ip = ntohl(ipv4->sin_addr.s_addr);

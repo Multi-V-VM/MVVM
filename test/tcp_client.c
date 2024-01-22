@@ -21,12 +21,6 @@ static void init_sockaddr_inet(struct sockaddr_in *addr) {
     addr->sin_port = htons(1234);
     addr->sin_addr.s_addr = my_inet_addr("172.17.0.2");
 }
-static void init_sockaddr_inet1(struct sockaddr_in *addr) {
-    /* 127.0.0.1:1234 */
-    addr->sin_family = AF_INET;
-    addr->sin_port = htons(1234);
-    addr->sin_addr.s_addr = my_inet_addr("172.17.0.1");
-}
 static void init_sockaddr_inet6(struct sockaddr_in6 *addr) {
     /* [::1]:1234 */
     addr->sin6_family = AF_INET6;
@@ -38,7 +32,7 @@ void init_connect(int socket_fd) {
     struct sockaddr_storage server_address = {0};
 
     int len = sizeof(struct sockaddr_in);
-    init_sockaddr_inet1((struct sockaddr_in *)&server_address);
+    init_sockaddr_inet((struct sockaddr_in *)&server_address);
 
     printf("[Client] Create socket\n");
     // s_(af, SOCK_STREAM, 0,socket_fd);
