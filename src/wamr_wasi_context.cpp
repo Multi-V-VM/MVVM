@@ -66,48 +66,50 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
         this->fd_map[fd] = dumped_res;
     }
 #if !defined(_WIN32)
-    if (gettid() == getpid()) {
-        is_debug = false;
-        for (auto [fd, socketMetaData] : wamr->socket_fd_map_) {
-            ssize_t rc;
-            if (wamr->socket_fd_map_[fd].socketRecvFromDatas.empty()) {
+    // is_debug = false;
+    for (auto [fd, socketMetaData] : wamr->socket_fd_map_) {
+        ssize_t rc;
+        if (wamr->socket_fd_map_[fd].socketRecvFromDatas.empty()) {
+            this->socket_fd_map[fd] = socketMetaData;
+            continue;
+        }
+        wamr->socket_fd_map_[fd].is_collection = true;
+
+        if (!wamr->op_data.is_tcp) {
+            while (wamr->socket_fd_map_[fd].is_collection) { // drain udp socket
+                // get source from previous packets
+                // emunate the recvfrom syscall
+                if (socketMetaData.socketAddress.is_4) {
+                    struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
+                    socklen_t sockaddr4_size = sizeof(sockaddr4);
+                    rc = wamr->invoke_recvfrom(fd, &buf, 1024, 0, (struct sockaddr *)&sockaddr4, &sockaddr4_size);
+                } else {
+                    struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
+                    socklen_t sockaddr6_size = sizeof(sockaddr6);
+                    rc = wamr->invoke_recvfrom(fd, &buf, 1024, 0, (struct sockaddr *)&sockaddr6, &sockaddr6_size);
+                }
+                if (rc == -1) {
+                    LOGV(ERROR) << "recvfrom error";
+                    return;
+                }
+            }
+        } else {
+            if (wamr->socket_fd_map_[fd].is_server) {
                 this->socket_fd_map[fd] = socketMetaData;
                 continue;
             }
-            wamr->socket_fd_map_[fd].is_collection = true;
-
-            if (!wamr->op_data.is_tcp) {
-                while (wamr->socket_fd_map_[fd].is_collection) { // drain udp socket
-                    // get source from previous packets
-                    // emunate the recvfrom syscall
-                    if (socketMetaData.socketAddress.is_4) {
-                        struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
-                        socklen_t sockaddr4_size = sizeof(sockaddr4);
-                        rc = wamr->invoke_recvfrom(fd, &buf, 1024, 0, (struct sockaddr *)&sockaddr4, &sockaddr4_size);
-                    } else {
-                        struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
-                        socklen_t sockaddr6_size = sizeof(sockaddr6);
-                        rc = wamr->invoke_recvfrom(fd, &buf, 1024, 0, (struct sockaddr *)&sockaddr6, &sockaddr6_size);
-                    }
-                    if (rc == -1) {
-                        LOGV(ERROR) << "recvfrom error";
-                        return;
-                    }
-                }
-            } else {
-                while (wamr->socket_fd_map_[fd].is_collection) { // drain udp socket
-                    rc = wamr->invoke_recv(fd, &buf, 1024, 0);
-                    if (rc == -1) {
-                        LOGV(ERROR) << "recv error";
-                        return;
-                    }
+            while (wamr->socket_fd_map_[fd].is_collection) { // drain udp socket
+                rc = wamr->invoke_recv(fd, &buf, 1024, 0);
+                if (rc == -1) {
+                    LOGV(ERROR) << "recv error";
+                    return;
                 }
             }
-            // LOGV(ERROR) << "recv error";
-
-            this->socket_fd_map[fd] = socketMetaData;
         }
+
+        this->socket_fd_map[fd] = socketMetaData;
     }
+
     this->sync_ops.assign(wamr->sync_ops.begin(), wamr->sync_ops.end());
 #endif
 }

@@ -390,7 +390,8 @@ int main() {
         if ((rc = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
             memcpy(op_data, buffer, sizeof(*op_data));
             switch (op_data->op) {
-            case MVVM_SOCK_SUSPEND: {
+            case MVVM_SOCK_SUSPEND:
+            case MVVM_SOCK_SUSPEND_TCP_SERVER: {
                 // suspend
                 LOGV(ERROR) << "suspend";
 
@@ -421,28 +422,39 @@ int main() {
 
                     forward_pair.emplace_back(server_ip, client_ip, "");
                     // send the fin to server
-                    op_data->op = MVVM_SOCK_FIN;
-                    LOGV(INFO) << "send fin";
 
                     if (!op_data->is_tcp) {
+                        op_data->op = MVVM_SOCK_FIN;
+                        LOGV(INFO) << "send fin";
                         send_fin(client_ip, client_port, server_ip, server_port, (char *)op_data);
                     } else {
-
                         auto to_stop = tcp_pair[fmt::format("{}:{}", server_ip, server_port)];
-                        LOGV(ERROR) << server_ip << ":" << server_port << " " << to_stop.new_client << " "
-                                    << to_stop.new_server;
+
+                        LOGV(ERROR) << "is_tcp_server" << fmt::format("{}:{}", server_ip, server_port)
+                                    << to_stop.new_server << to_stop.new_client;
+                        LOGV(INFO) << "send fin";
                         sleep(2);
-                        send(to_stop.new_server, (char *)op_data, sizeof(*op_data), 0);
-                        to_stop.is_sleep = true;
                         delete to_stop.send;
                         delete to_stop.recv;
+                        if (op_data->op == MVVM_SOCK_SUSPEND_TCP_SERVER) {
+                            op_data->op = MVVM_SOCK_FIN;
+
+                            send(to_stop.new_client, (char *)op_data, sizeof(*op_data), 0);
+                        } else {
+                            op_data->op = MVVM_SOCK_FIN;
+
+                            send(to_stop.new_server, (char *)op_data, sizeof(*op_data), 0);
+                        }
+                        to_stop.is_sleep = true;
                     }
                 }
                 break;
             }
-            case MVVM_SOCK_RESUME: {
+            case MVVM_SOCK_RESUME:
+            case MVVM_SOCK_RESUME_TCP_SERVER: {
                 // resume
                 LOGV(ERROR) << "resume";
+
                 auto tmp_tuple = forward_pair[forward_pair.size() - 1];
                 auto &&tmp_ip4 = op_data->addr[0][0].ip4;
                 std::get<2>(tmp_tuple) = fmt::format("{}.{}.{}.{}", tmp_ip4[0], tmp_ip4[1], tmp_ip4[2], tmp_ip4[3]);
@@ -450,6 +462,7 @@ int main() {
                             << std::get<1>(forward_pair[forward_pair.size() - 1]);
 
                 if (op_data->is_tcp) {
+                    // client
                     auto to_start = tcp_pair[fmt::format("{}:{}", server_ip, server_port)];
                     LOGV(ERROR) << server_ip << ":" << server_port;
 
@@ -459,10 +472,27 @@ int main() {
                     } else {
                         to_start.is_sleep = false;
                     }
+                    int new_server;
+                    int new_client;
+                    if (op_data->op != MVVM_SOCK_RESUME_TCP_SERVER) {
+                        socklen_t size = sizeof(address);
+                        new_server = accept(to_start.server_fd, (struct sockaddr *)&address, &size);
+                        new_client = to_start.new_client;
+                    } else {
+                        new_server = to_start.new_server;
+                        address.sin_family = AF_INET;
+                        address.sin_port = htons(client_port);
+                        if (inet_pton(AF_INET, std::get<2>(tmp_tuple).c_str(), &address.sin_addr) <= 0) {
+                            LOGV(ERROR) << "Invalid address/ Address not supported";
+                            exit(EXIT_FAILURE);
+                        }
 
-                    socklen_t size = sizeof(address);
-                    auto new_server = accept(to_start.server_fd, (struct sockaddr *)&address, &size);
-                    int new_client = to_start.new_client;
+                        if (connect(new_client, (struct sockaddr *)&address, sizeof(address)) == -1) {
+                            LOGV(ERROR) << "connect failed " << errno;
+                            close(new_client);
+                            exit(EXIT_FAILURE);
+                        }
+                    }
 
                     to_start.send = new std::jthread([&](std::stop_token stopToken) {
                         while (!stopToken.stop_requested()) {
@@ -493,6 +523,7 @@ int main() {
                         }
                     });
                     to_start.new_server = new_server;
+                    to_start.is_sleep = false;
                     tcp_pair[fmt::format("{}:{}", server_ip, server_port)] = to_start;
                 } else
                     is_forward = true;

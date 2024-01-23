@@ -29,14 +29,31 @@ FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 void serialize_to_file(WASMExecEnv *instance) {
-    // gateway
+// gateway
 #if !defined(_WIN32)
-    if (!wamr->socket_fd_map_.empty() && gettid() == getpid()) {
+    auto cluster = wasm_exec_env_get_cluster(instance);
+    auto all_count = bh_list_length(&cluster->exec_env_list);
+    // fill vector
+    std::unique_lock as_ul(wamr->as_mtx);
+    printf("get lock\n");
+    wamr->ready++;
+    wamr->lwcp_list[gettid()]++;
+    // If we're not all ready
+    printf("thread %d, with %ld ready out of %d total\n", gettid(), wamr->ready, all_count);
+    if (!wamr->socket_fd_map_.empty() && wamr->ready == all_count) {
         // tell gateway to keep alive the server
         struct sockaddr_in addr {};
         int fd = 0;
         ssize_t rc;
         SocketAddrPool src_addr{};
+        bool is_server = false;
+        for (auto [tmp_fd, sock_data] : wamr->socket_fd_map_) {
+            if (sock_data.is_server) {
+                is_server = true;
+                break;
+            }
+        }
+        wamr->op_data.op = is_server ? MVVM_SOCK_SUSPEND_TCP_SERVER : MVVM_SOCK_SUSPEND;
 
         for (auto [tmp_fd, sock_data] : wamr->socket_fd_map_) {
             int idx = wamr->op_data.size;
@@ -48,12 +65,12 @@ void serialize_to_file(WASMExecEnv *instance) {
                             src_addr.ip6[3], src_addr.ip6[4], src_addr.ip6[5], src_addr.ip6[6], src_addr.ip6[7]);
             if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
                 src_addr = wamr->local_addr;
+                src_addr.port = sock_data.socketAddress.port;
             }
             LOGV(INFO) << "addr: "
                        << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3])
                        << " port: " << src_addr.port;
 
-            wamr->op_data.op = MVVM_SOCK_SUSPEND;
             wamr->op_data.addr[idx][0] = src_addr;
             tmp_ip4 = fmt::format("{}.{}.{}.{}", sock_data.socketSentToData.dest_addr.ip.ip4[0],
                                   sock_data.socketSentToData.dest_addr.ip.ip4[1],
@@ -65,44 +82,54 @@ void serialize_to_file(WASMExecEnv *instance) {
                 sock_data.socketSentToData.dest_addr.ip.ip6[3], sock_data.socketSentToData.dest_addr.ip.ip6[4],
                 sock_data.socketSentToData.dest_addr.ip.ip6[5], sock_data.socketSentToData.dest_addr.ip.ip6[6],
                 sock_data.socketSentToData.dest_addr.ip.ip6[7]);
-            if ((tmp_ip4 == "0.0.0.0" || tmp_ip6 == "0:0:0:0:0:0:0:0") && !wamr->op_data.is_tcp) {
-                if (sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip4 == "0.0.0.0" ||
-                    !sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
-                    wamr->op_data.addr[idx][1].is_4 = sock_data.socketRecvFromDatas[0].src_addr.ip.is_4;
-                    std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketRecvFromDatas[0].src_addr.ip.ip4,
-                                sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip4));
-                    std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketRecvFromDatas[0].src_addr.ip.ip6,
-                                sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip6));
-                    wamr->op_data.addr[idx][1].port = sock_data.socketRecvFromDatas[0].src_addr.port;
-                } else {
-                    wamr->op_data.addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
-                    std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
-                                sizeof(sock_data.socketSentToData.dest_addr.ip.ip4));
-                    std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
-                                sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
-                    wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
-                }
-            } else {
-                unsigned int size_ = sizeof(sockaddr_in);
-                sockaddr_in *ss = (sockaddr_in *)malloc(size_);
-                wamr->invoke_sock_getsockname(tmp_fd, (sockaddr **)&ss, &size_);
-                if (ss->sin_family <= AF_INET) {
-                    auto *ipv4 = (struct sockaddr_in *)ss;
-                    uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
-                    wamr->op_data.addr[idx][1].is_4 = true;
-                    wamr->op_data.addr[idx][1].ip4[0] = (ip >> 24) & 0xFF;
-                    wamr->op_data.addr[idx][1].ip4[1] = (ip >> 16) & 0xFF;
-                    wamr->op_data.addr[idx][1].ip4[2] = (ip >> 8) & 0xFF;
-                    wamr->op_data.addr[idx][1].ip4[3] = ip & 0xFF;
-                    wamr->op_data.addr[idx][1].port = ntohs(ipv4->sin_port);
-                } else if (ss->sin_family > AF_INET) {
-                    auto *ipv6 = (struct sockaddr_in6 *)ss;
-                    wamr->op_data.addr[idx][1].is_4 = false;
-                    const auto *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
-                    for (int i = 0; i < 16; i += 2) {
-                        wamr->op_data.addr[idx][1].ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
+            if (tmp_ip4 == "0.0.0.0" || tmp_ip6 == "0:0:0:0:0:0:0:0") {
+                if (!wamr->op_data.is_tcp) {
+                    if (sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip4 == "0.0.0.0" ||
+                        !sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
+                        wamr->op_data.addr[idx][1].is_4 = sock_data.socketRecvFromDatas[0].src_addr.ip.is_4;
+                        std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketRecvFromDatas[0].src_addr.ip.ip4,
+                                    sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip4));
+                        std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketRecvFromDatas[0].src_addr.ip.ip6,
+                                    sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip6));
+                        wamr->op_data.addr[idx][1].port = sock_data.socketRecvFromDatas[0].src_addr.port;
+                    } else {
+                        wamr->op_data.addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
+                        std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
+                                    sizeof(sock_data.socketSentToData.dest_addr.ip.ip4));
+                        std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
+                                    sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
+                        wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
                     }
-                    wamr->op_data.addr[idx][1].port = ntohs(ipv6->sin6_port);
+                } else {
+                    // if it's not socket
+                    if (!is_server) {
+                        int tmp_fd = 0;
+                        unsigned int size_ = sizeof(sockaddr_in);
+                        sockaddr_in *ss = (sockaddr_in *)malloc(size_);
+                        wamr->invoke_sock_getsockname(tmp_fd, (sockaddr **)&ss, &size_);
+                        if (ss->sin_family == AF_INET) {
+                            auto *ipv4 = (struct sockaddr_in *)ss;
+                            uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
+                            wamr->op_data.addr[idx][1].is_4 = true;
+                            wamr->op_data.addr[idx][1].ip4[0] = (ip >> 24) & 0xFF;
+                            wamr->op_data.addr[idx][1].ip4[1] = (ip >> 16) & 0xFF;
+                            wamr->op_data.addr[idx][1].ip4[2] = (ip >> 8) & 0xFF;
+                            wamr->op_data.addr[idx][1].ip4[3] = ip & 0xFF;
+                            wamr->op_data.addr[idx][1].port = ntohs(ipv4->sin_port);
+                        } else {
+                            auto *ipv6 = (struct sockaddr_in6 *)ss;
+                            wamr->op_data.addr[idx][1].is_4 = false;
+                            const auto *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
+                            for (int i = 0; i < 16; i += 2) {
+                                wamr->op_data.addr[idx][1].ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
+                            }
+                            wamr->op_data.addr[idx][1].port = ntohs(ipv6->sin6_port);
+                        }
+                        free(ss);
+                    }else if ( sock_data.is_server){
+                        wamr->op_data.size--;
+                    }
+
                 }
             }
             LOGV(INFO) << "dest_addr: "
@@ -142,19 +169,8 @@ void serialize_to_file(WASMExecEnv *instance) {
         // Clean up
         close(fd);
     }
-    auto all_count = 1;
-    // fill vector
-#if !defined(_WIN32)
-    std::unique_lock as_ul(wamr->as_mtx);
-    auto cluster = wasm_exec_env_get_cluster(instance);
-    all_count = bh_list_length(&cluster->exec_env_list);
-    printf("get lock\n");
-    wamr->ready++;
-    wamr->lwcp_list[gettid()]++;
-    //If we're not all ready
-    printf("thread %d, with %ld ready out of %d total\n", gettid(), wamr->ready, all_count);
-    if(wamr->ready < all_count){
-	// Then wait for someone else to get here and finish the job
+    if (wamr->ready < all_count) {
+        // Then wait for someone else to get here and finish the job
         std::condition_variable as_cv;
         as_cv.wait(as_ul);
     }
@@ -162,22 +178,23 @@ void serialize_to_file(WASMExecEnv *instance) {
     // double check
     {
         auto ready_count = 0;
-	for(auto [k, v] : wamr->lwcp_list){
-		printf("%ld: %d\n", k, v);
-            if(v>0) ready_count++;
-	}
-	if(ready_count != all_count){
-	    printf("we have a discrepancy between ready count and number of threads that say they are\n");
-	    printf("ready: %d, all: %d\n", ready_count, all_count);
-	    //not actually ready
+        for (auto [k, v] : wamr->lwcp_list) {
+            printf("%ld: %d\n", k, v);
+            if (v > 0)
+                ready_count++;
+        }
+        if (ready_count != all_count) {
+            printf("we have a discrepancy between ready count and number of threads that say they are\n");
+            printf("ready: %d, all: %d\n", ready_count, all_count);
+            // not actually ready
             std::condition_variable as_cv;
             as_cv.wait(as_ul);
-	}
+        }
     }
     // wasm_cluster_suspend_all_except_self(cluster, instance);
     auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
     while (elem) {
-	instance = elem;
+        instance = elem;
 #endif // windows has no threads so only does it once
         auto a = new WAMRExecEnv();
         dump(a, instance);
@@ -262,7 +279,7 @@ int main(int argc, char *argv[]) {
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
     wamr->get_int3_addr();
-    //wamr->replace_int3_with_nop();
+    wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 #if defined(_WIN32)

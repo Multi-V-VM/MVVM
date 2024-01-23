@@ -19,9 +19,9 @@ struct SocketAddrPool {
 };
 enum fd_op { MVVM_FOPEN = 0, MVVM_FWRITE = 1, MVVM_FREAD = 2, MVVM_FSEEK = 3 };
 
-enum sync_op{
-	SYNC_OP_MUTEX_LOCK,
-	SYNC_OP_MUTEX_UNLOCK,
+enum sync_op {
+    SYNC_OP_MUTEX_LOCK,
+    SYNC_OP_MUTEX_UNLOCK,
 };
 
 struct sync_op_t {
@@ -39,11 +39,7 @@ void insert_socket(int, int, int, int);
 void update_socket_fd_address(int, struct SocketAddrPool *);
 void init_gateway(struct SocketAddrPool *address);
 void set_tcp();
-void insert_lock(char const *, int);
-void insert_sem(char const *, int);
-void insert_sync_op(wasm_exec_env_t exec_env, uint32* mutex, enum sync_op locking);
-void remove_lock(char const *);
-void remove_sem(char const *);
+void insert_sync_op(wasm_exec_env_t exec_env, uint32 *mutex, enum sync_op locking);
 void restart_execution(uint32 targs);
 extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, const void *attr, uint32 elem_index,
                                   uint32 arg);

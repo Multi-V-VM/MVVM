@@ -121,7 +121,14 @@ fmt::color level2color(LogLevel level);
 #define LOGV_ERROR LOG_IF(BH_LOG_LEVEL_ERROR)
 #define LOGV_FATAL LOG_IF(BH_LOG_LEVEL_FATAL)
 
-enum opcode { MVVM_SOCK_SUSPEND = 0, MVVM_SOCK_RESUME = 1, MVVM_SOCK_INIT = 2, MVVM_SOCK_FIN = 2 };
+enum opcode {
+    MVVM_SOCK_SUSPEND = 0,
+    MVVM_SOCK_SUSPEND_TCP_SERVER = 1,
+    MVVM_SOCK_RESUME = 2,
+    MVVM_SOCK_RESUME_TCP_SERVER = 3,
+    MVVM_SOCK_INIT = 4,
+    MVVM_SOCK_FIN = 5
+};
 struct mvvm_op_data {
     enum opcode op;
     bool is_tcp;

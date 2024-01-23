@@ -57,50 +57,56 @@ int main(int argc, char **argv) {
     reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
+    // is server for all and the is server?
 #if !defined(_WIN32)
-    if (!a[0]->module_inst.wasi_ctx.socket_fd_map.empty()) { // new ip, old ip // only if tcp requires keepalive
-        // tell gateway to stop keep alive the server
-        struct sockaddr_in addr {};
-        int fd = 0;
+    for (int i = 0; i < a.size(); i++)
+        if (!a[i]->module_inst.wasi_ctx.socket_fd_map.empty()) { // new ip, old ip // only if tcp requires keepalive
+            // tell gateway to stop keep alive the server
+            struct sockaddr_in addr {};
+            int fd = 0;
+            bool is_tcp_server;
+            SocketAddrPool src_addr = wamr->local_addr;
+            LOGV(INFO) << "new ip is "
+                       << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2],
+                                      src_addr.ip4[3]);
 
-        SocketAddrPool src_addr = wamr->local_addr;
-        LOGV(INFO) << "new ip is "
-                   << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);
-        wamr->op_data.op = MVVM_SOCK_RESUME;
-        wamr->op_data.addr[0][0] = src_addr;
-        // got from wamr
-        for (auto &[fd, socketMetaData] : a[0]->module_inst.wasi_ctx.socket_fd_map) {
-            wamr->op_data.is_tcp |= socketMetaData.type;
-        }
+            // got from wamr
+            for (auto &[fd, socketMetaData] : a[i]->module_inst.wasi_ctx.socket_fd_map) {
+                wamr->op_data.is_tcp |= socketMetaData.type;
+                is_tcp_server |= socketMetaData.is_server;
+            }
+            is_tcp_server &= wamr->op_data.is_tcp;
 
-        // Create a socket
-        if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-            LOGV(ERROR) << "socket error";
-            throw std::runtime_error("socket error");
-        }
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(MVVM_SOCK_PORT);
+            wamr->op_data.op = is_tcp_server ? MVVM_SOCK_RESUME_TCP_SERVER : MVVM_SOCK_RESUME;
+            wamr->op_data.addr[0][0] = src_addr;
+            // Create a socket
+            if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+                LOGV(ERROR) << "socket error";
+                throw std::runtime_error("socket error");
+            }
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons(MVVM_SOCK_PORT);
 
-        // Convert IPv4 and IPv6 addresses from text to binary form
-        if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
-            LOGV(ERROR) << "Invalid address/ Address not supported";
-            exit(EXIT_FAILURE);
-        }
+            // Convert IPv4 and IPv6 addresses from text to binary form
+            if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
+                LOGV(ERROR) << "Invalid address/ Address not supported";
+                exit(EXIT_FAILURE);
+            }
 
-        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-            LOGV(ERROR) << "Connection Failed " << errno;
-            exit(EXIT_FAILURE);
-        }
-        // send the fd
-        // struct msghdr msg = {0};
+            if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+                LOGV(ERROR) << "Connection Failed " << errno;
+                exit(EXIT_FAILURE);
+            }
+            // send the fd
+            // struct msghdr msg = {0};
 
-        if (send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0) == -1) {
-            LOGV(ERROR) << "Send Error";
-            exit(EXIT_FAILURE);
+            if (send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0) == -1) {
+                LOGV(ERROR) << "Send Error";
+                exit(EXIT_FAILURE);
+            }
+            close(fd);
+            LOGV(ERROR) << "sent the resume signal";
         }
-        close(fd);
-        LOGV(ERROR) << "sent the resume signal";
-    }
 #endif
     // do iptables here
     wamr->recover(&a);

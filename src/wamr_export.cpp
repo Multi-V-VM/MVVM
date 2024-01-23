@@ -190,14 +190,15 @@ void insert_socket(int fd, int domain, int type, int protocol) {
     if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end()) {
         LOGV(ERROR) << "socket_fd already exist" << fd;
     } else {
-        if (protocol == 1) {
-            wamr->socket_fd_map_[fd].is_server = true;
-        }
         SocketMetaData metaData{};
         metaData.domain = domain;
         metaData.type = type;
         metaData.protocol = protocol;
         wamr->socket_fd_map_[fd] = metaData;
+        if (protocol == 1) {
+            wamr->socket_fd_map_[fd].is_server = true;
+            
+        }
     }
 }
 
@@ -265,12 +266,6 @@ void init_gateway(SocketAddrPool *address) {
     }
 }
 
-void insert_lock(char const *, int) {}
-void insert_sem(char const *, int) {}
-void remove_lock(char const *) {}
-void remove_sem(char const *) {}
-
-
 #if defined(__APPLE__)
 int gettid() {
     uint64_t tid;
@@ -281,8 +276,8 @@ int gettid() {
 int gettid() { return GetCurrentThreadId(); }
 #endif
 
-void insert_sync_op(wasm_exec_env_t exec_env, uint32* mutex, enum sync_op locking){
-	printf("insert sync on offset %d, as op: %d\n", *mutex, locking);
+void insert_sync_op(wasm_exec_env_t exec_env, uint32 *mutex, enum sync_op locking) {
+    printf("insert sync on offset %d, as op: %d\n", *mutex, locking);
     struct sync_op_t sync_op = {.tid = exec_env->cur_count, .ref = *mutex, .sync_op = locking};
     wamr->sync_ops.push_back(sync_op);
 }
@@ -314,10 +309,10 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
         return;
     }
     std::unique_lock as_ul(wamr->as_mtx);
-    if(wamr->lwcp_list[gettid()] == 0){
+    if (wamr->lwcp_list[gettid()] == 0) {
         // someone has reset our counter
-	// which means we've been serialized
-	// so we shouldn't return back to the wasm state
+        // which means we've been serialized
+        // so we shouldn't return back to the wasm state
         std::condition_variable cv;
         cv.wait(as_ul);
     }
@@ -388,8 +383,10 @@ void print_memory(WASMExecEnv *exec_env) {
 
 void sigtrap_handler(int sig) {
     // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
-
     auto exec_env = wamr->get_exec_env();
+    // if (sig == SIGSEGV) {
+    //     serialize_to_file(exec_env);
+    // }
 //    print_exec_env_debug_info(exec_env);
 //    print_memory(exec_env);
 #if defined(_WIN32)
@@ -430,6 +427,12 @@ void register_sigtrap() {
             perror("Error: cannot handle SIGSYS");
             exit(-1);
         } else {
+            if (sigaction(SIGSEGV, &sa, nullptr) == -1) {
+                perror("Error: cannot handle SIGSEGV");
+                exit(-1);
+            } else {
+                LOGV_DEBUG << "SIGSEGV registered";
+            }
             LOGV_DEBUG << "SIGSYS registered";
         }
         LOGV_DEBUG << "SIGTRAP registered";

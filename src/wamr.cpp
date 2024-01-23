@@ -9,9 +9,9 @@
 #include "wasm_export.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"
-#include <regex>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
+#include <regex>
 #include <semaphore>
 #if !defined(_WIN32)
 #include "thread_manager.h"
@@ -122,6 +122,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
     local_addr.is_4 = true;
 
     freeifaddrs(ifaddr);
+
 #endif
 }
 
@@ -164,15 +165,13 @@ void WAMRInstance::invoke_init_c() {
     auto name = "__wasm_init_memory";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi " << name << " function is not found.";
-    }
-    else{
+    } else {
         wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
     }
     auto name1 = "__wasm_call_ctors";
     if (!(func = wasm_runtime_lookup_function(module_inst, name1, nullptr))) {
         LOGV(ERROR) << "The wasi " << name1 << " function is not found.";
-    }
-    else{
+    } else {
         wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
     }
     return;
@@ -657,54 +656,47 @@ void restart_execution(uint32 id) {
                                    targs->exec_env->cur_frame->function, targs->exec_env->cur_frame->prev_frame);
 }
 
-void
-WAMRInstance::register_tid_map(){
-    tid_map[cur_thread] = gettid();
-}
+void WAMRInstance::register_tid_map() { tid_map[cur_thread] = gettid(); }
 
-
-extern "C" int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32*);
-extern "C" int32 pthread_mutex_unlock_wrapper(wasm_exec_env_t, uint32*);
-extern "C" int32 pthread_mutex_init_wrapper(wasm_exec_env_t, uint32*, void*);
-void
-WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env){
-    if(main){
-        for (auto &i : sync_ops){
+extern "C" int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32 *);
+extern "C" int32 pthread_mutex_unlock_wrapper(wasm_exec_env_t, uint32 *);
+extern "C" int32 pthread_mutex_init_wrapper(wasm_exec_env_t, uint32 *, void *);
+void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
+    if (main) {
+        for (auto &i : sync_ops) {
             // remap to new tids so that if we reserialize it'll be correct
-	    (i).tid = tid_map[(i).tid];
-	}
-	//start from the beginning
-	sync_iter = sync_ops.begin();
+            (i).tid = tid_map[(i).tid];
+        }
+        // start from the beginning
+        sync_iter = sync_ops.begin();
         thread_init.release(100);
-    }
-    else{
+    } else {
         // wait for remap to finish
         thread_init.acquire();
     }
     size_t mytid = gettid();
     // Actually replay
-    while(sync_iter != sync_ops.end()){
+    while (sync_iter != sync_ops.end()) {
         std::unique_lock l(sync_op_mutex);
-	if((*sync_iter).tid == mytid){
+        if ((*sync_iter).tid == mytid) {
 
             // do op
-	    printf("replay %ld, op %d\n", sync_iter->tid, sync_iter->sync_op);
-	    switch(sync_iter->sync_op){
+            printf("replay %ld, op %d\n", sync_iter->tid, sync_iter->sync_op);
+            switch (sync_iter->sync_op) {
             case SYNC_OP_MUTEX_LOCK:
                 pthread_mutex_lock_wrapper(exec_env, &(sync_iter->ref));
-		break;
+                break;
             case SYNC_OP_MUTEX_UNLOCK:
                 pthread_mutex_unlock_wrapper(exec_env, &(sync_iter->ref));
-		break;
-	    }
-	    ++sync_iter;
-	    // wakeup everyone
+                break;
+            }
+            ++sync_iter;
+            // wakeup everyone
             sync_op_cv.notify_all();
-	}
-	else{
-	    // wait for actual recipient
+        } else {
+            // wait for actual recipient
             sync_op_cv.wait(l);
-	}
+        }
     }
 }
 // End Sync Op Specific Stuff
@@ -742,7 +734,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     main_env->restore_call_chain = nullptr;
 
     invoke_init_c();
-    invoke_preopen(1, "/dev/stdout");
+    // invoke_preopen(1, "/dev/stdout");
 
 #if !defined(_WIN32)
     for (auto [idx, exec_] : *execEnv | enumerate) {
@@ -793,8 +785,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
         cur_env->restore_call_chain = main_saved_call_chain;
 
         fprintf(stderr, "invoke main %p %p\n", cur_env, cur_env->restore_call_chain);
-	// replay sync ops to get OS state matching
-	replay_sync_ops(true, main_env);
+        // replay sync ops to get OS state matching
+        replay_sync_ops(true, main_env);
         invoke_main();
     }
 }
