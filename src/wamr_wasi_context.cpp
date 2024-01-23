@@ -7,8 +7,6 @@
 #include "wamr.h"
 #include <chrono>
 #include <fmt/core.h>
-#include <functional>
-#include <future>
 #include <string>
 #include <sys/types.h>
 extern WAMRInstance *wamr;
@@ -85,13 +83,11 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
                     if (socketMetaData.socketAddress.is_4) {
                         struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
                         socklen_t sockaddr4_size = sizeof(sockaddr4);
-                        rc = wamr->invoke_recvfrom(fd, &buf, sizeof(buf) - 1, 0, (struct sockaddr *)&sockaddr4,
-                                                   &sockaddr4_size);
+                        rc = wamr->invoke_recvfrom(fd, &buf, 1024, 0, (struct sockaddr *)&sockaddr4, &sockaddr4_size);
                     } else {
                         struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
                         socklen_t sockaddr6_size = sizeof(sockaddr6);
-                        rc = wamr->invoke_recvfrom(fd, &buf, sizeof(buf) - 1, 0, (struct sockaddr *)&sockaddr6,
-                                                   &sockaddr6_size);
+                        rc = wamr->invoke_recvfrom(fd, &buf, 1024, 0, (struct sockaddr *)&sockaddr6, &sockaddr6_size);
                     }
                     if (rc == -1) {
                         LOGV(ERROR) << "recvfrom error";
@@ -99,23 +95,12 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
                     }
                 }
             } else {
-                std::packaged_task<void()> task([&]() {
-                    while (true) {
-                        rc = wamr->invoke_recv(fd, &buf, sizeof(buf), 0);
-                        if (rc == -1) {
-                            LOGV(ERROR) << "recv error";
-                            return;
-                        }
-                        sleep(10);
+                while (wamr->socket_fd_map_[fd].is_collection) { // drain udp socket
+                    rc = wamr->invoke_recv(fd, &buf, 1024, 0);
+                    if (rc == -1) {
+                        LOGV(ERROR) << "recv error";
+                        return;
                     }
-                });
-                auto future = task.get_future();
-                std::thread thr(std::move(task));
-                if (future.wait_for(10s) != std::future_status::timeout) {
-                    thr.join();
-                    future.get(); // this will propagate exception from f() if any
-                } else {
-                    thr.detach(); // we leave the thread still running
                 }
             }
             // LOGV(ERROR) << "recv error";
@@ -155,8 +140,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     for (auto [fd, socketMetaData] : this->socket_fd_map) {
         // whether need to listen
         if (socketMetaData.is_server) {
-            auto res = wamr->invoke_sock_open(socketMetaData.domain, socketMetaData.type, socketMetaData.protocol,
-            fd);
+            auto res = wamr->invoke_sock_open(socketMetaData.domain, socketMetaData.type, socketMetaData.protocol, fd);
             if (socketMetaData.socketAddress.is_4) {
                 struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
                 inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr4.sin_addr);

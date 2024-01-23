@@ -78,6 +78,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
         LOGV(ERROR) << fmt::format("Load wasm module failed. error: {}", error_buf);
         throw;
     }
+#if !defined(_WIN32)
     struct ifaddrs *ifaddr, *ifa;
     int family, s;
     char host[NI_MAXHOST];
@@ -118,6 +119,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
     local_addr.is_4 = true;
 
     freeifaddrs(ifaddr);
+#endif
 }
 
 bool WAMRInstance::load_wasm_binary(const char *wasm_path, char **buffer_ptr) {

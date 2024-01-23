@@ -37,10 +37,11 @@ void init_connect(int socket_fd) {
     printf("[Client] Create socket\n");
     // s_(af, SOCK_STREAM, 0,socket_fd);
     int ret = socket(AF_INET, SOCK_STREAM, 0);
-    while (ret != socket_fd){
+    while (ret != socket_fd) {
         ret = socket(AF_INET, SOCK_STREAM, 0);
-        printf("connect %d %d\n",ret,socket_fd);
-   } if (socket_fd == -1) {
+        printf("connect %d %d\n", ret, socket_fd);
+    }
+    if (socket_fd == -1) {
         perror("Create socket failed");
     }
 
@@ -102,11 +103,13 @@ int main(int argc, char *argv[]) {
 
     printf("[Client] Client receive\n");
     while (1) {
-        int i=0;
-	total_size = 0;
-        while (i<10) {
+        int i = 0;
+        total_size = 0;
+        while (i < 10) {
             ret = recv(socket_fd, buffer + total_size, sizeof(buffer) - total_size, 0);
             i++;
+            printf("[Client] Client receive\n");
+
             if (ret <= 0)
                 break;
             total_size += ret;
@@ -118,7 +121,7 @@ int main(int argc, char *argv[]) {
             printf("Buffer recieved:\n%s\n", buffer);
         }
         int rc = send(socket_fd, "Hello from client", 17, 0);
-	printf("[Client] %d bytes sent\n", rc);
+        printf("[Client] %d bytes sent\n", rc);
     }
 
     close(socket_fd);
