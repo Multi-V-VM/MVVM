@@ -108,6 +108,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
             this->socket_fd_map[fd] = socketMetaData;
         }
     }
+    this->sync_ops.assign(wamr->sync_ops.begin(), wamr->sync_ops.end());
 #endif
 }
 void WAMRWASIContext::restore_impl(WASIArguments *env) {
@@ -179,4 +180,5 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
                 wamr->socket_fd_map_[fd].socketRecvFromDatas.size());
     }
 #endif
+    wamr->sync_ops.assign(this->sync_ops.begin(), this->sync_ops.end());
 };

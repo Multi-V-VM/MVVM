@@ -269,6 +269,8 @@ void insert_lock(char const *, int) {}
 void insert_sem(char const *, int) {}
 void remove_lock(char const *) {}
 void remove_sem(char const *) {}
+
+
 #if defined(__APPLE__)
 int gettid() {
     uint64_t tid;
@@ -278,6 +280,13 @@ int gettid() {
 #elif defined(_WIN32)
 int gettid() { return GetCurrentThreadId(); }
 #endif
+
+void insert_sync_op(wasm_exec_env_t exec_env, uint32* mutex, enum sync_op locking){
+	printf("insert sync on offset %d, as op: %d\n", *mutex, locking);
+    struct sync_op_t sync_op = {.tid = exec_env->cur_count, .ref = *mutex, .sync_op = locking};
+    wamr->sync_ops.push_back(sync_op);
+}
+
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {
@@ -288,9 +297,12 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
         LOGV(DEBUG) << "skip checkpoint";
         return;
     }
+
     std::unique_lock as_ul(wamr->as_mtx);
+    wamr->lwcp_list[gettid()]++;
     wamr->ready++;
 }
+
 void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {
@@ -302,6 +314,14 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
         return;
     }
     std::unique_lock as_ul(wamr->as_mtx);
+    if(wamr->lwcp_list[gettid()] == 0){
+        // someone has reset our counter
+	// which means we've been serialized
+	// so we shouldn't return back to the wasm state
+        std::condition_variable cv;
+        cv.wait(as_ul);
+    }
+    wamr->lwcp_list[gettid()]--;
     wamr->ready--;
 }
 

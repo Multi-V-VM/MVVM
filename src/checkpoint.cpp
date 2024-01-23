@@ -142,45 +142,54 @@ void serialize_to_file(WASMExecEnv *instance) {
         // Clean up
         close(fd);
     }
-    auto cluster = wasm_exec_env_get_cluster(instance);
-    // wasm_cluster_suspend_all_except_self(cluster, instance);
-    auto all_count = bh_list_length(&cluster->exec_env_list);
-    int cur_count = 0;
-    if (all_count > 1) {
-        auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
-        while (elem) {
-            if (elem == instance) {
-                break;
-            }
-            cur_count++;
-            elem = (WASMExecEnv *)bh_list_elem_next(elem);
-        }
-    } // gets the element index
-#else
     auto all_count = 1;
+    // fill vector
+#if !defined(_WIN32)
+    std::unique_lock as_ul(wamr->as_mtx);
+    auto cluster = wasm_exec_env_get_cluster(instance);
+    all_count = bh_list_length(&cluster->exec_env_list);
+    printf("get lock\n");
+    wamr->ready++;
+    wamr->lwcp_list[gettid()]++;
+    //If we're not all ready
+    printf("thread %d, with %ld ready out of %d total\n", gettid(), wamr->ready, all_count);
+    if(wamr->ready < all_count){
+	// Then wait for someone else to get here and finish the job
+        std::condition_variable as_cv;
+        as_cv.wait(as_ul);
+    }
+    // If we're all ready
+    // double check
+    {
+        auto ready_count = 0;
+	for(auto [k, v] : wamr->lwcp_list){
+		printf("%ld: %d\n", k, v);
+            if(v>0) ready_count++;
+	}
+	if(ready_count != all_count){
+	    printf("we have a discrepancy between ready count and number of threads that say they are\n");
+	    printf("ready: %d, all: %d\n", ready_count, all_count);
+	    //not actually ready
+            std::condition_variable as_cv;
+            as_cv.wait(as_ul);
+	}
+    }
+    // wasm_cluster_suspend_all_except_self(cluster, instance);
+    auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
+    while (elem) {
+	instance = elem;
+#endif // windows has no threads so only does it once
+        auto a = new WAMRExecEnv();
+        dump(a, instance);
+        as.emplace_back(a);
+#if !defined(_WIN32)
+        elem = (WASMExecEnv *)bh_list_elem_next(elem);
+    }
+    // finish filling vector
 #endif
-    auto a = new WAMRExecEnv();
-    dump(a, instance);
-    a->cur_count = gettid();
 
-    std::unique_lock as_ul(as_mtx);
-    as.emplace_back(a);
-    if (as.size() == all_count - 1) {
-#if !defined(_WIN32)
-        kill(getpid(), SIGINT);
-#else
-        raise(SIGINT);
-#endif
-    }
-    if (as.size() == all_count) {
-        struct_pack::serialize_to(*writer, as);
-        exit(EXIT_SUCCESS);
-    }
-#if !defined(_WIN32)
-    // Is there some better way to sleep until exit?
-    std::condition_variable as_cv;
-    as_cv.wait(as_ul);
-#endif
+    struct_pack::serialize_to(*writer, as);
+    exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char *argv[]) {
@@ -253,7 +262,7 @@ int main(int argc, char *argv[]) {
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
     wamr->get_int3_addr();
-    wamr->replace_int3_with_nop();
+    //wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 #if defined(_WIN32)

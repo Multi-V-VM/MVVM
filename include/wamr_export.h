@@ -18,6 +18,18 @@ struct SocketAddrPool {
     uint16 port;
 };
 enum fd_op { MVVM_FOPEN = 0, MVVM_FWRITE = 1, MVVM_FREAD = 2, MVVM_FSEEK = 3 };
+
+enum sync_op{
+	SYNC_OP_MUTEX_LOCK,
+	SYNC_OP_MUTEX_UNLOCK,
+};
+
+struct sync_op_t {
+    ssize_t tid;
+    uint32 ref;
+    enum sync_op sync_op;
+};
+
 #if !defined(_WIN32)
 void insert_sock_send_to_data(uint32_t, uint8 *, uint32, uint16_t, __wasi_addr_t *);
 void insert_sock_open_data(uint32_t, int, int, uint32_t);
@@ -29,6 +41,7 @@ void init_gateway(struct SocketAddrPool *address);
 void set_tcp();
 void insert_lock(char const *, int);
 void insert_sem(char const *, int);
+void insert_sync_op(wasm_exec_env_t exec_env, uint32* mutex, enum sync_op locking);
 void remove_lock(char const *);
 void remove_sem(char const *);
 void restart_execution(uint32 targs);
@@ -43,7 +56,7 @@ void remove_fd(int);
 void rename_fd(int, char const *, int, char const *);
 void lightweight_checkpoint(WASMExecEnv *);
 void lightweight_uncheckpoint(WASMExecEnv *);
-void wamr_wait();
+void wamr_wait(wasm_exec_env_t);
 void sigint_handler(int sig);
 void register_sigtrap();
 void sigtrap_handler(int sig);
