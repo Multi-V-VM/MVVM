@@ -70,7 +70,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
         LOGV(ERROR) << "Init runtime environment failed.\n";
         throw;
     }
-    // Not working initialiseWAMRNatives();
+    initialiseWAMRNatives();
     char *buffer{};
     if (!load_wasm_binary(wasm_path, &buffer)) {
         LOGV(ERROR) << "Load wasm binary failed.\n";
@@ -624,7 +624,7 @@ void restart_execution(uint32 id) {
 }
 
 void WAMRInstance::register_tid_map() { tid_map[cur_thread] = gettid(); }
-
+#if !defined(_WIN32)
 extern "C" int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32 *);
 extern "C" int32 pthread_mutex_unlock_wrapper(wasm_exec_env_t, uint32 *);
 extern "C" int32 pthread_mutex_init_wrapper(wasm_exec_env_t, uint32 *, void *);
@@ -667,7 +667,7 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
     }
 }
 // End Sync Op Specific Stuff
-
+#endif
 WAMRExecEnv *child_env;
 // will call pthread create wrapper if needed?
 void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
@@ -750,10 +750,11 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
 
         cur_env->is_restore = true;
         cur_env->restore_call_chain = main_saved_call_chain;
-
+#if !defined(_WIN32)
         fprintf(stderr, "invoke main %p %p\n", cur_env, cur_env->restore_call_chain);
         // replay sync ops to get OS state matching
         replay_sync_ops(true, main_env);
+#endif
         invoke_main();
     }
 }
@@ -791,9 +792,11 @@ void wamr_wait(wasm_exec_env_t exec_env) {
     thread_init.release(1);
     fprintf(stderr, "finish child restore\n");
     wakeup.acquire();
+#if !defined(_WIN32)
     fprintf(stderr, "go child!! %d\n", gettid());
     wamr->replay_sync_ops(false, exec_env);
     fprintf(stderr, "finish syncing\n");
+#endif
 }
 WASMExecEnv *restore_env() {
     auto exec_env = wasm_exec_env_create_internal(wamr->module_inst, wamr->stack_size);

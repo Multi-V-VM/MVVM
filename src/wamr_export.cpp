@@ -226,7 +226,7 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
         wamr->socket_fd_map_[fd].socketAddress.ip6[7] = address->ip6[7];
     }
 }
-
+#if !defined(_WIN32)
 void init_gateway(SocketAddrPool *address) {
     // tell gateway to keep alive the server
     if (wamr->op_data.op != MVVM_SOCK_RESUME && wamr->op_data.op != MVVM_SOCK_RESUME_TCP_SERVER) {
@@ -268,7 +268,7 @@ void init_gateway(SocketAddrPool *address) {
         close(fd);
     }
 }
-
+#endif
 #if defined(__APPLE__)
 int gettid() {
     uint64_t tid;
@@ -290,11 +290,11 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
     }
-    LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
-    if (fid == -1) {
-        LOGV(DEBUG) << "skip checkpoint";
-        return;
-    }
+//    LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
+//    if (fid == -1) {
+//        LOGV(DEBUG) << "skip checkpoint";
+//        return;
+//    }
 
     std::unique_lock as_ul(wamr->as_mtx);
     wamr->lwcp_list[gettid()]++;
@@ -306,11 +306,11 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
     }
-    LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
-    if (fid == -1) {
-        LOGV(DEBUG) << "skip uncheckpoint";
-        return;
-    }
+//    LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
+//    if (fid == -1) {
+//        LOGV(DEBUG) << "skip uncheckpoint";
+//        return;
+//    }
     std::unique_lock as_ul(wamr->as_mtx);
     if (wamr->lwcp_list[gettid()] == 0) {
         // someone has reset our counter

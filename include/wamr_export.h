@@ -25,7 +25,7 @@ enum sync_op {
 };
 
 struct sync_op_t {
-    ssize_t tid;
+    size_t tid;
     uint32 ref;
     enum sync_op sync_op;
 };
