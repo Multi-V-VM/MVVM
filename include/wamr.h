@@ -15,11 +15,11 @@
 #include "wamr_read_write.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
-#include <mutex>
 #include <condition_variable>
-#include <semaphore>
 #include <iterator>
+#include <mutex>
 #include <ranges>
+#include <semaphore>
 #include <tuple>
 
 class WAMRInstance {
@@ -48,8 +48,8 @@ public:
     std::map<ssize_t, int> lwcp_list;
     size_t ready = 0;
     std::mutex as_mtx;
-
     std::vector<struct sync_op_t> sync_ops;
+    bool should_snapshot_socket = false;
     void replay_sync_ops(bool, wasm_exec_env_t);
     void register_tid_map();
     std::vector<struct sync_op_t>::iterator sync_iter;
@@ -57,7 +57,6 @@ public:
     std::condition_variable sync_op_cv;
     std::map<ssize_t, ssize_t> tid_map;
     ssize_t cur_thread;
-
 
     bool is_jit;
     bool is_aot{};
@@ -105,9 +104,8 @@ public:
     int invoke_ftell(uint32 fd, uint32 offset, uint32 whench);
     int invoke_preopen(uint32 fd, const std::string &path);
     int invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t protocol, uint32_t sockfd);
-    int invoke_sock_listen(uint32_t sockfd, uint32_t fd);
-    int invoke_sock_bind(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);
     int invoke_sock_connect(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);
+    int invoke_sock_accept(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);
     int invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **sock, socklen_t *sock_size);
     int invoke_recv(int sockfd, uint8 **buf, size_t len, int flags);
     int invoke_recvfrom(int sockfd, uint8 **buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);

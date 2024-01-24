@@ -464,7 +464,8 @@ int main() {
                 if (op_data->is_tcp) {
                     // client
                     auto to_start = tcp_pair[fmt::format("{}:{}", server_ip, server_port)];
-                    LOGV(ERROR) << server_ip << ":" << server_port;
+                    LOGV(ERROR) << fmt::format("{}.{}.{}.{}", tmp_ip4[0], tmp_ip4[1], tmp_ip4[2], tmp_ip4[3]) << ":"
+                                << server_ip << server_port;
 
                     if (to_start.new_server == 0) {
                         LOGV(ERROR) << "to_start is empty";
@@ -480,13 +481,15 @@ int main() {
                         new_client = to_start.new_client;
                     } else {
                         new_server = to_start.new_server;
+                        new_client = socket(AF_INET, SOCK_STREAM, 0);
+                        to_start.new_client = new_client;
                         address.sin_family = AF_INET;
                         address.sin_port = htons(client_port);
                         if (inet_pton(AF_INET, std::get<2>(tmp_tuple).c_str(), &address.sin_addr) <= 0) {
                             LOGV(ERROR) << "Invalid address/ Address not supported";
                             exit(EXIT_FAILURE);
                         }
-
+                        sleep(3);
                         if (connect(new_client, (struct sockaddr *)&address, sizeof(address)) == -1) {
                             LOGV(ERROR) << "connect failed " << errno;
                             close(new_client);
@@ -495,12 +498,23 @@ int main() {
                     }
 
                     to_start.send = new std::jthread([&](std::stop_token stopToken) {
+                        fcntl(new_server, F_SETFL, O_NONBLOCK);
+
                         while (!stopToken.stop_requested()) {
-                            if ((rc = recv(new_server, buffer1, sizeof(buffer1), 0)) > 0) {
-                                LOGV(ERROR) << "send" << sizeof(buffer1);
-                                send(new_client, buffer1, sizeof(buffer1), 0);
+                            rc = recv(new_server, buffer1, sizeof(buffer1), 0);
+                            if (rc > 0) {
+                                LOGV(ERROR) << "send" << sizeof(buffer);
+                                while ((rc = send(new_client, buffer, sizeof(buffer), 0) <= 0)) {
+                                    LOGV(ERROR) << "error sending" << rc << errno;
+                                    sleep(1);
+                                }
+                            } else if (rc == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+                                // Handle error
+                                break;
                             }
-                        }
+                            // Add a small sleep to prevent busy-waiting
+                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                        };
                     });
                     to_start.recv = new std::jthread([&](std::stop_token stopToken) {
                         // Set the socket to non-blocking
@@ -605,14 +619,23 @@ int main() {
                 struct connection_pair cp = {
                     .server_fd = server_fd, .new_server = new_server, .new_client = new_client, .is_sleep = false};
                 cp.send = new std::jthread([&](std::stop_token stopToken) {
+                    // Set the socket to non-blocking
+                    fcntl(new_server, F_SETFL, O_NONBLOCK);
+
                     while (!stopToken.stop_requested()) {
-                        if ((rc = recv(new_server, buffer1, sizeof(buffer1), 0)) > 0) {
-                            LOGV(ERROR) << "send" << sizeof(buffer1);
-                            while ((rc = send(new_client, buffer1, sizeof(buffer1), 0) <= 0)) {
+                        rc = recv(new_server, buffer1, sizeof(buffer1), 0);
+                        if (rc > 0) {
+                            LOGV(ERROR) << "send" << sizeof(buffer);
+                            while ((rc = send(new_client, buffer, sizeof(buffer), 0) <= 0)) {
                                 LOGV(ERROR) << "error sending" << rc << errno;
                                 sleep(1);
                             }
+                        } else if (rc == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+                            // Handle error
+                            break;
                         }
+                        // Add a small sleep to prevent busy-waiting
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     }
                 });
                 cp.recv = new std::jthread([&](std::stop_token stopToken) {

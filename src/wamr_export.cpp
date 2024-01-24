@@ -195,16 +195,16 @@ void insert_socket(int fd, int domain, int type, int protocol) {
         metaData.type = type;
         metaData.protocol = protocol;
         wamr->socket_fd_map_[fd] = metaData;
-        if (protocol == 1) {
+        if (protocol >= 1) {
             wamr->socket_fd_map_[fd].is_server = true;
-            
+            wamr->socket_fd_map_[fd].socketAddress = wamr->socket_fd_map_[protocol].socketAddress;
         }
     }
 }
 
 void update_socket_fd_address(int fd, SocketAddrPool *address) {
-    printf("\n #update_socket_fd_address(fd, address) %d \n\n", fd);
     wamr->socket_fd_map_[fd].socketAddress.port = address->port;
+    printf("\n #update_socket_fd_address(fd, address) %d %d\n\n", fd, wamr->socket_fd_map_[fd].socketAddress.port);
     if (address->is_4) {
         wamr->socket_fd_map_[fd].socketAddress.is_4 = true;
         wamr->socket_fd_map_[fd].socketAddress.ip4[0] = address->ip4[0];
@@ -226,7 +226,7 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
 
 void init_gateway(SocketAddrPool *address) {
     // tell gateway to keep alive the server
-    if (wamr->op_data.op != MVVM_SOCK_RESUME) {
+    if (wamr->op_data.op != MVVM_SOCK_RESUME && wamr->op_data.op != MVVM_SOCK_RESUME_TCP_SERVER) {
         struct sockaddr_in addr {};
         int fd = 0;
         ssize_t rc;

@@ -74,8 +74,8 @@ void WAMRInterpFrame::dump_impl(AOTFrame *env) {
     ip = env->ip_offset;
     sp = env->sp - env->lp; // offset to the wasm_stack_top
 
-//    LOGV(INFO) << fmt::format("function_index {} ip_offset {} lp {} sp {} sp_offset {}", env->func_index, ip,
-//                              (void *)env->lp, (void *)env->sp, sp);
+    //    LOGV(INFO) << fmt::format("function_index {} ip_offset {} lp {} sp {} sp_offset {}", env->func_index, ip,
+    //                              (void *)env->lp, (void *)env->sp, sp);
 
     stack_frame = std::vector(env->lp, env->sp);
 

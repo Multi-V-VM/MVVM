@@ -65,7 +65,7 @@ static void init_sockaddr_inet6(struct sockaddr_in6 *addr) {
     addr->sin6_addr = in6addr_any;
 }
 void init_connect(int socket_fd) {
-   int addrlen = 0, af;
+    int addrlen = 0, af;
     struct sockaddr_storage addr = {0};
     af = AF_INET;
     addrlen = sizeof(struct sockaddr_in6);
@@ -75,19 +75,19 @@ void init_connect(int socket_fd) {
     socket_fd = socket(af, SOCK_STREAM, 0);
     if (socket_fd < 0) {
         perror("Create socket failed");
-       exit(-1);
+        exit(-1);
     }
 
     printf("[Server] Bind socket\n");
     if (bind(socket_fd, (struct sockaddr *)&addr, addrlen) < 0) {
         perror("Bind failed");
-       exit(-1);
+        exit(-1);
     }
 
     printf("[Server] Listening on socket\n");
     if (listen(socket_fd, 3) < 0) {
         perror("Listen failed");
-       exit(-1);
+        exit(-1);
     }
 
     printf("[Server] Wait for clients to connect ..\n");

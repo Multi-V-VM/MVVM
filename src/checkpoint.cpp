@@ -34,13 +34,17 @@ void serialize_to_file(WASMExecEnv *instance) {
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
     // fill vector
+
     std::unique_lock as_ul(wamr->as_mtx);
     printf("get lock\n");
     wamr->ready++;
     wamr->lwcp_list[gettid()]++;
+    if (wamr->ready == all_count) {
+        wamr->should_snapshot_socket = true;
+    }
     // If we're not all ready
     printf("thread %d, with %ld ready out of %d total\n", gettid(), wamr->ready, all_count);
-    if (!wamr->socket_fd_map_.empty() && wamr->ready == all_count) {
+    if (!wamr->socket_fd_map_.empty() && wamr->should_snapshot_socket) {
         // tell gateway to keep alive the server
         struct sockaddr_in addr {};
         int fd = 0;
@@ -126,10 +130,9 @@ void serialize_to_file(WASMExecEnv *instance) {
                             wamr->op_data.addr[idx][1].port = ntohs(ipv6->sin6_port);
                         }
                         free(ss);
-                    }else if ( sock_data.is_server){
+                    } else if (sock_data.is_server) {
                         wamr->op_data.size--;
                     }
-
                 }
             }
             LOGV(INFO) << "dest_addr: "
