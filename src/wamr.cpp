@@ -701,7 +701,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
     main_env->restore_call_chain = nullptr;
 
     invoke_init_c();
-    // invoke_preopen(1, "/dev/stdout");
+    invoke_preopen(1, "/dev/stdout");
 
 #if !defined(_WIN32)
     for (auto [idx, exec_] : *execEnv | enumerate) {

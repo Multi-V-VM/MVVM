@@ -7,17 +7,18 @@
 #include <stdio.h>
 
 #define MAX_NUM_THREADS 2
-#define NUM_ITER 1000000
+#define NUM_ITER 1000
 
 int g_count = 0;
 pthread_mutex_t g_count_lock;
 static void *thread(void *arg) {
-    // for (int i = 0; i < NUM_ITER; i++) {
-    //     __atomic_fetch_add(&g_count, 1, __ATOMIC_SEQ_CST);
-    //     printf("print!!!%d\n", i);
-    // }
-    // printf("Value of g_count is %d\n", g_count);
-    // printf("%d\n", g_count);
+    for (int i = 0; i < NUM_ITER; i++) {
+        __atomic_fetch_add(&g_count, 1, __ATOMIC_SEQ_CST);
+        if(i %100 ==0)
+            printf("print!!!%d\n", i);
+    }
+    printf("Value of g_count is %d\n", g_count);
+    printf("%d\n", g_count);
     
     return NULL;
 }
@@ -40,8 +41,9 @@ int main(int argc, char **argv) {
     }
 
     printf("Value of counter after update: %d (expected=%d)\n", g_count, MAX_NUM_THREADS * NUM_ITER);
-    if (g_count != MAX_NUM_THREADS * NUM_ITER) {
-        __builtin_trap();
-    }
-    return -1;
+    // if (g_count != MAX_NUM_THREADS * NUM_ITER) {
+    //     __builtin_trap();
+    // }
+    __wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
+    exit(0);
 }

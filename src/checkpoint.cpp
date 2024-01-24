@@ -71,7 +71,7 @@ void serialize_to_file(WASMExecEnv *instance) {
                 src_addr = wamr->local_addr;
                 src_addr.port = sock_data.socketAddress.port;
             }
-            LOGV(INFO) << "addr: "
+            LOGV(INFO) << "addr: "<<tmp_fd<<"  "
                        << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3])
                        << " port: " << src_addr.port;
 
@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
     wamr->get_int3_addr();
-    wamr->replace_int3_with_nop();
+    // wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 #if defined(_WIN32)

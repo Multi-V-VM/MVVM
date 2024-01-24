@@ -145,7 +145,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
 #if !defined(_WIN32)
     // is tcp socket
     if (!wamr->should_snapshot_socket) {
-        wamr->should_snapshot_socket=true;
+        wamr->should_snapshot_socket = true;
         bool is_tcp_server = false;
         int old_fd = 0;
         for (auto [fd, socketMetaData] : this->socket_fd_map) {

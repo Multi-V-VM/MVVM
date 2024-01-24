@@ -185,6 +185,7 @@ void remove_fd(int fd) {
 */
 void insert_socket(int fd, int domain, int type, int protocol) {
     // if protocol == 1, is the remote protocol, we need to getsockname?
+
     LOGV(INFO) << fmt::format("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
 
     if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end()) {
@@ -195,8 +196,10 @@ void insert_socket(int fd, int domain, int type, int protocol) {
         metaData.type = type;
         metaData.protocol = protocol;
         wamr->socket_fd_map_[fd] = metaData;
-        if (protocol >= 1) {
+        if (protocol == 1)
             wamr->socket_fd_map_[fd].is_server = true;
+
+        if (protocol > 1) {
             wamr->socket_fd_map_[fd].socketAddress = wamr->socket_fd_map_[protocol].socketAddress;
         }
     }
