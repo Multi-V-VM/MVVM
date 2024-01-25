@@ -281,7 +281,7 @@ int gettid() { return GetCurrentThreadId(); }
 
 void insert_sync_op(wasm_exec_env_t exec_env, uint32 *mutex, enum sync_op locking) {
     printf("insert sync on offset %d, as op: %d\n", *mutex, locking);
-    struct sync_op_t sync_op = {.tid = exec_env->cur_count, .ref = *mutex, .sync_op = locking};
+    struct sync_op_t sync_op = {.tid = ((uint32)exec_env->cur_count), .ref = *mutex, .sync_op = locking};
     wamr->sync_ops.push_back(sync_op);
 }
 
@@ -290,11 +290,11 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
     }
-//    LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
-//    if (fid == -1) {
-//        LOGV(DEBUG) << "skip checkpoint";
-//        return;
-//    }
+    //    LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
+    //    if (fid == -1) {
+    //        LOGV(DEBUG) << "skip checkpoint";
+    //        return;
+    //    }
 
     std::unique_lock as_ul(wamr->as_mtx);
     wamr->lwcp_list[gettid()]++;
@@ -306,11 +306,11 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
     }
-//    LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
-//    if (fid == -1) {
-//        LOGV(DEBUG) << "skip uncheckpoint";
-//        return;
-//    }
+    //    LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
+    //    if (fid == -1) {
+    //        LOGV(DEBUG) << "skip uncheckpoint";
+    //        return;
+    //    }
     std::unique_lock as_ul(wamr->as_mtx);
     if (wamr->lwcp_list[gettid()] == 0) {
         // someone has reset our counter

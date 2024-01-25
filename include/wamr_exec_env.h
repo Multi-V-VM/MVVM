@@ -18,7 +18,7 @@ struct WAMRExecEnv { // multiple
     //
     //    /* Previous thread's exec env of a WASM module instance. */
     //    struct WASMExecEnv *prev;
-    ssize_t cur_count{};
+    uint32 cur_count{};
 
     /* Note: field module_inst, argv_buf, native_stack_boundary,
        susƒend_flags, aux_stack_boundary, aux_stack_bottom, and
