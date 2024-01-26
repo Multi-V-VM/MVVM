@@ -72,10 +72,10 @@ void init_connect(int socket_fd) {
     init_sockaddr_inet((struct sockaddr_in *)&addr);
 
     printf("[Server] Create socket\n");
-    socket_fd = socket(af, SOCK_STREAM, 0);
-    if (socket_fd < 0) {
-        perror("Create socket failed");
-        exit(-1);
+    int ret = socket(AF_INET, SOCK_STREAM, 0);
+    while (ret != socket_fd) {
+        ret = socket(AF_INET, SOCK_STREAM, 0);
+        printf("connect %d %d\n", ret, socket_fd);
     }
 
     printf("[Server] Bind socket\n");

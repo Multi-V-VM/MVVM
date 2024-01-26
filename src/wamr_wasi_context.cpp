@@ -148,47 +148,79 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
         wamr->should_snapshot_socket = true;
         bool is_tcp_server = false;
         int old_fd = 0;
+        int res;
+        bool is_4 = false;
         for (auto [fd, socketMetaData] : this->socket_fd_map) {
             wamr->op_data.is_tcp |= socketMetaData.type;
             is_tcp_server |= socketMetaData.is_server;
+            is_4 |= socketMetaData.socketAddress.is_4;
             if (!socketMetaData.is_server) {
                 old_fd = fd;
             }
         }
         is_tcp_server &= wamr->op_data.is_tcp;
+
         for (auto [fd, socketMetaData] : this->socket_fd_map) {
-            // udp?
-            if (!wamr->op_data.is_tcp) { // udp
-                auto res =
-                    wamr->invoke_sock_open(socketMetaData.domain, socketMetaData.type, socketMetaData.protocol, fd);
+            if (!socketMetaData.is_server) {
+                if (!wamr->op_data.is_tcp) { // udp
+                    res =
+                        wamr->invoke_sock_open(socketMetaData.domain, socketMetaData.type, socketMetaData.protocol, fd);
+                } else if (socketMetaData.socketAddress.is_4 || is_4) {
+                    struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
+                    inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr4.sin_addr);
 
-            } else if (socketMetaData.socketAddress.is_4) {
-                struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
-                inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr4.sin_addr);
+                    socklen_t sockaddr4_size = sizeof(sockaddr4);
 
-                socklen_t sockaddr4_size = sizeof(sockaddr4);
-
-                if (is_tcp_server && socketMetaData.is_server) {
-                    wamr->invoke_sock_accept(old_fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
-                    // This ip should be old ip?
-                } else {
                     wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
-                }
-            } else {
-                struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
-                inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr6.sin6_addr);
-
-                socklen_t sockaddr6_size = sizeof(sockaddr6);
-                if (is_tcp_server && socketMetaData.is_server) {
-                    wamr->invoke_sock_accept(old_fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
                 } else {
+                    struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
+                    inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr6.sin6_addr);
+
+                    socklen_t sockaddr6_size = sizeof(sockaddr6);
                     wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
                 }
-            }
 
-            // renumber or not?
-            // LOGV(INFO) << "tmp_sock_fd " << res << " fd" << fd;
-            wamr->socket_fd_map_[fd] = socketMetaData;
+                // renumber or not?
+                // LOGV(INFO) << "tmp_sock_fd " << res << " fd" << fd;
+                wamr->socket_fd_map_[fd] = socketMetaData;
+            }
+        }
+        for (auto [fd, socketMetaData] : this->socket_fd_map) {
+            if (socketMetaData.is_server) {
+                if (!wamr->op_data.is_tcp) { // udp
+                    res =
+                        wamr->invoke_sock_open(socketMetaData.domain, socketMetaData.type, socketMetaData.protocol, fd);
+                } else if (socketMetaData.socketAddress.is_4 || is_4) {
+                    struct sockaddr_in sockaddr4 = sockaddr_from_ip4(socketMetaData.socketAddress);
+                    inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr4.sin_addr);
+
+                    socklen_t sockaddr4_size = sizeof(sockaddr4);
+
+                    if (is_tcp_server) {
+                        wamr->new_sock_map_[fd] =
+                            wamr->invoke_sock_accept(old_fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
+                            
+                        // This ip should be old ip?
+                    } else {
+                        wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
+                    }
+                } else {
+                    struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
+                    inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr6.sin6_addr);
+
+                    socklen_t sockaddr6_size = sizeof(sockaddr6);
+                    if (is_tcp_server) {
+                        wamr->new_sock_map_[fd] =
+                            wamr->invoke_sock_accept(old_fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
+                    } else {
+                        wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
+                    }
+                }
+
+                // renumber or not?
+                // LOGV(INFO) << "tmp_sock_fd " << res << " fd" << fd;
+                wamr->socket_fd_map_[fd] = socketMetaData;
+            }
         }
     }
 #endif

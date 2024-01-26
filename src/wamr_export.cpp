@@ -135,6 +135,13 @@ void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, unsigned long *r
 #endif
 // only support one type of requests at a time
 void set_tcp() { wamr->op_data.is_tcp = true; }
+int get_sock_fd(int fd) {
+    if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end())
+        return wamr->new_sock_map_[fd];
+    else
+        return fd;
+};
+
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
@@ -180,6 +187,7 @@ void remove_fd(int fd) {
             LOGV(ERROR) << "fd not found " << fd;
     }
 }
+
 /*
     create fd-socketmetadata map and store the "domain", "type", "protocol" value
 */
@@ -226,7 +234,7 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
         wamr->socket_fd_map_[fd].socketAddress.ip6[7] = address->ip6[7];
     }
 }
-#if !defined(_WIN32)
+
 void init_gateway(SocketAddrPool *address) {
     // tell gateway to keep alive the server
     if (wamr->op_data.op != MVVM_SOCK_RESUME && wamr->op_data.op != MVVM_SOCK_RESUME_TCP_SERVER) {
@@ -268,7 +276,7 @@ void init_gateway(SocketAddrPool *address) {
         close(fd);
     }
 }
-#endif
+
 #if defined(__APPLE__)
 int gettid() {
     uint64_t tid;
@@ -281,7 +289,7 @@ int gettid() { return GetCurrentThreadId(); }
 
 void insert_sync_op(wasm_exec_env_t exec_env, uint32 *mutex, enum sync_op locking) {
     printf("insert sync on offset %d, as op: %d\n", *mutex, locking);
-    struct sync_op_t sync_op = {.tid = ((uint32)exec_env->cur_count), .ref = *mutex, .sync_op = locking};
+    struct sync_op_t sync_op = {.tid = exec_env->cur_count, .ref = *mutex, .sync_op = locking};
     wamr->sync_ops.push_back(sync_op);
 }
 
@@ -290,11 +298,11 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
     }
-    //    LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
-    //    if (fid == -1) {
-    //        LOGV(DEBUG) << "skip checkpoint";
-    //        return;
-    //    }
+    LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
+    if (fid == -1) {
+        LOGV(DEBUG) << "skip checkpoint";
+        return;
+    }
 
     std::unique_lock as_ul(wamr->as_mtx);
     wamr->lwcp_list[gettid()]++;
@@ -306,11 +314,11 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
     }
-    //    LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
-    //    if (fid == -1) {
-    //        LOGV(DEBUG) << "skip uncheckpoint";
-    //        return;
-    //    }
+    LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
+    if (fid == -1) {
+        LOGV(DEBUG) << "skip uncheckpoint";
+        return;
+    }
     std::unique_lock as_ul(wamr->as_mtx);
     if (wamr->lwcp_list[gettid()] == 0) {
         // someone has reset our counter

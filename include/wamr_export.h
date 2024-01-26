@@ -39,6 +39,7 @@ void insert_socket(int, int, int, int);
 void update_socket_fd_address(int, struct SocketAddrPool *);
 void init_gateway(struct SocketAddrPool *address);
 void set_tcp();
+int get_sock_fd(int);
 void insert_sync_op(wasm_exec_env_t exec_env, uint32 *mutex, enum sync_op locking);
 void restart_execution(uint32 targs);
 extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, const void *attr, uint32 elem_index,

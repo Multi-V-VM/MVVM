@@ -484,7 +484,7 @@ int main() {
                         new_client = socket(AF_INET, SOCK_STREAM, 0);
                         to_start.new_client = new_client;
                         address.sin_family = AF_INET;
-                        address.sin_port = htons(client_port);
+                        address.sin_port = htons(server_port);
                         if (inet_pton(AF_INET, std::get<2>(tmp_tuple).c_str(), &address.sin_addr) <= 0) {
                             LOGV(ERROR) << "Invalid address/ Address not supported";
                             exit(EXIT_FAILURE);
@@ -538,7 +538,7 @@ int main() {
                     });
                     to_start.new_server = new_server;
                     to_start.is_sleep = false;
-                    tcp_pair[fmt::format("{}:{}", server_ip, server_port)] = to_start;
+                    tcp_pair[fmt::format("{}:{}", std::get<2>(tmp_tuple), server_port)] = to_start;
                 } else
                     is_forward = true;
                 break;
