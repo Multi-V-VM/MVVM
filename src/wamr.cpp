@@ -165,12 +165,6 @@ int WAMRInstance::invoke_main() {
     return wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
 void WAMRInstance::invoke_init_c() {
-    auto name = "__wasm_init_memory";
-    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        LOGV(ERROR) << "The wasi " << name << " function is not found.";
-    } else {
-        wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
-    }
     auto name1 = "__wasm_call_ctors";
     if (!(func = wasm_runtime_lookup_function(module_inst, name1, nullptr))) {
         LOGV(ERROR) << "The wasi " << name1 << " function is not found.";

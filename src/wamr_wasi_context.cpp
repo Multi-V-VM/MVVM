@@ -119,6 +119,10 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
 void WAMRWASIContext::restore_impl(WASIArguments *env) {
     int r;
 
+    if (!wamr->should_snapshot_socket) {
+#if !defined(_WIN32)
+        wamr->should_snapshot_socket = true;
+#endif
     for (auto [fd, res] : this->fd_map) {
         // differ from path from file
         auto path = std::get<0>(res);
