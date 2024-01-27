@@ -59,6 +59,19 @@ void insert_sock_send_to_data(uint32_t sock, uint8 *si_data, uint32 si_data_len,
 
 void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_len, uint16_t ri_flags,
                                 __wasi_addr_t *src_addr) {
+
+    if(wamr->time != std::chrono::high_resolution_clock::time_point())
+        wamr->latencies.emplace_back(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - wamr->time)
+            .count());
+    wamr->time = std::chrono::high_resolution_clock::now();
+    if (wamr->latencies.size() % 1000 ==0) {
+        long long sum = std::accumulate(wamr->latencies.begin(), wamr->latencies.end(), 0LL);
+        double average_latency = static_cast<double>(sum) / wamr->latencies.size();
+        fprintf(stderr, "average latency %f\n", average_latency);
+
+
+    }
     if (wamr->socket_fd_map_.find(sock) != wamr->socket_fd_map_.end()) {
         WasiSockRecvFromData recvFromData{};
         recvFromData.sock = sock;
@@ -145,8 +158,8 @@ int get_sock_fd(int fd) {
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
-        LOGV(INFO) << "insert_fd(fd,filename,flags, offset) fd:" << fd << " flags:" << flags << " offset:" << offset
-                   << " op:" << op;
+        // LOGV(INFO) << "insert_fd(fd,filename,flags, offset) fd:" << fd << " flags:" << flags << " offset:" << offset
+        //    << " op:" << op;
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
         std::tie(path_, ops_) = wamr->fd_map_[fd];
@@ -234,7 +247,7 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
         wamr->socket_fd_map_[fd].socketAddress.ip6[7] = address->ip6[7];
     }
 }
-
+#if !defined(_WIN32)
 void init_gateway(SocketAddrPool *address) {
     // tell gateway to keep alive the server
     if (wamr->op_data.op != MVVM_SOCK_RESUME && wamr->op_data.op != MVVM_SOCK_RESUME_TCP_SERVER) {
@@ -276,7 +289,7 @@ void init_gateway(SocketAddrPool *address) {
         close(fd);
     }
 }
-
+#endif
 #if defined(__APPLE__)
 int gettid() {
     uint64_t tid;
@@ -288,8 +301,8 @@ int gettid() { return GetCurrentThreadId(); }
 #endif
 
 void insert_sync_op(wasm_exec_env_t exec_env, uint32 *mutex, enum sync_op locking) {
-    printf("insert sync on offset %d, as op: %d\n", *mutex, locking);
-    struct sync_op_t sync_op = {.tid = exec_env->cur_count, .ref = *mutex, .sync_op = locking};
+    // printf("insert sync on offset %d, as op: %d\n", *mutex, locking);
+    struct sync_op_t sync_op = {.tid = ((uint32)exec_env->cur_count), .ref = *mutex, .sync_op = locking};
     wamr->sync_ops.push_back(sync_op);
 }
 

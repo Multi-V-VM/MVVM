@@ -15,10 +15,12 @@
 #include "wamr_read_write.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
+#include <chrono>
 #include <condition_variable>
 #include <functional>
 #include <iterator>
 #include <mutex>
+#include <numeric>
 #include <ranges>
 #include <semaphore>
 #include <tuple>
@@ -43,7 +45,7 @@ public:
     std::vector<const char *> ns_pool_{};
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_{};
     // add offset to pair->tuple, 3rd param 'int'
-    std::map<int,int> new_sock_map_{};
+    std::map<int, int> new_sock_map_{};
     std::map<int, SocketMetaData, std::greater<int>> socket_fd_map_{};
     SocketAddrPool local_addr{};
     // lwcp is LightWeight CheckPoint
@@ -80,6 +82,8 @@ public:
     bool replace_mfence_with_nop();
     bool replace_nop_with_int3();
     bool replace_switch_with_nop();
+    std::chrono::time_point<std::chrono::high_resolution_clock> time;
+    std::vector<long long> latencies;
     WASMFunction *get_func();
     void set_func(WASMFunction *);
 #if WASM_ENABLE_AOT != 0

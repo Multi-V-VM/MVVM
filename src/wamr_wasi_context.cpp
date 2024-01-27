@@ -120,29 +120,30 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     int r;
 
     if (!wamr->should_snapshot_socket) {
-#if !defined(_WIN32)
+#if defined(_WIN32)
         wamr->should_snapshot_socket = true;
 #endif
-    for (auto [fd, res] : this->fd_map) {
-        // differ from path from file
-        auto path = std::get<0>(res);
-        LOGV(INFO) << "fd: " << fd << " path: " << path;
-        for (auto [flags, offset, op] : std::get<1>(res)) {
+        for (auto [fd, res] : this->fd_map) {
             // differ from path from file
-            LOGV(INFO) << "fd: " << fd << " path: " << path << " flag: " << flags << " op: " << op;
-            switch (op) {
-            case MVVM_FOPEN:
-                r = wamr->invoke_fopen(path, fd);
-                LOGV(ERROR) << r;
-                if (r != fd)
-                    wamr->invoke_frenumber(r, fd);
-                wamr->fd_map_[fd] = res;
-                break;
-            case MVVM_FWRITE:
-            case MVVM_FREAD:
-            case MVVM_FSEEK:
-                wamr->invoke_fseek(fd, flags);
-                break;
+            auto path = std::get<0>(res);
+            LOGV(INFO) << "fd: " << fd << " path: " << path;
+            for (auto [flags, offset, op] : std::get<1>(res)) {
+                // differ from path from file
+                LOGV(INFO) << "fd: " << fd << " path: " << path << " flag: " << flags << " op: " << op;
+                switch (op) {
+                case MVVM_FOPEN:
+                    r = wamr->invoke_fopen(path, fd);
+                    LOGV(ERROR) << r;
+                    if (r != fd)
+                        wamr->invoke_frenumber(r, fd);
+                    wamr->fd_map_[fd] = res;
+                    break;
+                case MVVM_FWRITE:
+                case MVVM_FREAD:
+                case MVVM_FSEEK:
+                    wamr->invoke_fseek(fd, flags);
+                    break;
+                }
             }
         }
     }
@@ -203,7 +204,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
                     if (is_tcp_server) {
                         wamr->new_sock_map_[fd] =
                             wamr->invoke_sock_accept(old_fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
-                            
+
                         // This ip should be old ip?
                     } else {
                         wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
