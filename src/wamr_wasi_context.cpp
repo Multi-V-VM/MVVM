@@ -227,7 +227,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
                 wamr->socket_fd_map_[fd] = socketMetaData;
             }
         }
+        wamr->sync_ops.assign(this->sync_ops.begin(), this->sync_ops.end());
     }
 #endif
-    wamr->sync_ops.assign(this->sync_ops.begin(), this->sync_ops.end());
 };

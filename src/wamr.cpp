@@ -399,6 +399,7 @@ int WAMRInstance::invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **soc
     }
     return -1;
 }
+bool is_atomic_checkpointable(){return checkpoint;}
 int WAMRInstance::invoke_fseek(uint32 fd, uint32 offset) {
     auto name = "__wasi_fd_seek";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
@@ -642,7 +643,7 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
         if ((*sync_iter).tid == mytid) {
 
             // do op
-            printf("replay %ld, op %d\n", sync_iter->tid, sync_iter->sync_op);
+            // printf("replay %ld, op %d\n", sync_iter->tid, sync_iter->sync_op);
             switch (sync_iter->sync_op) {
             case SYNC_OP_MUTEX_LOCK:
                 pthread_mutex_lock_wrapper(exec_env, &(sync_iter->ref));
@@ -712,14 +713,14 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
 
         // restart thread execution
         fprintf(stderr, "pthread_create_wrapper, func %d\n", id);
-        /*    module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
+        module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
         exec_env->is_restore = false;
         auto s = exec_env->restore_call_chain;
         exec_env->restore_call_chain = NULL;
-            invoke_init_c();
-            invoke_preopen(1, "/dev/stdout");
+        invoke_init_c();
+        invoke_preopen(1, "/dev/stdout");
         exec_env->is_restore = true;
-        exec_env->restore_call_chain =s; // */
+        exec_env->restore_call_chain = s;
         pthread_create_wrapper(main_env, nullptr, nullptr, id, id);
 
         thread_init.acquire();

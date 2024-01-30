@@ -40,7 +40,7 @@ void update_socket_fd_address(int, struct SocketAddrPool *);
 void init_gateway(struct SocketAddrPool *address);
 void set_tcp();
 int get_sock_fd(int);
-void insert_sync_op(wasm_exec_env_t exec_env, uint32 *mutex, enum sync_op locking);
+void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking);
 void restart_execution(uint32 targs);
 extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, const void *attr, uint32 elem_index,
                                   uint32 arg);
@@ -51,6 +51,7 @@ void serialize_to_file(struct WASMExecEnv *);
 void insert_fd(int, const char *, int, int, enum fd_op op);
 void remove_fd(int);
 void rename_fd(int, char const *, int, char const *);
+bool is_atomic_checkpointable();
 void lightweight_checkpoint(WASMExecEnv *);
 void lightweight_uncheckpoint(WASMExecEnv *);
 void wamr_wait(wasm_exec_env_t);

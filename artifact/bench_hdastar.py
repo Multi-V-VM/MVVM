@@ -2,8 +2,9 @@ import pickle
 import common_util
 from multiprocessing import Pool
 
-cmd = ["hdastar", "hdastar", "hdastar"]
+cmd = ["hw5","hw5", "hw5", "hw5"]
 arg = [
+    ["maze-6404.txt", "1"],
     ["maze-6404.txt", "2"],
     ["maze-6404.txt", "4"],
     ["maze-6404.txt", "8"],
@@ -15,10 +16,8 @@ pool = Pool(processes=5)
 # run the benchmarks
 results = []
 for i in range(len(cmd)):
-    for j in range(len(common_util.aot_variant)):
-        for env in ["a=b"]:
-            aot = cmd[i] + common_util.aot_variant[j]
-            results.append(pool.apply_async(common_util.run, (aot, arg[i], env)))
+    aot = cmd[i]
+    results.append(pool.apply_async(common_util.run_hcontainer, (aot,"hdastar", arg[i], "OMP_NUM_THREADS=1")))
 pool.close()
 pool.join()
 
@@ -31,7 +30,7 @@ for exec, output in results:
     print(exec)
     lines = output.split("\n")
     for line in lines:
-        if line.__contains__("Execution time:"):
+        if line.__contains__("real"):
             print(line)
 
 # read the results

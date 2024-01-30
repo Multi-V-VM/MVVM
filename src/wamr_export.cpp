@@ -15,6 +15,7 @@ int stop_func_threshold = 0;
 int cur_func_count = 0;
 bool is_debug;
 
+
 void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockfd) {
     if (wamr->socket_fd_map_.find(sockfd) != wamr->socket_fd_map_.end()) {
         wamr->socket_fd_map_[sockfd].socketOpenData.poolfd = poolfd;
@@ -60,17 +61,15 @@ void insert_sock_send_to_data(uint32_t sock, uint8 *si_data, uint32 si_data_len,
 void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_len, uint16_t ri_flags,
                                 __wasi_addr_t *src_addr) {
 
-    if(wamr->time != std::chrono::high_resolution_clock::time_point())
+    if (wamr->time != std::chrono::high_resolution_clock::time_point())
         wamr->latencies.emplace_back(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - wamr->time)
-            .count());
+            std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - wamr->time)
+                .count());
     wamr->time = std::chrono::high_resolution_clock::now();
-    if (wamr->latencies.size() % 1000 ==0) {
+    if (wamr->latencies.size() % 1000 == 0) {
         long long sum = std::accumulate(wamr->latencies.begin(), wamr->latencies.end(), 0LL);
         double average_latency = static_cast<double>(sum) / wamr->latencies.size();
         fprintf(stderr, "average latency %f\n", average_latency);
-
-
     }
     if (wamr->socket_fd_map_.find(sock) != wamr->socket_fd_map_.end()) {
         WasiSockRecvFromData recvFromData{};
@@ -300,7 +299,7 @@ int gettid() {
 int gettid() { return GetCurrentThreadId(); }
 #endif
 
-void insert_sync_op(wasm_exec_env_t exec_env, uint32 *mutex, enum sync_op locking) {
+void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking) {
     // printf("insert sync on offset %d, as op: %d\n", *mutex, locking);
     struct sync_op_t sync_op = {.tid = ((uint32)exec_env->cur_count), .ref = *mutex, .sync_op = locking};
     wamr->sync_ops.push_back(sync_op);
@@ -309,7 +308,7 @@ void insert_sync_op(wasm_exec_env_t exec_env, uint32 *mutex, enum sync_op lockin
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {
-        fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
+        fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;
     }
     LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
     if (fid == -1) {
@@ -325,7 +324,7 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
 void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {
-        fid = (((AOTFrame *)exec_env->cur_frame)->func_index);
+        fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;
     }
     LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
     if (fid == -1) {

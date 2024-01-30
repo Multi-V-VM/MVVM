@@ -3,10 +3,10 @@ import common_util
 from multiprocessing import Pool
 
 cmd = [
-   "rgb",
+   "rgbd_tum",
 ]
 arg = [
-    [],
+    [ "./ORBvoc.txt","./TUM1.yaml","./","./associations/fr2_desk.txt"],
 ]
 
 

@@ -53,7 +53,7 @@ public:
     size_t ready = 0;
     std::mutex as_mtx;
     std::vector<struct sync_op_t> sync_ops;
-    bool should_snapshot_socket = false;
+    bool should_snapshot_socket{};
     void replay_sync_ops(bool, wasm_exec_env_t);
     void register_tid_map();
     std::vector<struct sync_op_t>::iterator sync_iter;
@@ -61,8 +61,7 @@ public:
     std::condition_variable sync_op_cv;
     std::map<ssize_t, ssize_t> tid_map;
     ssize_t cur_thread;
-
-    bool is_jit;
+    bool is_jit{};
     bool is_aot{};
     char error_buf[128]{};
     struct mvvm_op_data op_data {};
