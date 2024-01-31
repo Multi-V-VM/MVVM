@@ -41,7 +41,6 @@ struct sockaddr_in6 sockaddr_from_ip6(const SocketAddrPool &addr) {
 #endif
 
 void WAMRWASIContext::dump_impl(WASIArguments *env) {
-    auto buf = (uint8 *)malloc(1024);
     for (auto &i : wamr->dir_) {
         dir.emplace_back(i);
     }
@@ -60,16 +59,20 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
     for (auto &i : wamr->ns_pool_) {
         ns_lookup_list.emplace_back(i);
     }
+    for (auto &[k, v] : wamr->tid_start_arg_map) {
+        tid_start_arg_map[k] = v;
+    }
     // only one thread has fd_map
-    if (wamr->should_snapshot_socket)
+    if (wamr->should_snapshot)
         for (auto [fd, res] : wamr->fd_map_) {
             auto [path, op] = res;
             auto dumped_res = std::make_tuple(path, op);
             this->fd_map[fd] = dumped_res;
         }
 #if !defined(_WIN32)
+    auto buf = (uint8 *)malloc(1024);
     // only one thread has socket_map
-    if (wamr->should_snapshot_socket)
+    if (wamr->should_snapshot)
         for (auto [fd, socketMetaData] : wamr->socket_fd_map_) {
             ssize_t rc;
             if (wamr->socket_fd_map_[fd].socketRecvFromDatas.empty()) {
@@ -119,10 +122,13 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
 void WAMRWASIContext::restore_impl(WASIArguments *env) {
     int r;
 
-    if (!wamr->should_snapshot_socket) {
+    if (!wamr->should_snapshot) {
 #if defined(_WIN32)
-        wamr->should_snapshot_socket = true;
+        wamr->should_snapshot = true;
 #endif
+        for (auto &[k, v] : tid_start_arg_map) {
+            wamr->tid_start_arg_map[k] = v;
+        }
         for (auto [fd, res] : this->fd_map) {
             // differ from path from file
             auto path = std::get<0>(res);
@@ -149,8 +155,8 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
     }
 #if !defined(_WIN32)
     // is tcp socket
-    if (!wamr->should_snapshot_socket) {
-        wamr->should_snapshot_socket = true;
+    if (!wamr->should_snapshot) {
+        wamr->should_snapshot = true;
         bool is_tcp_server = false;
         int old_fd = 0;
         int res;

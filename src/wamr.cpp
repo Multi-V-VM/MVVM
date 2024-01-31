@@ -171,7 +171,6 @@ void WAMRInstance::invoke_init_c() {
     } else {
         wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
     }
-    return;
 }
 int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
     auto name = "o_";
@@ -399,7 +398,7 @@ int WAMRInstance::invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **soc
     }
     return -1;
 }
-bool is_atomic_checkpointable(){return checkpoint;}
+bool is_atomic_checkpointable() { return checkpoint; }
 int WAMRInstance::invoke_fseek(uint32 fd, uint32 offset) {
     auto name = "__wasi_fd_seek";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
@@ -461,25 +460,7 @@ int WAMRInstance::invoke_preopen(uint32 fd, const std::string &path) {
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi\"" << name << "\"function is not found.";
         auto target_module = get_module_instance()->e;
-        for (int i = 0; i < target_module->function_count; i++) {
-            auto cur_func = &target_module->functions[i];
-            if (cur_func->is_import_func) {
-                LOGV(DEBUG) << cur_func->u.func_import->field_name << " " << i;
-                if (!strcmp(cur_func->u.func_import->field_name, name)) {
-
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-
-            } else {
-                LOGV(DEBUG) << cur_func->u.func->field_name << " " << i;
-
-                if (!strcmp(cur_func->u.func->field_name, name)) {
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-            }
-        }
+        return 0;
     }
     char *buffer_ = nullptr;
     uint32_t buffer_for_wasm;
@@ -602,12 +583,12 @@ WASMExecEnv *WAMRInstance::get_exec_env() {
     return cur_env; // should return the current thread's
 }
 
-WASMModuleInstance *WAMRInstance::get_module_instance() {
+WASMModuleInstance *WAMRInstance::get_module_instance() const {
     return reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst);
 }
 
 #if WASM_ENABLE_AOT != 0
-AOTModule *WAMRInstance::get_module() {
+AOTModule *WAMRInstance::get_module() const {
     return reinterpret_cast<AOTModule *>(reinterpret_cast<WASMModuleInstance *>(exec_env->module_inst)->module);
 }
 #endif
@@ -618,16 +599,14 @@ void restart_execution(uint32 id) {
                                    targs->exec_env->cur_frame->function, targs->exec_env->cur_frame->prev_frame);
 }
 
-void WAMRInstance::register_tid_map() { tid_map[cur_thread] = gettid(); }
+void WAMRInstance::register_tid_map() { tid_map[((long)cur_thread)] = gettid(); }
+
 #if !defined(_WIN32)
-extern "C" int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32 *);
-extern "C" int32 pthread_mutex_unlock_wrapper(wasm_exec_env_t, uint32 *);
-extern "C" int32 pthread_mutex_init_wrapper(wasm_exec_env_t, uint32 *, void *);
 void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
     if (main) {
         for (auto &i : sync_ops) {
             // remap to new tids so that if we reserialize it'll be correct
-            (i).tid = tid_map[(i).tid];
+            i.tid = tid_map[i.tid];
         }
         // start from the beginning
         sync_iter = sync_ops.begin();
@@ -641,7 +620,6 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
     while (sync_iter != sync_ops.end()) {
         std::unique_lock l(sync_op_mutex);
         if ((*sync_iter).tid == mytid) {
-
             // do op
             // printf("replay %ld, op %d\n", sync_iter->tid, sync_iter->sync_op);
             switch (sync_iter->sync_op) {
@@ -708,12 +686,13 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
 
         // requires to record the args and callback for the pthread.
         auto thread_arg = ThreadArgs{main_env};
+        main_env->restore_call_chain = NULL;
 
         argptr[id] = &thread_arg;
 
         // restart thread execution
-        fprintf(stderr, "pthread_create_wrapper, func %d\n", id);
-        module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
+        fprintf(stderr, "pthread_create_wrapper, func %d\n", child_env->cur_count);
+        // module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
         exec_env->is_restore = false;
         auto s = exec_env->restore_call_chain;
         exec_env->restore_call_chain = NULL;
@@ -721,7 +700,10 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
         invoke_preopen(1, "/dev/stdout");
         exec_env->is_restore = true;
         exec_env->restore_call_chain = s;
-        pthread_create_wrapper(main_env, nullptr, nullptr, id, id);
+        if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end())
+            thread_spawn_wrapper(main_env, tid_start_arg_map[child_env->cur_count]);
+        else
+            pthread_create_wrapper(main_env, nullptr, nullptr, id, id); // tid_map
 
         thread_init.acquire();
         id++;
@@ -750,6 +732,10 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv) {
         // replay sync ops to get OS state matching
         replay_sync_ops(true, main_env);
 #endif
+        auto end = std::chrono::high_resolution_clock::now();
+        // get duration in us
+        auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - this->time);
+        fprintf(stderr, "Recover time: %f\n", dur.count() / 1000000.0);
         invoke_main();
     }
 }

@@ -1,20 +1,20 @@
 #include <stdio.h>
 #include <unistd.h>
-int a(int c){
-    static int b=0;
+int a(int c) {
+    static int b = 0;
     b++;
-    printf("%d %d\n",c,b);
-//    printf("\n");
+    printf("%d %d\n", c, b);
+    //    printf("\n");
 }
-int main(int argv,char ** argc){
-    int c=0;
+int main(int argv, char **argc) {
+    int c = 0;
     int d = atoi(argc[1]);
-    while (1){
+    while (1) {
         a(c);
         c++;
         sleep(1);
-        if(c==d)
+        if (c == d)
             break;
     }
-//    __wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
+    //     //__wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
 }

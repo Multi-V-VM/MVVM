@@ -42,8 +42,13 @@ void set_tcp();
 int get_sock_fd(int);
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking);
 void restart_execution(uint32 targs);
+void insert_tid_start_arg(ssize_t, size_t);
 extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, const void *attr, uint32 elem_index,
                                   uint32 arg);
+extern int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32 *);
+extern int32 pthread_mutex_unlock_wrapper(wasm_exec_env_t, uint32 *);
+extern int32 pthread_mutex_init_wrapper(wasm_exec_env_t, uint32 *, void *);
+extern int32 thread_spawn_wrapper(wasm_exec_env_t exec_env, uint32 start_arg);
 #endif
 void serialize_to_file(struct WASMExecEnv *);
 #endif

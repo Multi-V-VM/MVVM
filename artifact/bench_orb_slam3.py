@@ -6,7 +6,7 @@ cmd = [
    "rgbd_tum",
 ]
 arg = [
-    [ "./ORBvoc.txt","./TUM1.yaml","./","./associations/fr2_desk.txt"],
+    [ "./ORBvoc.txt","./TUM1.yaml","./","./associations/fr1_xyz.txt"],
 ]
 
 

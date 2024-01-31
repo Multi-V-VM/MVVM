@@ -14,9 +14,9 @@ pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
 static void *thread(void *arg) {
     for (int i = 0; i < NUM_ITER; i++) {
-	pthread_mutex_lock(&m);
-	g_count++;
-	pthread_mutex_unlock(&m);
+        pthread_mutex_lock(&m);
+        g_count++;
+        pthread_mutex_unlock(&m);
     }
     printf("Value of g_count is %d\n", g_count);
     printf("%d\n", g_count);
@@ -24,7 +24,7 @@ static void *thread(void *arg) {
 }
 
 int main(int argc, char **argv) {
-	pthread_mutex_init(&m,NULL);
+    pthread_mutex_init(&m, NULL);
     pthread_t tids[MAX_NUM_THREADS];
 
     for (int i = 0; i < MAX_NUM_THREADS; i++) {
@@ -44,6 +44,6 @@ int main(int argc, char **argv) {
     if (g_count != MAX_NUM_THREADS * NUM_ITER) {
         __builtin_trap();
     }
-    __wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
+    //__wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
     return -1;
 }

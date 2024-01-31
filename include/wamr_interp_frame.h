@@ -14,26 +14,10 @@ struct WAMRInterpFrame {
     uint32 size{};
     /* Instruction pointer of the bytecode array.  */
     uint32 ip{};
-
-    // #if WASM_ENABLE_FAST_JIT != 0
-    //     uint8 *jitted_return_addr;
-    // #endif
     int32 function_index{};
-
-    // #if WASM_ENABLE_PERF_PROFILING != 0
-    //     uint64 time_started;
-    // #endif
-
-    // #if WASM_ENABLE_FAST_INTERP != 0
-    //     /* Return offset of the first return value of current frame,
-    //    the callee will put return values here continuously */
-    //     uint32 ret_offset;
-    //     uint32 *lp;
-    //     uint32 operand[1];
-    // #else
     /* Operand stack top pointer of the current frame. The bottom of
        the stack is the next cell after the last local variable. */
-    uint32 sp{}; // all the sp that can be restart
+    uint32 sp{};
 
     /*
      * Frame data, the layout is:
@@ -42,8 +26,6 @@ struct WAMRInterpFrame {
      *  csp_bottom to csp_boundary: wasm label stack
      *  jit spill cache: only available for fast jit
      */
-    // #endif
-
     std::vector<uint32> stack_frame;
 
     void dump_impl(WASMInterpFrame *env);

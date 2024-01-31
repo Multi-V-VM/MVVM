@@ -304,7 +304,9 @@ void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op 
     struct sync_op_t sync_op = {.tid = ((uint32)exec_env->cur_count), .ref = *mutex, .sync_op = locking};
     wamr->sync_ops.push_back(sync_op);
 }
-
+void insert_tid_start_arg(ssize_t tid, size_t start_arg){
+    wamr->tid_start_arg_map[tid] = start_arg;
+};
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {

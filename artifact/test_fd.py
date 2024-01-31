@@ -9,7 +9,10 @@ import common_util
 def run_fd_once(funcs):
     for i in funcs:
         os.system(f"LOGV=0 ./MVVM_checkpoint -t ./test/read-file.aot -f {i}")
-        os.system(f"LOGV=0 ./MVVM_restore -t ./test/read-file.aot -c 100000000")
+        os.system(f"LOGV=0 ./MVVM_restore -t ./test/read-file.aot -c 10000")
+
+def get_fd_merge_latency():
+    pass
 
 
 if __name__ == "__main__":

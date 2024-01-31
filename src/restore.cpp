@@ -56,6 +56,7 @@ int main(int argc, char **argv) {
 
     reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
+    wamr->time = std::chrono::high_resolution_clock::now();
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
     // is server for all and the is server?
 #if !defined(_WIN32)

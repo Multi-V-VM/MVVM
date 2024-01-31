@@ -76,7 +76,9 @@ struct WAMRWASIContext {
     std::vector<std::string> env_list;
     std::vector<std::string> addr_pool;
     std::vector<std::string> ns_lookup_list;
+    std::map<int, int> tid_start_arg_map;
     uint32_t exit_code;
+
     void dump_impl(WASIArguments *env);
     void restore_impl(WASIArguments *env);
 };

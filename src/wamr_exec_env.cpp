@@ -3,6 +3,7 @@
 #include "wamr.h"
 extern WAMRInstance *wamr;
 void WAMRExecEnv::dump_impl(WASMExecEnv *env) {
+    this->cur_count = env->cur_count;
     dump(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
     flags = env->suspend_flags.flags;
     aux_boundary = env->aux_stack_boundary.boundary;
@@ -18,7 +19,6 @@ void WAMRExecEnv::dump_impl(WASMExecEnv *env) {
         this->frames.emplace_back(dumped_frame);
         cur_frame = cur_frame->prev_frame;
     }
-    this->cur_count = env->cur_count;
 }
 void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
     env->suspend_flags.flags = flags;

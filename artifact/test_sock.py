@@ -53,6 +53,11 @@ def run_tcp_migrate_once(funcs):
         os.system(f"LOGV=0 ./MVVM_checkpoint -t ./test/client.aot -c {i}")
         os.system(f"LOGV=0 ./MVVM_restore -t ./test/client.aot")
     
+def get_tcp_latency():
+    pass
+def get_tcp_bandwidth():
+    pass
+
 if __name__ == "__main__":
     funcs = ["socket", "sendto", "recvfrom", "close"]
     func_idxs = [common_util.get_func_index(x) for x in funcs]

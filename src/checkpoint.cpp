@@ -22,7 +22,8 @@ FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 void serialize_to_file(WASMExecEnv *instance) {
-// gateway
+    // gateway
+    auto start = std::chrono::high_resolution_clock::now();
 #if !defined(_WIN32)
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
@@ -33,11 +34,11 @@ void serialize_to_file(WASMExecEnv *instance) {
     wamr->ready++;
     wamr->lwcp_list[gettid()]++;
     if (wamr->ready == all_count) {
-        wamr->should_snapshot_socket = true;
+        wamr->should_snapshot = true;
     }
     // If we're not all ready
     printf("thread %d, with %ld ready out of %d total\n", gettid(), wamr->ready, all_count);
-    if (!wamr->socket_fd_map_.empty() && wamr->should_snapshot_socket) {
+    if (!wamr->socket_fd_map_.empty() && wamr->should_snapshot) {
         // tell gateway to keep alive the server
         struct sockaddr_in addr {};
         int fd = 0;
@@ -64,7 +65,7 @@ void serialize_to_file(WASMExecEnv *instance) {
                 src_addr = wamr->local_addr;
                 src_addr.port = sock_data.socketAddress.port;
             }
-            LOGV(INFO) << "addr: "<<tmp_fd<<"  "
+            LOGV(INFO) << "addr: " << tmp_fd << "  "
                        << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3])
                        << " port: " << src_addr.port;
 
@@ -202,6 +203,10 @@ void serialize_to_file(WASMExecEnv *instance) {
 #endif
 
     struct_pack::serialize_to(*writer, as);
+    auto end = std::chrono::high_resolution_clock::now();
+    // get duration in us
+    auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    printf("Snapshot time: %f s\n", dur.count() / 1000000.0);
     exit(EXIT_SUCCESS);
 }
 
@@ -311,6 +316,6 @@ int main(int argc, char *argv[]) {
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     // print in s
-    printf("Execution time: %f s\n", dur.count()/ 1000000.0);
+    printf("Execution time: %f s\n", dur.count() / 1000000.0);
     return 0;
 }

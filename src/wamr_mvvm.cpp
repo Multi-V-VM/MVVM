@@ -3,9 +3,9 @@
 bool WAMRInstance::get_int3_addr() {
     if (!is_aot)
         return true;
-    auto module = get_module();
-    auto code = static_cast<unsigned char *>(module->code);
-    auto code_size = module->code_size;
+    auto m_ = get_module();
+    auto code = static_cast<unsigned char *>(m_->code);
+    auto code_size = m_->code_size;
     fprintf(stderr, "code %p code_size %d\n", code, code_size);
 
     std::string object_file = std::string(aot_file_path) + ".o";

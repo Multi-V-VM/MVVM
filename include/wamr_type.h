@@ -12,7 +12,6 @@ struct WAMRType {
     uint16 ret_cell_num;
     uint16 ref_count;
     /* types of params and results */
-    //    uint8 types[1];
     void dump_impl(WASMType *env) {
         param_count = env->param_count;
         result_count = env->result_count;

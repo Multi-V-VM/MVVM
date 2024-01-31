@@ -46,21 +46,24 @@ public:
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_{};
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, int> new_sock_map_{};
-    std::map<int, SocketMetaData, std::greater<int>> socket_fd_map_{};
+    std::map<int, SocketMetaData, std::greater<>> socket_fd_map_{};
     SocketAddrPool local_addr{};
     // lwcp is LightWeight CheckPoint
     std::map<ssize_t, int> lwcp_list;
     size_t ready = 0;
     std::mutex as_mtx;
     std::vector<struct sync_op_t> sync_ops;
-    bool should_snapshot_socket{};
+    bool should_snapshot{};
+    WASMMemoryInstance **tmp_buf;
+    uint32 tmp_buf_size;
     void replay_sync_ops(bool, wasm_exec_env_t);
     void register_tid_map();
     std::vector<struct sync_op_t>::iterator sync_iter;
     std::mutex sync_op_mutex;
     std::condition_variable sync_op_cv;
     std::map<ssize_t, ssize_t> tid_map;
-    ssize_t cur_thread;
+    std::map<ssize_t, size_t> tid_start_arg_map;
+    size_t cur_thread;
     bool is_jit{};
     bool is_aot{};
     char error_buf[128]{};
@@ -76,11 +79,9 @@ public:
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
     bool load_wasm_binary(const char *wasm_path, char **buffer_ptr);
     bool get_int3_addr();
-    bool get_switch_addr();
     bool replace_int3_with_nop();
     bool replace_mfence_with_nop();
     bool replace_nop_with_int3();
-    bool replace_switch_with_nop();
     std::chrono::time_point<std::chrono::high_resolution_clock> time;
     std::vector<long long> latencies;
     WASMFunction *get_func();
@@ -90,10 +91,10 @@ public:
     AOTFunctionInstance *get_func(int index);
 #endif
     WASMExecEnv *get_exec_env();
-    WASMModuleInstance *get_module_instance();
+    WASMModuleInstance *get_module_instance() const;
 
 #if WASM_ENABLE_AOT != 0
-    AOTModule *get_module();
+    AOTModule *get_module() const;
 #endif
 
     void set_wasi_args(WAMRWASIContext &addrs);
