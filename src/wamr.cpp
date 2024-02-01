@@ -689,7 +689,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
         // invoke_init_c();
         //  invoke_preopen(1, "/dev/stdout");
         fprintf(stderr, "wakeup.release\n");
-        sleep(1);
+        sleep(5);
         wakeup.release(100);
 
         cur_env->is_restore = true;
@@ -719,35 +719,36 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env) {
         child_env = exec_;
         // requires to record the args and callback for the pthread.
         auto thread_arg = ThreadArgs{cur_env};
-        //cur_env->restore_call_chain = NULL;
-        // cur_env->is_restore = false;
+        //  cur_env->is_restore = false;
 
         argptr[id] = &thread_arg;
         auto parent = child_tid_map[child_env->cur_count];
         if (parent == cur_env->cur_count) {
             LOGV(ERROR) << parent << " " << child_env->cur_count;
             // restart thread execution
+
             fprintf(stderr, "pthread_create_wrapper, func %d\n", child_env->cur_count);
             // module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
-            exec_env->is_restore = false;
-            auto s = exec_env->restore_call_chain;
-            exec_env->restore_call_chain = NULL;
-            invoke_init_c();
-            invoke_preopen(1, "/dev/stdout");
-            exec_env->is_restore = true;
-            exec_env->restore_call_chain = s;
             if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end()) {
                 // find the parent env
+                cur_env->restore_call_chain = NULL;
 
                 // main thread
                 thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count]);
 
             } else {
+                exec_env->is_restore = false;
+                auto s = exec_env->restore_call_chain;
+                exec_env->restore_call_chain = NULL;
+                invoke_init_c();
+                invoke_preopen(1, "/dev/stdout");
+                exec_env->is_restore = true;
+                exec_env->restore_call_chain = s;
                 pthread_create_wrapper(cur_env, nullptr, nullptr, id, id); // tid_map
             }
             fprintf(stderr, "child spawned %p\n\n", cur_env);
+            // sleep(1);
             this->as_mtx.unlock();
-
             thread_init.acquire();
         }
     }

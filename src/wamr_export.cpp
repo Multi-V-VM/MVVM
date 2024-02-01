@@ -308,6 +308,7 @@ void insert_tid_start_arg(ssize_t tid, size_t start_arg){
     wamr->tid_start_arg_map[tid] = start_arg;
 };
 void change_thread_id_to_child(ssize_t tid, ssize_t child_tid){
+    LOGV(ERROR)<<fmt::format("change_thread_id_to_child {} {}", tid, child_tid);
     for (auto &[k, v] : wamr->child_tid_map) {
         if (k == child_tid) {
             wamr->child_tid_map[tid] = v;
@@ -317,6 +318,7 @@ void change_thread_id_to_child(ssize_t tid, ssize_t child_tid){
     }
 };
 void insert_parent_child(ssize_t tid, ssize_t child_tid){
+    LOGV(ERROR)<<fmt::format("insert_parent_child {} {}", tid, child_tid);
     wamr->child_tid_map[child_tid] = tid;
 };
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
