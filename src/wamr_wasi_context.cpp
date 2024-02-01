@@ -62,6 +62,10 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
     for (auto &[k, v] : wamr->tid_start_arg_map) {
         tid_start_arg_map[k] = v;
     }
+    for (auto &[k, v] : wamr->child_tid_map) {
+        child_tid_map[k] = v;
+        LOGV(ERROR) << "child_tid_map: " << k << " " << v;
+    }
     // only one thread has fd_map
     if (wamr->should_snapshot)
         for (auto [fd, res] : wamr->fd_map_) {
@@ -128,6 +132,10 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
 #endif
         for (auto &[k, v] : tid_start_arg_map) {
             wamr->tid_start_arg_map[k] = v;
+        }
+        for (auto &[k, v] : child_tid_map) {
+            wamr->child_tid_map[k] = v;
+            LOGV(ERROR) << "child_tid_map: " << k << " " << v;
         }
         for (auto [fd, res] : this->fd_map) {
             // differ from path from file

@@ -44,6 +44,6 @@ int main(int argc, char **argv) {
     if (g_count != MAX_NUM_THREADS * NUM_ITER) {
         __builtin_trap();
     }
-    //__wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
+    // __wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
     return -1;
 }

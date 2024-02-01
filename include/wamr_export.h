@@ -43,6 +43,8 @@ int get_sock_fd(int);
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking);
 void restart_execution(uint32 targs);
 void insert_tid_start_arg(ssize_t, size_t);
+void change_thread_id_to_child(ssize_t, ssize_t);
+void insert_parent_child(ssize_t, ssize_t);
 extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, const void *attr, uint32 elem_index,
                                   uint32 arg);
 extern int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32 *);

@@ -14,7 +14,7 @@ pthread_mutex_t g_count_lock;
 static void *thread(void *arg) {
     for (int i = 0; i < NUM_ITER; i++) {
         __atomic_fetch_add(&g_count, 1, __ATOMIC_SEQ_CST);
-        if (i % 100 == 0)
+        // if (i % 100 == 0)
             printf("print!!!%d\n", i);
     }
     printf("Value of g_count is %d\n", g_count);
@@ -44,6 +44,6 @@ int main(int argc, char **argv) {
     // if (g_count != MAX_NUM_THREADS * NUM_ITER) {
     //     __builtin_trap();
     // }
-    __wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
+    // __wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
     exit(0);
 }

@@ -43,6 +43,7 @@ public:
     std::vector<const char *> arg_{};
     std::vector<const char *> addr_{};
     std::vector<const char *> ns_pool_{};
+    std::vector<WAMRExecEnv*> execEnv{};
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_{};
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, int> new_sock_map_{};
@@ -51,19 +52,21 @@ public:
     // lwcp is LightWeight CheckPoint
     std::map<ssize_t, int> lwcp_list;
     size_t ready = 0;
-    std::mutex as_mtx;
+    std::mutex as_mtx{};
     std::vector<struct sync_op_t> sync_ops;
     bool should_snapshot{};
     WASMMemoryInstance **tmp_buf;
-    uint32 tmp_buf_size;
-    void replay_sync_ops(bool, wasm_exec_env_t);
-    void register_tid_map();
+    uint32 tmp_buf_size{};
     std::vector<struct sync_op_t>::iterator sync_iter;
     std::mutex sync_op_mutex;
     std::condition_variable sync_op_cv;
     std::map<ssize_t, ssize_t> tid_map;
+    std::map<ssize_t, ssize_t> child_tid_map;
     std::map<ssize_t, size_t> tid_start_arg_map;
+    uint32 id{};
     size_t cur_thread;
+    std::chrono::time_point<std::chrono::high_resolution_clock> time;
+    std::vector<long long> latencies;
     bool is_jit{};
     bool is_aot{};
     char error_buf[128]{};
@@ -76,31 +79,29 @@ public:
     explicit WAMRInstance(const char *wasm_path, bool is_jit);
 
     void instantiate();
-    void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *execEnv);
+    void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *);
     bool load_wasm_binary(const char *wasm_path, char **buffer_ptr);
     bool get_int3_addr();
     bool replace_int3_with_nop();
     bool replace_mfence_with_nop();
     bool replace_nop_with_int3();
-    std::chrono::time_point<std::chrono::high_resolution_clock> time;
-    std::vector<long long> latencies;
+    void replay_sync_ops(bool, wasm_exec_env_t);
+    void register_tid_map();
     WASMFunction *get_func();
     void set_func(WASMFunction *);
 #if WASM_ENABLE_AOT != 0
     std::vector<uint32> get_args();
     AOTFunctionInstance *get_func(int index);
+    [[nodiscard]] AOTModule *get_module() const;
 #endif
     WASMExecEnv *get_exec_env();
-    WASMModuleInstance *get_module_instance() const;
-
-#if WASM_ENABLE_AOT != 0
-    AOTModule *get_module() const;
-#endif
+    [[nodiscard]] WASMModuleInstance *get_module_instance() const;
 
     void set_wasi_args(WAMRWASIContext &addrs);
     void set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
                        const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,
                        const std::vector<std::string> &addr_list, const std::vector<std::string> &ns_lookup_pool);
+    void spawn_child(WASMExecEnv *main_env);
 
     int invoke_main();
     void invoke_init_c();

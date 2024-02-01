@@ -307,6 +307,18 @@ void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op 
 void insert_tid_start_arg(ssize_t tid, size_t start_arg){
     wamr->tid_start_arg_map[tid] = start_arg;
 };
+void change_thread_id_to_child(ssize_t tid, ssize_t child_tid){
+    for (auto &[k, v] : wamr->child_tid_map) {
+        if (k == child_tid) {
+            wamr->child_tid_map[tid] = v;
+            wamr->child_tid_map.erase(k);
+            break;
+        }
+    }
+};
+void insert_parent_child(ssize_t tid, ssize_t child_tid){
+    wamr->child_tid_map[child_tid] = tid;
+};
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {

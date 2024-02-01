@@ -34,7 +34,7 @@ struct WAMRMemoryInstance {
     void dump_impl(WASMMemoryInstance *env) {
         module_type = env->module_type;
         ref_count = env->ref_count;
-        LOGV(ERROR)<< "ref_count:" << ref_count;
+        LOGV(ERROR) << "ref_count:" << ref_count;
         num_bytes_per_page = env->num_bytes_per_page;
         cur_page_count = env->cur_page_count;
         max_page_count = env->max_page_count;
@@ -42,21 +42,7 @@ struct WAMRMemoryInstance {
         memcpy(memory_data.data(), env->memory_data, env->memory_data_size);
         heap_data = std::vector<uint8>(env->heap_data, env->heap_data_end);
     };
-    void restore_impl(WASMMemoryInstance *env) {
-        env->module_type = module_type;
-        env->ref_count = ref_count+1;
-        LOGV(ERROR)<< "ref_count:" << env->ref_count;
-        env->num_bytes_per_page = num_bytes_per_page;
-        env->cur_page_count = cur_page_count;
-        env->max_page_count = max_page_count;
-        env->memory_data_size = memory_data.size();
-        env->memory_data = (uint8 *)malloc(env->memory_data_size);
-        memcpy(env->memory_data, memory_data.data(), env->memory_data_size);
-        env->memory_data_end = env->memory_data + memory_data.size();
-        env->heap_data = (uint8 *)malloc(heap_data.size());
-        memcpy(env->heap_data, heap_data.data(), heap_data.size());
-        env->heap_data_end = env->heap_data + heap_data.size();
-    };
+    void restore_impl(WASMMemoryInstance *env);
 };
 
 template <SerializerTrait<WASMMemoryInstance *> T> void dump(T t, WASMMemoryInstance *env) { t->dump_impl(env); }

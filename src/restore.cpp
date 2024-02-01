@@ -60,16 +60,18 @@ int main(int argc, char **argv) {
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
     // is server for all and the is server?
 #if !defined(_WIN32)
-    if (!a[a.size()-1]->module_inst.wasi_ctx.socket_fd_map.empty()) { // new ip, old ip // only if tcp requires keepalive
+    if (!a[a.size() - 1]
+             ->module_inst.wasi_ctx.socket_fd_map.empty()) { // new ip, old ip // only if tcp requires keepalive
         // tell gateway to stop keep alive the server
         struct sockaddr_in addr {};
         int fd = 0;
         bool is_tcp_server;
         SocketAddrPool src_addr = wamr->local_addr;
         LOGV(INFO) << "new ip is "
-                   << fmt::format("{}.{}.{}.{}:{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3], src_addr.port);
+                   << fmt::format("{}.{}.{}.{}:{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3],
+                                  src_addr.port);
         // got from wamr
-        for (auto &[fd, socketMetaData] : a[a.size()-1]->module_inst.wasi_ctx.socket_fd_map) {
+        for (auto &[fd, socketMetaData] : a[a.size() - 1]->module_inst.wasi_ctx.socket_fd_map) {
             wamr->op_data.is_tcp |= socketMetaData.type;
             is_tcp_server |= socketMetaData.is_server;
         }
@@ -77,7 +79,7 @@ int main(int argc, char **argv) {
 
         wamr->op_data.op = is_tcp_server ? MVVM_SOCK_RESUME_TCP_SERVER : MVVM_SOCK_RESUME;
         wamr->op_data.addr[0][0] = src_addr;
-        
+
         // Create a socket
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
             LOGV(ERROR) << "socket error";
