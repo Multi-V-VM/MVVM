@@ -15,7 +15,6 @@ int stop_func_threshold = 0;
 int cur_func_count = 0;
 bool is_debug;
 
-
 void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockfd) {
     if (wamr->socket_fd_map_.find(sockfd) != wamr->socket_fd_map_.end()) {
         wamr->socket_fd_map_[sockfd].socketOpenData.poolfd = poolfd;
@@ -304,11 +303,9 @@ void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op 
     struct sync_op_t sync_op = {.tid = ((uint32)exec_env->cur_count), .ref = *mutex, .sync_op = locking};
     wamr->sync_ops.push_back(sync_op);
 }
-void insert_tid_start_arg(ssize_t tid, size_t start_arg){
-    wamr->tid_start_arg_map[tid] = start_arg;
-};
-void change_thread_id_to_child(ssize_t tid, ssize_t child_tid){
-    LOGV(ERROR)<<fmt::format("change_thread_id_to_child {} {}", tid, child_tid);
+void insert_tid_start_arg(ssize_t tid, size_t start_arg) { wamr->tid_start_arg_map[tid] = start_arg; };
+void change_thread_id_to_child(ssize_t tid, ssize_t child_tid) {
+    LOGV(ERROR) << fmt::format("change_thread_id_to_child {} {}", tid, child_tid);
     for (auto &[k, v] : wamr->child_tid_map) {
         if (k == child_tid) {
             wamr->child_tid_map[tid] = v;
@@ -317,8 +314,8 @@ void change_thread_id_to_child(ssize_t tid, ssize_t child_tid){
         }
     }
 };
-void insert_parent_child(ssize_t tid, ssize_t child_tid){
-    LOGV(ERROR)<<fmt::format("insert_parent_child {} {}", tid, child_tid);
+void insert_parent_child(ssize_t tid, ssize_t child_tid) {
+    LOGV(ERROR) << fmt::format("insert_parent_child {} {}", tid, child_tid);
     wamr->child_tid_map[child_tid] = tid;
 };
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
