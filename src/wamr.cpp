@@ -689,9 +689,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
         // invoke_init_c();
         //  invoke_preopen(1, "/dev/stdout");
         fprintf(stderr, "wakeup.release\n");
-        sleep(5);
         wakeup.release(100);
-
+        
         cur_env->is_restore = true;
         cur_env->restore_call_chain = main_saved_call_chain;
 #if !defined(_WIN32)
@@ -731,10 +730,17 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env) {
             // module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
             if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end()) {
                 // find the parent env
+                auto * saved_env =  cur_env->restore_call_chain;
                 cur_env->restore_call_chain = NULL;
-
+        // auto s = exec_env->restore_call_chain;
+        //         exec_env->restore_call_chain = NULL;
+        //         invoke_init_c();
+        //         invoke_preopen(1, "/dev/stdout");
+                exec_env->is_restore = true;
                 // main thread
                 thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count]);
+                cur_env->restore_call_chain = saved_env;
+                exec_env->is_restore = false;
 
             } else {
                 exec_env->is_restore = false;
@@ -746,7 +752,7 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env) {
                 exec_env->restore_call_chain = s;
                 pthread_create_wrapper(cur_env, nullptr, nullptr, id, id); // tid_map
             }
-            fprintf(stderr, "child spawned %p\n\n", cur_env);
+            fprintf(stderr, "child spawned %p %p\n\n", cur_env,child_env);
             // sleep(1);
             this->as_mtx.unlock();
             thread_init.acquire();
@@ -782,7 +788,7 @@ extern WAMRInstance *wamr;
 extern "C" { // stop name mangling so it can be linked externally
 void wamr_wait(wasm_exec_env_t exec_env) {
 
-    fprintf(stderr, "child getting ready to wait\n");
+    fprintf(stderr, "child getting ready to wait %p\n", exec_env);
     wamr->spawn_child(exec_env);
     // register thread id mapping
     wamr->register_tid_map();

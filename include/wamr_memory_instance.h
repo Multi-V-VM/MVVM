@@ -14,6 +14,8 @@ struct WAMRMemoryInstance {
     uint32 module_type;
     /* Shared memory flag */
     uint16 ref_count;
+    /* Shared memory flag */
+    uint8 is_shared_memory;
     /* Number bytes per page */
     uint32 num_bytes_per_page;
     /* Current page count */
@@ -38,6 +40,7 @@ struct WAMRMemoryInstance {
         num_bytes_per_page = env->num_bytes_per_page;
         cur_page_count = env->cur_page_count;
         max_page_count = env->max_page_count;
+        is_shared_memory =env->is_shared_memory;
         memory_data.resize(env->memory_data_size);
         memcpy(memory_data.data(), env->memory_data, env->memory_data_size);
         heap_data = std::vector<uint8>(env->heap_data, env->heap_data_end);
