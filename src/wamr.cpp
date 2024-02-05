@@ -709,7 +709,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 void WAMRInstance::spawn_child(WASMExecEnv *cur_env) {
 #if !defined(_WIN32)
     this->as_mtx.lock();
-    for (auto [idx, exec_] : execEnv | enumerate) {
+    int idx = 0;
+    for (auto &exec_ : execEnv) {
         if (idx + 1 == execEnv.size()) {
             // the last one should be the main thread
             break;
@@ -757,6 +758,7 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env) {
             this->as_mtx.unlock();
             thread_init.acquire();
         }
+        idx++;
     }
 #endif
 }

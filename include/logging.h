@@ -10,11 +10,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
-#include <fmt/color.h>
 #include <fmt/format.h>
-#include <fmt/os.h>
-#include <fmt/ostream.h>
-#include <fmt/printf.h>
 #include <fstream>
 #include <iostream>
 #include <list>
@@ -29,21 +25,21 @@
 #else
 #include <winsock2.h>
 #endif
-#ifndef __APPLE__
+// #ifndef __APPLE__
 /** Barry's work*/
-struct Enumerate : std::ranges::range_adaptor_closure<Enumerate> {
-    template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {
-        return std::views::zip(std::views::iota(0), (R &&)r);
-    }
-};
-#else
-struct Enumerate : std::__range_adaptor_closure<Enumerate> {
-    template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {
-        return std::views::zip(std::views::iota(0), (R &&)r);
-    }
-};
-#endif
-inline constexpr Enumerate enumerate;
+// struct Enumerate : std::ranges::range_adaptor_closure<Enumerate> {
+//     template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {
+//         return std::views::zip(std::views::iota(0), (R &&)r);
+//     }
+// };
+// #else
+// struct Enumerate : std::__range_adaptor_closure<Enumerate> {
+//     template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {
+//         return std::views::zip(std::views::iota(0), (R &&)r);
+//     }
+// };
+// #endif
+// inline constexpr Enumerate enumerate;
 using std::list;
 using std::string;
 struct LocationInfo {
@@ -104,7 +100,6 @@ private:
 };
 
 string level2string(LogLevel level);
-fmt::color level2color(LogLevel level);
 
 #define MVVM_SOCK_ADDR "172.17.0.1"
 #define MVVM_SOCK_ADDR6 "fe80::42:aeff:fe1f:b579"
