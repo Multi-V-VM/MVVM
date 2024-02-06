@@ -299,7 +299,7 @@ int gettid() { return GetCurrentThreadId(); }
 #endif
 
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking) {
-    printf("insert sync on offset %d, as op: %d %ld\n", *mutex, locking,(uint64)exec_env->handle);
+    // printf("insert sync on offset %d, as op: %d %ld\n", *mutex, locking,(uint64)exec_env->handle);
     struct sync_op_t sync_op = {.tid = exec_env->handle, .ref = *mutex, .sync_op = locking};
 
     wamr->sync_ops.push_back(sync_op);

@@ -638,7 +638,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     // got this done tommorrow.
     // order threads by id (descending)
     std::sort(execEnv.begin(), execEnv.end(), [](const auto &a, const auto &b) {
-        return a->frames.back()->function_index > b->frames.back()->function_index;
+        return a->frames.back()->function_index < b->frames.back()->function_index;
     });
 
     argptr = (ThreadArgs **)malloc(sizeof(void *) * execEnv.size());
@@ -650,7 +650,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     get_int3_addr();
     replace_int3_with_nop();
 
-    restore(execEnv.back(), cur_env);
+    restore(execEnv.front(), cur_env);
     auto main_env = cur_env;
     auto main_saved_call_chain = main_env->restore_call_chain;
     cur_thread = main_env->handle;
@@ -663,7 +663,9 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 
     invoke_init_c();
     invoke_preopen(1, "/dev/stdout");
+#if !defined(_WIN32)
     spawn_child(main_env, true);
+#endif
     // restart main thread execution
     if (!is_aot) {
         wasm_interp_call_func_bytecode(get_module_instance(), get_exec_env(), get_exec_env()->cur_frame->function,
@@ -695,72 +697,82 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     }
 }
 
-void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
 #if !defined(_WIN32)
-    this->as_mtx.lock();
-    for (auto [idx, exec_] : execEnv | enumerate) {
-        if (idx + 1 == execEnv.size()) {
-            // the last one should be the main thread
-            break;
-        }
-        // std::memcpy(child_env, exec_.get(), sizeof(WASMExecEnv));
-        child_env = exec_;
-        // requires to record the args and callback for the pthread.
-        auto thread_arg = ThreadArgs{cur_env};
-        //  cur_env->is_restore = false;
-
-        argptr[id] = &thread_arg;
-
-        auto parent = child_env->cur_count;
-        if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end()) {
-            parent = tid_start_arg_map[parent].second;
-        }
-        parent = child_tid_map[parent];
-        for (auto &[tid, vtid] : tid_start_arg_map) {
-            printf("tid %ld\n", tid);
-            if (vtid.second == parent) {
-                parent = tid;
-                break;
-            }
-        }
-        printf("cur_env %ld\n", cur_env->handle);
-        if (parent == cur_env->handle || (parent == !main)) {
-            LOGV(ERROR) << parent << " " << child_env->cur_count;
-            // restart thread execution
-            fprintf(stderr, "pthread_create_wrapper, func %ld\n", child_env->cur_count);
-            // module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
-            if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end()) {
-                // find the parent env
-                auto *saved_env = cur_env->restore_call_chain;
-                cur_env->restore_call_chain = NULL;
-                // auto s = exec_env->restore_call_chain;
-                // exec_env->restore_call_chain = NULL;
-                // invoke_init_c();
-                // invoke_preopen(1, "/dev/stdout");
-                exec_env->is_restore = true;
-                // main thread
-                thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count].first);
-                cur_env->restore_call_chain = saved_env;
-                exec_env->is_restore = false;
-
-            } else {
-                exec_env->is_restore = false;
-                auto s = exec_env->restore_call_chain;
-                exec_env->restore_call_chain = NULL;
-                invoke_init_c();
-                invoke_preopen(1, "/dev/stdout");
-                exec_env->is_restore = true;
-                exec_env->restore_call_chain = s;
-                pthread_create_wrapper(cur_env, nullptr, nullptr, id, id); // tid_map
-            }
-            fprintf(stderr, "child spawned %p %p\n\n", cur_env, child_env);
-            // sleep(1);
-            this->as_mtx.unlock();
-            thread_init.acquire();
-        }
+void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
+    static std::vector<WAMRExecEnv*>::iterator iter;
+    static uint64 parent;
+    if(main){
+        iter = ++(execEnv.begin());
+	parent = 0;
     }
-#endif
+    //std::cout << typeid(iter).name() << std::endl << abi::__cxa_demangle(typeid(iter).name(), NULL, NULL, &s) << std::endl;
+    // Each thread needs it's own thread arg
+    auto thread_arg = ThreadArgs{cur_env};
+    static std::mutex mtx;
+    static std::condition_variable cv;
+    std::unique_lock ul(mtx);
+    
+    while(iter != execEnv.end()){
+	// Get parent's virtual TID from child's OS TID
+        if(parent == 0){
+            child_env = *iter;
+            parent = child_env->cur_count;
+            if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end()) {
+                parent = tid_start_arg_map[parent].second;
+            }
+            parent = child_tid_map[parent];
+            for (auto &[tid, vtid] : tid_start_arg_map) {
+                if (vtid.second == parent) {
+                    parent = tid;
+                    break;
+                }
+            }
+            LOGV(ERROR) << parent << " " << child_env->cur_count;
+	} // calculate parent TID once
+        if (parent != cur_env->handle && (parent != !main)) {
+            cv.wait(ul);
+	    continue;
+	}
+        // requires to record the args and callback for the pthread.
+        argptr[id] = &thread_arg;
+        // restart thread execution
+        fprintf(stderr, "pthread_create_wrapper, func %ld\n", child_env->cur_count);
+        // module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
+        if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end()) {
+            // find the parent env
+            auto *saved_env = cur_env->restore_call_chain;
+            cur_env->restore_call_chain = NULL;
+            // auto s = exec_env->restore_call_chain;
+            // exec_env->restore_call_chain = NULL;
+            // invoke_init_c();
+            // invoke_preopen(1, "/dev/stdout");
+            exec_env->is_restore = true;
+            // main thread
+            thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count].first);
+            cur_env->restore_call_chain = saved_env;
+            exec_env->is_restore = false;
+
+        } else {
+            // exec_env->is_restore = false;
+            // auto s = exec_env->restore_call_chain;
+            // exec_env->restore_call_chain = NULL;
+            // invoke_init_c();
+            // invoke_preopen(1, "/dev/stdout");
+            exec_env->is_restore = true;
+            // exec_env->restore_call_chain = s;
+            pthread_create_wrapper(cur_env, nullptr, nullptr, id, id); // tid_map
+        }
+        fprintf(stderr, "child spawned %p %p\n\n", cur_env, child_env);
+        // sleep(1);
+        thread_init.acquire();
+	//advance ptr
+	++iter;
+	parent = 0;
+        cv.notify_all();
+    }
 }
+#endif
+
 WASMFunction *WAMRInstance::get_func() { return static_cast<WASMFunction *>(func); }
 void WAMRInstance::set_func(WASMFunction *f) { func = static_cast<WASMFunction *>(f); }
 void WAMRInstance::set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
@@ -790,8 +802,8 @@ extern "C" { // stop name mangling so it can be linked externally
 void wamr_wait(wasm_exec_env_t exec_env) {
 
     fprintf(stderr, "child getting ready to wait %p\n", exec_env);
-    wamr->spawn_child(exec_env, false);
     thread_init.release(1);
+    wamr->spawn_child(exec_env, false);
     fprintf(stderr, "finish child restore\n");
     wakeup.acquire();
 #if !defined(_WIN32)
@@ -801,7 +813,6 @@ void wamr_wait(wasm_exec_env_t exec_env) {
 #endif
 
     // finished restoring
-    wamr->as_mtx.unlock();
     exec_env->is_restore = true;
 }
 WASMExecEnv *restore_env() {
