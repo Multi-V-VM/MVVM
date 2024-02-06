@@ -76,7 +76,7 @@ struct WAMRWASIContext {
     std::vector<std::string> env_list;
     std::vector<std::string> addr_pool;
     std::vector<std::string> ns_lookup_list;
-    std::map<int, int> tid_start_arg_map;
+    std::map<int, std::pair<int, int>> tid_start_arg_map;
     std::map<int, int> child_tid_map;
     uint32_t exit_code;
 

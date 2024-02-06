@@ -16,7 +16,7 @@ struct WAMRExecEnv { // multiple
     /** We need to put Module Inst at the top. */
     WAMRModuleInstance module_inst{};
     /* The thread id of wasm interpreter for current thread. */
-    uint32 cur_count{};
+    uint64 cur_count{};
     uint32 flags;
 
     /* Auxiliary stack boundary */

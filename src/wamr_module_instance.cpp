@@ -6,13 +6,14 @@ extern WAMRInstance *wamr;
 
 void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
     // The first thread will dump the memory
-    if (((WAMRExecEnv *)this)->cur_count == 0) {
-        for (int i = 0; i < env->memory_count; i++) {
-            auto local_mem = WAMRMemoryInstance();
-            dump(&local_mem, env->memories[i]);
-            memories.push_back(local_mem);
-        }
+
+    // if (((WAMRExecEnv *)this)->cur_count == wamr->exec_env->handle) {
+    for (int i = 0; i < env->memory_count; i++) {
+        auto local_mem = WAMRMemoryInstance();
+        dump(&local_mem, env->memories[i]);
+        memories.push_back(local_mem);
     }
+    // }
     global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
     dump(&wasi_ctx, &env->module->wasi_args);
 
@@ -39,7 +40,7 @@ void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
 }
 
 void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {
-    if (((WAMRExecEnv *)this)->cur_count == 0) {
+    if (!wamr->tmp_buf) {
         env->memory_count = memories.size();
         for (int i = 0; i < env->memory_count; i++) {
             restore(&memories[i], env->memories[i]);

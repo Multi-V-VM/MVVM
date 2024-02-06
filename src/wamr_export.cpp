@@ -299,12 +299,15 @@ int gettid() { return GetCurrentThreadId(); }
 #endif
 
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking) {
-    // printf("insert sync on offset %d, as op: %d\n", *mutex, locking);
-    struct sync_op_t sync_op = {.tid = ((uint32)exec_env->cur_count), .ref = *mutex, .sync_op = locking};
+    printf("insert sync on offset %d, as op: %d %ld\n", *mutex, locking,(uint64)exec_env->handle);
+    struct sync_op_t sync_op = {.tid = exec_env->handle, .ref = *mutex, .sync_op = locking};
+
     wamr->sync_ops.push_back(sync_op);
 }
-void insert_tid_start_arg(ssize_t tid, size_t start_arg) { wamr->tid_start_arg_map[tid] = start_arg; };
+void insert_tid_start_arg(ssize_t tid, size_t start_arg, size_t vtid) { wamr->tid_start_arg_map[tid] = std::make_pair(start_arg,vtid); };
 void change_thread_id_to_child(ssize_t tid, ssize_t child_tid) {
+    // insert parent child takes both `vtid`s so we don't need to remap to OS threads
+    return;
     LOGV(ERROR) << fmt::format("change_thread_id_to_child {} {}", tid, child_tid);
     for (auto &[k, v] : wamr->child_tid_map) {
         if (k == child_tid) {
@@ -314,10 +317,16 @@ void change_thread_id_to_child(ssize_t tid, ssize_t child_tid) {
         }
     }
 };
+void wamr_handle_map(ssize_t old_tid, ssize_t tid) {
+    LOGV(ERROR) << fmt::format("wamr_handle_map old:< {} > new:< {} >", old_tid, tid);
+    wamr->tid_map[old_tid] = tid;
+};
+
 void insert_parent_child(ssize_t tid, ssize_t child_tid) {
     LOGV(ERROR) << fmt::format("insert_parent_child {} {}", tid, child_tid);
     wamr->child_tid_map[child_tid] = tid;
 };
+
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {
@@ -416,7 +425,13 @@ void print_memory(WASMExecEnv *exec_env) {
         }
     }
 }
+void segfault_handler(int sig) {
+    // auto end = std::chrono::high_resolution_clock::now();
+    // auto dur = std::chronro::duration_cast<std::chrono::milliseconds>(end - wamr->time);
+    // printf("Execution time: %f s\n", dur.count() / 1000000.0);
 
+    exit(0);
+}
 void sigtrap_handler(int sig) {
     // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     auto exec_env = wamr->get_exec_env();
@@ -444,15 +459,14 @@ void register_sigtrap() {
     LOGV_DEBUG << "SIGILL registered";
 #else
     struct sigaction sa {};
-
-    // Clear the structure
     sigemptyset(&sa.sa_mask);
-
-    // Set the signal handler function
     sa.sa_handler = sigtrap_handler;
-
-    // Set the flags
     sa.sa_flags = SA_RESTART;
+
+    // struct sigaction sb {};
+    // sigemptyset(&sb.sa_mask);
+    // sb.sa_handler = segfault_handler;
+    // sb.sa_flags = SA_RESTART;
 
     // Register the signal handler for SIGTRAP
     if (sigaction(SIGTRAP, &sa, nullptr) == -1) {
@@ -463,12 +477,12 @@ void register_sigtrap() {
             perror("Error: cannot handle SIGSYS");
             exit(-1);
         } else {
-            if (sigaction(SIGSEGV, &sa, nullptr) == -1) {
-                perror("Error: cannot handle SIGSEGV");
-                exit(-1);
-            } else {
-                LOGV_DEBUG << "SIGSEGV registered";
-            }
+            // if (sigaction(SIGSEGV, &sb, nullptr) == -1) {
+            //     perror("Error: cannot handle SIGSEGV");
+            //     exit(-1);
+            // } else {
+            //     LOGV_DEBUG << "SIGSEGV registered";
+            // }
             LOGV_DEBUG << "SIGSYS registered";
         }
         LOGV_DEBUG << "SIGTRAP registered";

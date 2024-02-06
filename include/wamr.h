@@ -62,7 +62,7 @@ public:
     std::condition_variable sync_op_cv;
     std::map<ssize_t, ssize_t> tid_map;
     std::map<ssize_t, ssize_t> child_tid_map;
-    std::map<ssize_t, size_t> tid_start_arg_map;
+    std::map<ssize_t, std::pair<int,int>> tid_start_arg_map;
     uint32 id{};
     size_t cur_thread;
     std::chrono::time_point<std::chrono::high_resolution_clock> time;
@@ -86,7 +86,6 @@ public:
     bool replace_mfence_with_nop();
     bool replace_nop_with_int3();
     void replay_sync_ops(bool, wasm_exec_env_t);
-    void register_tid_map();
     WASMFunction *get_func();
     void set_func(WASMFunction *);
 #if WASM_ENABLE_AOT != 0
@@ -101,7 +100,7 @@ public:
     void set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
                        const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,
                        const std::vector<std::string> &addr_list, const std::vector<std::string> &ns_lookup_pool);
-    void spawn_child(WASMExecEnv *main_env);
+    void spawn_child(WASMExecEnv *main_env, bool);
 
     int invoke_main();
     void invoke_init_c();

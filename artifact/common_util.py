@@ -35,6 +35,46 @@ def build():
     return
 
 
+def run_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
+    cmd = f"LOGV=5 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
+    print(cmd)
+    cmd = cmd.split()
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        output = result.stdout.decode("utf-8")
+    except:
+        output = result.stdout
+    exec = " ".join([env] + [aot_file] + arg)
+    # print(exec)
+    # print(output)
+    return (exec, output)
+
+def run_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
+    cmd = f"LOGV=5 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
+    print(cmd)
+    cmd = cmd.split()
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        output = result.stdout.decode("utf-8")
+    except:
+        output = result.stdout
+    exec = " ".join([env] + [aot_file] + arg)
+    return (exec, output)
+
+def run_criu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
+    cmd = f"LOGV=5 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
+    print(cmd)
+    cmd = cmd.split()
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        output = result.stdout.decode("utf-8")
+    except:
+        output = result.stdout
+    exec = " ".join([env] + [aot_file] + arg)
+    # print(exec)
+    # print(output)
+    return (exec, output)
+
 def run(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     cmd = f"LOGV=5 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
     print(cmd)

@@ -25,7 +25,7 @@ enum sync_op {
 };
 
 struct sync_op_t {
-    uint32 tid;
+    uint64 tid;
     uint32 ref;
     enum sync_op sync_op;
 };
@@ -42,7 +42,7 @@ void set_tcp();
 int get_sock_fd(int);
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking);
 void restart_execution(uint32 targs);
-void insert_tid_start_arg(ssize_t, size_t);
+void insert_tid_start_arg(ssize_t, size_t, size_t);
 void change_thread_id_to_child(ssize_t, ssize_t);
 void insert_parent_child(ssize_t, ssize_t);
 extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, const void *attr, uint32 elem_index,
@@ -59,6 +59,7 @@ void insert_fd(int, const char *, int, int, enum fd_op op);
 void remove_fd(int);
 void rename_fd(int, char const *, int, char const *);
 bool is_atomic_checkpointable();
+void wamr_handle_map(ssize_t old_tid, ssize_t new_tid);
 void lightweight_checkpoint(WASMExecEnv *);
 void lightweight_uncheckpoint(WASMExecEnv *);
 void wamr_wait(wasm_exec_env_t);
