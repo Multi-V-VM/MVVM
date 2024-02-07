@@ -65,7 +65,7 @@ public:
             string string_logv = logv;
             env_log_level = std::stoi(logv);
         } else {
-            env_log_level = 4;
+            env_log_level = 5;
         }
     };
 

@@ -9,6 +9,7 @@
 #include "wasm_export.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"
+#include "wasm_runtime_common.h"
 #include <condition_variable>
 #include <mutex>
 #include <regex>
@@ -617,6 +618,28 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
             case SYNC_OP_MUTEX_UNLOCK:
                 pthread_mutex_unlock_wrapper(exec_env, &(sync_iter->ref));
                 break;
+            case SYNC_OP_COND_WAIT:
+                pthread_cond_wait_wrapper(exec_env, &(sync_iter->ref), nullptr);
+                break;
+            case SYNC_OP_COND_SIGNAL:
+                pthread_cond_signal_wrapper(exec_env, &(sync_iter->ref));
+                break;
+            case SYNC_OP_COND_BROADCAST:
+                pthread_cond_broadcast_wrapper(exec_env, &(sync_iter->ref));
+                break;
+            case SYNC_OP_ATOMIC_WAIT:
+                wasm_runtime_atomic_wait(
+                    exec_env->module_inst,
+                    ((void *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + sync_iter->ref),
+                    ((uint64)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + sync_iter->ref),
+                    -1, false);
+                break;
+            case SYNC_OP_ATOMIC_NOTIFY:
+                wasm_runtime_atomic_notify(
+                    exec_env->module_inst,
+                    ((void *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + sync_iter->ref),
+                    100);
+                break;
             }
             ++sync_iter;
             // wakeup everyone
@@ -685,7 +708,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 #if !defined(_WIN32)
         fprintf(stderr, "invoke main %p %p\n", cur_env, cur_env->restore_call_chain);
         // replay sync ops to get OS state matching
-        wamr_handle_map(execEnv.back()->cur_count, main_env->handle);
+        wamr_handle_map(execEnv.front()->cur_count, main_env->handle);
 
         replay_sync_ops(true, main_env);
 #endif
@@ -699,22 +722,21 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 
 #if !defined(_WIN32)
 void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
-    static std::vector<WAMRExecEnv*>::iterator iter;
+    static std::vector<WAMRExecEnv *>::iterator iter;
     static uint64 parent;
-    if(main){
+    if (main) {
         iter = ++(execEnv.begin());
-	parent = 0;
+        parent = 0;
     }
-    //std::cout << typeid(iter).name() << std::endl << abi::__cxa_demangle(typeid(iter).name(), NULL, NULL, &s) << std::endl;
-    // Each thread needs it's own thread arg
+    //  Each thread needs it's own thread arg
     auto thread_arg = ThreadArgs{cur_env};
     static std::mutex mtx;
     static std::condition_variable cv;
     std::unique_lock ul(mtx);
-    
-    while(iter != execEnv.end()){
-	// Get parent's virtual TID from child's OS TID
-        if(parent == 0){
+
+    while (iter != execEnv.end()) {
+        // Get parent's virtual TID from child's OS TID
+        if (parent == 0) {
             child_env = *iter;
             parent = child_env->cur_count;
             if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end()) {
@@ -728,11 +750,11 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
                 }
             }
             LOGV(ERROR) << parent << " " << child_env->cur_count;
-	} // calculate parent TID once
+        } // calculate parent TID once
         if (parent != cur_env->handle && (parent != !main)) {
             cv.wait(ul);
-	    continue;
-	}
+            continue;
+        }
         // requires to record the args and callback for the pthread.
         argptr[id] = &thread_arg;
         // restart thread execution
@@ -742,10 +764,6 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
             // find the parent env
             auto *saved_env = cur_env->restore_call_chain;
             cur_env->restore_call_chain = NULL;
-            // auto s = exec_env->restore_call_chain;
-            // exec_env->restore_call_chain = NULL;
-            // invoke_init_c();
-            // invoke_preopen(1, "/dev/stdout");
             exec_env->is_restore = true;
             // main thread
             thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count].first);
@@ -753,21 +771,15 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
             exec_env->is_restore = false;
 
         } else {
-            // exec_env->is_restore = false;
-            // auto s = exec_env->restore_call_chain;
-            // exec_env->restore_call_chain = NULL;
-            // invoke_init_c();
-            // invoke_preopen(1, "/dev/stdout");
             exec_env->is_restore = true;
-            // exec_env->restore_call_chain = s;
             pthread_create_wrapper(cur_env, nullptr, nullptr, id, id); // tid_map
         }
         fprintf(stderr, "child spawned %p %p\n\n", cur_env, child_env);
         // sleep(1);
         thread_init.acquire();
-	//advance ptr
-	++iter;
-	parent = 0;
+        // advance ptr
+        ++iter;
+        parent = 0;
         cv.notify_all();
     }
 }
@@ -801,20 +813,21 @@ extern WAMRInstance *wamr;
 extern "C" { // stop name mangling so it can be linked externally
 void wamr_wait(wasm_exec_env_t exec_env) {
 
-    fprintf(stderr, "child getting ready to wait %p\n", exec_env);
+    LOGV(DEBUG) << fmt::format("child getting ready to wait {}", fmt::ptr(exec_env));
     thread_init.release(1);
     wamr->spawn_child(exec_env, false);
-    fprintf(stderr, "finish child restore\n");
+    LOGV(DEBUG) << fmt::format("finish child restore");
     wakeup.acquire();
 #if !defined(_WIN32)
-    fprintf(stderr, "go child!! %d\n", gettid());
+    LOGV(DEBUG) << fmt::format("go child!! {}", exec_env->handle);
     wamr->replay_sync_ops(false, exec_env);
-    fprintf(stderr, "finish syncing\n");
+    LOGV(DEBUG) << fmt::format("finish syncing");
 #endif
 
     // finished restoring
     exec_env->is_restore = true;
 }
+
 WASMExecEnv *restore_env() {
     auto exec_env = wasm_exec_env_create_internal(wamr->module_inst, wamr->stack_size);
     restore(child_env, exec_env);

@@ -288,23 +288,26 @@ void init_gateway(SocketAddrPool *address) {
     }
 }
 #endif
-#if defined(__APPLE__)
-int gettid() {
-    uint64_t tid;
-    pthread_threadid_np(NULL, &tid);
-    return tid;
-}
-#elif defined(_WIN32)
-int gettid() { return GetCurrentThreadId(); }
-#endif
 
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking) {
-    // printf("insert sync on offset %d, as op: %d %ld\n", *mutex, locking,(uint64)exec_env->handle);
-    struct sync_op_t sync_op = {.tid = exec_env->handle, .ref = *mutex, .sync_op = locking};
+    LOGV(DEBUG) << fmt::format(
+        "insert sync on offset {}, as op: {} ",
+        (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data), locking);
+    struct sync_op_t sync_op {};
+    if (locking >= SYNC_OP_ATOMIC_WAIT)
+        sync_op = {
+            .tid = exec_env->handle,
+            .ref = (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data),
+            .sync_op = locking};
+    else
+        sync_op = {.tid = exec_env->handle, .ref = *mutex, .sync_op = locking};
 
     wamr->sync_ops.push_back(sync_op);
 }
-void insert_tid_start_arg(ssize_t tid, size_t start_arg, size_t vtid) { wamr->tid_start_arg_map[tid] = std::make_pair(start_arg,vtid); };
+void insert_tid_start_arg(ssize_t tid, size_t start_arg, size_t vtid) {
+    LOGV(ERROR) << fmt::format("insert_tid_start_arg {} {} {}", tid, start_arg, vtid);
+    wamr->tid_start_arg_map[tid] = std::make_pair(start_arg, vtid);
+};
 void change_thread_id_to_child(ssize_t tid, ssize_t child_tid) {
     // insert parent child takes both `vtid`s so we don't need to remap to OS threads
     return;
@@ -332,14 +335,14 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;
     }
-    LOGV(DEBUG) << "checkpoint " << gettid() << " func(" << fid << ")";
+    LOGV(DEBUG) << "checkpoint " << exec_env->handle << " func(" << fid << ")";
     if (fid == -1) {
         LOGV(DEBUG) << "skip checkpoint";
         return;
     }
 
     std::unique_lock as_ul(wamr->as_mtx);
-    wamr->lwcp_list[gettid()]++;
+    wamr->lwcp_list[exec_env->handle]++;
     wamr->ready++;
 }
 
@@ -348,20 +351,20 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;
     }
-    LOGV(DEBUG) << "uncheckpoint " << gettid() << " func(" << fid << ")";
+    LOGV(DEBUG) << "uncheckpoint " << exec_env->handle << " func(" << fid << ")";
     if (fid == -1) {
         LOGV(DEBUG) << "skip uncheckpoint";
         return;
     }
     std::unique_lock as_ul(wamr->as_mtx);
-    if (wamr->lwcp_list[gettid()] == 0) {
+    if (wamr->lwcp_list[exec_env->handle] == 0) {
         // someone has reset our counter
         // which means we've been serialized
         // so we shouldn't return back to the wasm state
         std::condition_variable cv;
         cv.wait(as_ul);
     }
-    wamr->lwcp_list[gettid()]--;
+    wamr->lwcp_list[exec_env->handle]--;
     wamr->ready--;
 }
 

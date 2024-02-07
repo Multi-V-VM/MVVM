@@ -1,6 +1,7 @@
 //
 // Created by victoryang00 on 6/17/23.
 //
+#include "platform_common.h"
 #include "wasm_runtime.h"
 
 #ifdef __cplusplus
@@ -20,8 +21,13 @@ struct SocketAddrPool {
 enum fd_op { MVVM_FOPEN = 0, MVVM_FWRITE = 1, MVVM_FREAD = 2, MVVM_FSEEK = 3 };
 
 enum sync_op {
-    SYNC_OP_MUTEX_LOCK,
+    SYNC_OP_MUTEX_LOCK = 0,
     SYNC_OP_MUTEX_UNLOCK,
+    SYNC_OP_COND_WAIT,
+    SYNC_OP_COND_SIGNAL,
+    SYNC_OP_COND_BROADCAST,
+    SYNC_OP_ATOMIC_WAIT,
+    SYNC_OP_ATOMIC_NOTIFY,
 };
 
 struct sync_op_t {
@@ -51,6 +57,12 @@ extern int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32 *);
 extern int32 pthread_mutex_unlock_wrapper(wasm_exec_env_t, uint32 *);
 extern int32 pthread_mutex_init_wrapper(wasm_exec_env_t, uint32 *, void *);
 extern int32 thread_spawn_wrapper(wasm_exec_env_t exec_env, uint32 start_arg);
+extern int32 pthread_cond_wait_wrapper(wasm_exec_env_t, uint32 *, uint32 *);
+extern int32 pthread_cond_signal_wrapper(wasm_exec_env_t, uint32 *);
+extern int32 pthread_cond_broadcast_wrapper(wasm_exec_env_t, uint32 *);
+extern uint32 wasm_runtime_atomic_wait(WASMModuleInstanceCommon *module, void *address, uint64 expect, int64 timeout,
+                                       bool wait64);
+extern uint32 wasm_runtime_atomic_notify(WASMModuleInstanceCommon *module, void *address, uint32 count);
 #endif
 void serialize_to_file(struct WASMExecEnv *);
 #endif
@@ -66,9 +78,6 @@ void wamr_wait(wasm_exec_env_t);
 void sigint_handler(int sig);
 void register_sigtrap();
 void sigtrap_handler(int sig);
-#if defined(__APPLE__) || defined(_WIN32)
-int gettid();
-#endif
 extern size_t snapshot_threshold;
 extern int stop_func_threshold;
 extern bool checkpoint;

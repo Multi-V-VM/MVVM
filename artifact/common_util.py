@@ -30,13 +30,13 @@ list_of_arg = [
 aot_variant = [".aot"]
 # aot_variant = ["-ckpt-every-dirty.aot"]
 
-
-def build():
-    return
+def contains_result(output: str, result: str) -> bool:
+    return result in output
+    
 
 
 def run_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"LOGV=5 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
+    cmd = f"LOGV=4 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -50,7 +50,7 @@ def run_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     return (exec, output)
 
 def run_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"LOGV=5 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
+    cmd = f"LOGV=4 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -62,7 +62,7 @@ def run_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     return (exec, output)
 
 def run_criu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"LOGV=5 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
+    cmd = f"LOGV=4 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -76,7 +76,7 @@ def run_criu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, s
     return (exec, output)
 
 def run(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"LOGV=5 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
+    cmd = f"LOGV=4 ./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

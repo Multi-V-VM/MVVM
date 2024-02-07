@@ -30,14 +30,14 @@ void serialize_to_file(WASMExecEnv *instance) {
     // fill vector
 
     std::unique_lock as_ul(wamr->as_mtx);
-    printf("get lock\n");
+    LOGV(DEBUG) << fmt::format("get lock");
     wamr->ready++;
-    wamr->lwcp_list[gettid()]++;
+    wamr->lwcp_list[instance->handle]++;
     if (wamr->ready == all_count) {
         wamr->should_snapshot = true;
     }
     // If we're not all ready
-    printf("thread %d, with %ld ready out of %d total\n", gettid(), wamr->ready, all_count);
+    LOGV(DEBUG) << fmt::format("thread {}, with {} ready out of {} total", instance->handle, wamr->ready, all_count);
     if (!wamr->socket_fd_map_.empty() && wamr->should_snapshot) {
         // tell gateway to keep alive the server
         struct sockaddr_in addr {};
@@ -173,21 +173,22 @@ void serialize_to_file(WASMExecEnv *instance) {
     }
     // If we're all ready
     // double check
-    {
-        auto ready_count = 0;
-        for (auto [k, v] : wamr->lwcp_list) {
-            printf("%ld: %d\n", k, v);
-            if (v > 0)
-                ready_count++;
-        }
-        if (ready_count != all_count) {
-            printf("we have a discrepancy between ready count and number of threads that say they are\n");
-            printf("ready: %d, all: %d\n", ready_count, all_count);
-            // not actually ready
-            std::condition_variable as_cv;
-            as_cv.wait(as_ul);
-        }
-    }
+    // {
+    //     auto ready_count = 0;
+    //     for (auto [k, v] : wamr->lwcp_list) {
+    //         LOGV(DEBUG) << fmt::format("{}: {}", k, v);
+    //         if (v > 0)
+    //             ready_count++;
+    //     }
+    //     if (ready_count != all_count) {
+    //         LOGV(DEBUG) << fmt::format(
+    //             "we have a discrepancy between ready count and number of threads that say they are");
+    //         LOGV(DEBUG) << fmt::format("ready: {}, all: {}", ready_count, all_count);
+    //         // not actually ready
+    //         std::condition_variable as_cv;
+    //         as_cv.wait(as_ul);
+    //     }
+    // }
     // wasm_cluster_suspend_all_except_self(cluster, instance);
     auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
     while (elem) {
@@ -206,7 +207,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     auto end = std::chrono::high_resolution_clock::now();
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    printf("Snapshot time: %f s\n", dur.count() / 1000000.0);
+    LOGV(INFO) << fmt::format("Snapshot time: {} s", dur.count() / 1000000.0);
     exit(EXIT_SUCCESS);
 }
 
@@ -316,6 +317,6 @@ int main(int argc, char *argv[]) {
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     // print in s
-    printf("Execution time: %f s\n", dur.count() / 1000000.0);
+    LOGV(INFO) << fmt::format("Execution time: %f s", dur.count() / 1000000.0);
     return 0;
 }

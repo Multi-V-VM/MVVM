@@ -43,14 +43,14 @@ public:
     std::vector<const char *> arg_{};
     std::vector<const char *> addr_{};
     std::vector<const char *> ns_pool_{};
-    std::vector<WAMRExecEnv*> execEnv{};
+    std::vector<WAMRExecEnv *> execEnv{};
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_{};
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, int> new_sock_map_{};
     std::map<int, SocketMetaData, std::greater<>> socket_fd_map_{};
     SocketAddrPool local_addr{};
     // lwcp is LightWeight CheckPoint
-    std::map<ssize_t, int> lwcp_list;
+    std::map<uint64, int> lwcp_list;
     size_t ready = 0;
     std::mutex as_mtx{};
     std::vector<struct sync_op_t> sync_ops;
@@ -60,9 +60,9 @@ public:
     std::vector<struct sync_op_t>::iterator sync_iter;
     std::mutex sync_op_mutex;
     std::condition_variable sync_op_cv;
-    std::map<ssize_t, ssize_t> tid_map;
-    std::map<ssize_t, ssize_t> child_tid_map;
-    std::map<ssize_t, std::pair<int,int>> tid_start_arg_map;
+    std::map<uint64, uint64> tid_map;
+    std::map<uint64, uint64> child_tid_map;
+    std::map<uint64, std::pair<int, int>> tid_start_arg_map;
     uint32 id{};
     size_t cur_thread;
     std::chrono::time_point<std::chrono::high_resolution_clock> time;

@@ -25,3 +25,4 @@ cmake-*
 .DS_Store
 foo
 __pycache__
+*.swp

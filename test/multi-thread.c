@@ -41,9 +41,9 @@ int main(int argc, char **argv) {
     }
 
     printf("Value of counter after update: %d (expected=%d)\n", g_count, MAX_NUM_THREADS * NUM_ITER);
-    // if (g_count != MAX_NUM_THREADS * NUM_ITER) {
-    //     __builtin_trap();
-    // }
+    if (g_count != MAX_NUM_THREADS * NUM_ITER) {
+        __builtin_trap();
+    }
     // __wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
     exit(0);
 }
