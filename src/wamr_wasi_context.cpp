@@ -131,6 +131,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
         wamr->should_snapshot = true;
 #endif
         for (auto &[k, v] : tid_start_arg_map) {
+            LOGV(ERROR) << "tid_start_arg_map: " << k << " " << v.second;
             wamr->tid_start_arg_map[k] = v;
         }
         for (auto &[k, v] : child_tid_map) {

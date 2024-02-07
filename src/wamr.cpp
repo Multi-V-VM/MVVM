@@ -190,7 +190,7 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
     if (buffer_for_wasm != 0) {
         uint32 argv[2];
         argv[0] = buffer_for_wasm; // pass the buffer_ address for WASM space
-        argv[1] = 335548416; // the size of buffer_
+        argv[1] = option; // the size of buffer_
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
         wasm_runtime_call_wasm(exec_env, func, 2, argv);
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
@@ -665,7 +665,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     });
 
     argptr = (ThreadArgs **)malloc(sizeof(void *) * execEnv.size());
-    set_wasi_args(execEnv.back()->module_inst.wasi_ctx);
+    set_wasi_args(execEnv.front()->module_inst.wasi_ctx);
 
     instantiate();
     auto mi = module_inst;
@@ -674,6 +674,12 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     replace_int3_with_nop();
 
     restore(execEnv.front(), cur_env);
+    if (tid_start_arg_map.find(execEnv.back()->cur_count) != tid_start_arg_map.end()) {
+        std::sort(execEnv.begin() + 1, execEnv.end(), [&](const auto &a, const auto &b) {
+            return tid_start_arg_map[a->cur_count].second < tid_start_arg_map[b->cur_count].second;
+        });
+    }
+
     auto main_env = cur_env;
     auto main_saved_call_chain = main_env->restore_call_chain;
     cur_thread = main_env->handle;
@@ -826,6 +832,8 @@ void wamr_wait(wasm_exec_env_t exec_env) {
 
     // finished restoring
     exec_env->is_restore = true;
+    // setting back handle
+    exec_env->handle = wamr->tid_map[exec_env->handle];
 }
 
 WASMExecEnv *restore_env() {

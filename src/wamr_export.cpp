@@ -305,7 +305,7 @@ void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op 
     wamr->sync_ops.push_back(sync_op);
 }
 void insert_tid_start_arg(ssize_t tid, size_t start_arg, size_t vtid) {
-    LOGV(ERROR) << fmt::format("insert_tid_start_arg {} {} {}", tid, start_arg, vtid);
+    LOGV(INFO) << fmt::format("insert_tid_start_arg {} {} {}", tid, start_arg, vtid);
     wamr->tid_start_arg_map[tid] = std::make_pair(start_arg, vtid);
 };
 void change_thread_id_to_child(ssize_t tid, ssize_t child_tid) {
@@ -335,7 +335,7 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;
     }
-    LOGV(DEBUG) << "checkpoint " << exec_env->handle << " func(" << fid << ")";
+    LOGV(DEBUG) << "checkpoint " << exec_env << " func(" << fid << ")";
     if (fid == -1) {
         LOGV(DEBUG) << "skip checkpoint";
         return;
@@ -351,7 +351,7 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;
     }
-    LOGV(DEBUG) << "uncheckpoint " << exec_env->handle << " func(" << fid << ")";
+    LOGV(DEBUG) << "uncheckpoint " << exec_env << " func(" << fid << ")";
     if (fid == -1) {
         LOGV(DEBUG) << "skip uncheckpoint";
         return;

@@ -317,6 +317,6 @@ int main(int argc, char *argv[]) {
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     // print in s
-    LOGV(INFO) << fmt::format("Execution time: %f s", dur.count() / 1000000.0);
+    LOGV(INFO) << fmt::format("Execution time: {} s", dur.count() / 1000000.0);
     return 0;
 }

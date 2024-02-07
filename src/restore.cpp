@@ -108,7 +108,14 @@ int main(int argc, char **argv) {
         LOGV(ERROR) << "sent the resume signal";
     }
 #endif
+    // get current time
+    auto start = std::chrono::high_resolution_clock::now();
     // do iptables here
     wamr->recover(&a);
-    return 0;
+    // get current time
+    auto end = std::chrono::high_resolution_clock::now();
+    // get duration in us
+    auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    // print in s
+    LOGV(INFO) << fmt::format("Execution time: {} s", dur.count() / 1000000.0);
 }
