@@ -30,7 +30,11 @@ static auto string_vec_to_cstr_array = [](const std::vector<std::string> &vecStr
     std::transform(vecStr.begin(), vecStr.end(), cstrArray.begin(), [](const std::string &str) { return str.c_str(); });
     return cstrArray;
 };
-
+WAMRInstance::WAMRInstance(WASMExecEnv *e, bool is_jit) : is_jit(is_jit) {
+    exec_env = cur_env = e;
+    module_inst = e->module_inst;
+    module = ((WASMModuleCommon *)((WASMModuleInstance *)e->module_inst)->module);
+}
 WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) {
     {
         std::string path(wasm_path);
@@ -130,19 +134,6 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) 
 }
 
 bool WAMRInstance::load_wasm_binary(const char *wasm_path, char **buffer_ptr) {
-    *buffer_ptr = bh_read_file_to_buffer(wasm_path, &buf_size);
-    if (!*buffer_ptr) {
-        LOGV(ERROR) << "Open wasm app file failed.\n";
-        return false;
-    }
-    if ((get_package_type((const uint8_t *)*buffer_ptr, buf_size) != Wasm_Module_Bytecode) &&
-        (get_package_type((const uint8_t *)*buffer_ptr, buf_size) != Wasm_Module_AoT)) {
-        LOGV(ERROR) << "WASM bytecode or AOT object is expected but other file format";
-
-        BH_FREE(*buffer_ptr);
-        return false;
-    }
-
     return true;
 }
 
@@ -690,7 +681,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
         //  invoke_preopen(1, "/dev/stdout");
         fprintf(stderr, "wakeup.release\n");
         wakeup.release(100);
-        
+
         cur_env->is_restore = true;
         cur_env->restore_call_chain = main_saved_call_chain;
 #if !defined(_WIN32)
@@ -731,12 +722,12 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env) {
             // module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
             if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end()) {
                 // find the parent env
-                auto * saved_env =  cur_env->restore_call_chain;
+                auto *saved_env = cur_env->restore_call_chain;
                 cur_env->restore_call_chain = NULL;
-        // auto s = exec_env->restore_call_chain;
-        //         exec_env->restore_call_chain = NULL;
-        //         invoke_init_c();
-        //         invoke_preopen(1, "/dev/stdout");
+                // auto s = exec_env->restore_call_chain;
+                //         exec_env->restore_call_chain = NULL;
+                //         invoke_init_c();
+                //         invoke_preopen(1, "/dev/stdout");
                 exec_env->is_restore = true;
                 // main thread
                 thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count]);
@@ -753,7 +744,7 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env) {
                 exec_env->restore_call_chain = s;
                 pthread_create_wrapper(cur_env, nullptr, nullptr, id, id); // tid_map
             }
-            fprintf(stderr, "child spawned %p %p\n\n", cur_env,child_env);
+            fprintf(stderr, "child spawned %p %p\n\n", cur_env, child_env);
             // sleep(1);
             this->as_mtx.unlock();
             thread_init.acquire();

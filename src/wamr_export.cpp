@@ -66,11 +66,6 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
             std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - wamr->time)
                 .count());
     wamr->time = std::chrono::high_resolution_clock::now();
-    if (wamr->latencies.size() % 1000 == 0) {
-        long long sum = std::accumulate(wamr->latencies.begin(), wamr->latencies.end(), 0LL);
-        double average_latency = static_cast<double>(sum) / wamr->latencies.size();
-        fprintf(stderr, "average latency %f\n", average_latency);
-    }
     if (wamr->socket_fd_map_.find(sock) != wamr->socket_fd_map_.end()) {
         WasiSockRecvFromData recvFromData{};
         recvFromData.sock = sock;

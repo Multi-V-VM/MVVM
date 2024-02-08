@@ -9,6 +9,7 @@
 #include "wamr_export.h"
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
+#include "wasm.h"
 #include <atomic>
 #include <filesystem>
 #include <map>

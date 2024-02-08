@@ -8,21 +8,15 @@
 #if WASM_ENABLE_AOT != 0
 #include "aot_runtime.h"
 #endif
-#include "bh_read_file.h"
 #include "logging.h"
 #include "wamr_exec_env.h"
 #include "wamr_export.h"
-#include "wamr_read_write.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
 #include <chrono>
 #include <condition_variable>
 #include <functional>
-#include <iterator>
 #include <mutex>
-#include <numeric>
-#include <ranges>
-#include <semaphore>
 #include <tuple>
 
 class WAMRInstance {
@@ -43,7 +37,7 @@ public:
     std::vector<const char *> arg_{};
     std::vector<const char *> addr_{};
     std::vector<const char *> ns_pool_{};
-    std::vector<WAMRExecEnv*> execEnv{};
+    std::vector<WAMRExecEnv *> execEnv{};
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_{};
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, int> new_sock_map_{};
@@ -77,6 +71,7 @@ public:
     } ThreadArgs;
 
     explicit WAMRInstance(const char *wasm_path, bool is_jit);
+    explicit WAMRInstance(WASMExecEnv *, bool is_jit);
 
     void instantiate();
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *);
