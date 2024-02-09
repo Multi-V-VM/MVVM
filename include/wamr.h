@@ -61,6 +61,7 @@ public:
     std::mutex sync_op_mutex;
     std::condition_variable sync_op_cv;
     std::map<uint64, uint64> tid_map;
+    std::map<korp_tid, korp_tid> korp_tid_map;
     std::map<uint64, uint64> child_tid_map;
     std::map<uint64, std::pair<int, int>> tid_start_arg_map;
     uint32 id{};

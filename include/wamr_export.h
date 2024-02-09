@@ -71,7 +71,9 @@ void insert_fd(int, const char *, int, int, enum fd_op op);
 void remove_fd(int);
 void rename_fd(int, char const *, int, char const *);
 bool is_atomic_checkpointable();
-void wamr_handle_map(ssize_t old_tid, ssize_t new_tid);
+void wamr_handle_map(uint64_t old_tid, uint64_t new_tid);
+korp_tid wamr_get_new_korp_tid(korp_tid new_tid);
+korp_tid wamr_get_korp_tid(korp_tid new_tid);
 void lightweight_checkpoint(WASMExecEnv *);
 void lightweight_uncheckpoint(WASMExecEnv *);
 void wamr_wait(wasm_exec_env_t);
@@ -84,6 +86,7 @@ extern bool checkpoint;
 extern bool is_debug;
 extern int stop_func_index;
 extern int cur_func_count;
+void print_memory(WASMExecEnv *);
 
 #ifdef __cplusplus
 }

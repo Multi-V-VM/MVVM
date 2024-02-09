@@ -16,6 +16,7 @@ static void *thread(void *arg) {
     for (int i = 0; i < NUM_ITER; i++) {
         pthread_mutex_lock(&m);
         g_count++;
+        printf("print!!!%d\n", getpid());
         pthread_mutex_unlock(&m);
     }
     printf("Value of g_count is %d\n", g_count);

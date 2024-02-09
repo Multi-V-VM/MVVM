@@ -12,6 +12,9 @@
 int g_count = 0;
 pthread_mutex_t g_count_lock;
 static void *thread(void *arg) {
+	while(true){
+		getpid();
+	}
     for (int i = 0; i < NUM_ITER; i++) {
         __atomic_fetch_add(&g_count, 1, __ATOMIC_SEQ_CST);
         // if (i % 100 == 0)

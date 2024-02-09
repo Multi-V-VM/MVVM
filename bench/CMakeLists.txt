@@ -94,7 +94,7 @@ ExternalProject_Add(nas
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
         -DCMAKE_BUILD_TYPE=Release
         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
-        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk.cmake
+        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
         -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
         ${CMAKE_CURRENT_SOURCE_DIR}/nas
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
@@ -102,7 +102,6 @@ ExternalProject_Add(nas
         ${CMAKE_COMMAND} -E copy_if_different ./cg ${CMAKE_CURRENT_BINARY_DIR}/cg.wasm &&
         ${CMAKE_COMMAND} -E copy_if_different ./ep ${CMAKE_CURRENT_BINARY_DIR}/ep.wasm &&
         ${CMAKE_COMMAND} -E copy_if_different ./ft ${CMAKE_CURRENT_BINARY_DIR}/ft.wasm &&
-        ${CMAKE_COMMAND} -E copy_if_different ./is ${CMAKE_CURRENT_BINARY_DIR}/is.wasm &&
         ${CMAKE_COMMAND} -E copy_if_different ./lu ${CMAKE_CURRENT_BINARY_DIR}/lu.wasm &&
         ${CMAKE_COMMAND} -E copy_if_different ./mg ${CMAKE_CURRENT_BINARY_DIR}/mg.wasm &&
         ${CMAKE_COMMAND} -E copy_if_different ./sp ${CMAKE_CURRENT_BINARY_DIR}/sp.wasm
@@ -197,7 +196,6 @@ if (WAMR_BUILD_AOT)
     bench_wamr_app(cg)
     bench_wamr_app(ep)
     bench_wamr_app(ft)
-    bench_wamr_app(is)
     bench_wamr_app(lu)
     bench_wamr_app(mg)
     bench_wamr_app(sp)

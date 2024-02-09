@@ -1,6 +1,7 @@
 #include "wamr_exec_env.h"
 #include "aot_runtime.h"
 #include "wamr.h"
+
 extern WAMRInstance *wamr;
 void WAMRExecEnv::dump_impl(WASMExecEnv *env) {
     this->cur_count = env->handle;

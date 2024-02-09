@@ -16,7 +16,10 @@ void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
     // }
     global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
     dump(&wasi_ctx, &env->module->wasi_args);
-
+    // for (int i = 0; i < env->global_data_size; i++) {
+    //     fprintf(stderr, "%d", env->global_data[i]);
+    // }
+    fprintf(stderr, "\nDumped global data ptr: %p\n", env->global_data);
     if (wamr->is_aot) {
         auto module = (AOTModule *)env->module;
         aux_data_end_global_index = module->aux_data_end_global_index;
@@ -37,28 +40,42 @@ void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
         aux_stack_size = module->aux_stack_size;
     }
     dump(&global_table_data, env->global_table_data.memory_instances);
+    fprintf(stderr, "\nDumped global data size: %d\n", env->table_count);
 }
 
 void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {
     if (!wamr->tmp_buf) {
-        env->memory_count = memories.size();
-        for (int i = 0; i < env->memory_count; i++) {
-            restore(&memories[i], env->memories[i]);
-        }
-        wamr->tmp_buf = env->memories;
-        wamr->tmp_buf_size = env->memory_count;
-        restore(&global_table_data, env->global_table_data.memory_instances);
+    // auto m_ = (WASMMemoryInstance **)malloc(env->memory_count * sizeof(WASMMemoryInstance *));
+    // wamr->tmp_buf = m_;
+    // wamr->tmp_buf_size = env->memory_count;
+    env->memory_count = memories.size();
+    // for (int i = 0; i < env->memory_count; i++) {
+    //     m_[i] = (WASMMemoryInstance *)malloc(sizeof(WASMMemoryInstance));
+    // }
+    for (int i = 0; i < env->memory_count; i++) {
+        restore(&memories[i], env->memories[i]);
+        // restore(&memories[i], m_[i]);
+    }
+    wamr->tmp_buf = env->memories;
+    // env->memories = m_;
+    wamr->tmp_buf_size = env->memory_count;
+
+    env->global_data_size = global_data.size();
+    // restore(&global_table_data, env->global_table_data.memory_instances);
 
     } else {
         env->memory_count = wamr->tmp_buf_size;
         env->memories = wamr->tmp_buf;
     }
+    env->global_table_data.memory_instances[0] = **env->memories;
+    env->global_data = (uint8 *)malloc(env->global_data_size);
+    fprintf(stderr, "\nRestored global data ptr: %p\n", env->global_data);
     memcpy(env->global_data, global_data.data(), global_data.size());
-    env->global_data_size = global_data.size();
-    //                env->global_data = global_data.data();
-    //                env->global_data_size = global_data.size() - 1;
+
     LOGV(DEBUG) << env->global_data_size;
-    LOGV(DEBUG) << env->global_data;
+    for (int i = 0; i < env->global_data_size; i++) {
+        fprintf(stderr, "%d", env->global_data[i]);
+    }
     if (wamr->is_aot) {
         auto module = (AOTModule *)env->module;
         module->aux_data_end_global_index = aux_data_end_global_index;

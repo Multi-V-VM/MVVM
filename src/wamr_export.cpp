@@ -156,8 +156,8 @@ int get_sock_fd(int fd) {
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
-        // LOGV(INFO) << "insert_fd(fd,filename,flags, offset) fd:" << fd << " flags:" << flags << " offset:" << offset
-        //    << " op:" << op;
+        LOGV(INFO) << "insert_fd(fd,filename,flags, offset) fd:" << fd << " flags:" << flags << " offset:" << offset
+           << " op:" << op;
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
         std::tie(path_, ops_) = wamr->fd_map_[fd];
@@ -320,10 +320,23 @@ void change_thread_id_to_child(ssize_t tid, ssize_t child_tid) {
         }
     }
 };
-void wamr_handle_map(ssize_t old_tid, ssize_t tid) {
+void wamr_handle_map(uint64_t old_tid, uint64_t tid) {
     LOGV(ERROR) << fmt::format("wamr_handle_map old:< {} > new:< {} >", old_tid, tid);
     wamr->tid_map[old_tid] = tid;
 };
+
+korp_tid wamr_get_new_korp_tid(korp_tid new_tid){
+    return wamr->tid_map[new_tid];
+}
+
+korp_tid wamr_get_korp_tid(korp_tid new_tid){
+    for (auto &[old_tid, new_tid_v] : wamr->tid_map) {
+        if(new_tid == new_tid_v){
+	    return old_tid;
+	}
+    }
+    return 0;
+}
 
 void insert_parent_child(ssize_t tid, ssize_t child_tid) {
     LOGV(ERROR) << fmt::format("insert_parent_child {} {}", tid, child_tid);

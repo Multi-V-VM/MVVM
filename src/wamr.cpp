@@ -722,6 +722,19 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
         // get duration in us
         auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - this->time);
         fprintf(stderr, "Recover time: %f\n", dur.count() / 1000000.0);
+        // put things back
+        // fprintf(stderr, "invoke 1%p\n",((WASMModuleInstance *)exec_env->module_inst)->global_data);
+
+        ((WASMModuleInstance *)exec_env->module_inst)->global_data =
+            (uint8 *)malloc(((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
+
+        memcpy(((WASMModuleInstance *)exec_env->module_inst)->global_data,
+               execEnv.front()->module_inst.global_data.data(),
+               ((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
+        // for (int i = 0; i < ((WASMModuleInstance *)exec_env->module_inst)->global_data_size; i++) {
+        //     fprintf(stderr, "%d", ((WASMModuleInstance *)exec_env->module_inst)->global_data[i]);
+        // }
+        // fprintf(stderr, "invoke 2%p\n",((WASMModuleInstance *)exec_env->module_inst)->global_data);
         invoke_main();
     }
 }
@@ -818,7 +831,6 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
 extern WAMRInstance *wamr;
 extern "C" { // stop name mangling so it can be linked externally
 void wamr_wait(wasm_exec_env_t exec_env) {
-
     LOGV(DEBUG) << fmt::format("child getting ready to wait {}", fmt::ptr(exec_env));
     thread_init.release(1);
     wamr->spawn_child(exec_env, false);
@@ -833,7 +845,15 @@ void wamr_wait(wasm_exec_env_t exec_env) {
     // finished restoring
     exec_env->is_restore = true;
     // setting back handle
-    exec_env->handle = wamr->tid_map[exec_env->handle];
+    // exec_env->handle = wamr->tid_map[exec_env->handle];
+    // ((WASMModuleInstance *)exec_env->module_inst)->memories = wamr->tmp_buf;
+    // ((WASMModuleInstance *)exec_env->module_inst)->memory_count = wamr->tmp_buf_size;
+
+    // for (int i = 0; i < ((WASMModuleInstance *)exec_env->module_inst)->global_data_size; i++) {
+    //     fprintf(stderr, "%d", ((WASMModuleInstance *)exec_env->module_inst)->global_data[i]);
+    // }
+    // sleep(10);
+    fprintf(stderr, "invoke side%p\n", ((WASMModuleInstance *)exec_env->module_inst)->global_data);
 }
 
 WASMExecEnv *restore_env() {
