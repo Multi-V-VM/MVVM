@@ -34,6 +34,8 @@ struct sync_op_t {
     uint64 tid;
     uint32 ref;
     enum sync_op sync_op;
+    uint64 expected;
+    bool wait64;
 };
 
 #if !defined(_WIN32)
@@ -47,6 +49,8 @@ void init_gateway(struct SocketAddrPool *address);
 void set_tcp();
 int get_sock_fd(int);
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking);
+void insert_sync_op_atomic_notify(wasm_exec_env_t exec_env, const uint32 *mutex, uint32);
+void insert_sync_op_atomic_wait(wasm_exec_env_t exec_env, const uint32 *mutex, uint64,bool);
 void restart_execution(uint32 targs);
 void insert_tid_start_arg(ssize_t, size_t, size_t);
 void change_thread_id_to_child(ssize_t, ssize_t);

@@ -56,10 +56,10 @@ public:
     std::vector<struct sync_op_t> sync_ops;
     bool should_snapshot{};
     WASMMemoryInstance **tmp_buf;
+    uint8 *tmp_buf2;
     uint32 tmp_buf_size{};
+    uint32 tmp_buf_size2{};
     std::vector<struct sync_op_t>::iterator sync_iter;
-    std::mutex sync_op_mutex;
-    std::condition_variable sync_op_cv;
     std::map<uint64, uint64> tid_map;
     std::map<korp_tid, korp_tid> korp_tid_map;
     std::map<uint64, uint64> child_tid_map;

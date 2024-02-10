@@ -157,7 +157,7 @@ int get_sock_fd(int fd) {
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
         LOGV(INFO) << "insert_fd(fd,filename,flags, offset) fd:" << fd << " flags:" << flags << " offset:" << offset
-           << " op:" << op;
+                   << " op:" << op;
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
         std::tie(path_, ops_) = wamr->fd_map_[fd];
@@ -293,15 +293,25 @@ void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op 
     LOGV(DEBUG) << fmt::format(
         "insert sync on offset {}, as op: {} ",
         (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data), locking);
-    struct sync_op_t sync_op {};
-    if (locking >= SYNC_OP_ATOMIC_WAIT)
-        sync_op = {
-            .tid = exec_env->handle,
-            .ref = (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data),
-            .sync_op = locking};
-    else
-        sync_op = {.tid = exec_env->handle, .ref = *mutex, .sync_op = locking};
+    struct sync_op_t sync_op = {.tid = exec_env->handle, .ref = *mutex, .sync_op = locking};
 
+    wamr->sync_ops.push_back(sync_op);
+}
+void insert_sync_op_atomic_wait(wasm_exec_env_t exec_env, const uint32 *mutex, uint64 expected, bool wait64) {
+    struct sync_op_t sync_op = {
+        .tid = exec_env->handle,
+        .ref = (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data),
+        .sync_op = SYNC_OP_ATOMIC_WAIT,
+        .expected = expected,
+        .wait64 = wait64};
+    wamr->sync_ops.push_back(sync_op);
+}
+void insert_sync_op_atomic_notify(wasm_exec_env_t exec_env, const uint32 *mutex, uint32 count) {
+    struct sync_op_t sync_op = {
+        .tid = exec_env->handle,
+        .ref = (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data),
+        .sync_op = SYNC_OP_ATOMIC_NOTIFY,
+        .expected = count};
     wamr->sync_ops.push_back(sync_op);
 }
 void insert_tid_start_arg(ssize_t tid, size_t start_arg, size_t vtid) {
@@ -325,15 +335,13 @@ void wamr_handle_map(uint64_t old_tid, uint64_t tid) {
     wamr->tid_map[old_tid] = tid;
 };
 
-korp_tid wamr_get_new_korp_tid(korp_tid new_tid){
-    return wamr->tid_map[new_tid];
-}
+korp_tid wamr_get_new_korp_tid(korp_tid new_tid) { return wamr->tid_map[new_tid]; }
 
-korp_tid wamr_get_korp_tid(korp_tid new_tid){
+korp_tid wamr_get_korp_tid(korp_tid new_tid) {
     for (auto &[old_tid, new_tid_v] : wamr->tid_map) {
-        if(new_tid == new_tid_v){
-	    return old_tid;
-	}
+        if (new_tid == new_tid_v) {
+            return old_tid;
+        }
     }
     return 0;
 }

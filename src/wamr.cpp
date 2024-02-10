@@ -586,6 +586,9 @@ void restart_execution(uint32 id) {
                                    targs->exec_env->cur_frame->function, targs->exec_env->cur_frame->prev_frame);
 }
 
+korp_mutex syncop_mutex;
+korp_cond syncop_cv;
+
 #if !defined(_WIN32)
 void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
     if (main) {
@@ -606,49 +609,51 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
         thread_init.acquire();
     }
     // Actually replay
-    std::unique_lock l(sync_op_mutex);
+    os_mutex_lock(&syncop_mutex);
     while (sync_iter != sync_ops.end()) {
-        if ((*sync_iter).tid == exec_env->handle) {
-            // do op
+        printf("test %ld == %ld, op %d\n", (uint64_t)exec_env->handle, (uint64_t)sync_iter->tid, sync_iter->sync_op);
+        if (((uint64_t)(*sync_iter).tid) == ((uint64_t)exec_env->handle)) {
             printf("replay %ld, op %d\n", sync_iter->tid, sync_iter->sync_op);
-            switch (sync_iter->sync_op) {
+	    auto mysync = sync_iter;
+            ++sync_iter;
+            // do op
+            switch (mysync->sync_op) {
             case SYNC_OP_MUTEX_LOCK:
-                pthread_mutex_lock_wrapper(exec_env, &(sync_iter->ref));
+                pthread_mutex_lock_wrapper(exec_env, &(mysync->ref));
                 break;
             case SYNC_OP_MUTEX_UNLOCK:
-                pthread_mutex_unlock_wrapper(exec_env, &(sync_iter->ref));
+                pthread_mutex_unlock_wrapper(exec_env, &(mysync->ref));
                 break;
             case SYNC_OP_COND_WAIT:
-                pthread_cond_wait_wrapper(exec_env, &(sync_iter->ref), nullptr);
+                pthread_cond_wait_wrapper(exec_env, &(mysync->ref), nullptr);
                 break;
             case SYNC_OP_COND_SIGNAL:
-                pthread_cond_signal_wrapper(exec_env, &(sync_iter->ref));
+                pthread_cond_signal_wrapper(exec_env, &(mysync->ref));
                 break;
             case SYNC_OP_COND_BROADCAST:
-                pthread_cond_broadcast_wrapper(exec_env, &(sync_iter->ref));
+                pthread_cond_broadcast_wrapper(exec_env, &(mysync->ref));
                 break;
             case SYNC_OP_ATOMIC_WAIT:
                 wasm_runtime_atomic_wait(
                     exec_env->module_inst,
-                    ((void *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + sync_iter->ref),
-                    ((uint64)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + sync_iter->ref),
-                    -1, false);
+                    ((void *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + mysync->ref),
+                    mysync->expected,
+                    -1, mysync->wait64);
                 break;
             case SYNC_OP_ATOMIC_NOTIFY:
                 wasm_runtime_atomic_notify(
                     exec_env->module_inst,
-                    ((void *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + sync_iter->ref),
-                    100);
+                    ((void *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + mysync->ref),
+                    ((uint32)mysync->expected));
                 break;
             }
-            ++sync_iter;
             // wakeup everyone
-            sync_op_cv.notify_all();
+	    os_cond_signal(&syncop_cv);
         } else {
-            // wait for actual recipient
-            sync_op_cv.wait(l);
+	    os_cond_reltimedwait(&syncop_cv, &syncop_mutex, 1000);
         }
     }
+    os_mutex_unlock(&syncop_mutex);
 }
 // End Sync Op Specific Stuff
 #endif
@@ -692,6 +697,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 
     invoke_init_c();
     invoke_preopen(1, "/dev/stdout");
+    invoke_preopen(2, "/dev/stderr");
 #if !defined(_WIN32)
     spawn_child(main_env, true);
 #endif
@@ -725,12 +731,12 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
         // put things back
         // fprintf(stderr, "invoke 1%p\n",((WASMModuleInstance *)exec_env->module_inst)->global_data);
 
-        ((WASMModuleInstance *)exec_env->module_inst)->global_data =
-            (uint8 *)malloc(((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
+        // ((WASMModuleInstance *)exec_env->module_inst)->global_data =
+        //     (uint8 *)malloc(((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
 
-        memcpy(((WASMModuleInstance *)exec_env->module_inst)->global_data,
-               execEnv.front()->module_inst.global_data.data(),
-               ((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
+        // memcpy(((WASMModuleInstance *)exec_env->module_inst)->global_data,
+        //        execEnv.front()->module_inst.global_data.data(),
+        //        ((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
         // for (int i = 0; i < ((WASMModuleInstance *)exec_env->module_inst)->global_data_size; i++) {
         //     fprintf(stderr, "%d", ((WASMModuleInstance *)exec_env->module_inst)->global_data[i]);
         // }
@@ -784,6 +790,9 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
             auto *saved_env = cur_env->restore_call_chain;
             cur_env->restore_call_chain = NULL;
             exec_env->is_restore = true;
+            invoke_init_c();
+            invoke_preopen(1, "/dev/stdout");
+            invoke_preopen(2, "/dev/stderr");
             // main thread
             thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count].first);
             cur_env->restore_call_chain = saved_env;
