@@ -21,6 +21,7 @@ struct WAMRModuleInstance {
     std::vector<WAMRMemoryInstance> memories;
     /* global and table info */
     std::vector<uint8> global_data;
+    std::vector<WASMTableInstance> tables;
     /* the index of auxiliary __data_end global,
        -1 means unexported */
     uint32 aux_data_end_global_index;

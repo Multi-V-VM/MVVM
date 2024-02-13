@@ -352,6 +352,9 @@ void insert_parent_child(ssize_t tid, ssize_t child_tid) {
 };
 
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
+    if (exec_env->is_restore) {
+        return;
+    }
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;
@@ -368,6 +371,9 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
 }
 
 void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
+    if (exec_env->is_restore) {
+        return;
+    }
     int fid = -1;
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;

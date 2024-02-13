@@ -614,7 +614,7 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
         printf("test %ld == %ld, op %d\n", (uint64_t)exec_env->handle, (uint64_t)sync_iter->tid, sync_iter->sync_op);
         if (((uint64_t)(*sync_iter).tid) == ((uint64_t)exec_env->handle)) {
             printf("replay %ld, op %d\n", sync_iter->tid, sync_iter->sync_op);
-	    auto mysync = sync_iter;
+            auto mysync = sync_iter;
             ++sync_iter;
             // do op
             switch (mysync->sync_op) {
@@ -637,8 +637,7 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
                 wasm_runtime_atomic_wait(
                     exec_env->module_inst,
                     ((void *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + mysync->ref),
-                    mysync->expected,
-                    -1, mysync->wait64);
+                    0, -1, mysync->wait64);
                 break;
             case SYNC_OP_ATOMIC_NOTIFY:
                 wasm_runtime_atomic_notify(
@@ -648,9 +647,9 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
                 break;
             }
             // wakeup everyone
-	    os_cond_signal(&syncop_cv);
+            os_cond_signal(&syncop_cv);
         } else {
-	    os_cond_reltimedwait(&syncop_cv, &syncop_mutex, 1000);
+            os_cond_reltimedwait(&syncop_cv, &syncop_mutex, 10);
         }
     }
     os_mutex_unlock(&syncop_mutex);
@@ -790,9 +789,9 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
             auto *saved_env = cur_env->restore_call_chain;
             cur_env->restore_call_chain = NULL;
             exec_env->is_restore = true;
-            invoke_init_c();
-            invoke_preopen(1, "/dev/stdout");
-            invoke_preopen(2, "/dev/stderr");
+            // invoke_init_c();
+            // invoke_preopen(1, "/dev/stdout");
+            // invoke_preopen(2, "/dev/stderr");
             // main thread
             thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count].first);
             cur_env->restore_call_chain = saved_env;
@@ -862,6 +861,13 @@ void wamr_wait(wasm_exec_env_t exec_env) {
     //     fprintf(stderr, "%d", ((WASMModuleInstance *)exec_env->module_inst)->global_data[i]);
     // }
     // sleep(10);
+
+    // ((WASMModuleInstance *)exec_env->module_inst)->global_data =
+    //     (uint8 *)malloc(((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
+
+    // memcpy(((WASMModuleInstance *)exec_env->module_inst)->global_data,
+    //        wamr->execEnv.back()->module_inst.global_data.data(),
+    //    ((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
     fprintf(stderr, "invoke side%p\n", ((WASMModuleInstance *)exec_env->module_inst)->global_data);
 }
 

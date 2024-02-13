@@ -13,12 +13,14 @@ void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
         dump(&local_mem, env->memories[i]);
         memories.push_back(local_mem);
     }
+    for (int i = 0; i < env->table_count; i++) {
+        printf("Dumping table %d\n", env->tables[i]->cur_size);
+        tables.push_back(*env->tables[i]);
+    }
     // }
     global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
+    // tables = std::vector<std::unique_ptr<WASMTableInstance>>(env->tables, env->tables + env->table_count);
     dump(&wasi_ctx, &env->module->wasi_args);
-    // for (int i = 0; i < env->global_data_size; i++) {
-    //     fprintf(stderr, "%d", env->global_data[i]);
-    // }
     fprintf(stderr, "\nDumped global data ptr: %p\n", env->global_data);
     if (wamr->is_aot) {
         auto module = (AOTModule *)env->module;
@@ -65,15 +67,22 @@ void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {
         memcpy(env->global_data, global_data.data(), global_data.size());
         wamr->tmp_buf2 = env->global_data;
         wamr->tmp_buf_size2 = env->global_data_size;
+        for (int i = 0; i < env->table_count; i++) {
+            env->tables[i] = &tables[i];
+        }
+        env->table_count = tables.size();
     } else {
         env->memory_count = wamr->tmp_buf_size;
         env->memories = wamr->tmp_buf;
         // env->global_data_size= wamr->tmp_buf_size2;
         // env->global_data = wamr->tmp_buf2;
         env->global_data = (uint8 *)malloc(env->global_data_size);
-
         memcpy(env->global_data, global_data.data(), global_data.size());
         env->global_data_size = global_data.size();
+        for (int i = 0; i < env->table_count; i++) {
+            env->tables[i] = &tables[i];
+        }
+        env->table_count = tables.size();
     }
     env->global_table_data.memory_instances[0] = **env->memories;
     if (wamr->is_aot) {
