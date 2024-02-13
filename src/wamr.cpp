@@ -32,7 +32,7 @@ static auto string_vec_to_cstr_array = [](const std::vector<std::string> &vecStr
     return cstrArray;
 };
 
-WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit) : is_jit(is_jit) {
+WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit, std::string policy) : is_jit(is_jit), policy(policy) {
     {
         std::string path(wasm_path);
 
@@ -174,10 +174,10 @@ void WAMRInstance::invoke_init_c() {
     }
 }
 int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
-    auto name = "o_";
+    auto name = "__wasilibc_open_nomode";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
         LOGV(ERROR) << "The wasi " << name << " function is not found.";
-        auto name1 = "__wasilibc_open_nomode";
+        auto name1 = "o_";
 
         if (!(func = wasm_runtime_lookup_function(module_inst, name1, nullptr))) {
             LOGV(ERROR) << "The wasi " << name1 << " function is not found.";
@@ -196,12 +196,6 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
         return ((int)argv[0]);
     }
-    // auto name1 = "o_";
-    // uint32 argv[0];
-    // if (!(func = wasm_runtime_lookup_function(module_inst, name1, nullptr))) {
-    //     LOGV(ERROR) << "The wasi " << name1 << " function is not found.";
-    // }
-    // wasm_runtime_call_wasm(exec_env, func, 0, argv);
     return -1;
 };
 int WAMRInstance::invoke_frenumber(uint32 fd, uint32 to) {
@@ -233,7 +227,64 @@ int WAMRInstance::invoke_frenumber(uint32 fd, uint32 to) {
     wasm_runtime_call_wasm(exec_env, func, 2, argv);
     return argv[0];
 };
+int WAMRInstance::invoke_fread(uint32 fd, uint32 len) {
+    auto name = "__wasi_fd_read";
+    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
+        LOGV(ERROR) << "The wasi fopen function is not found.";
+        auto target_module = get_module_instance()->e;
+        for (int i = 0; i < target_module->function_count; i++) {
+            auto cur_func = &target_module->functions[i];
+            if (cur_func->is_import_func) {
+                LOGV(DEBUG) << cur_func->u.func_import->field_name << " " << i;
+                if (!strcmp(cur_func->u.func_import->field_name, name)) {
 
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
+
+            } else {
+                LOGV(DEBUG) << cur_func->u.func->field_name << " " << i;
+
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
+            }
+        }
+    }
+    uint32 argv[2] = {fd, len};
+    wasm_runtime_call_wasm(exec_env, func, 2, argv);
+    return argv[0];
+};
+int WAMRInstance::invoke_fwrite(uint32 fd, uint32 len) {
+    auto name = "__wasi_fd_write";
+    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
+        LOGV(ERROR) << "The wasi fopen function is not found.";
+        auto target_module = get_module_instance()->e;
+        for (int i = 0; i < target_module->function_count; i++) {
+            auto cur_func = &target_module->functions[i];
+            if (cur_func->is_import_func) {
+                LOGV(DEBUG) << cur_func->u.func_import->field_name << " " << i;
+                if (!strcmp(cur_func->u.func_import->field_name, name)) {
+
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
+
+            } else {
+                LOGV(DEBUG) << cur_func->u.func->field_name << " " << i;
+
+                if (!strcmp(cur_func->u.func->field_name, name)) {
+                    func = ((WASMFunctionInstanceCommon *)cur_func);
+                    break;
+                }
+            }
+        }
+    }
+    uint32 argv[2] = {fd, len};
+    wasm_runtime_call_wasm(exec_env, func, 2, argv);
+    return argv[0];
+};
 int WAMRInstance::invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t protocol, uint32_t sockfd) {
     auto name = "s_";
     if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
@@ -636,8 +687,8 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
             case SYNC_OP_ATOMIC_WAIT:
                 wasm_runtime_atomic_wait(
                     exec_env->module_inst,
-                    ((void *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + mysync->ref),
-                    0, -1, mysync->wait64);
+                    ((void *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + mysync->ref), 0,
+                    -1, mysync->wait64);
                 break;
             case SYNC_OP_ATOMIC_NOTIFY:
                 wasm_runtime_atomic_notify(

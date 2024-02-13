@@ -65,8 +65,6 @@ void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {
         env->global_data_size = global_data.size();
         env->global_data = (uint8 *)malloc(env->global_data_size);
         memcpy(env->global_data, global_data.data(), global_data.size());
-        wamr->tmp_buf2 = env->global_data;
-        wamr->tmp_buf_size2 = env->global_data_size;
         for (int i = 0; i < env->table_count; i++) {
             env->tables[i] = &tables[i];
         }

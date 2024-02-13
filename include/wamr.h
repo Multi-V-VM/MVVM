@@ -55,10 +55,9 @@ public:
     std::mutex as_mtx{};
     std::vector<struct sync_op_t> sync_ops;
     bool should_snapshot{};
+    std::string policy{};
     WASMMemoryInstance **tmp_buf;
-    uint8 *tmp_buf2;
     uint32 tmp_buf_size{};
-    uint32 tmp_buf_size2{};
     std::vector<struct sync_op_t>::iterator sync_iter;
     std::map<uint64, uint64> tid_map;
     std::map<korp_tid, korp_tid> korp_tid_map;
@@ -77,7 +76,7 @@ public:
         wasm_exec_env_t exec_env;
     } ThreadArgs;
 
-    explicit WAMRInstance(const char *wasm_path, bool is_jit);
+    explicit WAMRInstance(const char *wasm_path, bool is_jit, std::string policy = "replay");
 
     void instantiate();
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *);
@@ -107,6 +106,8 @@ public:
     void invoke_init_c();
     int invoke_fopen(std::string &path, uint32 option);
     int invoke_frenumber(uint32 fd, uint32 to);
+    int invoke_fwrite(uint32 fd, uint32 len);
+    int invoke_fread(uint32 fd, uint32 len);
     int invoke_fseek(uint32 fd, uint32 offset);
     int invoke_ftell(uint32 fd, uint32 offset, uint32 whench);
     int invoke_preopen(uint32 fd, const std::string &path);

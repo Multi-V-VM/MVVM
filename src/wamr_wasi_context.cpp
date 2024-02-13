@@ -11,6 +11,7 @@
 #include <sys/types.h>
 extern WAMRInstance *wamr;
 using namespace std::chrono_literals;
+
 #if !defined(_WIN32)
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -144,20 +145,36 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
             LOGV(INFO) << "fd: " << fd << " path: " << path;
             for (auto [flags, offset, op] : std::get<1>(res)) {
                 // differ from path from file
-                LOGV(INFO) << "fd: " << fd << " path: " << path << " flag: " << flags << " op: " << op;
-                switch (op) {
-                case MVVM_FOPEN:
-                    r = wamr->invoke_fopen(path, fd);
-                    LOGV(ERROR) << r;
-                    if (r != fd)
-                        wamr->invoke_frenumber(r, fd);
-                    wamr->fd_map_[fd] = res;
-                    break;
-                case MVVM_FWRITE:
-                case MVVM_FREAD:
-                case MVVM_FSEEK:
-                    wamr->invoke_fseek(fd, flags);
-                    break;
+                if (wamr->policy == "replay") {
+
+                    switch (op) {
+                    case MVVM_FOPEN:
+                        r = wamr->invoke_fopen(path, offset);
+                        LOGV(ERROR) << r;
+                        if (r != fd)
+                            wamr->invoke_frenumber(r, fd);
+                        wamr->fd_map_[fd] = res;
+                        break;
+                    case MVVM_FWRITE:
+                        wamr->invoke_fwrite(fd, flags);
+                        break;
+                    case MVVM_FREAD:
+                        wamr->invoke_fread(fd, flags);
+                        break;
+                    case MVVM_FSEEK:
+                        wamr->invoke_fseek(fd, flags);
+                        break;
+                    }
+                } else if (wamr->policy == "compression") {
+                    if (op == MVVM_FOPEN) {
+                        r = wamr->invoke_fopen(path, offset);
+                        LOGV(ERROR) << r;
+                        if (r != fd)
+                            wamr->invoke_frenumber(r, fd);
+                        wamr->fd_map_[fd] = res;
+                    } else {
+                        wamr->invoke_fseek(fd, flags);
+                    }
                 }
             }
         }

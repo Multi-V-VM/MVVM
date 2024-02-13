@@ -69,7 +69,7 @@ ExternalProject_Add(gapbs-native
         PATCH_COMMAND     ""
         CONFIGURE_COMMAND  ${CMAKE_COMMAND}
         -DCMAKE_BUILD_TYPE=Release
-        -GNinja -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1 -DCMAKE_BUILD_TYPE=Debug
+        -GNinja -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1 
         ${CMAKE_CURRENT_SOURCE_DIR}/redis
         BUILD_COMMAND     ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_if_different ./redis ${CMAKE_CURRENT_BINARY_DIR}/redis
@@ -106,6 +106,23 @@ ExternalProject_Add(nas
         ${CMAKE_COMMAND} -E copy_if_different ./mg ${CMAKE_CURRENT_BINARY_DIR}/mg.wasm &&
         ${CMAKE_COMMAND} -E copy_if_different ./sp ${CMAKE_CURRENT_BINARY_DIR}/sp.wasm
 )
+ExternalProject_Add(nas-native
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nas
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -DCMAKE_BUILD_TYPE=Release
+        -GNinja -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+        ${CMAKE_CURRENT_SOURCE_DIR}/nas
+        BUILD_COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./bt ${CMAKE_CURRENT_BINARY_DIR}/bt &&
+        ${CMAKE_COMMAND} -E copy_if_different ./cg ${CMAKE_CURRENT_BINARY_DIR}/cg &&
+        ${CMAKE_COMMAND} -E copy_if_different ./ep ${CMAKE_CURRENT_BINARY_DIR}/ep &&
+        ${CMAKE_COMMAND} -E copy_if_different ./ft ${CMAKE_CURRENT_BINARY_DIR}/ft &&
+        ${CMAKE_COMMAND} -E copy_if_different ./lu ${CMAKE_CURRENT_BINARY_DIR}/lu &&
+        ${CMAKE_COMMAND} -E copy_if_different ./mg ${CMAKE_CURRENT_BINARY_DIR}/mg &&
+        ${CMAKE_COMMAND} -E copy_if_different ./sp ${CMAKE_CURRENT_BINARY_DIR}/sp
+)
 ExternalProject_Add(llama
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/llama
         UPDATE_COMMAND ""
@@ -120,7 +137,17 @@ ExternalProject_Add(llama
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./llama ${CMAKE_CURRENT_BINARY_DIR}/llama.wasm
 )
-
+ExternalProject_Add(llama-native
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/llama
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -GNinja -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+        ${CMAKE_CURRENT_SOURCE_DIR}/llama
+        BUILD_COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./llama ${CMAKE_CURRENT_BINARY_DIR}/llama
+)
 ExternalProject_Add(linpack
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/linpack
         UPDATE_COMMAND ""
@@ -135,6 +162,16 @@ ExternalProject_Add(linpack
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./linpack ${CMAKE_CURRENT_BINARY_DIR}/linpack.wasm
 )
+ExternalProject_Add(linpack-native
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/linpack
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+        ${CMAKE_CURRENT_SOURCE_DIR}/linpack
+        BUILD_COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./linpack ${CMAKE_CURRENT_BINARY_DIR}/linpack
+)
 ExternalProject_Add(hdastar
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
         UPDATE_COMMAND ""
@@ -147,6 +184,17 @@ ExternalProject_Add(hdastar
         ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./hw5 ${CMAKE_CURRENT_BINARY_DIR}/hdastar.wasm
+)
+ExternalProject_Add(hdastar-native
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -GNinja -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+        ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
+        BUILD_COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./hw5 ${CMAKE_CURRENT_BINARY_DIR}/hdastar
 )
 
 if (WAMR_BUILD_AOT)
