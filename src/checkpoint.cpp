@@ -36,7 +36,7 @@ void serialize_to_file(WASMExecEnv *instance) {
         wamr->should_snapshot = true;
     }
     // If we're not all ready
-    SPDLOG_DEBUG("thread {}, with {} ready out of {} total", instance->handle, wamr->ready, all_count);
+    SPDLOG_DEBUG("thread {}, with {} ready out of {} total", ((uint64_t)instance->handle), wamr->ready, all_count);
 #endif
 #if !defined(_WIN32)
     if (!wamr->socket_fd_map_.empty() && wamr->should_snapshot) {

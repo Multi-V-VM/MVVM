@@ -906,7 +906,7 @@ void wamr_wait(wasm_exec_env_t exec_env) {
     SPDLOG_DEBUG("finish child restore");
     wakeup.acquire();
 #if WASM_ENABLE_LIB_PTHREAD != 0
-    SPDLOG_DEBUG("go child!! {}", exec_env->handle);
+    SPDLOG_DEBUG("go child!! {}", ((uint64_t)exec_env->handle));
     wamr->replay_sync_ops(false, exec_env);
     SPDLOG_DEBUG("finish syncing");
 #endif
