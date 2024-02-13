@@ -35,16 +35,16 @@ jobs:
         git clone https://github.com/microsoft/vcpkg
         cd vcpkg
         ./bootstrap-vcpkg.bat
-        ./vcpkg install fmt:x64-windows cxxopts:x64-windows benchmark:x64-windows
+        ./vcpkg install fmt:x64-windows cxxopts:x64-windows spdlog:x64-windows
         echo "C:/tools/msys64/usr/bin/" >> "$GITHUB_PATH"
         C:/tools/msys64/usr/bin/pacman.exe --noconfirm -S gcc
 
     - name: Install WASI SDK
       run: |
         cd D:
-        wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-20/wasi-sdk-20.0.m-mingw.tar.gz -O D:/wasi-sdk-20.0.m-mingw.tar.gz
-        tar -xzf wasi-sdk-20.0.m-mingw.tar.gz
-        mv wasi-sdk-20.0+m wasi-sdk
+        wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-21/wasi-sdk-21.0.m-mingw.tar.gz -O D:/wasi-sdk-21.0.m-mingw.tar.gz
+        tar -xzf wasi-sdk-21.0.m-mingw.tar.gz
+        mv wasi-sdk-21.0+m wasi-sdk
 
     - name: Make WASM LD no check features
       run: |

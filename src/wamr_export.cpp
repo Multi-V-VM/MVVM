@@ -2,7 +2,6 @@
 // Created by victoryang00 on 10/19/23.
 //
 
-#include "logging.h"
 #include "wamr.h"
 #include "wamr_wasi_context.h"
 #include <condition_variable>
@@ -22,7 +21,7 @@ void insert_sock_open_data(uint32_t poolfd, int af, int socktype, uint32_t sockf
         wamr->socket_fd_map_[sockfd].socketOpenData.socktype = socktype;
         wamr->socket_fd_map_[sockfd].socketOpenData.sockfd = sockfd;
     } else {
-        LOGV(ERROR) << "socket_fd" << sockfd << " not found";
+        SPDLOG_ERROR("socket_fd {} not found", sockfd);
     }
 }
 #if !defined(_WIN32)
@@ -53,7 +52,7 @@ void insert_sock_send_to_data(uint32_t sock, uint8 *si_data, uint32 si_data_len,
             wamr->socket_fd_map_[sock].socketSentToData.dest_addr.port = dest_addr->addr.ip6.port;
         }
     } else {
-        LOGV(ERROR) << "socket_fd" << sock << " not found";
+        SPDLOG_ERROR("socket_fd", sock, " not found");
     }
 }
 
@@ -97,27 +96,27 @@ void insert_sock_recv_from_data(uint32_t sock, uint8 *ri_data, uint32 ri_data_le
             recvFromData.src_addr.ip.ip6[7] = src_addr->addr.ip6.addr.h3;
             recvFromData.src_addr.port = src_addr->addr.ip6.port;
         }
-        LOGV(ERROR) << "insert_sock_recv_from_data " << sock << " " << ((struct mvvm_op_data *)ri_data)->op;
+        SPDLOG_ERROR("insert_sock_recv_from_data ", sock, " ", ((struct mvvm_op_data *)ri_data)->op);
         if (((struct mvvm_op_data *)ri_data)->op == MVVM_SOCK_FIN) {
             wamr->socket_fd_map_[sock].is_collection = false;
             return;
         }
         wamr->socket_fd_map_[sock].socketRecvFromDatas.emplace_back(recvFromData);
     } else {
-        LOGV(ERROR) << "socket_fd" << sock << " not found";
+        SPDLOG_ERROR("socket_fd", sock, " not found");
     }
 }
 void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, unsigned long *recv_size, __wasi_addr_t *src_addr) {
     // check from wamr->socket_fd_map_[sock] and drain one
     // should be in the same order
     if (wamr->socket_fd_map_[sock].socketRecvFromDatas.empty()) {
-        LOGV(ERROR) << "no recvfrom data " << sock;
+        SPDLOG_ERROR("no recvfrom data {}", sock);
         *recv_size = 0;
         return;
     }
     // shoud we check the src_addr?
     if (wamr->socket_fd_map_[sock].replay_start_index >= wamr->socket_fd_map_[sock].socketRecvFromDatas.size()) {
-        LOGV(INFO) << "replay index out of bound " << sock;
+        SPDLOG_INFO("replay index out of bound {}", sock);
         *recv_size = 0;
         return;
     }
@@ -156,8 +155,8 @@ int get_sock_fd(int fd) {
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
-        LOGV(INFO) << "insert_fd(fd,filename,flags, offset) fd:" << fd << " flags:" << flags << " offset:" << offset
-                   << " op:" << op;
+        SPDLOG_DEBUG("insert_fd(fd,filename,flags, offset) fd: {} flags: {} offset: {}, op: {}", fd, flags, offset,
+                     ((int)op));
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
         std::tie(path_, ops_) = wamr->fd_map_[fd];
@@ -171,9 +170,9 @@ void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
 
 /** frename */
 void rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) {
-    LOGV(INFO) << fmt::format("rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) old:{} "
-                              "old_fd:{} new_fd:{}, new_path:{}",
-                              old_fd, old_path, new_fd, new_path);
+    SPDLOG_DEBUG("rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_path) old:{} "
+                 "old_fd:{} new_fd:{}, new_path:{}",
+                 old_fd, old_path, new_fd, new_path);
     if (wamr->fd_map_.find(old_fd) != wamr->fd_map_.end()) {
         auto new_fd_ = wamr->fd_map_[old_fd];
         std::string path_;
@@ -188,14 +187,14 @@ void rename_fd(int old_fd, char const *old_path, int new_fd, char const *new_pat
 };
 /** fclose */
 void remove_fd(int fd) {
-    LOGV(INFO) << fmt::format("remove_fd(fd) fd{}", fd);
+    SPDLOG_DEBUG("remove_fd(fd) fd{}", fd);
     if (wamr->fd_map_.find(fd) != wamr->fd_map_.end())
         wamr->fd_map_.erase(fd);
     else {
         if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end())
             wamr->socket_fd_map_.erase(fd);
         else
-            LOGV(ERROR) << "fd not found " << fd;
+            SPDLOG_DEBUG("fd not found {}", fd);
     }
 }
 
@@ -205,10 +204,10 @@ void remove_fd(int fd) {
 void insert_socket(int fd, int domain, int type, int protocol) {
     // if protocol == 1, is the remote protocol, we need to getsockname?
 
-    LOGV(INFO) << fmt::format("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
+    SPDLOG_DEBUG("insert_socket(fd, domain, type, protocol) {} {} {} {}", fd, domain, type, protocol);
 
     if (wamr->socket_fd_map_.find(fd) != wamr->socket_fd_map_.end()) {
-        LOGV(ERROR) << "socket_fd already exist" << fd;
+        SPDLOG_ERROR("socket_fd already exist", fd);
     } else {
         SocketMetaData metaData{};
         metaData.domain = domain;
@@ -226,7 +225,7 @@ void insert_socket(int fd, int domain, int type, int protocol) {
 
 void update_socket_fd_address(int fd, SocketAddrPool *address) {
     wamr->socket_fd_map_[fd].socketAddress.port = address->port;
-    printf("\n #update_socket_fd_address(fd, address) %d %d\n\n", fd, wamr->socket_fd_map_[fd].socketAddress.port);
+    SPDLOG_DEBUG("#update_socket_fd_address(fd, address) {} {}", fd, wamr->socket_fd_map_[fd].socketAddress.port);
     if (address->is_4) {
         wamr->socket_fd_map_[fd].socketAddress.is_4 = true;
         wamr->socket_fd_map_[fd].socketAddress.ip4[0] = address->ip4[0];
@@ -258,8 +257,8 @@ void init_gateway(SocketAddrPool *address) {
 
         // Create a socket
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-            LOGV(ERROR) << "socket error";
-            throw std::runtime_error("socket error");
+            SPDLOG_ERROR("socket error");
+            exit(EXIT_FAILURE);
         }
 
         addr.sin_family = AF_INET;
@@ -267,19 +266,19 @@ void init_gateway(SocketAddrPool *address) {
 
         // Convert IPv4 and IPv6 addresses from text to binary form
         if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
-            LOGV(ERROR) << "AF_INET not supported";
+            SPDLOG_ERROR("AF_INET not supported");
             exit(EXIT_FAILURE);
         }
         // Connect to the server
         if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-            LOGV(ERROR) << "Connection Failed " << errno;
+            SPDLOG_ERROR("Connection Failed ", errno);
             exit(EXIT_FAILURE);
         }
 
-        LOGV(INFO) << "Connected successfully";
+        SPDLOG_INFO("Connected successfully");
         rc = send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0);
         if (rc == -1) {
-            LOGV(ERROR) << "send error";
+            SPDLOG_ERROR("send error");
             exit(EXIT_FAILURE);
         }
 
@@ -290,16 +289,16 @@ void init_gateway(SocketAddrPool *address) {
 #endif
 
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking) {
-    LOGV(DEBUG) << fmt::format(
-        "insert sync on offset {}, as op: {} ",
-        (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data), locking);
-    struct sync_op_t sync_op = {.tid = exec_env->handle, .ref = *mutex, .sync_op = locking};
+    SPDLOG_DEBUG("insert sync on offset {}, as op: {} ",
+                 (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data),
+                 ((int)locking));
+    struct sync_op_t sync_op = {.tid = ((uint64_t)exec_env->handle), .ref = *mutex, .sync_op = locking};
 
     wamr->sync_ops.push_back(sync_op);
 }
 void insert_sync_op_atomic_wait(wasm_exec_env_t exec_env, const uint32 *mutex, uint64 expected, bool wait64) {
     struct sync_op_t sync_op = {
-        .tid = exec_env->handle,
+        .tid = ((uint64_t)exec_env->handle),
         .ref = (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data),
         .sync_op = SYNC_OP_ATOMIC_WAIT,
         .expected = expected,
@@ -308,20 +307,20 @@ void insert_sync_op_atomic_wait(wasm_exec_env_t exec_env, const uint32 *mutex, u
 }
 void insert_sync_op_atomic_notify(wasm_exec_env_t exec_env, const uint32 *mutex, uint32 count) {
     struct sync_op_t sync_op = {
-        .tid = exec_env->handle,
+        .tid = ((uint64_t)exec_env->handle),
         .ref = (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data),
         .sync_op = SYNC_OP_ATOMIC_NOTIFY,
         .expected = count};
     wamr->sync_ops.push_back(sync_op);
 }
 void insert_tid_start_arg(ssize_t tid, size_t start_arg, size_t vtid) {
-    LOGV(INFO) << fmt::format("insert_tid_start_arg {} {} {}", tid, start_arg, vtid);
+    SPDLOG_DEBUG("insert_tid_start_arg {} {} {}", tid, start_arg, vtid);
     wamr->tid_start_arg_map[tid] = std::make_pair(start_arg, vtid);
 };
 void change_thread_id_to_child(ssize_t tid, ssize_t child_tid) {
     // insert parent child takes both `vtid`s so we don't need to remap to OS threads
     return;
-    LOGV(ERROR) << fmt::format("change_thread_id_to_child {} {}", tid, child_tid);
+    SPDLOG_ERROR("change_thread_id_to_child {} {}", tid, child_tid);
     for (auto &[k, v] : wamr->child_tid_map) {
         if (k == child_tid) {
             wamr->child_tid_map[tid] = v;
@@ -331,23 +330,23 @@ void change_thread_id_to_child(ssize_t tid, ssize_t child_tid) {
     }
 };
 void wamr_handle_map(uint64_t old_tid, uint64_t tid) {
-    LOGV(ERROR) << fmt::format("wamr_handle_map old:< {} > new:< {} >", old_tid, tid);
+    SPDLOG_ERROR("wamr_handle_map old:< {} > new:< {} >", old_tid, tid);
     wamr->tid_map[old_tid] = tid;
 };
 
-korp_tid wamr_get_new_korp_tid(korp_tid new_tid) { return wamr->tid_map[new_tid]; }
+korp_tid wamr_get_new_korp_tid(korp_tid new_tid) { return ((korp_tid)wamr->tid_map[((uint64_t)new_tid)]); }
 
 korp_tid wamr_get_korp_tid(korp_tid new_tid) {
     for (auto &[old_tid, new_tid_v] : wamr->tid_map) {
-        if (new_tid == new_tid_v) {
-            return old_tid;
+        if (((uint64_t)new_tid) == new_tid_v) {
+            return ((korp_tid)old_tid);
         }
     }
     return 0;
 }
 
 void insert_parent_child(ssize_t tid, ssize_t child_tid) {
-    LOGV(ERROR) << fmt::format("insert_parent_child {} {}", tid, child_tid);
+    SPDLOG_ERROR("insert_parent_child {} {}", tid, child_tid);
     wamr->child_tid_map[child_tid] = tid;
 };
 
@@ -359,14 +358,14 @@ void lightweight_checkpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;
     }
-    LOGV(DEBUG) << "checkpoint " << exec_env << " func(" << fid << ")";
+    SPDLOG_DEBUG("checkpoint {}, func({})", ((void *)exec_env), fid);
     if (fid == -1) {
-        LOGV(DEBUG) << "skip checkpoint";
+        SPDLOG_DEBUG("skip checkpoint");
         return;
     }
 
     std::unique_lock as_ul(wamr->as_mtx);
-    wamr->lwcp_list[exec_env->handle]++;
+    wamr->lwcp_list[((uint64_t)exec_env->handle)]++;
     wamr->ready++;
 }
 
@@ -378,20 +377,20 @@ void lightweight_uncheckpoint(WASMExecEnv *exec_env) {
     if (((AOTFrame *)exec_env->cur_frame)) {
         fid = (int)((AOTFrame *)exec_env->cur_frame)->func_index;
     }
-    LOGV(DEBUG) << "uncheckpoint " << exec_env << " func(" << fid << ")";
+    SPDLOG_DEBUG("uncheckpoint {} func({})", ((void *)exec_env), fid);
     if (fid == -1) {
-        LOGV(DEBUG) << "skip uncheckpoint";
+        SPDLOG_DEBUG("skip uncheckpoint");
         return;
     }
     std::unique_lock as_ul(wamr->as_mtx);
-    if (wamr->lwcp_list[exec_env->handle] == 0) {
+    if (wamr->lwcp_list[((uint64_t)exec_env->handle)] == 0) {
         // someone has reset our counter
         // which means we've been serialized
         // so we shouldn't return back to the wasm state
         std::condition_variable cv;
         cv.wait(as_ul);
     }
-    wamr->lwcp_list[exec_env->handle]--;
+    wamr->lwcp_list[((uint64_t)exec_env->handle)]--;
     wamr->ready--;
 }
 
@@ -403,14 +402,14 @@ void print_stack(AOTFrame *frame) {
         }
         fprintf(stderr, "\n");
     } else {
-        LOGV(ERROR) << fmt::format("no cur_frame");
+        SPDLOG_ERROR("no cur_frame");
     }
 }
 
 void print_exec_env_debug_info(WASMExecEnv *exec_env) {
-    LOGV(DEBUG) << fmt::format("----");
+    SPDLOG_DEBUG("----");
     if (!exec_env) {
-        LOGV(ERROR) << fmt::format("no exec_env");
+        SPDLOG_ERROR("no exec_env");
         return;
     }
     if (exec_env->cur_frame) {
@@ -418,18 +417,18 @@ void print_exec_env_debug_info(WASMExecEnv *exec_env) {
         auto p = (AOTFrame *)exec_env->cur_frame;
         while (p) {
             uint32 *frame_lp = p->lp;
-            // LOGV(ERROR) << (size_t)((size_t)frame_lp - (size_t)p);
-            LOGV(DEBUG) << fmt::format("depth {}, function {}, ip {}, lp {}, sp {}", call_depth, p->func_index,
-                                       p->ip_offset, (void *)frame_lp, (void *)p->sp);
+            SPDLOG_ERROR("{}", (size_t)((size_t)frame_lp - (size_t)p));
+            SPDLOG_DEBUG("depth {}, function {}, ip {}, lp {}, sp {}", call_depth, p->func_index, p->ip_offset,
+                         (void *)frame_lp, (void *)p->sp);
             call_depth++;
             print_stack(p);
 
             p = p->prev_frame;
         }
     } else {
-        LOGV(ERROR) << fmt::format("no cur_frame");
+        SPDLOG_ERROR("no cur_frame");
     }
-    LOGV(DEBUG) << fmt::format("----");
+    SPDLOG_DEBUG("----");
 }
 
 void print_memory(WASMExecEnv *exec_env) {
@@ -441,7 +440,7 @@ void print_memory(WASMExecEnv *exec_env) {
     for (size_t j = 0; j < module_inst->memory_count; j++) {
         auto mem = module_inst->memories[j];
         if (mem) {
-            LOGV(INFO) << fmt::format("memory data size {}", mem->memory_data_size);
+            SPDLOG_INFO("memory data size {}", mem->memory_data_size);
             if (mem->memory_data_size >= 70288 + 64) {
                 // for (int *i = (int *)(mem->memory_data + 70288); i < (int *)(mem->memory_data + 70288 + 64); ++i) {
                 //     fprintf(stdout, "%d ", *i);
@@ -486,7 +485,7 @@ void sigtrap_handler(int sig) {
 void register_sigtrap() {
 #if defined(_WIN32)
     signal(SIGILL, sigtrap_handler);
-    LOGV_DEBUG << "SIGILL registered";
+    SPDLOG_DEBUG("SIGILL registered");
 #else
     struct sigaction sa {};
     sigemptyset(&sa.sa_mask);
@@ -500,22 +499,22 @@ void register_sigtrap() {
 
     // Register the signal handler for SIGTRAP
     if (sigaction(SIGTRAP, &sa, nullptr) == -1) {
-        perror("Error: cannot handle SIGTRAP");
+        SPDLOG_ERROR("Error: cannot handle SIGTRAP");
         exit(-1);
     } else {
         if (sigaction(SIGSYS, &sa, nullptr) == -1) {
-            perror("Error: cannot handle SIGSYS");
+            SPDLOG_ERROR("Error: cannot handle SIGSYS");
             exit(-1);
         } else {
             // if (sigaction(SIGSEGV, &sb, nullptr) == -1) {
-            //     perror("Error: cannot handle SIGSEGV");
+            //    SPDLOG_ERROR("Error: cannot handle SIGSEGV");
             //     exit(-1);
             // } else {
-            //     LOGV_DEBUG << "SIGSEGV registered";
+            //     SPDLOG_DEBUG( "SIGSEGV registered");
             // }
-            LOGV_DEBUG << "SIGSYS registered";
+            SPDLOG_DEBUG("SIGSYS registered");
         }
-        LOGV_DEBUG << "SIGTRAP registered";
+        SPDLOG_DEBUG("SIGTRAP registered");
     }
 #endif
 }
@@ -531,7 +530,7 @@ void sigint_handler(int sig) {
     wamr->replace_nop_with_int3();
 #if defined(_WIN32)
     signal(SIGINT, SIG_DFL);
-    LOGV_DEBUG << "SIGINT registered";
+    SPDLOG_DEBUG("SIGINT registered");
 #else
     struct sigaction sa {};
     // Clear the structure
@@ -542,7 +541,7 @@ void sigint_handler(int sig) {
     sa.sa_flags = SA_RESTART;
     // Register the signal handler for SIGINT
     if (sigaction(SIGINT, &sa, nullptr) == -1) {
-        perror("Error: cannot restore SIGINT SIG_DFL");
+        SPDLOG_ERROR("Error: cannot restore SIGINT SIG_DFL");
     }
 #endif
 }

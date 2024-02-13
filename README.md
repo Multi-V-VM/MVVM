@@ -7,8 +7,8 @@
 ## To checkpoint and migrate a WAMR nano process
 ```bash
 python3 ../artifact/common_util.py # return $recv is 193
-LOGV=1 ./MVVM_checkpoint -t ./test/tcp_client.aot -f 193 -c 0 -x 10 -a "10" -e OMP_NUM_THREADS=1 -i
-LOGV=1 ./MVVM_restore -t ./test/tcp_client.aot # All the wasi env will be restored
+SPDLOG_LEVEL=debug ./MVVM_checkpoint -t ./test/tcp_client.aot -f 193 -c 0 -x 10 -a "10" -e OMP_NUM_THREADS=1 -i
+SPDLOG_LEVEL=debug ./MVVM_restore -t ./test/tcp_client.aot # All the wasi env will be restored
 ```
 1. -t Target: The path to the WASM interpreter or AOT executable
 2. -i Debug Mode: Switch on for debugging

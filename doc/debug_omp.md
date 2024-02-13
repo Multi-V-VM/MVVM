@@ -20,8 +20,8 @@ cd /mnt/wasm-openmp-examples
 
    - Compile the project and copy the resulting libraries to the WASI SDK system root:
 
-  ```bash
-     make
+```bash
+make
 cp build/runtime/src/lib* /opt/wasi-sdk/share/wasi-sysroot/lib/wasm32-wasi-threads/
 ```
 
@@ -31,15 +31,14 @@ cp build/runtime/src/lib* /opt/wasi-sdk/share/wasi-sysroot/lib/wasm32-wasi-threa
 
    - Clean and prepare the MVVM build directory:
 
-  ```bash
-     cd /mnt/MVVM/build
+```bash
+cd /mnt/MVVM/build
 rm -rf bench/nas-prefix/ && ninja nas && ninja mg_compile
 ```
 
    - Execute MVVM-specific build commands:
 
-```
-     Copy code
+```bash
 ninja MVVM_checkpoint MVVM_restore
 ```
 
@@ -47,7 +46,7 @@ ninja MVVM_checkpoint MVVM_restore
 
    - Run the MVVM checkpoint with specific arguments and environment variables:
 
-  ```bash
+```bash
 LOGV=1 ../build/MVVM_checkpoint -t bench/mg.aot -a -g12,-n1000 -e OMP_NUM_THREADS=2 -e KMP_DEBUG=511
 ```
 
