@@ -1,17 +1,16 @@
 //
 // Created by victoryang00 on 4/8/23.
 //
-
 #include "aot_runtime.h"
-#include "logging.h"
 #include "wamr.h"
-#include <cstdio>
 #include <cxxopts.hpp>
 #include <sstream>
 #include <string>
 #include <thread>
-#if !defined(_WIN32)
+#if WASM_ENABLE_LIB_PTHREAD != 0
 #include "thread_manager.h"
+#endif
+#if !defined(_WIN32)
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #endif
@@ -24,20 +23,22 @@ std::mutex as_mtx;
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     auto start = std::chrono::high_resolution_clock::now();
-#if !defined(_WIN32)
+#if WASM_ENABLE_LIB_PTHREAD != 0
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
     // fill vector
 
     std::unique_lock as_ul(wamr->as_mtx);
-    LOGV(DEBUG) << fmt::format("get lock");
+    SPDLOG_DEBUG("get lock");
     wamr->ready++;
-    wamr->lwcp_list[instance->handle]++;
+    wamr->lwcp_list[((uint64_t)instance->handle)]++;
     if (wamr->ready == all_count) {
         wamr->should_snapshot = true;
     }
     // If we're not all ready
-    LOGV(DEBUG) << fmt::format("thread {}, with {} ready out of {} total", instance->handle, wamr->ready, all_count);
+    SPDLOG_DEBUG("thread {}, with {} ready out of {} total", instance->handle, wamr->ready, all_count);
+#endif
+#if !defined(_WIN32)
     if (!wamr->socket_fd_map_.empty() && wamr->should_snapshot) {
         // tell gateway to keep alive the server
         struct sockaddr_in addr {};
@@ -65,9 +66,9 @@ void serialize_to_file(WASMExecEnv *instance) {
                 src_addr = wamr->local_addr;
                 src_addr.port = sock_data.socketAddress.port;
             }
-            LOGV(INFO) << "addr: " << tmp_fd << "  "
-                       << fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3])
-                       << " port: " << src_addr.port;
+            SPDLOG_INFO("addr: ", tmp_fd,
+                        fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]),
+                        " port: ", src_addr.port);
 
             wamr->op_data.addr[idx][0] = src_addr;
             tmp_ip4 = fmt::format("{}.{}.{}.{}", sock_data.socketSentToData.dest_addr.ip.ip4[0],
@@ -129,16 +130,16 @@ void serialize_to_file(WASMExecEnv *instance) {
                     }
                 }
             }
-            LOGV(INFO) << "dest_addr: "
-                       << fmt::format("{}.{}.{}.{}", wamr->op_data.addr[idx][1].ip4[0],
-                                      wamr->op_data.addr[idx][1].ip4[1], wamr->op_data.addr[idx][1].ip4[2],
-                                      wamr->op_data.addr[idx][1].ip4[3])
-                       << " dest_port: " << wamr->op_data.addr[idx][1].port;
+            SPDLOG_DEBUG("dest_addr: ",
+                         fmt::format("{}.{}.{}.{}", wamr->op_data.addr[idx][1].ip4[0],
+                                     wamr->op_data.addr[idx][1].ip4[1], wamr->op_data.addr[idx][1].ip4[2],
+                                     wamr->op_data.addr[idx][1].ip4[3]),
+                         " dest_port: ", wamr->op_data.addr[idx][1].port);
             wamr->op_data.size += 1;
         }
         // Create a socket
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-            LOGV(ERROR) << "socket error";
+            SPDLOG_ERROR(socket error");
             throw std::runtime_error("socket error");
         }
 
@@ -147,49 +148,33 @@ void serialize_to_file(WASMExecEnv *instance) {
 
         // Convert IPv4 and IPv6 addresses from text to binary form
         if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
-            LOGV(ERROR) << "AF_INET not supported";
+            SPDLOG_ERROR(AF_INET not supported");
             exit(EXIT_FAILURE);
         }
         // Connect to the server
         if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-            LOGV(ERROR) << "Connection Failed " << errno;
+            SPDLOG_ERROR(Connection Failed " << errno);
             exit(EXIT_FAILURE);
         }
 
         LOGV(INFO) << "Connected successfully";
         rc = send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0);
         if (rc == -1) {
-            LOGV(ERROR) << "send error";
+            SPDLOG_ERROR(send error");
             exit(EXIT_FAILURE);
         }
 
         // Clean up
         close(fd);
     }
+#endif
+#if WASM_ENABLE_LIB_PTHREAD != 0
     if (wamr->ready < all_count) {
         // Then wait for someone else to get here and finish the job
         std::condition_variable as_cv;
         as_cv.wait(as_ul);
     }
-    // If we're all ready
-    // double check
-    // {
-    //     auto ready_count = 0;
-    //     for (auto [k, v] : wamr->lwcp_list) {
-    //         LOGV(DEBUG) << fmt::format("{}: {}", k, v);
-    //         if (v > 0)
-    //             ready_count++;
-    //     }
-    //     if (ready_count != all_count) {
-    //         LOGV(DEBUG) << fmt::format(
-    //             "we have a discrepancy between ready count and number of threads that say they are");
-    //         LOGV(DEBUG) << fmt::format("ready: {}, all: {}", ready_count, all_count);
-    //         // not actually ready
-    //         std::condition_variable as_cv;
-    //         as_cv.wait(as_ul);
-    //     }
-    // }
-    // wasm_cluster_suspend_all_except_self(cluster, instance);
+    wasm_cluster_suspend_all_except_self(cluster, instance);
     auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
     while (elem) {
         instance = elem;
@@ -197,7 +182,7 @@ void serialize_to_file(WASMExecEnv *instance) {
         auto a = new WAMRExecEnv();
         dump(a, instance);
         as.emplace_back(a);
-#if !defined(_WIN32)
+#if WASM_ENABLE_LIB_PTHREAD != 0
         elem = (WASMExecEnv *)bh_list_elem_next(elem);
     }
     // finish filling vector
@@ -207,7 +192,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     auto end = std::chrono::high_resolution_clock::now();
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    LOGV(INFO) << fmt::format("Snapshot time: {} s", dur.count() / 1000000.0);
+    SPDLOG_DEBUG("Snapshot time: {} s", dur.count() / 1000000.0);
     exit(EXIT_SUCCESS);
 }
 
@@ -241,7 +226,7 @@ int main(int argc, char *argv[]) {
             res = filename.substr(0, dotPos);
         } else {
             // If there's no period in the string, it means there's no extension.
-            LOGV(ERROR) << "No extension found.";
+            SPDLOG_ERROR("No extension found.");
         }
         return res;
     };
@@ -263,7 +248,7 @@ int main(int argc, char *argv[]) {
     is_debug = result["is_debug"].as<bool>();
     stop_func_index = result["function"].as<int>();
     if (snapshot_threshold != 0 && stop_func_index != 0) {
-        LOGV(ERROR) << "Conflict arguments, please choose either count or function";
+        SPDLOG_DEBUG("Conflict arguments, please choose either count or function");
         exit(EXIT_FAILURE);
     }
 
@@ -272,7 +257,7 @@ int main(int argc, char *argv[]) {
     arg.insert(arg.begin(), target);
 
     for (const auto &e : arg) {
-        LOGV(INFO) << "arg " << e;
+        SPDLOG_DEBUG("arg {}", e);
     }
     register_sigtrap();
 
@@ -302,7 +287,7 @@ int main(int argc, char *argv[]) {
 
     // Register the signal handler for SIGINT
     if (sigaction(SIGINT, &sa, nullptr) == -1) {
-        LOGV(ERROR) << "Error: cannot handle SIGINT";
+        SPDLOG_ERROR("Error: cannot handle SIGINT");
         return 1;
     }
 #endif
@@ -317,6 +302,6 @@ int main(int argc, char *argv[]) {
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     // print in s
-    LOGV(INFO) << fmt::format("Execution time: {} s", dur.count() / 1000000.0);
+    SPDLOG_INFO("Execution time: {} s", dur.count() / 1000000.0);
     return 0;
 }

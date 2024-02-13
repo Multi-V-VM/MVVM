@@ -48,6 +48,8 @@ void update_socket_fd_address(int, struct SocketAddrPool *);
 void init_gateway(struct SocketAddrPool *address);
 void set_tcp();
 int get_sock_fd(int);
+#endif
+#if WASM_ENABLE_LIB_PTHREAD != 0
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking);
 void insert_sync_op_atomic_notify(wasm_exec_env_t exec_env, const uint32 *mutex, uint32);
 void insert_sync_op_atomic_wait(wasm_exec_env_t exec_env, const uint32 *mutex, uint64,bool);
@@ -91,6 +93,7 @@ extern bool is_debug;
 extern int stop_func_index;
 extern int cur_func_count;
 void print_memory(WASMExecEnv *);
+void print_exec_env_debug_info(WASMExecEnv *);
 
 #ifdef __cplusplus
 }

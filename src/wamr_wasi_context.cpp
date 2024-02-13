@@ -2,7 +2,6 @@
 // Created by victoryang00 on 5/2/23.
 //
 #include "wamr_wasi_context.h"
-#include "logging.h"
 #include "platform_wasi_types.h"
 #include "wamr.h"
 #include <chrono>
@@ -64,7 +63,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
     }
     for (auto &[k, v] : wamr->child_tid_map) {
         child_tid_map[k] = v;
-        LOGV(ERROR) << "child_tid_map: " << k << " " << v;
+        SPDLOG_DEBUG("child_tid_map: {} {}", k, v);
     }
     // only one thread has fd_map
     if (wamr->should_snapshot)
@@ -99,7 +98,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
                         rc = wamr->invoke_recvfrom(fd, &buf, 1024, 0, (struct sockaddr *)&sockaddr6, &sockaddr6_size);
                     }
                     if (rc == -1) {
-                        LOGV(ERROR) << "recvfrom error";
+                        SPDLOG_ERROR("recvfrom error");
                         return;
                     }
                 }
@@ -111,7 +110,7 @@ void WAMRWASIContext::dump_impl(WASIArguments *env) {
                 while (wamr->socket_fd_map_[fd].is_collection) { // drain tcp socket
                     rc = wamr->invoke_recv(fd, &buf, 1024, 0);
                     if (rc == -1) {
-                        LOGV(ERROR) << "recv error";
+                        SPDLOG_ERROR("recv error");
                         return;
                     }
                 }
@@ -131,24 +130,23 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
         wamr->should_snapshot = true;
 #endif
         for (auto &[k, v] : tid_start_arg_map) {
-            LOGV(ERROR) << "tid_start_arg_map: " << k << " " << v.second;
+            SPDLOG_ERROR("tid_start_arg_map: {}, {}", k, v.second);
             wamr->tid_start_arg_map[k] = v;
         }
         for (auto &[k, v] : child_tid_map) {
             wamr->child_tid_map[k] = v;
-            LOGV(ERROR) << "child_tid_map: " << k << " " << v;
+            SPDLOG_ERROR("child_tid_map: {}, {}", k, v);
         }
         for (auto [fd, res] : this->fd_map) {
             // differ from path from file
             auto path = std::get<0>(res);
-            LOGV(INFO) << "fd: " << fd << " path: " << path;
+            SPDLOG_INFO("fd: {} path: {}", fd, path);
             for (auto [flags, offset, op] : std::get<1>(res)) {
                 // differ from path from file
-                LOGV(INFO) << "fd: " << fd << " path: " << path << " flag: " << flags << " op: " << op;
                 switch (op) {
                 case MVVM_FOPEN:
                     r = wamr->invoke_fopen(path, fd);
-                    LOGV(ERROR) << r;
+                    SPDLOG_ERROR(r);
                     if (r != fd)
                         wamr->invoke_frenumber(r, fd);
                     wamr->fd_map_[fd] = res;

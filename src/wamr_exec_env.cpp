@@ -4,7 +4,7 @@
 
 extern WAMRInstance *wamr;
 void WAMRExecEnv::dump_impl(WASMExecEnv *env) {
-    this->cur_count = env->handle;
+    this->cur_count = ((uint64_t)env->handle);
     dump(&this->module_inst, reinterpret_cast<WASMModuleInstance *>(env->module_inst));
     flags = env->suspend_flags.flags;
     aux_boundary = env->aux_stack_boundary.boundary;
@@ -32,7 +32,7 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
         std::vector<AOTFrame *> replay_frames;
         for (const auto &dump_frame : frames) {
             if (!aot_alloc_frame(env, dump_frame->function_index)) {
-                LOGV(INFO) << "restore error: aot_alloc_frame failed";
+                SPDLOG_DEBUG("restore error: aot_alloc_frame failed");
                 exit(-1);
             }
             auto cur_frame = (AOTFrame *)env->cur_frame;
@@ -53,15 +53,15 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
         auto module_inst = (WASMModuleInstance *)env->module_inst;
         auto get_function = [&](size_t function_index) {
             if (0 <= function_index && function_index < module_inst->e->function_count) {
-                LOGV(INFO) << fmt::format("function_index {} restored", function_index);
+                SPDLOG_DEBUG("function_index {} restored", function_index);
                 auto function = &module_inst->e->functions[function_index];
                 if (function->is_import_func) {
-                    LOGV(ERROR) << fmt::format("function_index {} is_import_func", function_index);
+                    SPDLOG_ERROR("function_index {} is_import_func", function_index);
                     exit(-1);
                 }
                 return function;
             } else {
-                LOGV(ERROR) << fmt::format("function_index {} invalid", function_index);
+                SPDLOG_ERROR("function_index {} invalid", function_index);
                 exit(-1);
             };
         };
@@ -71,7 +71,7 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
             if (frame) {
                 frame->prev_frame = prev_frame;
             } else {
-                LOGV(ERROR) << "wasm operand stack overflow";
+                SPDLOG_ERROR("wasm operand stack overflow");
                 exit(-1);
             }
             return frame;
@@ -93,7 +93,7 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
                            cur_wasm_func->max_block_num * (uint32)sizeof(WASMBranchBlock) / 4;
             frame_size = wasm_interp_interp_frame_size(all_cell_num);
             if (!(frame = ALLOC_FRAME(env, frame_size, prev_frame))) {
-                LOGV(ERROR) << "ALLOC_FRAME failed";
+                SPDLOG_ERROR("ALLOC_FRAME failed");
                 exit(-1);
             }
             restore(dump_frame.get(), frame);
@@ -101,5 +101,5 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
         }
         env->cur_frame = prev_frame;
     }
-    env->handle = this->cur_count;
+    env->handle = ((korp_tid)this->cur_count);
 }

@@ -4,7 +4,6 @@
 
 #ifndef MVVM_WAMR_MEMORY_INSTANCE_H
 #define MVVM_WAMR_MEMORY_INSTANCE_H
-#include "logging.h"
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <memory>
@@ -36,7 +35,6 @@ struct WAMRMemoryInstance {
     void dump_impl(WASMMemoryInstance *env) {
         module_type = env->module_type;
         ref_count = env->ref_count;
-        LOGV(ERROR) << "ref_count:" << ref_count;
         num_bytes_per_page = env->num_bytes_per_page;
         cur_page_count = env->cur_page_count;
         max_page_count = env->max_page_count;

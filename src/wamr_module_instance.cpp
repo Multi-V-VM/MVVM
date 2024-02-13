@@ -14,14 +14,14 @@ void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
         memories.push_back(local_mem);
     }
     for (int i = 0; i < env->table_count; i++) {
-        printf("Dumping table %d\n", env->tables[i]->cur_size);
+        SPDLOG_DEBUG("Dumping table {}", env->tables[i]->cur_size);
         tables.push_back(*env->tables[i]);
     }
     // }
     global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
     // tables = std::vector<std::unique_ptr<WASMTableInstance>>(env->tables, env->tables + env->table_count);
     dump(&wasi_ctx, &env->module->wasi_args);
-    fprintf(stderr, "\nDumped global data ptr: %p\n", env->global_data);
+    SPDLOG_DEBUG("Dumped global data ptr: {}", ((void*)env->global_data));
     if (wamr->is_aot) {
         auto module = (AOTModule *)env->module;
         aux_data_end_global_index = module->aux_data_end_global_index;
@@ -42,7 +42,6 @@ void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
         aux_stack_size = module->aux_stack_size;
     }
     dump(&global_table_data, env->global_table_data.memory_instances);
-    fprintf(stderr, "\nDumped global data size: %d\n", env->table_count);
 }
 
 void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {

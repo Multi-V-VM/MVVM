@@ -9,21 +9,78 @@
 #include "aot_runtime.h"
 #endif
 #include "bh_read_file.h"
-#include "logging.h"
 #include "wamr_exec_env.h"
 #include "wamr_export.h"
 #include "wamr_read_write.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
+#include <algorithm>
 #include <chrono>
 #include <condition_variable>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <functional>
+#include <iostream>
 #include <iterator>
+#include <list>
 #include <mutex>
 #include <numeric>
 #include <ranges>
 #include <semaphore>
+#include <spdlog/spdlog.h>
+#include <sstream>
+#include <string>
 #include <tuple>
+#if !defined(_WIN32)
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#else
+#include <winsock2.h>
+#endif
+
+#ifndef __APPLE__
+/** Barry's work*/
+struct Enumerate : std::ranges::range_adaptor_closure<Enumerate> {
+    template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {
+        return std::views::zip(std::views::iota(0), (R &&)r);
+    }
+};
+#else
+struct Enumerate : std::__range_adaptor_closure<Enumerate> {
+    template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {
+        return std::views::zip(std::views::iota(0), (R &&)r);
+    }
+};
+#endif
+inline constexpr Enumerate enumerate;
+
+#define MVVM_SOCK_ADDR "172.17.0.1"
+#define MVVM_SOCK_ADDR6 "fe80::42:aeff:fe1f:b579"
+#define MVVM_SOCK_MASK 24
+#define MVVM_SOCK_MASK6 48
+#define MVVM_SOCK_PORT 1235
+#define MVVM_MAX_ADDR 5
+#define MVVM_SOCK_INTERFACE "docker0"
+
+enum opcode {
+    MVVM_SOCK_SUSPEND = 0,
+    MVVM_SOCK_SUSPEND_TCP_SERVER = 1,
+    MVVM_SOCK_RESUME = 2,
+    MVVM_SOCK_RESUME_TCP_SERVER = 3,
+    MVVM_SOCK_INIT = 4,
+    MVVM_SOCK_FIN = 5
+};
+struct mvvm_op_data {
+    enum opcode op;
+    bool is_tcp;
+    int size;
+    SocketAddrPool addr[MVVM_MAX_ADDR][2];
+};
+bool is_ip_in_cidr(const char *base_ip, int subnet_mask_len, uint32_t ip);
+bool is_ipv6_in_cidr(const char *base_ip_str, int subnet_mask_len, struct in6_addr *ip);
 
 class WAMRInstance {
 public:
@@ -118,4 +175,5 @@ public:
     int invoke_recvfrom(int sockfd, uint8 **buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
     ~WAMRInstance();
 };
+
 #endif // MVVM_WAMR_H

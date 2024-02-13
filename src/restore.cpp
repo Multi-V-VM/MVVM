@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
             res = filename.substr(0, dotPos);
         } else {
             // If there's no period in the string, it means there's no extension.
-            LOGV(ERROR) << "No extension found.";
+            SPDLOG_ERROR("No extension found.");
         }
         return res;
     };
@@ -67,9 +67,8 @@ int main(int argc, char **argv) {
         int fd = 0;
         bool is_tcp_server;
         SocketAddrPool src_addr = wamr->local_addr;
-        LOGV(INFO) << "new ip is "
-                   << fmt::format("{}.{}.{}.{}:{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3],
-                                  src_addr.port);
+        SPDLOG_DEBUG("new ip {}.{}.{}.{}:{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3],
+                     src_addr.port);
         // got from wamr
         for (auto &[fd, socketMetaData] : a[a.size() - 1]->module_inst.wasi_ctx.socket_fd_map) {
             wamr->op_data.is_tcp |= socketMetaData.type;
@@ -82,7 +81,7 @@ int main(int argc, char **argv) {
 
         // Create a socket
         if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-            LOGV(ERROR) << "socket error";
+            SPDLOG_ERROR("socket error");
             throw std::runtime_error("socket error");
         }
         addr.sin_family = AF_INET;
@@ -90,22 +89,22 @@ int main(int argc, char **argv) {
 
         // Convert IPv4 and IPv6 addresses from text to binary form
         if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
-            LOGV(ERROR) << "Invalid address/ Address not supported";
+            SPDLOG_ERROR("Invalid address/ Address not supported");
             exit(EXIT_FAILURE);
         }
 
         if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-            LOGV(ERROR) << "Connection Failed " << errno;
+            SPDLOG_ERROR("Connection Failed " << errno);
             exit(EXIT_FAILURE);
         }
         // send the fd
 
         if (send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0) == -1) {
-            LOGV(ERROR) << "Send Error";
+            SPDLOG_ERROR("Send Error");
             exit(EXIT_FAILURE);
         }
         close(fd);
-        LOGV(ERROR) << "sent the resume signal";
+        SPDLOG_ERROR("sent the resume signal");
     }
 #endif
     // get current time
@@ -117,5 +116,5 @@ int main(int argc, char **argv) {
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     // print in s
-    LOGV(INFO) << fmt::format("Execution time: {} s", dur.count() / 1000000.0);
+    SPDLOG_INFO("Execution time: {} s", dur.count() / 1000000.0);
 }

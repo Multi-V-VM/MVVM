@@ -10,7 +10,7 @@
 #include <memory>
 extern WAMRInstance *wamr;
 void WAMRInterpFrame::dump_impl(WASMInterpFrame *env) {
-    LOGV(ERROR) << "not impl";
+    SPDLOG_ERROR("not impl");
     exit(-1);
 }
 std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecEnv *exec_env, WASMInterpFrame *frame,
@@ -26,7 +26,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     }
 
     if (env->function->is_import_func) {
-        // LOGV(ERROR) << fmt::format("is_import_func");
+        SPDLOG_ERROR("is_import_func");
         exit(-1);
     }
 
@@ -34,8 +34,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     auto cur_func = env->function;
     WASMFunction *cur_wasm_func = cur_func->u.func;
 
-    LOGV(INFO) << fmt::format("ip_offset {} sp_offset {}, code start {}", ip, sp,
-                              (void *)wasm_get_func_code(env->function));
+    SPDLOG_INFO("ip_offset {} sp_offset {}, code start {}", ip, sp, (void *)wasm_get_func_code(env->function));
     env->ip = wasm_get_func_code(env->function) + ip;
 
     env->sp_bottom = env->lp + cur_func->param_cell_num + cur_func->local_cell_num;
@@ -45,8 +44,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     memcpy(env->lp, stack_frame.data(), stack_frame.size() * sizeof(uint32));
 
     // print_csps(csp);
-    // LOGV(INFO) << fmt::format("wasm_replay_csp_bytecode {} {} {}", (void *)wamr->get_exec_env(), (void *)env,
-    //                           (void *)env->ip);
+    SPDLOG_DEBUG("wasm_replay_csp_bytecode {} {} {}", (void *)wamr->get_exec_env(), (void *)env, (void *)env->ip);
     env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
 
     if (env->function->u.func && !env->function->is_import_func && env->sp_bottom) {
@@ -56,16 +54,15 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         int i = 0;
         for (auto &&csp_item : csp) {
             restore(csp_item.get(), env->csp_bottom + i);
-            // LOGV(ERROR) << "csp_bottom" << ((uint8 *)env->csp_bottom + i) -
-            // wamr->get_exec_env()->wasm_stack.s.bottom;
+            SPDLOG_ERROR("csp_bottom {}", ((uint8 *)env->csp_bottom + i) - wamr->get_exec_env()->wasm_stack.s.bottom);
             i++;
         }
 
         env->csp = env->csp_bottom + csp.size();
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
     }
-    LOGV(INFO) << fmt::format("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip,
-                              (void *)env->sp, (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
+    SPDLOG_INFO("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip, (void *)env->sp,
+                (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
 }
 
 #if WASM_ENABLE_AOT != 0
@@ -74,8 +71,8 @@ void WAMRInterpFrame::dump_impl(AOTFrame *env) {
     ip = env->ip_offset;
     sp = env->sp - env->lp; // offset to the wasm_stack_top
 
-    //    LOGV(INFO) << fmt::format("function_index {} ip_offset {} lp {} sp {} sp_offset {}", env->func_index, ip,
-    //                              (void *)env->lp, (void *)env->sp, sp);
+    SPDLOG_INFO("function_index {} ip_offset {} lp {} sp {} sp_offset {}", env->func_index, ip, (void *)env->lp,
+                (void *)env->sp, sp);
 
     stack_frame = std::vector(env->lp, env->sp);
 
@@ -85,42 +82,8 @@ void WAMRInterpFrame::dump_impl(AOTFrame *env) {
     std::cout << std::endl;
 }
 void WAMRInterpFrame::restore_impl(AOTFrame *env) {
-    LOGV(ERROR) << "not impl";
+    SPDLOG_ERROR("not impl");
     exit(-1);
-    // env->function = reinterpret_cast<WASMFunctionInstance *>(malloc(sizeof(WASMFunctionInstance)));
-    // restore(&function, env->function);
-
-    // if (env->function)
-    //     wamr->set_func(env->function->u.func);
-    // if (ip) {
-    //     //        LOGV(ERROR)<<"env_ip "<<env->ip << " "<<env->function->u.func->code + ip;
-    //     env->ip = env->function->u.func->code + ip;
-    // }
-    // if (sp) {
-    //     //        LOGV(ERROR)<<"env_sp "<<env->sp<<" "<<reinterpret_cast<uint32 *>((uint8
-    //     //        *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
-    //     env->sp = reinterpret_cast<uint32 *>((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom + sp);
-    // }
-    // int i = 0;
-    // env->sp_bottom = ((uint32 *)env->lp) + env->function->param_cell_num + env->function->local_cell_num;
-    // env->csp_bottom = static_cast<WASMBranchBlock *>(malloc(sizeof(WASMBranchBlock) * csp.size()));
-
-    // if (env->ip && env->function->u.func && !env->function->is_import_func && env->sp_bottom) {
-    //     env->sp_boundary = env->sp_bottom + env->function->u.func->max_stack_cell_num;
-    //     //        env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
-    //     std::reverse(csp.begin(), csp.end());
-    //     for (auto &&csp_item : csp) {
-    //         restore(csp_item.get(), env->csp_bottom + i);
-    //         LOGV(ERROR) << "csp_bottom" << ((uint8 *)env->csp_bottom + i) -
-    //         wamr->get_exec_env()->wasm_stack.s.bottom; i++;
-    //     }
-    //     env->csp = env->csp_bottom + csp.size() - 1;
-    //     env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
-    //     LOGV(DEBUG) << env->function->u.func->field_name << " csp_bottom" << env->csp_bottom << " sp_bottom"
-    //                 << env->sp_bottom << " sp" << sp << ((uint8 *)env->sp) -
-    //                 wamr->get_exec_env()->wasm_stack.s.bottom
-    //                 << " lp" << lp;
-    // }
 }
 
 static bool check_buf(const uint8 *buf, const uint8 *buf_end, uint32 length, char *error_buf, uint32 error_buf_size) {
@@ -248,7 +211,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
     const uint8 *frame_ip = wasm_get_func_code(cur_func), *frame_ip_end = wasm_get_func_code_end(cur_func);
 
     if (!(frame_ip <= target_addr && target_addr <= frame_ip_end)) {
-        LOGV(ERROR) << "target_addr invalid";
+        SPDLOG_ERROR("target_addr invalid");
         exit(-1);
     }
 
@@ -338,7 +301,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             cell_num = wasm_value_type_cell_num(value_type);
             if (!wasm_loader_find_block_addr(exec_env, (BlockAddr *)exec_env->block_addr_cache, frame_ip, (uint8 *)-1,
                                              LABEL_TYPE_BLOCK, &else_addr, &end_addr)) {
-                LOGV(ERROR) << "FAULT";
+                SPDLOG_ERROR("wasm_loader_find_block_addr");
                 exit(-1);
             }
             PUSH_CSP(LABEL_TYPE_BLOCK, param_cell_num, cell_num, end_addr);
@@ -356,7 +319,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             cell_num = wasm_value_type_cell_num(value_type);
             if (!wasm_loader_find_block_addr(exec_env, (BlockAddr *)exec_env->block_addr_cache, frame_ip, (uint8 *)-1,
                                              LABEL_TYPE_IF, &else_addr, &end_addr)) {
-                LOGV(ERROR) << "FAULT";
+                SPDLOG_DEBUG("FAULT");
                 exit(-1);
             }
 
@@ -379,7 +342,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         case EXT_OP_LOOP:
         case EXT_OP_IF:
             POP_I32();
-            LOGV(ERROR) << "FAULT";
+            SPDLOG_DEBUG("FAULT");
             exit(-1);
             break;
 
@@ -391,7 +354,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             if (csp.size() > 1) {
                 POP_CSP();
             } else {
-                LOGV(ERROR) << "FAULT";
+                SPDLOG_DEBUG("FAULT");
                 exit(-1);
             }
             break;
@@ -412,13 +375,13 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
 
 #if WASM_ENABLE_FAST_INTERP == 0
         case EXT_OP_BR_TABLE_CACHE:
-            LOGV(ERROR) << "FAULT";
+            SPDLOG_DEBUG("FAULT");
             exit(-1);
             break;
 #endif
 
         case WASM_OP_RETURN:
-            LOGV(ERROR) << "FAULT";
+            SPDLOG_DEBUG("FAULT");
             exit(-1);
             break;
 
@@ -461,7 +424,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         case WASM_OP_REF_NULL:
         case WASM_OP_REF_IS_NULL:
         case WASM_OP_REF_FUNC:
-            LOGV(ERROR) << "FAULT";
+            SPDLOG_DEBUG("FAULT");
             exit(-1);
             break;
 #endif /* WASM_ENABLE_REF_TYPES */
@@ -478,7 +441,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
                 PUSH_I64();
                 break;
             default:
-                LOGV(ERROR) << "FAULT";
+                SPDLOG_DEBUG("FAULT");
                 exit(-1);
             }
             break;
@@ -499,7 +462,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
                 POP_I64()
                 break;
             default:
-                LOGV(ERROR) << "FAULT";
+                SPDLOG_DEBUG("FAULT");
                 exit(-1);
             }
             break;
@@ -794,7 +757,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         case WASM_OP_I64_EXTEND16_S:
         case WASM_OP_I64_EXTEND32_S:
             // TODO
-            LOGV(ERROR) << "FAULT";
+            SPDLOG_DEBUG("FAULT");
             exit(-1);
             break;
         case WASM_OP_MISC_PREFIX: {
@@ -849,7 +812,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
                 break;
 #endif /* WASM_ENABLE_REF_TYPES */
             default:
-                LOGV(ERROR) << "FAULT";
+                SPDLOG_DEBUG("FAULT");
                 exit(-1);
             }
             break;
@@ -858,7 +821,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
 #if WASM_ENABLE_SIMD != 0
 #if (WASM_ENABLE_WAMR_COMPILER != 0) || (WASM_ENABLE_JIT != 0)
         case WASM_OP_SIMD_PREFIX: {
-            LOGV(ERROR) << "FAULT";
+            SPDLOG_DEBUG("FAULT");
             exit(-1);
             /* TODO: shall we ceate a table to be friendly to branch
              * prediction */
@@ -951,7 +914,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
 
 #if WASM_ENABLE_SHARED_MEMORY != 0
         case WASM_OP_ATOMIC_PREFIX: {
-            LOGV(ERROR) << "FAULT";
+            SPDLOG_DEBUG("FAULT");
             exit(-1);
             /* atomic_op (1 u8) + memarg (2 u32_leb) */
             opcode = read_uint8(frame_ip);
@@ -986,7 +949,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
 #endif
 
         default:
-            LOGV(ERROR) << "FAULT";
+            SPDLOG_DEBUG("FAULT");
             exit(-1);
         }
     }
@@ -996,7 +959,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
     std::reverse(csp.begin(), csp.end());
     return csp;
 fail:
-    LOGV(ERROR) << "FAULT";
+    SPDLOG_DEBUG("FAULT");
     exit(-1);
 }
 #endif

@@ -5,7 +5,6 @@
 #ifndef MVVM_WAMR_WASI_CONTEXT_H
 #define MVVM_WAMR_WASI_CONTEXT_H
 
-#include "logging.h"
 #include "wamr_export.h"
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
@@ -34,7 +33,6 @@ struct WasiSockOpenData {
     int socktype;
     uint32 sockfd;
 };
-#if !defined(_WIN32)
 struct WasiSockSendToData {
     uint32 sock;
     std::vector<uint8_t> si_data;
@@ -50,7 +48,6 @@ struct WasiSockRecvFromData {
     WAMRWasiAddr src_addr;
     uint32 ro_data_len;
 };
-#endif
 struct SocketMetaData {
     int domain{};
     int type{};
@@ -60,10 +57,8 @@ struct SocketMetaData {
     int replay_start_index{};
     bool is_server = false;
     bool is_collection = false;
-#if !defined(_WIN32)
     WasiSockSendToData socketSentToData{}; //
     std::vector<WasiSockRecvFromData> socketRecvFromDatas;
-#endif
 };
 struct WAMRWASIContext {
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map;

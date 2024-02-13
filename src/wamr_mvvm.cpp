@@ -134,7 +134,7 @@ bool WAMRInstance::replace_int3_with_nop() {
 #endif
     }
 
-    // LOGV_DEBUG << "Making the code section executable";
+    SPDLOG_DEBUG("Making the code section executable");
     {
         int map_prot = MMAP_PROT_READ | MMAP_PROT_EXEC;
 
@@ -155,7 +155,7 @@ bool WAMRInstance::replace_mfence_with_nop() {
     auto code = static_cast<unsigned char *>(module->code);
     auto code_size = module->code_size;
 
-    // LOGV_DEBUG << "Making the code section writable";
+    SPDLOG_DEBUG("Making the code section writable");
     {
         int map_prot = MMAP_PROT_READ | MMAP_PROT_WRITE;
 

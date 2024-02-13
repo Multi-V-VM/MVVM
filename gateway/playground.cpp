@@ -83,20 +83,31 @@ int main() {
     // new port
     // clear_block(dst_ip, src_ip, dstport, srcport);
 
-
     tcp_v_to_s = new TCPConnection(src_ip, dst_ip, srcport, dstport, iface, TCPConnection::ESTABLISHED);
 
-    while(true){
-        sleep(1);
-        auto payload = Payload();
-        tcp_v_to_s->Read(
-            payload
-        );
-        if (payload.GetSize() == 0)
-            continue;
-        tcp_v_to_s->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
-    }
-
+    bool closed = false;
+    backend_thread.emplace_back([&]() {
+        while (!closed) {
+            auto payload = Payload();
+            tcp_v_to_s->Read(payload);
+            if (tcp_v_to_s->GetStatus() == TCPConnection::CLOSING) {
+                closed = true;
+                return;
+            }
+            tcp_s_to_v->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
+        }
+    });
+    backend_thread.emplace_back([&]() {
+        while (!closed) {
+            auto payload = Payload();
+            tcp_s_to_v->Read(payload);
+            if (tcp_s_to_v->GetStatus() == TCPConnection::CLOSING) {
+                closed = true;
+                return;
+            }
+            tcp_v_to_s->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
+        }
+    });
     clear_forward();
     CleanARPContext(arp_context);
 
