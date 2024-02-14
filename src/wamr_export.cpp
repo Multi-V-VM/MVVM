@@ -313,22 +313,11 @@ void insert_sync_op_atomic_notify(wasm_exec_env_t exec_env, const uint32 *mutex,
         .expected = count};
     wamr->sync_ops.push_back(sync_op);
 }
-void insert_tid_start_arg(ssize_t tid, size_t start_arg, size_t vtid) {
+void insert_tid_start_arg(uint64_t tid, size_t start_arg, size_t vtid) {
     SPDLOG_DEBUG("insert_tid_start_arg {} {} {}", tid, start_arg, vtid);
     wamr->tid_start_arg_map[tid] = std::make_pair(start_arg, vtid);
 };
-void change_thread_id_to_child(ssize_t tid, ssize_t child_tid) {
-    // insert parent child takes both `vtid`s so we don't need to remap to OS threads
-    return;
-    SPDLOG_ERROR("change_thread_id_to_child {} {}", tid, child_tid);
-    for (auto &[k, v] : wamr->child_tid_map) {
-        if (k == child_tid) {
-            wamr->child_tid_map[tid] = v;
-            wamr->child_tid_map.erase(k);
-            break;
-        }
-    }
-};
+
 void wamr_handle_map(uint64_t old_tid, uint64_t tid) {
     SPDLOG_ERROR("wamr_handle_map old:< {} > new:< {} >", old_tid, tid);
     wamr->tid_map[old_tid] = tid;
@@ -345,10 +334,10 @@ korp_tid wamr_get_korp_tid(korp_tid new_tid) {
     return 0;
 }
 
-void insert_parent_child(ssize_t tid, ssize_t child_tid) {
+void insert_parent_child(uint64_t tid, uint64_t child_tid) {
     SPDLOG_ERROR("insert_parent_child {} {}", tid, child_tid);
     wamr->child_tid_map[child_tid] = tid;
-};
+}
 
 void lightweight_checkpoint(WASMExecEnv *exec_env) {
     if (exec_env->is_restore) {

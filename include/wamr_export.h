@@ -54,9 +54,8 @@ void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op 
 void insert_sync_op_atomic_notify(wasm_exec_env_t exec_env, const uint32 *mutex, uint32);
 void insert_sync_op_atomic_wait(wasm_exec_env_t exec_env, const uint32 *mutex, uint64,bool);
 void restart_execution(uint32 targs);
-void insert_tid_start_arg(ssize_t, size_t, size_t);
-void change_thread_id_to_child(ssize_t, ssize_t);
-void insert_parent_child(ssize_t, ssize_t);
+void insert_tid_start_arg(uint64_t, size_t, size_t);
+void insert_parent_child(uint64_t, uint64_t);
 extern int pthread_create_wrapper(wasm_exec_env_t exec_env, uint32 *thread, const void *attr, uint32 elem_index,
                                   uint32 arg);
 extern int32 pthread_mutex_lock_wrapper(wasm_exec_env_t, uint32 *);
