@@ -14,7 +14,8 @@ pool = Pool(processes=40)
 
 # run the benchmarks
 results = []
-for i in range(len(cmd)):
+for i in range(common_util.trial):
+   for i in range(len(cmd)):
     for j in range(len(common_util.aot_variant)):
         for env in ["LINPACK_ARRAY_SIZE=600"]:
             aot = cmd[i] + common_util.aot_variant[j]

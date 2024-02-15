@@ -190,7 +190,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     auto end = std::chrono::high_resolution_clock::now();
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    SPDLOG_DEBUG("Snapshot time: {} s", dur.count() / 1000000.0);
+    SPDLOG_INFO("Snapshot time: {} s", dur.count() / 1000000.0);
     exit(EXIT_SUCCESS);
 }
 

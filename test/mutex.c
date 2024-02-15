@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <stdio.h>
 
-#define MAX_NUM_THREADS 2
+#define MAX_NUM_THREADS 4
 #define NUM_ITER 10000
 
 int g_count = 0;
@@ -16,7 +16,7 @@ static void *thread(void *arg) {
     for (int i = 0; i < NUM_ITER; i++) {
         pthread_mutex_lock(&m);
         g_count++;
-        printf("print!!!%d\n", getpid());
+        printf("print!!!%d\n", g_count);
         pthread_mutex_unlock(&m);
     }
     printf("Value of g_count is %d\n", g_count);

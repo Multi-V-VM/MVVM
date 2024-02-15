@@ -145,7 +145,6 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
             for (auto [flags, offset, op] : std::get<1>(res)) {
                 // differ from path from file
                 if (wamr->policy == "replay") {
-
                     switch (op) {
                     case MVVM_FOPEN:
                         r = wamr->invoke_fopen(path, offset);
@@ -154,13 +153,12 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
                         wamr->fd_map_[fd] = res;
                         break;
                     case MVVM_FWRITE:
-                        wamr->invoke_fwrite(fd, flags);
-                        break;
-                    case MVVM_FREAD:
-                        wamr->invoke_fread(fd, flags);
+                        wamr->invoke_fseek(fd, 1);
                         break;
                     case MVVM_FSEEK:
-                        wamr->invoke_fseek(fd, flags);
+                        wamr->invoke_fseek(fd, 1);
+                        break;
+                    default:
                         break;
                     }
                 } else if (wamr->policy == "compression") {
@@ -170,7 +168,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
                             wamr->invoke_frenumber(r, fd);
                         wamr->fd_map_[fd] = res;
                     } else {
-                        wamr->invoke_fseek(fd, flags);
+                        wamr->invoke_fseek(fd, 1);
                     }
                 }
             }

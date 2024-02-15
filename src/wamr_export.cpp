@@ -155,16 +155,35 @@ int get_sock_fd(int fd) {
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
-        SPDLOG_DEBUG("insert_fd(fd,filename,flags, offset) fd: {} flags: {} offset: {}, op: {}", fd, flags, offset,
+        SPDLOG_ERROR("insert_fd(fd,filename,flags, offset) fd: {} flags: {} offset: {}, op: {}", fd, flags, offset,
                      ((int)op));
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
         std::tie(path_, ops_) = wamr->fd_map_[fd];
-        ops_.emplace_back(flags, offset, op);
-        if (strcmp(path, "") != 0)
-            wamr->fd_map_[fd] = std::make_tuple(std::string(path), ops_);
-        else
-            wamr->fd_map_[fd] = std::make_tuple(path_, ops_);
+        if (wamr->policy == "replay") {
+            ops_.emplace_back(flags, offset, op);
+            // policy is replay
+            if (strcmp(path, "") != 0)
+                wamr->fd_map_[fd] = std::make_tuple(std::string(path), ops_);
+            else
+                wamr->fd_map_[fd] = std::make_tuple(path_, ops_);
+        } else {
+            // policy is compression
+            if (strcmp(path, "") != 0) {
+                ops_.emplace_back(flags, offset, op);
+                wamr->fd_map_[fd] = std::make_tuple(std::string(path), ops_);
+            } else {
+                if (op == MVVM_FWRITE || op == MVVM_FSEEK) {
+                    if (ops_.size() == 1) {
+                        ops_.emplace_back(flags, offset, MVVM_FSEEK);
+                    } else {
+                        // SPDLOG_ERROR("insert_seek{} {}", std::get<1>(ops_[1]), flags);
+                        ops_[1] = std::make_tuple(flags, offset + std::get<1>(ops_[1]), MVVM_FSEEK);
+                    }
+                    wamr->fd_map_[fd] = std::make_tuple(path_, ops_);
+                }
+            }
+        }
     }
 }
 
@@ -197,6 +216,7 @@ void remove_fd(int fd) {
             SPDLOG_DEBUG("fd not found {}", fd);
     }
 }
+bool is_atomic_checkpointable() { return checkpoint; }
 
 /*
     create fd-socketmetadata map and store the "domain", "type", "protocol" value
@@ -304,6 +324,15 @@ void insert_sync_op_atomic_wait(wasm_exec_env_t exec_env, const uint32 *mutex, u
         .expected = expected,
         .wait64 = wait64};
     wamr->sync_ops.push_back(sync_op);
+}
+void insert_sync_op_atomic_wake(wasm_exec_env_t exec_env, const uint32 *mutex) {
+    // Calculate the ref value for the given mutex, similar to insert_sync_op_atomic_wait
+    uint32 ref = (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data);
+
+    // Remove elements from wamr->sync_ops where the ref matches the given mutex's ref
+    auto new_end = std::remove_if(wamr->sync_ops.begin(), wamr->sync_ops.end(),
+                                  [ref](const sync_op_t &op) { return op.ref == ref; });
+    wamr->sync_ops.erase(new_end, wamr->sync_ops.end());
 }
 void insert_sync_op_atomic_notify(wasm_exec_env_t exec_env, const uint32 *mutex, uint32 count) {
     struct sync_op_t sync_op = {

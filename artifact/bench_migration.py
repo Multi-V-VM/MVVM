@@ -2,16 +2,17 @@ import pickle
 import common_util
 from multiprocessing import Pool
 
-cmd = [
-   "linpack","llama"
-]
+cmd = ["linpack", "llama"]
 arg = [
-    [],["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
+    [],
+    ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
 ]
 
 
-pool = Pool(processes=40)
+pool = Pool(processes=2)
 results = []
+
+
 def run_mvvm():
     global results
     results1 = []
@@ -19,7 +20,13 @@ def run_mvvm():
         for j in range(len(common_util.aot_variant)):
             for env in common_util.list_of_arg:
                 aot = cmd[i] + common_util.aot_variant[j]
-                results1.append(pool.apply_async(common_util.run_checkpoint, (aot, arg[i], env)))
+                results1.append(
+                    pool.apply_async(
+                        common_util.run_checkpoint_restore,
+                        (aot, arg[i], env),
+                    )
+                )
+
     # print the results
     results += [x.get() for x in results1]
 
@@ -27,19 +34,19 @@ def run_mvvm():
 def run_criu():
     global results
     results1 = []
-
     for i in range(len(cmd)):
         aot = cmd[i]
         results1.append(
             pool.apply_async(
-                common_util.run_criu, (aot, "linpack", arg[i], "OMP_NUM_THREADS=1")
+                common_util.run_criu_checkpoint_restore,
+                (aot, arg[i], "OMP_NUM_THREADS=1"),
             )
         )
     # print the results
     results += [x.get() for x in results1]
 
 
-def run_qemu_x86_64():
+def run_qemu():
     global results
     results1 = []
 
@@ -47,23 +54,23 @@ def run_qemu_x86_64():
         aot = cmd[i]
         results1.append(
             pool.apply_async(
-                common_util.run_qemu_x86_64, (aot, "linpack", arg[i], "OMP_NUM_THREADS=1")
+                common_util.run_qemu_checkpoint_checkpoint,
+                (aot, arg[i], "OMP_NUM_THREADS=1"),
             )
         )
     # print the results
     results += [x.get() for x in results1]
 
 
-run_criu()
-run_qemu_x86_64()
+run_mvvm()
+# run_criu()
+# run_qemu()
 
 # print the results
 
-run_qemu_x86_64()
-run_criu()
 with open("bench_migration_results.pickle", "wb") as f:
     pickle.dump(results, f)
-for exec, output in results:
+for exec, output, exec2, output2 in results:
     print(exec)
     lines = output.split("\n")
     for line in lines:

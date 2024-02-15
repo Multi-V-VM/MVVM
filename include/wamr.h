@@ -28,8 +28,8 @@
 #include <numeric>
 #include <ranges>
 #include <semaphore>
-#include <spdlog/spdlog.h>
 #include <spdlog/cfg/env.h>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -134,7 +134,7 @@ public:
         wasm_exec_env_t exec_env;
     } ThreadArgs;
 
-    explicit WAMRInstance(const char *wasm_path, bool is_jit, std::string policy = "replay");
+    explicit WAMRInstance(const char *wasm_path, bool is_jit, std::string policy = "compression");
 
     void instantiate();
     void recover(std::vector<std::unique_ptr<WAMRExecEnv>> *);
@@ -159,15 +159,12 @@ public:
                        const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,
                        const std::vector<std::string> &addr_list, const std::vector<std::string> &ns_lookup_pool);
     void spawn_child(WASMExecEnv *main_env, bool);
-
+    void find_func(const char *name);
     int invoke_main();
     void invoke_init_c();
     int invoke_fopen(std::string &path, uint32 option);
     int invoke_frenumber(uint32 fd, uint32 to);
-    int invoke_fwrite(uint32 fd, uint32 len);
-    int invoke_fread(uint32 fd, uint32 len);
     int invoke_fseek(uint32 fd, uint32 offset);
-    int invoke_ftell(uint32 fd, uint32 offset, uint32 whench);
     int invoke_preopen(uint32 fd, const std::string &path);
     int invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t protocol, uint32_t sockfd);
     int invoke_sock_connect(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);

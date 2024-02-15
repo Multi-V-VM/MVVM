@@ -52,7 +52,8 @@ int get_sock_fd(int);
 #if WASM_ENABLE_LIB_PTHREAD != 0
 void insert_sync_op(wasm_exec_env_t exec_env, const uint32 *mutex, enum sync_op locking);
 void insert_sync_op_atomic_notify(wasm_exec_env_t exec_env, const uint32 *mutex, uint32);
-void insert_sync_op_atomic_wait(wasm_exec_env_t exec_env, const uint32 *mutex, uint64,bool);
+void insert_sync_op_atomic_wait(wasm_exec_env_t exec_env, const uint32 *mutex, uint64, bool);
+void insert_sync_op_atomic_wake(wasm_exec_env_t exec_env, const uint32 *mutex);
 void restart_execution(uint32 targs);
 void insert_tid_start_arg(uint64_t, size_t, size_t);
 void insert_parent_child(uint64_t, uint64_t);
