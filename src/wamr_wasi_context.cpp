@@ -147,28 +147,29 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
                 if (wamr->policy == "replay") {
                     switch (op) {
                     case MVVM_FOPEN:
-                        r = wamr->invoke_fopen(path, offset);
+                        r = wamr->invoke_fopen(path, fd);
                         if (r != fd)
                             wamr->invoke_frenumber(r, fd);
                         wamr->fd_map_[fd] = res;
                         break;
                     case MVVM_FWRITE:
-                        wamr->invoke_fseek(fd, 1);
-                        break;
+                    case MVVM_FREAD:
+                        wamr->invoke_fseek(fd, 1, offset);
                     case MVVM_FSEEK:
-                        wamr->invoke_fseek(fd, 1);
+                        wamr->invoke_fseek(fd, flags, offset);
                         break;
                     default:
                         break;
                     }
                 } else if (wamr->policy == "compression") {
                     if (op == MVVM_FOPEN) {
-                        r = wamr->invoke_fopen(path, offset);
+                        r = wamr->invoke_fopen(path, fd);
                         if (r != fd)
                             wamr->invoke_frenumber(r, fd);
                         wamr->fd_map_[fd] = res;
                     } else {
-                        wamr->invoke_fseek(fd, 1);
+                        // wamr->invoke_fseek(fd, 2, 15);
+                        wamr->invoke_fseek(fd, 0, offset);
                     }
                 }
             }

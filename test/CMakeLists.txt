@@ -76,8 +76,11 @@ wamr_app(read-file)
 wamr_app(gups)
 wamr_app(gemm)
 wamr_openmp_app(mutex)
+wamr_openmp_app(multi-thread-many)
+wamr_openmp_app(multi-thread-semophore)
 wamr_openmp_app(multi-thread)
 wamr_openmp_app(openmp)
+wamr_openmp_app(openmp-smoke)
 
 function(wamr_socket_app input)
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm

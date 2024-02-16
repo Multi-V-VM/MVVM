@@ -145,7 +145,7 @@ def run_qemu_checkpoint_restore(
 
 def run_qemu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     file = aot_file.replace(".aot", "")
-    cmd = f"./qemu_server.sh ../build/bench/{file} {' '.join(arg)}"
+    cmd = f"./qemu_migrate_client.sh ../build/bench/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.Popen(
@@ -165,7 +165,7 @@ def run_qemu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, s
 def run_qemu_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     file = aot_file.replace(".aot", "")
 
-    cmd = f"./qemu_server.sh ../build/bench/{file} {' '.join(arg)}"
+    cmd = f"./qemu_migrate_server.sh ../build/bench/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.Popen(

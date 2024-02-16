@@ -164,7 +164,7 @@ public:
     void invoke_init_c();
     int invoke_fopen(std::string &path, uint32 option);
     int invoke_frenumber(uint32 fd, uint32 to);
-    int invoke_fseek(uint32 fd, uint32 offset);
+    int invoke_fseek(uint32 fd, uint32 flags, uint32 offset);
     int invoke_preopen(uint32 fd, const std::string &path);
     int invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t protocol, uint32_t sockfd);
     int invoke_sock_connect(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);

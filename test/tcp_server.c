@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
     shutdown(socket_fd, SHUT_RDWR);
     sleep(3);
     printf("[Server] BYE \n");
-    __wasilibc_nocwd_openat_nomode(1,"/dev/stdout",0);
+    __wasilibc_nocwd_openat_nomode(1, "/dev/stdout", 0);
     return EXIT_SUCCESS;
 
 fail:

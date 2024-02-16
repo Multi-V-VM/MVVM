@@ -206,11 +206,12 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
     find_func("o_");
     buffer_for_wasm = wasm_runtime_module_malloc(module_inst, path.size(), (void **)&buffer_);
     if (buffer_for_wasm != 0) {
-        uint32 argv[2];
+        uint32 argv[3];
         argv[0] = buffer_for_wasm; // pass the buffer_ address for WASM space
         argv[1] = option; // the size of buffer_
+        argv[2] = 15; // the size of buffer_
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
-        wasm_runtime_call_wasm(exec_env, func, 2, argv);
+        wasm_runtime_call_wasm(exec_env, func, 3, argv);
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
         return ((int)argv[0]);
     }
@@ -284,28 +285,25 @@ int WAMRInstance::invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **soc
     }
     return -1;
 }
-int WAMRInstance::invoke_fseek(uint32 fd, uint32 offset) {
-    uint32 argv[2] = {fd, offset};
+int WAMRInstance::invoke_fseek(uint32 fd,uint32 flags,  uint32 offset) {
+    // return 0;
     find_func("__wasi_fd_seek");
-    return wasm_runtime_call_wasm(exec_env, func, 2, argv);
+    uint32 argv[5] = {fd,  offset,0, flags, 0};
+    auto res = wasm_runtime_call_wasm(exec_env, func, 5, argv);
+    return argv[0];
 }
 int WAMRInstance::invoke_preopen(uint32 fd, const std::string &path) {
-    auto name = "__wasilibc_nocwd_openat_nomode";
-    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        SPDLOG_ERROR("The wasi\"{}\"function is not found.", name);
-        auto target_module = get_module_instance()->e;
-        return 0;
-    }
+
     char *buffer_ = nullptr;
     uint32_t buffer_for_wasm;
-
+    find_func("__wasilibc_nocwd_openat_nomode");
     buffer_for_wasm = wasm_runtime_module_malloc(module_inst, 100, reinterpret_cast<void **>(&buffer_));
     if (buffer_for_wasm != 0) {
         uint32 argv[3];
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
         argv[0] = fd; // pass the buffer_ address for WASM space
         argv[1] = buffer_for_wasm; // the size of buffer_
-        argv[2] = 2; // O_RW | O_CREATE
+        argv[2] = 102; // O_RW | O_CREATE
         wasm_runtime_call_wasm(exec_env, func, 3, argv);
         int res = argv[0];
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
@@ -314,33 +312,9 @@ int WAMRInstance::invoke_preopen(uint32 fd, const std::string &path) {
     return -1;
 }
 int WAMRInstance::invoke_recv(int sockfd, uint8 **buf, size_t len, int flags) {
-    auto name = "recv";
-    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        SPDLOG_ERROR("The wasi\"{}\"function is not found.", name);
-        auto target_module = get_module_instance()->e;
-        for (int i = 0; i < target_module->function_count; i++) {
-            auto cur_func = &target_module->functions[i];
-            if (cur_func->is_import_func) {
-                SPDLOG_DEBUG("{} {}", cur_func->u.func_import->field_name, i);
-
-                if (!strcmp(cur_func->u.func_import->field_name, name)) {
-
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-
-            } else {
-                SPDLOG_DEBUG("{} {}", cur_func->u.func->field_name, i);
-
-                if (!strcmp(cur_func->u.func->field_name, name)) {
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-            }
-        }
-    }
     char *buffer_ = nullptr;
     uint32_t buffer_for_wasm;
+    find_func("recv");
 
     buffer_for_wasm = wasm_runtime_module_malloc(module_inst, len, reinterpret_cast<void **>(&buffer_));
     if (buffer_for_wasm != 0) {
@@ -360,34 +334,13 @@ int WAMRInstance::invoke_recv(int sockfd, uint8 **buf, size_t len, int flags) {
 }
 int WAMRInstance::invoke_recvfrom(int sockfd, uint8 **buf, size_t len, int flags, struct sockaddr *src_addr,
                                   socklen_t *addrlen) {
-    auto name = "recvfrom";
-    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        SPDLOG_ERROR("The wasi\"{}\"function is not found.", name);
-        auto target_module = get_module_instance()->e;
-        for (int i = 0; i < target_module->function_count; i++) {
-            auto cur_func = &target_module->functions[i];
-            if (cur_func->is_import_func) {
-                SPDLOG_DEBUG("{} {}", cur_func->u.func_import->field_name, i);
-                if (!strcmp(cur_func->u.func_import->field_name, name)) {
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-
-            } else {
-                SPDLOG_DEBUG("{} {}", cur_func->u.func->field_name, i);
-                if (!strcmp(cur_func->u.func->field_name, name)) {
-                    func = ((WASMFunctionInstanceCommon *)cur_func);
-                    break;
-                }
-            }
-        }
-    }
     char *buffer1_ = nullptr;
     char *buffer2_ = nullptr;
     char *buffer3_ = nullptr;
     uint32_t buffer1_for_wasm;
     uint32_t buffer2_for_wasm;
     uint32_t buffer3_for_wasm;
+    find_func("recvfrom");
 
     buffer1_for_wasm = wasm_runtime_module_malloc(module_inst, len, reinterpret_cast<void **>(&buffer1_));
     buffer2_for_wasm =
@@ -544,8 +497,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     main_env->restore_call_chain = nullptr;
 
     invoke_init_c();
-//    invoke_preopen(1, "/dev/stdout");
-//    invoke_preopen(2, "/dev/stderr");
+    invoke_preopen(1, "/dev/stdout");
+    invoke_preopen(2, "/dev/stderr");
 #if WASM_ENABLE_LIB_PTHREAD != 0
     spawn_child(main_env, true);
 #endif

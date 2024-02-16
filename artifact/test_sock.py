@@ -2,58 +2,58 @@
 import os
 import common_util
 
-#  /mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/client.aot -f {i} -c 0
-#  /mnt/MVVM/MVVM_restore -t /mnt/MVVM/test/client.aot
+#  ./MVVM_checkpoint -t ./test/client.aot -f {i} -c 0
+#  ./MVVM_restore -t ./test/client.aot
 
 def run_sock_once(funcs):
-    os.system("/mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/server.aot -f {i}")
+    os.system("./MVVM_checkpoint -t ./test/server.aot -f {i}")
 
     for i in range(0, funcs):
-        os.system(f"/mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/build/test/client.aot -c {i}")
-        os.system(f"/mnt/MVVM/build/MVVM_restore -t /mnt/MVVM/build/test/client.aot")
+        os.system(f"./MVVM_checkpoint -t test/client.aot -c {i}")
+        os.system(f"./build/MVVM_restore -t test/client.aot")
     
 def run_sock_migrate_once(funcs):
-    os.system(f"docker exec -it f9d /mnt/MVVM/build/MVVM_checkpoint -t /mnt/MVVM/build/test/server.aot -f {i} &")
-    os.system("/mnt/MVVM/build/gateway &")
+    os.system(f"docker exec -it f9d MVVM_checkpoint -t test/server.aot -f {i} &")
+    os.system("./build/gateway &")
 
     for i in range(0, funcs):
-        os.system(f" /mnt/MVVM/build/MVVM_checkpoint -t /mnt/MVVM/build/test/client.aot")
-        os.system(f"docker exec -it mvvm /mnt/MVVM/MVVM_restore -t /mnt/MVVM/test/server.aot -f {i} &")
+        os.system(f"MVVM_checkpoint -t test/client.aot")
+        os.system(f"docker exec -it mvvm ./MVVM_restore -t ./test/server.aot -f {i} &")
     
 def run_tcp_once(funcs):
-    os.system(" /mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/server.aot -f {i}")
+    os.system(" ./MVVM_checkpoint -t ./test/server.aot -f {i}")
 
     for i in range(0, funcs):
-        os.system(f" /mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/client.aot -c {i}")
-        os.system(f" /mnt/MVVM/MVVM_restore -t /mnt/MVVM/test/client.aot")
+        os.system(f" ./MVVM_checkpoint -t ./test/client.aot -c {i}")
+        os.system(f" ./MVVM_restore -t ./test/client.aot")
     
 def run_tcp_migrate_once(funcs):
-    os.system(" /mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/server.aot -f {i}")
-    os.system("/mnt/MVVM/gateway")
+    os.system(" ./MVVM_checkpoint -t ./test/server.aot -f {i}")
+    os.system("./gateway")
 
     for i in range(0, funcs):
-        os.system(f" /mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/client.aot -c {i}")
-        os.system(f" /mnt/MVVM/MVVM_restore -t /mnt/MVVM/test/client.aot")
+        os.system(f" ./MVVM_checkpoint -t ./test/client.aot -c {i}")
+        os.system(f" ./MVVM_restore -t ./test/client.aot")
     
     
 def run_tcp_migrate_once(funcs):
-    os.system(" /mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/server.aot -f {i}")
-    os.system("/mnt/MVVM/gateway")
+    os.system(" ./MVVM_checkpoint -t ./test/server.aot -f {i}")
+    os.system("./gateway")
 
     for i in range(0, funcs):
-        os.system(f" /mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/client.aot -c {i}")
-        os.system(f" /mnt/MVVM/MVVM_restore -t /mnt/MVVM/test/client.aot")
+        os.system(f" ./MVVM_checkpoint -t ./test/client.aot -c {i}")
+        os.system(f" ./MVVM_restore -t ./test/client.aot")
 
     
 def run_tcp_migrate_once(funcs):
-    os.system(" /mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/server.aot -f {i}")
-    os.system("/mnt/MVVM/gateway")
+    os.system(" ./MVVM_checkpoint -t ./test/server.aot -f {i}")
+    os.system("./gateway")
 
     for i in range(0, funcs):
-        os.system(f" /mnt/MVVM/MVVM_checkpoint -t /mnt/MVVM/test/client.aot -c {i}")
-        os.system(f" /mnt/MVVM/MVVM_restore -t /mnt/MVVM/test/client.aot")
+        os.system(f" ./MVVM_checkpoint -t ./test/client.aot -c {i}")
+        os.system(f" ./MVVM_restore -t ./test/client.aot")
     
-def get_tcp_latency():
+def get_tcp_latency(output: str):
     pass
 def get_tcp_bandwidth():
     pass

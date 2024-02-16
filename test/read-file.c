@@ -2,57 +2,78 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
 
 FILE *a_file = NULL;
 
-int o_(char *path,int fd) {
+int o_(char *path, int fd, int offset) {
     int flags = O_RDWR | O_CREAT;
-    int ret = open( path, flags);
-    if (ret !=fd)
-        __wasi_fd_renumber(ret, fd);
-    printf("open %s, ret = %d\n", path, fd);
-    return ret;
+    int *failed_array = malloc(100 * sizeof(int));
+    int counter = 0;
+    int ret = open(path, flags);
+    while (ret != fd) {
+        failed_array[counter] = ret;
+        counter += 1;
+        ret = open(path, flags);
+        printf("open %s, ret = %d\n", path, ret);
+    }
+    for (int i = 0; i < counter; i++) {
+        close(failed_array[i]);
+    }
+    free(failed_array);
+    return fd;
 }
 
-
 int main() {
-    FILE *file = fopen("./text.txt", "a");
-
-    FILE *file1 = fopen("./text1.txt", "w");
-    FILE *file2 = fopen("./text2.txt", "w");
-    // fseek(file,1,1);
-
+    // FILE *file = fopen("./text.txt", "w");
+    char *buffer = (char *)malloc(16);
     /** Test fread*/
-    volatile int c = 0;
-    FILE *file3 = fopen("./test3.txt", "a");
+    FILE *file3 = fopen("./test3.txt", "rw+");
+
     const char *line1 = "This is line 1\n";
     const char *line2 = "This is line 2\n";
+    const char *line3 = "This is line 3\n";
     size_t len1 = strlen(line1);
     size_t len2 = strlen(line2);
+    printf("File pointer: %ld\n", ftell(file3));
 
     fwrite(line1, sizeof(char), len1, file3);
     // ntwritten
+    printf("File pointer: %ld\n", ftell(file3));
+
     //  checkpoint: lib_wasi_wrapper fwrite system record
-    for (int i = 0; i < 10000; i++) {
-        c++;
-    }
     fwrite(line2, sizeof(char), len2, file3);
 
-    for (int i = 0; i < 10000; i++) {
-        c++;
+    printf("File pointer: %ld\n", ftell(file3));
+    // fseek(file3, -30, SEEK_CUR);
+    rewind(file3);
+    printf("File pointer: %ld\n", ftell(file3));
+
+    // Allocate memory to contain the whole file
+    buffer = (char *)malloc(sizeof(char) * 30);
+    if (buffer == NULL) {
+        fputs("Memory error", stderr);
+        exit(2);
     }
-    fseek(file3, 1, SEEK_END);
-    for (int i = 0; i < 10000; i++) {
-        c++;
+
+    // Read the file into the buffer
+    int result = fread(buffer, 1, 30, file3);
+    if (result != 30) {
+        fputs("Reading error", stderr);
+        exit(3);
     }
-    fread(file3, sizeof(char), len2, file3);
-    ftell(file3);
-    renameat(4, "./test3.txt", 10, "./test4.txt");
-    fclose(file);
-    fclose(file1);
-    fclose(file2);
+    // buffer = line2[0:len2-1
+    printf("%d %s\n", result, buffer);
+    fseek(file3, -15, SEEK_CUR);
+
+    printf("File pointer: %ld\n", ftell(file3));
+    fwrite(line3, sizeof(char), len2, file3);
+    printf("File pointer: %ld\n", ftell(file3));
+
+    // rename("./test3.txt", "./test4.txt");
+    // fclose(file);
     fclose(file3);
 }

@@ -155,7 +155,7 @@ int get_sock_fd(int fd) {
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
     if (fd > 2) {
-        SPDLOG_ERROR("insert_fd(fd,filename,flags, offset) fd: {} flags: {} offset: {}, op: {}", fd, flags, offset,
+        SPDLOG_DEBUG("insert_fd(fd,filename,flags, offset) fd: {} flags: {} offset: {}, op: {}", fd, flags, offset,
                      ((int)op));
         std::string path_;
         std::vector<std::tuple<int, int, enum fd_op>> ops_;
@@ -173,15 +173,16 @@ void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
                 ops_.emplace_back(flags, offset, op);
                 wamr->fd_map_[fd] = std::make_tuple(std::string(path), ops_);
             } else {
-                if (op == MVVM_FWRITE || op == MVVM_FSEEK) {
-                    if (ops_.size() == 1) {
-                        ops_.emplace_back(flags, offset, MVVM_FSEEK);
-                    } else {
-                        // SPDLOG_ERROR("insert_seek{} {}", std::get<1>(ops_[1]), flags);
-                        ops_[1] = std::make_tuple(flags, offset + std::get<1>(ops_[1]), MVVM_FSEEK);
-                    }
-                    wamr->fd_map_[fd] = std::make_tuple(path_, ops_);
+                if (ops_.size() == 1) {
+                    ops_.emplace_back(flags, offset, MVVM_FSEEK);
+                } else {
+                    // SPDLOG_ERROR("insert_seek{} {}", std::get<1>(ops_[1]), flags);
+                    // if ((flags == 2 || flags == 0) && op == MVVM_FSEEK) {
+                    //     ops_.back() = std::make_tuple(flags, offset, MVVM_FSEEK);
+                    // } else
+                        ops_.back() = std::make_tuple(1, offset, MVVM_FSEEK);
                 }
+                wamr->fd_map_[fd] = std::make_tuple(path_, ops_);
             }
         }
     }

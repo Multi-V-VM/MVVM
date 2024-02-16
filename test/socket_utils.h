@@ -6,9 +6,9 @@
 #ifndef TCP_UTILS_H
 #define TCP_UTILS_H
 
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+#include <sys/socket.h>
 #ifdef __wasi__
 #include <wasi_socket_ext.h>
 #endif
@@ -40,47 +40,50 @@ static uint32_t my_inet_addr(const char *ip) {
     return result;
 }
 
-int
-sockaddr_to_string(struct sockaddr *addr, char *str, size_t len)
-{
+int sockaddr_to_string(struct sockaddr *addr, char *str, size_t len) {
     uint16_t port;
     char ip_string[64];
     void *addr_buf;
     int ret;
 
     switch (addr->sa_family) {
-        case AF_INET:
-        {
-            struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
-            port = addr_in->sin_port;
-            addr_buf = &addr_in->sin_addr;
-            break;
-        }
-        case AF_INET6:
-        {
-            struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
-            port = addr_in6->sin6_port;
-            addr_buf = &addr_in6->sin6_addr;
-            break;
-        }
-        default:
-            return -1;
+    case AF_INET: {
+        struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
+        port = addr_in->sin_port;
+        addr_buf = &addr_in->sin_addr;
+        break;
+    }
+    case AF_INET6: {
+        struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
+        port = addr_in6->sin6_port;
+        addr_buf = &addr_in6->sin6_addr;
+        break;
+    }
+    default:
+        return -1;
     }
 
-    inet_ntop(addr->sa_family, addr_buf, ip_string,
-              sizeof(ip_string) / sizeof(ip_string[0]));
+    inet_ntop(addr->sa_family, addr_buf, ip_string, sizeof(ip_string) / sizeof(ip_string[0]));
 
     ret = snprintf(str, len, "%s:%d", ip_string, ntohs(port));
 
     return ret > 0 && (size_t)ret < len ? 0 : -1;
 }
 
-int
-s_(int domain, int socktype, int protocol, uint32_t sockfd)
-{
+int s_(int domain, int socktype, int protocol, uint32_t sockfd) {
     int ret = socket(AF_INET, SOCK_DGRAM, 0);
-    while (ret != sockfd)
+    int *failed_array = malloc(100 * sizeof(int));
+    int counter = 0;
+
+    while (ret != sockfd) {
+        failed_array[counter] = ret;
+        counter++;
         ret = socket(AF_INET, SOCK_DGRAM, 0);
+    }
+    for (int i = 0; i < counter; i++) {
+        close(failed_array[i]);
+    }
+    free(failed_array);
     return ret;
 }
 #endif /* TCP_UTILS_H */
