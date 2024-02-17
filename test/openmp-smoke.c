@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define NUM_THREADS 4
+#define NUM_THREADS 2
 
 // Simulating __kmp_gtid_threadprivate_key
 pthread_key_t gtid_key;
@@ -17,7 +17,11 @@ void* thread_func(void* arg) {
         printf("Error setting thread-specific data\n");
         pthread_exit((void*)-1);
     }
-
+    int x=0;
+    while (x< 1000) {
+        printf("Thread %ld\n", gtid);
+        x++;
+    }
     // Retrieve and verify thread-specific value
     void* value = pthread_getspecific(gtid_key);
     if (value != expected_value) {
@@ -26,8 +30,7 @@ void* thread_func(void* arg) {
     } else {
         printf("Thread-specific data matches as expected (Thread %ld)\n", gtid);
     }
-
-    pthread_exit((void*)0);
+    return NULL;
 }
 
 int main() {
@@ -53,6 +56,6 @@ int main() {
 
     // Cleanup
     pthread_key_delete(gtid_key);
-
+    __wasilibc_nocwd_openat_nomode(1, "/dev/stdout", 0);
     return 0;
 }

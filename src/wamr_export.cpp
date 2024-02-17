@@ -1,6 +1,14 @@
-//
-// Created by victoryang00 on 10/19/23.
-//
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  Copyright 2024 Regents of the Univeristy of California
+ *  UC Santa Cruz Sluglab.
+ */
 
 #include "wamr.h"
 #include "wamr_wasi_context.h"
@@ -180,7 +188,7 @@ void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {
                     // if ((flags == 2 || flags == 0) && op == MVVM_FSEEK) {
                     //     ops_.back() = std::make_tuple(flags, offset, MVVM_FSEEK);
                     // } else
-                        ops_.back() = std::make_tuple(1, offset, MVVM_FSEEK);
+                    ops_.back() = std::make_tuple(1, offset, MVVM_FSEEK);
                 }
                 wamr->fd_map_[fd] = std::make_tuple(path_, ops_);
             }
@@ -331,8 +339,10 @@ void insert_sync_op_atomic_wake(wasm_exec_env_t exec_env, const uint32 *mutex) {
     uint32 ref = (uint32)(((uint8 *)mutex) - ((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data);
 
     // Remove elements from wamr->sync_ops where the ref matches the given mutex's ref
-    auto new_end = std::remove_if(wamr->sync_ops.begin(), wamr->sync_ops.end(),
-                                  [ref](const sync_op_t &op) { return op.ref == ref; });
+    auto new_end = std::remove_if(wamr->sync_ops.begin(), wamr->sync_ops.end(), [ref](const sync_op_t &op) {
+        SPDLOG_DEBUG("remove_if {} {}", op.ref, ref);
+        return op.ref == ref;
+    });
     wamr->sync_ops.erase(new_end, wamr->sync_ops.end());
 }
 void insert_sync_op_atomic_notify(wasm_exec_env_t exec_env, const uint32 *mutex, uint32 count) {

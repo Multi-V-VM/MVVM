@@ -1,3 +1,15 @@
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  Copyright 2023 Regents of the Univeristy of California
+ *  UC Santa Cruz Sluglab.
+ */
+
 #include <crafter.h>
 #include <crafter/Utils/TCPConnection.h>
 #include <iostream>

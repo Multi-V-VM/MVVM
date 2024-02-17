@@ -1,3 +1,15 @@
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  Copyright 2024 Regents of the Univeristy of California
+ *  UC Santa Cruz Sluglab.
+ */
+
 #include "wamr.h"
 #include "wamr_memory_instance.h"
 extern WAMRInstance *wamr;

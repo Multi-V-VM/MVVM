@@ -1,6 +1,14 @@
-//
-// Created by victoryang00 on 4/29/23.
-//
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  Copyright 2024 Regents of the Univeristy of California
+ *  UC Santa Cruz Sluglab.
+ */
 
 #ifndef MVVM_WAMR_MEMORY_INSTANCE_H
 #define MVVM_WAMR_MEMORY_INSTANCE_H
@@ -38,7 +46,7 @@ struct WAMRMemoryInstance {
         num_bytes_per_page = env->num_bytes_per_page;
         cur_page_count = env->cur_page_count;
         max_page_count = env->max_page_count;
-        is_shared_memory =env->is_shared_memory;
+        is_shared_memory = env->is_shared_memory;
         memory_data.resize(env->memory_data_size);
         memcpy(memory_data.data(), env->memory_data, env->memory_data_size);
         heap_data = std::vector<uint8>(env->heap_data, env->heap_data_end);

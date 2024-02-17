@@ -58,12 +58,12 @@ jobs:
         unzip LLVM.zip
         cp "C:/Program Files/LLVM/tools/llvm/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
         
-    - name: Make WASI Socket Ext
-      run: |
-        cd lib/wasm-micro-runtime/samples/socket-api/
-        echo "C:/ProgramData/chocolatey/bin/" >> "$GITHUB_PATH"
-        cmake . -DWASI_SDK_DIR=D:/wasi-sdk -G"Unix Makefiles" -DCMAKE_C_COMPILER=C:/tools/msys64/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/tools/msys64/usr/bin/g++.exe
-        make
+    # - name: Make WASI Socket Ext
+    #   run: |
+    #     cd lib/wasm-micro-runtime/samples/socket-api/
+    #     echo "C:/ProgramData/chocolatey/bin/" >> "$GITHUB_PATH"
+    #     cmake . -DWASI_SDK_DIR=D:/wasi-sdk -G"Unix Makefiles" -DCMAKE_C_COMPILER=C:/tools/msys64/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/tools/msys64/usr/bin/g++.exe
+    #     make
 
     - name: configure cmake
       working-directory: ${{runner.workspace}}

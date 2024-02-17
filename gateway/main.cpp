@@ -1,3 +1,15 @@
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  Copyright 2024 Regents of the Univeristy of California
+ *  UC Santa Cruz Sluglab.
+ */
+
 #include "crafter/Payload.h"
 #include "crafter/Protocols/RawLayer.h"
 #include "crafter/Utils/TCPConnection.h"
@@ -14,8 +26,8 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <pcap/pcap.h>
-#include <spdlog/spdlog.h>
 #include <spdlog/cfg/env.h>
+#include <spdlog/spdlog.h>
 #include <thread>
 #include <tuple>
 #include <unistd.h>

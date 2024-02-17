@@ -1,3 +1,15 @@
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  Copyright 2024 Regents of the Univeristy of California
+ *  UC Santa Cruz Sluglab.
+ */
+
 #include "wamr_module_instance.h"
 #include "aot_runtime.h"
 #include "wamr.h"
@@ -21,7 +33,7 @@ void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
     global_data = std::vector<uint8>(env->global_data, env->global_data + env->global_data_size);
     // tables = std::vector<std::unique_ptr<WASMTableInstance>>(env->tables, env->tables + env->table_count);
     dump(&wasi_ctx, &env->module->wasi_args);
-    SPDLOG_DEBUG("Dumped global data ptr: {}", ((void*)env->global_data));
+    SPDLOG_DEBUG("Dumped global data ptr: {}", ((void *)env->global_data));
     if (wamr->is_aot) {
         auto module = (AOTModule *)env->module;
         aux_data_end_global_index = module->aux_data_end_global_index;
@@ -61,8 +73,8 @@ void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {
         // env->memories = m_;
         wamr->tmp_buf_size = env->memory_count;
 
+        // env->global_data = (uint8 *)malloc(env->global_data_size);
         env->global_data_size = global_data.size();
-        env->global_data = (uint8 *)malloc(env->global_data_size);
         memcpy(env->global_data, global_data.data(), global_data.size());
         for (int i = 0; i < env->table_count; i++) {
             env->tables[i] = &tables[i];
@@ -73,7 +85,7 @@ void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {
         env->memories = wamr->tmp_buf;
         // env->global_data_size= wamr->tmp_buf_size2;
         // env->global_data = wamr->tmp_buf2;
-        env->global_data = (uint8 *)malloc(env->global_data_size);
+        // env->global_data = (uint8 *)malloc(env->global_data_size);
         memcpy(env->global_data, global_data.data(), global_data.size());
         env->global_data_size = global_data.size();
         for (int i = 0; i < env->table_count; i++) {

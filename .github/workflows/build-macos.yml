@@ -39,11 +39,11 @@ jobs:
         sudo wget http://108.181.27.85/wasi/wasi-sdk-20.0-macos.tar.gz
         sudo tar -xzf wasi-sdk-*.tar.gz
 
-    - name: Make WASI Socket Ext
-      run: |
-        cd lib/wasm-micro-runtime/samples/socket-api/
-        cmake .
-        make -j
+    # - name: Make WASI Socket Ext
+    #   run: |
+    #     cd lib/wasm-micro-runtime/samples/socket-api/
+    #     cmake .
+    #     make -j
 
     - name: Install AOT wamrc
       run: |

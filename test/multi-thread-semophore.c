@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define NUM_THREADS 3
 
@@ -11,7 +11,7 @@ sem_t semaphore;
 // Shared resource
 int shared_resource = 0;
 
-void* thread_function(void* arg) {
+void *thread_function(void *arg) {
     long tid = (long)arg;
 
     // Wait on semaphore
@@ -28,7 +28,7 @@ void* thread_function(void* arg) {
     // Post semaphore
     sem_post(&semaphore);
 
-    pthread_exit(NULL);
+    return NULL;
 }
 
 int main() {
@@ -39,12 +39,12 @@ int main() {
     pthread_mutex_init(&mutex, NULL);
     sem_init(&semaphore, 0, 2); // Allow 2 threads to enter the critical section concurrently
 
-    for(t = 0; t < NUM_THREADS; t++) {
-        pthread_create(&threads[t], NULL, thread_function, (void*)t);
+    for (t = 0; t < NUM_THREADS; t++) {
+        pthread_create(&threads[t], NULL, thread_function, (void *)t);
     }
 
     // Wait for threads to finish
-    for(t = 0; t < NUM_THREADS; t++) {
+    for (t = 0; t < NUM_THREADS; t++) {
         pthread_join(threads[t], NULL);
     }
 

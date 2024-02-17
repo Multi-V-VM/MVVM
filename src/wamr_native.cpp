@@ -1,3 +1,15 @@
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  Copyright 2024 Regents of the Univeristy of California
+ *  UC Santa Cruz Sluglab.
+ */
+
 #include "wamr_native.h"
 #include "wasm_export.h"
 #include <wasm_native.h>
@@ -20,9 +32,9 @@ static void dgemm_wrapper(wasm_exec_env_t exec_env, int32_t m, int32_t n, int32_
 #if defined(MVVM_BUILD_TEST)
 #if defined(_WIN32)
     cudaSetDevice(0);
-//    cudaEvent_t start, stop;
-//    cudaEventCreate(&start);
-//    cudaEventCreate(&stop);
+    //    cudaEvent_t start, stop;
+    //    cudaEventCreate(&start);
+    //    cudaEventCreate(&stop);
     double *a_gpu, *b_gpu, *c_gpu;
 
     gpuErrchk(cudaMalloc((void **)&a_gpu, n * m * sizeof(double)));
@@ -34,13 +46,13 @@ static void dgemm_wrapper(wasm_exec_env_t exec_env, int32_t m, int32_t n, int32_
 
     gpuErrchk(cudaMalloc((void **)&c_gpu, m * k * sizeof(double)));
 
-//    cudaEventRecord(start);
+    //    cudaEventRecord(start);
     cublasHandle_t handle;
     cublasCreate(&handle);
     cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, a_gpu, m, b_gpu, k, &beta, c_gpu, m);
 
-//    cudaEventRecord(stop);
-//    cudaEventSynchronize(stop);
+    //    cudaEventRecord(stop);
+    //    cudaEventSynchronize(stop);
 
     float miliseconds = 0.0;
     gpuErrchk(cudaMemcpy(c, c_gpu, k * n * sizeof(float), cudaMemcpyDeviceToHost));

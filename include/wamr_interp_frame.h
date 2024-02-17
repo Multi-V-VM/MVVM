@@ -1,6 +1,14 @@
-//
-// Created by victoryang00 on 5/1/23.
-//
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  Copyright 2024 Regents of the Univeristy of California
+ *  UC Santa Cruz Sluglab.
+ */
 
 #ifndef MVVM_WAMR_INTERP_FRAME_H
 #define MVVM_WAMR_INTERP_FRAME_H

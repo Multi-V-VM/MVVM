@@ -1,8 +1,17 @@
-//
-// Created by victoryang00 on 5/6/23.
-//
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  Copyright 2024 Regents of the Univeristy of California
+ *  UC Santa Cruz Sluglab.
+ */
 
 #include "wamr.h"
+#include "platform_api_vmcore.h"
 #include "platform_common.h"
 #include "wamr_export.h"
 #include "wamr_native.h"
@@ -14,6 +23,7 @@
 #include <mutex>
 #include <regex>
 #include <semaphore>
+#include <spdlog/spdlog.h>
 #if WASM_ENABLE_LIB_PTHREAD != 0
 #include "thread_manager.h"
 #endif
@@ -193,6 +203,12 @@ int WAMRInstance::invoke_main() {
     return wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
 void WAMRInstance::invoke_init_c() {
+    auto name = "__wasm_init_memory";
+    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
+        SPDLOG_ERROR("The wasi ", name, " function is not found.");
+    } else {
+        wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
+    }
     auto name1 = "__wasm_call_ctors";
     if (!(func = wasm_runtime_lookup_function(module_inst, name1, nullptr))) {
         SPDLOG_ERROR("The wasi ", name1, " function is not found.");
@@ -285,10 +301,10 @@ int WAMRInstance::invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **soc
     }
     return -1;
 }
-int WAMRInstance::invoke_fseek(uint32 fd,uint32 flags,  uint32 offset) {
+int WAMRInstance::invoke_fseek(uint32 fd, uint32 flags, uint32 offset) {
     // return 0;
     find_func("__wasi_fd_seek");
-    uint32 argv[5] = {fd,  offset,0, flags, 0};
+    uint32 argv[5] = {fd, offset, 0, flags, 0};
     auto res = wasm_runtime_call_wasm(exec_env, func, 5, argv);
     return argv[0];
 }
@@ -497,8 +513,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     main_env->restore_call_chain = nullptr;
 
     invoke_init_c();
-    invoke_preopen(1, "/dev/stdout");
-    invoke_preopen(2, "/dev/stderr");
+    // invoke_preopen(1, "/dev/stdout");
+    // invoke_preopen(2, "/dev/stderr");
 #if WASM_ENABLE_LIB_PTHREAD != 0
     spawn_child(main_env, true);
 #endif
@@ -530,18 +546,6 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
         auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - this->time);
         SPDLOG_INFO("Recover time: {}\n", dur.count() / 1000000.0);
         // put things back
-        // fprintf(stderr, "invoke 1%p\n",((WASMModuleInstance *)exec_env->module_inst)->global_data);
-
-        // ((WASMModuleInstance *)exec_env->module_inst)->global_data =
-        //     (uint8 *)malloc(((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
-
-        // memcpy(((WASMModuleInstance *)exec_env->module_inst)->global_data,
-        //        execEnv.front()->module_inst.global_data.data(),
-        //        ((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
-        // for (int i = 0; i < ((WASMModuleInstance *)exec_env->module_inst)->global_data_size; i++) {
-        //     fprintf(stderr, "%d", ((WASMModuleInstance *)exec_env->module_inst)->global_data[i]);
-        // }
-        // fprintf(stderr, "invoke 2%p\n",((WASMModuleInstance *)exec_env->module_inst)->global_data);
         invoke_main();
     }
 }
@@ -654,43 +658,15 @@ void wamr_wait(wasm_exec_env_t exec_env) {
 
     // finished restoring
     exec_env->is_restore = true;
-    // setting back handle
-    // exec_env->handle = wamr->tid_map[exec_env->handle];
-    // ((WASMModuleInstance *)exec_env->module_inst)->memories = wamr->tmp_buf;
-    // ((WASMModuleInstance *)exec_env->module_inst)->memory_count = wamr->tmp_buf_size;
-
-    // for (int i = 0; i < ((WASMModuleInstance *)exec_env->module_inst)->global_data_size; i++) {
-    //     fprintf(stderr, "%d", ((WASMModuleInstance *)exec_env->module_inst)->global_data[i]);
-    // }
-    // sleep(10);
-
-    // ((WASMModuleInstance *)exec_env->module_inst)->global_data =
-    //     (uint8 *)malloc(((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
-
-    // memcpy(((WASMModuleInstance *)exec_env->module_inst)->global_data,
-    //        wamr->execEnv.back()->module_inst.global_data.data(),
-    //    ((WASMModuleInstance *)exec_env->module_inst)->global_data_size);
     fprintf(stderr, "invoke side%p\n", ((WASMModuleInstance *)exec_env->module_inst)->global_data);
 }
 
-WASMExecEnv *restore_env() {
-    auto exec_env = wasm_exec_env_create_internal(wamr->module_inst, wamr->stack_size);
+WASMExecEnv *restore_env(WASMModuleInstanceCommon *module_inst) {
+    auto exec_env = wasm_exec_env_create_internal(module_inst, wamr->stack_size);
     restore(child_env, exec_env);
 
     auto s = exec_env->restore_call_chain;
-    /*
-    exec_env->is_restore = false;
-    exec_env->restore_call_chain = NULL;
 
-    auto name = "__wasm_init_memory";
-    auto func = wasm_runtime_lookup_function(wamr->module_inst, name, nullptr);
-    wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
-    auto name1 = "__wasm_call_ctors";
-    func = wasm_runtime_lookup_function(wamr->module_inst, name1, nullptr);
-    wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
-
-    exec_env->restore_call_chain = s;
-// */
     wamr->cur_thread = ((uint64_t)exec_env->handle);
     exec_env->is_restore = true;
     fprintf(stderr, "restore_env: %p %p\n", exec_env, s);
