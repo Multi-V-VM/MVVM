@@ -9,24 +9,6 @@
 
 FILE *a_file = NULL;
 
-int o_(char *path, int fd, int offset) {
-    int flags = O_RDWR | O_CREAT;
-    int *failed_array = malloc(100 * sizeof(int));
-    int counter = 0;
-    int ret = open(path, flags);
-    while (ret != fd) {
-        failed_array[counter] = ret;
-        counter += 1;
-        ret = open(path, flags);
-        printf("open %s, ret = %d\n", path, ret);
-    }
-    for (int i = 0; i < counter; i++) {
-        close(failed_array[i]);
-    }
-    free(failed_array);
-    return fd;
-}
-
 int main() {
     // FILE *file = fopen("./text.txt", "w");
     char *buffer = (char *)malloc(16);

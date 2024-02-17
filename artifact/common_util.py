@@ -26,6 +26,9 @@ def get_func_index(func, file):
 
 list_of_arg = [
     "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=2",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=8",
 ]
 aot_variant = [".aot"]
 # aot_variant = ["-ckpt-every-dirty.aot"]

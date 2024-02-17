@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <stdio.h>
 
-#define MAX_NUM_THREADS 2
+#define MAX_NUM_THREADS 4
 #define NUM_ITER 1000
 
 int g_count = 0;

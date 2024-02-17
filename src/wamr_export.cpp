@@ -340,7 +340,7 @@ void insert_sync_op_atomic_wake(wasm_exec_env_t exec_env, const uint32 *mutex) {
 
     // Remove elements from wamr->sync_ops where the ref matches the given mutex's ref
     auto new_end = std::remove_if(wamr->sync_ops.begin(), wamr->sync_ops.end(), [ref](const sync_op_t &op) {
-        SPDLOG_DEBUG("remove_if {} {}", op.ref, ref);
+        // SPDLOG_DEBUG("remove_if {} {}", op.ref, ref);
         return op.ref == ref;
     });
     wamr->sync_ops.erase(new_end, wamr->sync_ops.end());

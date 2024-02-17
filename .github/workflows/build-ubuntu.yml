@@ -34,11 +34,11 @@ jobs:
         sudo tar -xzf wasi-sdk-*.tar.gz
         mv wasi-sdk-21 wasi-sdk
         
-    # - name: Make WASI Socket Ext
-    #   run: |
-    #     cd lib/wasm-micro-runtime/samples/socket-api/
-    #     cmake . -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
-    #     make -j
+    - name: Make WASI Socket Ext
+      run: |
+        cd lib/wasm-micro-runtime/samples/socket-api/
+        cmake . -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+        make -j
 
     - name: Install AOT wamrc
       run: |

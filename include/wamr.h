@@ -175,7 +175,8 @@ public:
     int invoke_fseek(uint32 fd, uint32 flags, uint32 offset);
     int invoke_preopen(uint32 fd, const std::string &path);
     int invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t protocol, uint32_t sockfd);
-    int invoke_sock_connect(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);
+    int invoke_sock_client_connect(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);
+    int invoke_sock_server_connect(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);
     int invoke_sock_accept(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size);
     int invoke_sock_getsockname(uint32_t sockfd, struct sockaddr **sock, socklen_t *sock_size);
     int invoke_recv(int sockfd, uint8 **buf, size_t len, int flags);

@@ -1,55 +1,51 @@
 #include <pthread.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <unistd.h> // For sleep()
 
-// Global mutex and condition variable
+#define NUM_THREADS 4
+#define READY_TIMES 100 // Number of times the ready condition is set
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+int ready = 0; // Condition variable to wait for
 
-// Shared variable among threads to demonstrate the condition change
-int ready = 0;
-
-// Worker thread function
-void* worker(void* arg) {
-    pthread_mutex_lock(&mutex);
-    while (!ready) {
-        printf("Worker %ld is waiting for the signal.\n", (long)arg);
-        pthread_cond_wait(&cond, &mutex);
+void* thread_func(void* arg) {
+    for (int i = 0; i < READY_TIMES; ++i) {
+        pthread_mutex_lock(&mutex);
+        while (ready <= i) {
+            printf("Thread %ld waiting on condition variable, iteration %d.\n", (long)arg, i+1);
+            pthread_cond_wait(&cond, &mutex);
+        }
+        printf("Thread %ld received the broadcast, iteration %d.\n", (long)arg, i+1);
+        pthread_mutex_unlock(&mutex);
     }
-    printf("Worker %ld received the signal.\n", (long)arg);
-    pthread_mutex_unlock(&mutex);
     return NULL;
 }
 
-int main(int argc, char* argv[]) {
-    int num_threads = 5; // Number of worker threads
-    pthread_t threads[num_threads];
-
-    // Create worker threads
-    for (long i = 0; i < num_threads; i++) {
-        if (pthread_create(&threads[i], NULL, worker, (void*)i) != 0) {
-            perror("pthread_create");
-            exit(EXIT_FAILURE);
-        }
+int main() {
+    pthread_t threads[NUM_THREADS];
+    for (long i = 0; i < NUM_THREADS; ++i) {
+        pthread_create(&threads[i], NULL, thread_func, (void*)i);
     }
 
-    // Sleep for a bit to ensure all workers are waiting
-    sleep(1);
+    // Allow threads to start and wait
+    sleep(1); // Simulate some work
 
-    // Broadcast to all waiting threads
-    pthread_mutex_lock(&mutex);
-    ready = 1;
-    pthread_cond_broadcast(&cond);
-    pthread_mutex_unlock(&mutex);
-    printf("Signal sent to all waiting workers.\n");
+    for (int i = 0; i < READY_TIMES; ++i) {
+        pthread_mutex_lock(&mutex);
+        ready++; // Update the condition
+        pthread_cond_broadcast(&cond); // Notify all waiting threads
+        pthread_mutex_unlock(&mutex);
 
-    // Join all threads
-    for (int i = 0; i < num_threads; i++) {
+        printf("Main thread broadcasted condition variable, iteration %d.\n", i+1);
+        sleep(1); // Simulate time between condition changes
+    }
+
+    // Wait for all threads to complete
+    for (int i = 0; i < NUM_THREADS; ++i) {
         pthread_join(threads[i], NULL);
     }
 
-    // Clean up
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond);
 

@@ -13,33 +13,6 @@
 #include <wasi_socket_ext.h>
 #endif
 
-static uint32_t my_inet_addr(const char *ip) {
-    uint32_t result = 0;
-    unsigned int part;
-    const char *start;
-
-    start = ip;
-    for (int i = 0; i < 4; i++) {
-        char c;
-        part = 0;
-        while ((c = *start++) != '\0') {
-            if (c == '.') {
-                break;
-            }
-            if (c < '0' || c > '9') {
-                return -1; // Invalid character encountered
-            }
-            part = part * 10 + (c - '0');
-        }
-        if (part > 255) {
-            return -1; // Single part is larger than 255
-        }
-        result = result | (part << (i * 8));
-    }
-
-    return result;
-}
-
 int sockaddr_to_string(struct sockaddr *addr, char *str, size_t len) {
     uint16_t port;
     char ip_string[64];
@@ -70,20 +43,4 @@ int sockaddr_to_string(struct sockaddr *addr, char *str, size_t len) {
     return ret > 0 && (size_t)ret < len ? 0 : -1;
 }
 
-int s_(int domain, int socktype, int protocol, uint32_t sockfd) {
-    int ret = socket(AF_INET, SOCK_DGRAM, 0);
-    int *failed_array = malloc(100 * sizeof(int));
-    int counter = 0;
-
-    while (ret != sockfd) {
-        failed_array[counter] = ret;
-        counter++;
-        ret = socket(AF_INET, SOCK_DGRAM, 0);
-    }
-    for (int i = 0; i < counter; i++) {
-        close(failed_array[i]);
-    }
-    free(failed_array);
-    return ret;
-}
 #endif /* TCP_UTILS_H */

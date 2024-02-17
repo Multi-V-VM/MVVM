@@ -26,3 +26,6 @@ cmake-*
 foo
 __pycache__
 *.swp
+*.ipynb
+temp
+qemu_migrate

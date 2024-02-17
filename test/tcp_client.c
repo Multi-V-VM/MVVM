@@ -19,7 +19,7 @@ static void init_sockaddr_inet(struct sockaddr_in *addr) {
     /* 127.0.0.1:1234 */
     addr->sin_family = AF_INET;
     addr->sin_port = htons(1234);
-    addr->sin_addr.s_addr = my_inet_addr("172.17.0.2");
+    addr->sin_addr.s_addr = inet_addr("172.17.0.2");
 }
 static void init_sockaddr_inet6(struct sockaddr_in6 *addr) {
     /* [::1]:1234 */
@@ -28,29 +28,6 @@ static void init_sockaddr_inet6(struct sockaddr_in6 *addr) {
     addr->sin6_addr = in6addr_loopback;
 }
 
-void init_connect(int socket_fd) {
-    struct sockaddr_storage server_address = {0};
-
-    int len = sizeof(struct sockaddr_in);
-    init_sockaddr_inet((struct sockaddr_in *)&server_address);
-
-    printf("[Client] Create socket\n");
-    // s_(af, SOCK_STREAM, 0,socket_fd);
-    int ret = socket(AF_INET, SOCK_STREAM, 0);
-    while (ret != socket_fd) {
-        ret = socket(AF_INET, SOCK_STREAM, 0);
-        printf("connect %d %d\n", ret, socket_fd);
-    }
-    if (socket_fd == -1) {
-        perror("Create socket failed");
-    }
-
-    printf("[Client] Connect socket\n");
-    if (connect(socket_fd, (struct sockaddr *)&server_address, len) == -1) {
-        perror("Connect failed");
-        close(socket_fd);
-    }
-}
 
 int main(int argc, char *argv[]) {
     int socket_fd, ret, total_size = 0, af;

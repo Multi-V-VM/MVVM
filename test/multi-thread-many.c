@@ -3,13 +3,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define NUM_THREADS 5
+#define NUM_THREADS 4
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 int ready = 0; // Condition variable to wait for
 
-void* thread_func(void* arg) {
+void *thread_func(void *arg) {
     pthread_mutex_lock(&mutex);
     while (!ready) {
         printf("Thread %ld waiting on condition variable.\n", (long)arg);
@@ -26,7 +26,7 @@ int main() {
 
     // Create threads
     for (i = 0; i < NUM_THREADS; i++) {
-        if (pthread_create(&threads[i], NULL, thread_func, (void*)i) != 0) {
+        if (pthread_create(&threads[i], NULL, thread_func, (void *)i) != 0) {
             perror("pthread_create");
             exit(EXIT_FAILURE);
         }

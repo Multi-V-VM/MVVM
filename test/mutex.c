@@ -42,6 +42,9 @@ int main(int argc, char **argv) {
     }
 
     printf("Value of counter after update: %d (expected=%d)\n", g_count, MAX_NUM_THREADS * NUM_ITER);
+    FILE *f = fopen("./test1.txt", "w");
+
+    fprintf(f, "%d\n", g_count);
     if (g_count != MAX_NUM_THREADS * NUM_ITER) {
         __builtin_trap();
     }

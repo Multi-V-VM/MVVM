@@ -213,13 +213,13 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
 
                     socklen_t sockaddr4_size = sizeof(sockaddr4);
 
-                    wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
+                    wamr->invoke_sock_server_connect(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
                 } else {
                     struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
                     inet_pton(AF_INET, MVVM_SOCK_ADDR6, &sockaddr6.sin6_addr);
 
                     socklen_t sockaddr6_size = sizeof(sockaddr6);
-                    wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
+                    wamr->invoke_sock_client_connect(fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
                 }
 
                 // renumber or not?
@@ -244,7 +244,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
 
                         // This ip should be old ip?
                     } else {
-                        wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
+                        wamr->invoke_sock_client_connect(fd, (struct sockaddr *)&sockaddr4, sizeof(sockaddr4));
                     }
                 } else {
                     struct sockaddr_in6 sockaddr6 = sockaddr_from_ip6(socketMetaData.socketAddress);
@@ -255,7 +255,7 @@ void WAMRWASIContext::restore_impl(WASIArguments *env) {
                         wamr->new_sock_map_[fd] =
                             wamr->invoke_sock_accept(old_fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
                     } else {
-                        wamr->invoke_sock_connect(fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
+                        wamr->invoke_sock_client_connect(fd, (struct sockaddr *)&sockaddr6, sizeof(sockaddr6));
                     }
                 }
 

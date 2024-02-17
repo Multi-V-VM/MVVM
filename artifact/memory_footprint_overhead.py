@@ -1,3 +1,4 @@
+# windows mac and linux
 import os
 import common_util
 def get_size_linear_memory():

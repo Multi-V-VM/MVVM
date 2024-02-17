@@ -21,7 +21,7 @@ init_sockaddr_inet(struct sockaddr_in *addr)
    /* 172.17.0.1:1234 */
    addr->sin_family = AF_INET;
    addr->sin_port = htons(12346);
-   addr->sin_addr.s_addr = my_inet_addr("172.17.0.3");
+   addr->sin_addr.s_addr = inet_addr("172.17.0.2");
 }
 
 static void

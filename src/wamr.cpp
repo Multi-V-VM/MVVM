@@ -203,12 +203,6 @@ int WAMRInstance::invoke_main() {
     return wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
 }
 void WAMRInstance::invoke_init_c() {
-    auto name = "__wasm_init_memory";
-    if (!(func = wasm_runtime_lookup_function(module_inst, name, nullptr))) {
-        SPDLOG_ERROR("The wasi ", name, " function is not found.");
-    } else {
-        wasm_runtime_call_wasm(exec_env, func, 0, nullptr);
-    }
     auto name1 = "__wasm_call_ctors";
     if (!(func = wasm_runtime_lookup_function(module_inst, name1, nullptr))) {
         SPDLOG_ERROR("The wasi ", name1, " function is not found.");
@@ -246,9 +240,16 @@ int WAMRInstance::invoke_sock_open(uint32_t domain, uint32_t socktype, uint32_t 
     auto res = wasm_runtime_call_wasm(exec_env, func, 4, argv);
     return argv[0];
 }
-int WAMRInstance::invoke_sock_connect(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size) {
+int WAMRInstance::invoke_sock_client_connect(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size) {
     uint32 argv[1] = {sockfd};
-    find_func("init_connect");
+    find_func("ci_");
+    wasm_runtime_call_wasm(exec_env, func, 1, argv);
+    int res = argv[0];
+    return -1;
+}
+int WAMRInstance::invoke_sock_server_connect(uint32_t sockfd, struct sockaddr *sock, socklen_t sock_size) {
+    uint32 argv[1] = {sockfd};
+    find_func("si_");
     wasm_runtime_call_wasm(exec_env, func, 1, argv);
     int res = argv[0];
     return -1;
@@ -458,10 +459,6 @@ void WAMRInstance::replay_sync_ops(bool main, wasm_exec_env_t exec_env) {
                     mysync->expected, -1, mysync->wait64);
                 break;
             case SYNC_OP_ATOMIC_NOTIFY:
-                wasm_runtime_atomic_notify(
-                    exec_env->module_inst,
-                    ((uint8_t *)((WASMModuleInstance *)exec_env->module_inst)->memories[0]->memory_data + mysync->ref),
-                    ((uint32)mysync->expected));
                 break;
             }
             // wakeup everyone
@@ -513,8 +510,6 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     main_env->restore_call_chain = nullptr;
 
     invoke_init_c();
-    // invoke_preopen(1, "/dev/stdout");
-    // invoke_preopen(2, "/dev/stderr");
 #if WASM_ENABLE_LIB_PTHREAD != 0
     spawn_child(main_env, true);
 #endif
@@ -527,8 +522,6 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
         module_inst = main_env->module_inst;
 
         fprintf(stderr, "invoke_init_c\n");
-        // invoke_init_c();
-        //  invoke_preopen(1, "/dev/stdout");
         fprintf(stderr, "wakeup.release\n");
         wakeup.release(100);
 
@@ -595,9 +588,6 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
             auto *saved_env = cur_env->restore_call_chain;
             cur_env->restore_call_chain = NULL;
             exec_env->is_restore = true;
-            // invoke_init_c();
-            // invoke_preopen(1, "/dev/stdout");
-            // invoke_preopen(2, "/dev/stderr");
             // main thread
             thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count].first);
             cur_env->restore_call_chain = saved_env;
