@@ -17,7 +17,9 @@ def get_func_index(func, file):
     output1 = [
         x
         for x in output
-        if not x.__contains__("(type (;") and not x.__contains__("(table (;") and not x.__contains__("global.get")
+        if not x.__contains__("(type (;")
+        and not x.__contains__("(table (;")
+        and not x.__contains__("global.get")
     ]
     for i in range(len(output1)):
         if func in output1[i]:
@@ -26,14 +28,14 @@ def get_func_index(func, file):
 
 list_of_arg = [
     "OMP_NUM_THREADS=1",
-    "OMP_NUM_THREADS=2",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=8",
+    # "OMP_NUM_THREADS=2",
+    # "OMP_NUM_THREADS=4",
+    # "OMP_NUM_THREADS=8",
 ]
 aot_variant = [".aot"]
 # aot_variant = ["-ckpt-every-dirty.aot"]
 
-trial = 1
+trial = 2
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -44,18 +46,21 @@ def run_checkpoint_restore(
     aot_file: str, arg: list[str], env: str
 ) -> tuple[str, str, str, str]:
     # Execute run_checkpoint and capture its result
-    for i in range(trial):
+    res = []
+    for _ in range(trial):
         checkpoint_result = run_checkpoint(aot_file, arg, env)
 
         # Execute run_restore with the same arguments (or modify as needed)
         restore_result = run_restore(aot_file, arg, env)
         print(checkpoint_result, restore_result)
-    # Return a combined result or just the checkpoint result as needed
-    return checkpoint_result, restore_result
+        # Return a combined result or just the checkpoint result as needed
+
+        res.append(checkpoint_result[1] + restore_result[1])
+    return (checkpoint_result[0], res)
 
 
 def run_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} -c 10000"
+    cmd = f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} -c 1000"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -133,6 +138,7 @@ def run_criu_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]
     # print(output)
     return (exec, output)
 
+
 def run_qemu_checkpoint_restore(
     aot_file: str, arg: list[str], env: str
 ) -> tuple[str, str, str, str]:
@@ -183,6 +189,7 @@ def run_qemu_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]
     # print(exec)
     # print(output)
     return (exec, output)
+
 
 def run(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     cmd = f"./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"

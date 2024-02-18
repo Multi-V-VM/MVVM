@@ -22,13 +22,13 @@ void WAMRMemoryInstance::restore_impl(WASMMemoryInstance *env) {
     env->cur_page_count = cur_page_count;
     env->max_page_count = max_page_count;
     env->memory_data_size = memory_data.size();
-    // #if !defined(_WIN32)
-    //     if (env->ref_count > 0) // shared memory
-    //         env->memory_data =
-    //             (uint8 *)mmap(NULL, wamr->heap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    //     else
-    // #endif
-    //     env->memory_data = (uint8 *)malloc(env->memory_data_size);
+    #if !defined(_WIN32)
+        if (env->ref_count > 0) // shared memory
+            env->memory_data =
+                (uint8 *)mmap(NULL, wamr->heap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        else
+    #endif
+        env->memory_data = (uint8 *)malloc(env->memory_data_size);
     memcpy(env->memory_data, memory_data.data(), env->memory_data_size);
     env->memory_data_end = env->memory_data + (memory_data.size());
     env->heap_data = (uint8 *)malloc(heap_data.size());

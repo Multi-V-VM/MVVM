@@ -535,12 +535,12 @@ void register_sigtrap() {
             SPDLOG_ERROR("Error: cannot handle SIGSYS");
             exit(-1);
         } else {
-            // if (sigaction(SIGSEGV, &sb, nullptr) == -1) {
-            //    SPDLOG_ERROR("Error: cannot handle SIGSEGV");
-            //     exit(-1);
-            // } else {
-            //     SPDLOG_DEBUG( "SIGSEGV registered");
-            // }
+            if (sigaction(SIGSEGV, &sa, nullptr) == -1) {
+               SPDLOG_ERROR("Error: cannot handle SIGSEGV");
+                exit(-1);
+            } else {
+                SPDLOG_DEBUG( "SIGSEGV registered");
+            }
             SPDLOG_DEBUG("SIGSYS registered");
         }
         SPDLOG_DEBUG("SIGTRAP registered");
@@ -554,7 +554,7 @@ void sigint_handler(int sig) {
         serialize_to_file(wamr->exec_env);
         return;
     }
-    // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
+    fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     checkpoint = true;
     wamr->replace_nop_with_int3();
 #if defined(_WIN32)

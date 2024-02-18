@@ -75,11 +75,9 @@ void serialize_to_file(WASMExecEnv *instance) {
                 src_addr = wamr->local_addr;
                 src_addr.port = sock_data.socketAddress.port;
             }
-            SPDLOG_INFO("addr: ", tmp_fd,
-                        fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]),
-                        " port: ", src_addr.port);
-
-            wamr->op_data.addr[idx][0] = src_addr;
+            SPDLOG_INFO("addr: {} {}.{}.{}.{}  port: {}", tmp_fd, src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2],
+                        src_addr.ip4[3], src_addr.port);
+            // make the rest coroutine?
             tmp_ip4 = fmt::format("{}.{}.{}.{}", sock_data.socketSentToData.dest_addr.ip.ip4[0],
                                   sock_data.socketSentToData.dest_addr.ip.ip4[1],
                                   sock_data.socketSentToData.dest_addr.ip.ip4[2],
@@ -212,7 +210,7 @@ int main(int argc, char *argv[]) {
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
         "d,dir", "The directory list exposed to WAMR", cxxopts::value<std::vector<std::string>>()->default_value("./"))(
-        "m,map_dir", "The mapped directory list exposed to WAMRe",
+        "m,map_dir", "The mapped directory list exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value(""))(
         "e,env", "The environment list exposed to WAMR",
         cxxopts::value<std::vector<std::string>>()->default_value("a=b"))(
