@@ -5,6 +5,8 @@ RUN apt-get update && apt-get install -y \
     wget git cmake ninja-build python3 python3-pip \
     lsb-release software-properties-common gnupg
 
+RUN apt-get install -y python3-ipykernel python3-numpy python3-matplotlib
+
 RUN cd /opt \
     && wget http://108.181.27.85/wasi/wasi-sdk-21.0-linux.tar.gz \
     && tar -xzf wasi-sdk-*.tar.gz \
