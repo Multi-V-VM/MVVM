@@ -24,14 +24,15 @@
 				"ms-toolsai.jupyter-renderers",
 				"ms-toolsai.vscode-jupyter-slideshow",
 				"ms-python.vscode-pylance",
-				"ms-python.python"
+				"ms-python.python",
+				"eamodio.gitlens"
 			]
 		}
 	},
 
 	// mount git config
 	"mounts": [
-		"source=/home/ryo/.config/git/config,target=/home/ubuntu/.config/git/config,type=bind,consistency=cached"
+		"source=${localEnv:HOME}/.config/git/config,target=/home/ubuntu/.config/git/config,type=bind,consistency=cached"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
