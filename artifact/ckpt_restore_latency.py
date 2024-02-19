@@ -1,5 +1,5 @@
 # for thread cound to 1, 2, 4, 8, 16
-import os
+import csv
 import common_util
 from collections import defaultdict
 import numpy as np
@@ -37,7 +37,8 @@ arg = [
     ["maze-6404.txt", "4"],
     ["maze-6404.txt", "8"],
 ]
-envs = [ "a=b",
+envs = [
+    "a=b",
     "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2",
     "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
@@ -46,8 +47,9 @@ envs = [ "a=b",
     "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "a=b","a=b","a=b","a=b",
-        ]
+    "a=b",
+    "a=b","a=b","a=b",
+]
 
 
 pool = Pool(processes=10)
@@ -68,6 +70,7 @@ def run_mvvm():
                 )
             )
     results1 = [x.get() for x in results1]
+    write_to_csv(results1, "ckpt_restore_latency_raw.csv")
     for exec, output in results1:
         for o in range(len(output)):
             lines = output[o].split("\n")
@@ -96,7 +99,20 @@ def run_criu():
             )
         )
     # print the results
-    results += [x.get() for x in results1]
+    results1 = [x.get() for x in results1]
+    write_to_csv_raw(results1, "ckpt_restore_latency_criu.csv")
+    for exec, output in results1:
+        for o in range(len(output)):
+            lines = output[o].split("\n")
+            for line in lines:
+                if line.__contains__("Dumping finished successfully"):
+                    time = line.split(" ")[0].replace("(", "").replace(")", "")
+                    snapshot_time = float(time)
+                if line.__contains__("Restore finished successfully."):
+                    time = line.split(" ")[0].replace("(", "").replace(")", "")
+                    recover_time = float(time)
+            print(exec, snapshot_time, recover_time)
+            results += [(exec, snapshot_time, recover_time)]
 
 
 def run_qemu():
@@ -112,11 +128,48 @@ def run_qemu():
             )
         )
     # print the results
-    results += [x.get() for x in results1]
+    result1 = [x.get() for x in results1]
+    write_to_csv_raw(results1, "ckpt_restore_latency_qemu.csv")
+    for exec, output in results1:
+        for o in range(len(output)):
+            lines = output[o].split("\n")
+            for line in lines:
+                if line.__contains__("Dumping finished successfully"):
+                    time = line.split(" ")[0].replace("(", "").replace(")", "")
+                    snapshot_time = float(time)
+                if line.__contains__("Running post-resume scripts"):
+                    time = line.split(" ")[0].replace("(", "").replace(")", "")
+                    recover_time = float(time)
+            print(exec, snapshot_time, recover_time)
+            results += [(exec, snapshot_time, recover_time)]
+
+
+def write_to_csv_raw(data, filename):
+    # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
+
+    with open(filename, "w", newline="") as csvfile:
+        csvfile.write("name, output\n")
+        # Optionally write headers
+
+        # Write the data
+        csvfile.write(str(data))
+
+
+def write_to_csv(data, filename):
+    # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
+
+    with open(filename, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        # Optionally write headers
+        writer.writerow(["name", "snapshot time(s)", "recovery time(s)"])
+
+        # Write the data
+        for row in data:
+            writer.writerow(row)
 
 
 # print the results
-def plot(result):
+def plot(result, file_name="ckpt_restore_latency.pdf"):
     workloads = defaultdict(list)
     for workload, snapshot, recovery in result:
         workloads[workload.split("1")[0]].append((snapshot, recovery))
@@ -133,8 +186,7 @@ def plot(result):
         }
 
     # Plotting
-    fig, ax = plt.subplots()
-
+    fig, ax = plt.subplots(figsize=(15, 7))
     # Define the bar width and positions
     bar_width = 0.35
     index = np.arange(len(statistics))
@@ -168,21 +220,23 @@ def plot(result):
     ax.set_ylabel("Time")
     ax.set_title("Median and Variation of Snapshot and Recovery Times by Workload")
     ax.set_xticks(index + bar_width / 2)
-    ax.set_xticklabels(statistics.keys())
+    ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
+    ax.set_xticklabels(ticklabel, rotation=45)
     ax.legend()
 
     # Show the plot
     plt.tight_layout()
     plt.show()
-    plt.savefig("ckpt_restore_latency.pdf")
+    plt.savefig(file_name)
     # %%
 
 
 if __name__ == "__main__":
-    run_mvvm()
-    print(results)
-    print(len(arg),len(cmd),len(envs))
-    # results = [('a=b linpack.aot', 4.147552, 2.550483), ('a=b linpack.aot', 4.164721, 2.58253), ('a=b llama.aot stories15M.bin -z tokenizer.bin -t 0.0', 0.238909, 2.58253), ('a=b llama.aot stories15M.bin -z tokenizer.bin -t 0.0', 0.238602, 2.58253)]
-    plot(results)
-    # run_criu()
+    # run_mvvm()
+    # print(results)
+    # print(len(arg),len(cmd),len(envs))
+    # results = [('a=b linpack.aot', 4.147552, 2.550483), ('a=b linpack.aot', 4.164721, 2.58253), ('a=b llama.aot stories15M.bin', 0.238909, 2.58253), ('a=b llama.aot stories15M.bin', 0.238602, 2.58253)]
+    run_criu()
+    write_to_csv(results, "ckpt_restore_latency_criu.csv")
+    plot(results, "ckpt_restore_latency_criu.pdf")
     # run_qemu()

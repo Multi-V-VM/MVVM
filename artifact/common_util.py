@@ -1,7 +1,9 @@
 import subprocess
-import sys
 import os
+import asyncio
 import time
+
+pwd = "/mnt1/MVVM"
 
 
 def get_func_index(func, file):
@@ -34,8 +36,8 @@ list_of_arg = [
 ]
 aot_variant = [".aot"]
 # aot_variant = ["-ckpt-every-dirty.aot"]
-
-trial = 2
+# aot_variant = ["-pure.aot", "-stack.aot", "-ckpt.aot", "-ckpt-br.aot"]
+trial = 1
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -78,9 +80,36 @@ def run_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     cmd = f"./MVVM_restore -t ./bench/{aot_file}"
     print(cmd)
     cmd = cmd.split()
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    # try:
-    output = result.stdout.decode("utf-8")
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+
+    # Record start time
+    start_time = time.time()
+    while True:
+        # Check if the process has terminated
+        if proc.poll() is not None:
+            break  # Process has finished
+
+        # Check for timeout
+        if time.time() - start_time > 20:
+            # Attempt to terminate the process
+            proc.terminate()
+            try:
+                # Wait a bit for the process to terminate
+                proc.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                # If it's still not terminated, kill it
+                proc.kill()
+                proc.wait()
+            break  # Exit the loop
+
+        time.sleep(0.1)  # Sleep briefly to avoid busy waiting
+
+    # Capture any output
+    output, stderr = proc.communicate()
+
+    # output = stdout.decode("utf-8")
     # except:
     # output = result.stdout
     exec = " ".join([env] + [aot_file] + arg)
@@ -91,48 +120,110 @@ def run_criu_checkpoint_restore(
     aot_file: str, arg: list[str], env: str
 ) -> tuple[str, str, str, str]:
     # Execute run_checkpoint and capture its result
-    checkpoint_result = run_criu_checkpoint(aot_file, arg, env)
+    res = []
+    for _ in range(trial):
+        checkpoint_result = run_criu_checkpoint(aot_file, arg, env)
 
-    # Execute run_criu_restore with the same arguments (or modify as needed)
-    restore_result = run_criu_restore(aot_file, arg, env)
+        # Execute run_restore with the same arguments (or modify as needed)
+        restore_result = run_criu_restore(aot_file, arg, env)
+        print(checkpoint_result, restore_result)
+        # Return a combined result or just the checkpoint result as needed
 
-    # Return a combined result or just the checkpoint result as needed
-    return checkpoint_result, restore_result
+        res.append(checkpoint_result[1] + restore_result[1])
+    return (checkpoint_result[0], res)
+
+
+async def run_subprocess(cmd, env):
+    # Create a subprocess
+    process = await asyncio.create_subprocess_exec(
+        cmd, env=env, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+
+    return process.pid
 
 
 def run_criu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     file = aot_file.replace(".aot", "")
-    cmd = f"../build/bench/{file} {' '.join(arg)}"
-    print(cmd)
-    cmd = cmd.split()
-    result = subprocess.Popen(
-        cmd, env={env}, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    cmd = f"{pwd}/bench/{file}/build/{file} {' '.join(arg)}".strip()
+    env_arg = dict([env.split("=")])
+
+    pid = asyncio.run(run_subprocess(cmd, env_arg))
+    time.sleep(0.1)
+    os.system(f"mkdir -p /tmp/{file}")
+    criu_cmd = f"/usr/sbin/criu dump -t {pid} -D /tmp/{file} --shell-job -v"
+
+    criu_cmd = criu_cmd.split()
+    proc = subprocess.Popen(
+        criu_cmd, env=env_arg, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )
 
-    try:
-        output = result.stdout.decode("utf-8")
-    except:
-        output = result.stdout
+    # Record start time
+    start_time = time.time()
+    while True:
+        # Check if the process has terminated
+        if proc.poll() is not None:
+            break  # Process has finished
+
+        # Check for timeout
+        if time.time() - start_time > 20:
+            # Attempt to terminate the process
+            proc.terminate()
+            try:
+                # Wait a bit for the process to terminate
+                proc.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                # If it's still not terminated, kill it
+                proc.kill()
+                proc.wait()
+            break  # Exit the loop
+
+        time.sleep(0.1)  # Sleep briefly to avoid busy waiting
+
+    # Capture any output
+    _, output = proc.communicate()
     exec = " ".join([env] + [aot_file] + arg)
     # print(exec)
-    # print(output)
+    print(output)
     return (exec, output)
 
 
 def run_criu_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     file = aot_file.replace(".aot", "")
 
-    cmd = f"../build/bench/{file} {' '.join(arg)}"
+    cmd = f"/usr/sbin/criu restore -D /tmp/{file} --shell-job -v"
     print(cmd)
     cmd = cmd.split()
-    result = subprocess.Popen(
-        cmd, env={env}, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    env_arg = dict([env.split("=")])
+
+    proc = subprocess.Popen(
+        cmd, env=env_arg, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )
 
-    try:
-        output = result.stdout.decode("utf-8")
-    except:
-        output = result.stdout
+    # Record start time
+    start_time = time.time()
+    while True:
+        # Check if the process has terminated
+        if proc.poll() is not None:
+            break  # Process has finished
+
+        # Check for timeout
+        if time.time() - start_time > 20:
+            # Attempt to terminate the process
+            proc.terminate()
+            try:
+                # Wait a bit for the process to terminate
+                proc.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                # If it's still not terminated, kill it
+                proc.kill()
+                proc.wait()
+            break  # Exit the loop
+
+        time.sleep(0.1)  # Sleep briefly to avoid busy waiting
+
+    # Capture any output
+    _, output = proc.communicate()
+
     exec = " ".join([env] + [aot_file] + arg)
     # print(exec)
     # print(output)
@@ -142,14 +233,17 @@ def run_criu_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]
 def run_qemu_checkpoint_restore(
     aot_file: str, arg: list[str], env: str
 ) -> tuple[str, str, str, str]:
-    # Execute run_checkpoint and capture its result
-    checkpoint_result = run_qemu_checkpoint(aot_file, arg, env)
+    res = []
+    for _ in range(trial):
+        checkpoint_result = run_qemu_checkpoint(aot_file, arg, env)
 
-    # Execute run_qemu_restore with the same arguments (or modify as needed)
-    restore_result = run_qemu_restore(aot_file, arg, env)
+        # Execute run_restore with the same arguments (or modify as needed)
+        restore_result = run_qemu_restore(aot_file, arg, env)
+        print(checkpoint_result, restore_result)
+        # Return a combined result or just the checkpoint result as needed
 
-    # Return a combined result or just the checkpoint result as needed
-    return checkpoint_result, restore_result
+        res.append(checkpoint_result[1] + restore_result[1])
+    return (checkpoint_result[0], res)
 
 
 def run_qemu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
@@ -160,11 +254,12 @@ def run_qemu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, s
     result = subprocess.Popen(
         cmd, env={env}, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
+    stdout, stderr = result.communicate()
 
     try:
-        output = result.stdout.decode("utf-8")
+        output = stdout.decode("utf-8")
     except:
-        output = result.stdout
+        output = stdout
     exec = " ".join([env] + [aot_file] + arg)
     # print(exec)
     # print(output)
@@ -180,7 +275,8 @@ def run_qemu_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]
     result = subprocess.Popen(
         cmd, env={env}, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
-
+    stdout, stderr = result.communicate()
+    int(open("test1.txt").read())
     try:
         output = result.stdout.decode("utf-8")
     except:
