@@ -491,6 +491,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 
     get_int3_addr();
     replace_int3_with_nop();
+    this->time = std::chrono::high_resolution_clock::now();
 
     restore(execEnv.front(), cur_env);
     if (tid_start_arg_map.find(execEnv.back()->cur_count) != tid_start_arg_map.end()) {
@@ -534,11 +535,14 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 
         replay_sync_ops(true, main_env);
 #endif
-        auto end = std::chrono::high_resolution_clock::now();
-        // get duration in us
-        auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - this->time);
-        SPDLOG_INFO("Recover time: {}\n", dur.count() / 1000000.0);
-        // put things back
+        if (this->time != std::chrono::time_point<std::chrono::high_resolution_clock>()) {
+            auto end = std::chrono::high_resolution_clock::now();
+            // get duration in us
+            auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - this->time);
+            this->time = std::chrono::time_point<std::chrono::high_resolution_clock>();
+            SPDLOG_INFO("Recover time: {}\n", dur.count() / 1000000.0);
+            // put things back
+        }
         invoke_main();
     }
 }
@@ -645,7 +649,14 @@ void wamr_wait(wasm_exec_env_t exec_env) {
     wamr->replay_sync_ops(false, exec_env);
     SPDLOG_DEBUG("finish syncing");
 #endif
-
+    if (wamr->time != std::chrono::time_point<std::chrono::high_resolution_clock>()) {
+        auto end = std::chrono::high_resolution_clock::now();
+        // get duration in us
+        auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - wamr->time);
+        wamr->time = std::chrono::time_point<std::chrono::high_resolution_clock>();
+        SPDLOG_INFO("Recover time: {}\n", dur.count() / 1000000.0);
+        // put things back
+    }
     // finished restoring
     exec_env->is_restore = true;
     fprintf(stderr, "invoke side%p\n", ((WASMModuleInstance *)exec_env->module_inst)->global_data);
