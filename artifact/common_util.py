@@ -54,7 +54,7 @@ def run_checkpoint_restore(
 
         # Execute run_restore with the same arguments (or modify as needed)
         restore_result = run_restore(aot_file, arg, env)
-        print(checkpoint_result, restore_result)
+        # print(checkpoint_result, restore_result)
         # Return a combined result or just the checkpoint result as needed
 
         res.append(checkpoint_result[1] + restore_result[1])
@@ -117,16 +117,16 @@ def run_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
 
 
 def run_criu_checkpoint_restore(
-    aot_file: str, arg: list[str], env: str
+    aot_file: str, folder, arg: list[str], env: str
 ) -> tuple[str, str, str, str]:
     # Execute run_checkpoint and capture its result
     res = []
     for _ in range(trial):
-        checkpoint_result = run_criu_checkpoint(aot_file, arg, env)
+        checkpoint_result = run_criu_checkpoint(aot_file, folder, arg, env)
 
         # Execute run_restore with the same arguments (or modify as needed)
         restore_result = run_criu_restore(aot_file, arg, env)
-        print(checkpoint_result, restore_result)
+        # print(checkpoint_result, restore_result)
         # Return a combined result or just the checkpoint result as needed
 
         res.append(checkpoint_result[1] + restore_result[1])
@@ -136,22 +136,25 @@ def run_criu_checkpoint_restore(
 async def run_subprocess(cmd, env):
     # Create a subprocess
     process = await asyncio.create_subprocess_exec(
-        cmd, env=env, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        *cmd, env=env, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
 
     return process.pid
 
 
-def run_criu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
+def run_criu_checkpoint(
+    aot_file: str, folder, arg: list[str], env: str
+) -> tuple[str, str]:
     file = aot_file.replace(".aot", "")
-    cmd = f"{pwd}/bench/{file}/build/{file} {' '.join(arg)}".strip()
+    cmd = f"{pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
     env_arg = dict([env.split("=")])
-
+    print(cmd)
+    cmd = cmd.split()
     pid = asyncio.run(run_subprocess(cmd, env_arg))
-    time.sleep(0.1)
+    time.sleep(1)
     os.system(f"mkdir -p /tmp/{file}")
     criu_cmd = f"/usr/sbin/criu dump -t {pid} -D /tmp/{file} --shell-job -v"
-
+    print(criu_cmd)
     criu_cmd = criu_cmd.split()
     proc = subprocess.Popen(
         criu_cmd, env=env_arg, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
@@ -183,7 +186,7 @@ def run_criu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, s
     _, output = proc.communicate()
     exec = " ".join([env] + [aot_file] + arg)
     # print(exec)
-    print(output)
+    # print(output)
     return (exec, output)
 
 
@@ -231,11 +234,11 @@ def run_criu_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]
 
 
 def run_qemu_checkpoint_restore(
-    aot_file: str, arg: list[str], env: str
+    aot_file: str, folder: str, arg: list[str], env: str
 ) -> tuple[str, str, str, str]:
     res = []
     for _ in range(trial):
-        checkpoint_result = run_qemu_checkpoint(aot_file, arg, env)
+        checkpoint_result = run_qemu_checkpoint(aot_file, folder, arg, env)
 
         # Execute run_restore with the same arguments (or modify as needed)
         restore_result = run_qemu_restore(aot_file, arg, env)
@@ -246,9 +249,11 @@ def run_qemu_checkpoint_restore(
     return (checkpoint_result[0], res)
 
 
-def run_qemu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
+def run_qemu_checkpoint(
+    aot_file: str, folder: str, arg: list[str], env: str
+) -> tuple[str, str]:
     file = aot_file.replace(".aot", "")
-    cmd = f"./qemu_migrate_client.sh ../build/bench/{file} {' '.join(arg)}"
+    cmd = f"./prepare_checkpoint.sh {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.Popen(
@@ -269,14 +274,14 @@ def run_qemu_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, s
 def run_qemu_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     file = aot_file.replace(".aot", "")
 
-    cmd = f"./qemu_migrate_server.sh ../build/bench/{file} {' '.join(arg)}"
+    cmd = f"./prepare_restore.sh"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.Popen(
         cmd, env={env}, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     stdout, stderr = result.communicate()
-    int(open("test1.txt").read())
+    int(open(f"/tmp/{file}.txt").read())
     try:
         output = result.stdout.decode("utf-8")
     except:
@@ -318,7 +323,7 @@ def run_hcontainer(file: str, folder: str, arg: list[str], env: str) -> tuple[st
 
 
 def run_native(file: str, folder: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"time /mnt/MVVM/bench/{folder}/build/{file} {' '.join(arg)}"
+    cmd = f"time {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -335,7 +340,7 @@ def run_native(file: str, folder: str, arg: list[str], env: str) -> tuple[str, s
 def run_qemu_x86_64(
     file: str, folder: str, arg: list[str], env: str
 ) -> tuple[str, str]:
-    cmd = f"time qemu-x86_64 /mnt/MVVM/bench/{folder}/build/{file} {' '.join(arg)}"
+    cmd = f"time qemu-x86_64 {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -352,7 +357,7 @@ def run_qemu_x86_64(
 def run_qemu_aarch64(
     file: str, folder: str, arg: list[str], env: str
 ) -> tuple[str, str]:
-    cmd = f"time qemu-aarch64 /mnt/MVVM/bench/{folder}/build/{file} {' '.join(arg)}"
+    cmd = f"time qemu-aarch64 {pwd}/bench/{folder}/build_aarch64_native/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

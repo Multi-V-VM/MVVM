@@ -6,49 +6,64 @@ import numpy as np
 from matplotlib import pyplot as plt
 from multiprocessing import Pool
 
+folder = [
+    "linpack",
+    # "llama","llama",
+    # "nas","nas","nas",
+    # "nas","nas","nas",
+    # "nas","nas","nas",
+    # "nas","nas","nas",
+    # "nas","nas","nas",
+    # "nas","nas","nas",
+    # "nas","nas","nas",
+    # "redis",
+    # "hdastar",
+    # "hdastar",
+    # "hdastar",
+]
 cmd = [
     "linpack",
-    "llama","llama",
-    "bt","bt","bt",
-    "cg","cg","cg",
-    "ep","ep","ep",
-    "ft","ft","ft",
-    "lu","lu","lu",
-    "mg","mg","mg",
-    "sp","sp","sp",
-    "redis",
-    "hdastar",
-    "hdastar",
-    "hdastar",
+    # "llama","llama",
+    # "bt","bt","bt",
+    # "cg","cg","cg",
+    # "ep","ep","ep",
+    # "ft","ft","ft",
+    # "lu","lu","lu",
+    # "mg","mg","mg",
+    # "sp","sp","sp",
+    # "redis",
+    # "hdastar",
+    # "hdastar",
+    # "hdastar",
 ]
 arg = [
     [],
-    ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    [],[],[],
-    [],[],[],
-    [],[],[],
-    [],[],[],
-    [],[],[],
-    [],[],[],
-    [],[],[],
-    [],
-    ["maze-6404.txt", "2"],
-    ["maze-6404.txt", "4"],
-    ["maze-6404.txt", "8"],
+    # ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
+    # ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
+    # [],[],[],
+    # [],[],[],
+    # [],[],[],
+    # [],[],[],
+    # [],[],[],
+    # [],[],[],
+    # [],[],[],
+    # [],
+    # ["maze-6404.txt", "2"],
+    # ["maze-6404.txt", "4"],
+    # ["maze-6404.txt", "8"],
 ]
 envs = [
     "a=b",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "a=b",
-    "a=b","a=b","a=b",
+    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2",
+    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    # "a=b",
+    # "a=b","a=b","a=b",
 ]
 
 
@@ -61,14 +76,13 @@ def run_mvvm():
     results1 = []
 
     for i, c in enumerate(cmd):
-        for j in range(len(common_util.aot_variant)):
-            aot = cmd[i] + common_util.aot_variant[j]
-            results1.append(
-                pool.apply_async(
-                    common_util.run_checkpoint_restore,
-                    (aot, arg[i], envs[i]),
-                )
+        aot = cmd[i] + common_util.aot_variant[j]
+        results1.append(
+            pool.apply_async(
+                common_util.run_checkpoint_restore,
+                (aot, arg[i], envs[i]),
             )
+        )
     results1 = [x.get() for x in results1]
     write_to_csv(results1, "ckpt_restore_latency_raw.csv")
     for exec, output in results1:
@@ -95,7 +109,7 @@ def run_criu():
         results1.append(
             pool.apply_async(
                 common_util.run_criu_checkpoint_restore,
-                (aot, arg[i], "OMP_NUM_THREADS=1"),
+                (aot,folder[i], arg[i], "OMP_NUM_THREADS=1"),
             )
         )
     # print the results
@@ -111,7 +125,7 @@ def run_criu():
                 if line.__contains__("Restore finished successfully."):
                     time = line.split(" ")[0].replace("(", "").replace(")", "")
                     recover_time = float(time)
-            print(exec, snapshot_time, recover_time)
+            print(output[o])
             results += [(exec, snapshot_time, recover_time)]
 
 
@@ -124,7 +138,7 @@ def run_qemu():
         results1.append(
             pool.apply_async(
                 common_util.run_qemu_checkpoint_checkpoint,
-                (aot, arg[i], "OMP_NUM_THREADS=1"),
+                (aot, folder[i],arg[i], "OMP_NUM_THREADS=1"),
             )
         )
     # print the results

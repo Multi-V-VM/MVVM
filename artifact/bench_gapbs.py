@@ -68,7 +68,7 @@ with open("bench_gapbs_results.pickle", "wb") as f:
 for exec, output in results:
     print(exec)
     try:
-        lines = output.decode("ISO-8859-1").split("\n")
+        lines = output.decode("utf-8").split("\n")
         for line in lines:
             if line.__contains__("Execution time:"):
                 print(line)
