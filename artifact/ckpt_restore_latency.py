@@ -8,66 +8,66 @@ from multiprocessing import Pool
 
 folder = [
     "linpack",
-    # "llama","llama",
-    # "nas","nas","nas",
-    # "nas","nas","nas",
-    # "nas","nas","nas",
-    # "nas","nas","nas",
-    # "nas","nas","nas",
-    # "nas","nas","nas",
-    # "nas","nas","nas",
-    # "redis",
-    # "hdastar",
-    # "hdastar",
-    # "hdastar",
+    "llama","llama",
+    "nas","nas","nas",
+    "nas","nas","nas",
+    "nas","nas","nas",
+    "nas","nas","nas",
+    "nas","nas","nas",
+    "nas","nas","nas",
+    "nas","nas","nas",
+    "redis",
+    "hdastar",
+    "hdastar",
+    "hdastar",
 ]
 cmd = [
     "linpack",
-    # "llama","llama",
-    # "bt","bt","bt",
-    # "cg","cg","cg",
-    # "ep","ep","ep",
-    # "ft","ft","ft",
-    # "lu","lu","lu",
-    # "mg","mg","mg",
-    # "sp","sp","sp",
-    # "redis",
-    # "hdastar",
-    # "hdastar",
-    # "hdastar",
+    "llama","llama",
+    "bt","bt","bt",
+    "cg","cg","cg",
+    "ep","ep","ep",
+    "ft","ft","ft",
+    "lu","lu","lu",
+    "mg","mg","mg",
+    "sp","sp","sp",
+    "redis",
+    "hdastar",
+    "hdastar",
+    "hdastar",
 ]
 arg = [
     [],
-    # ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    # ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    # [],[],[],
-    # [],[],[],
-    # [],[],[],
-    # [],[],[],
-    # [],[],[],
-    # [],[],[],
-    # [],[],[],
-    # [],
-    # ["maze-6404.txt", "2"],
-    # ["maze-6404.txt", "4"],
-    # ["maze-6404.txt", "8"],
+    ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
+    ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
+    [],[],[],
+    [],[],[],
+    [],[],[],
+    [],[],[],
+    [],[],[],
+    [],[],[],
+    [],[],[],
+    [],
+    ["maze-6404.txt", "2"],
+    ["maze-6404.txt", "4"],
+    ["maze-6404.txt", "8"],
 ]
 envs = [
     "a=b",
-    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2",
-    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    # "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    # "a=b",
-    # "a=b","a=b","a=b",
+    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2",
+    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    "a=b",
+    "a=b","a=b","a=b",
 ]
 
 
-pool = Pool(processes=10)
+pool = Pool(processes=1)
 results = []
 
 
@@ -76,7 +76,7 @@ def run_mvvm():
     results1 = []
 
     for i, c in enumerate(cmd):
-        aot = cmd[i] + common_util.aot_variant[j]
+        aot = cmd[i] + common_util.aot_variant[0]
         results1.append(
             pool.apply_async(
                 common_util.run_checkpoint_restore,
@@ -109,12 +109,12 @@ def run_criu():
         results1.append(
             pool.apply_async(
                 common_util.run_criu_checkpoint_restore,
-                (aot,folder[i], arg[i], "OMP_NUM_THREADS=1"),
+                (aot, folder[i], arg[i], envs[i]),
             )
         )
     # print the results
     results1 = [x.get() for x in results1]
-    write_to_csv_raw(results1, "ckpt_restore_latency_criu.csv")
+    write_to_csv_raw(results1, "ckpt_restore_latency_criu_raw.csv")
     for exec, output in results1:
         for o in range(len(output)):
             lines = output[o].split("\n")
@@ -125,7 +125,7 @@ def run_criu():
                 if line.__contains__("Restore finished successfully."):
                     time = line.split(" ")[0].replace("(", "").replace(")", "")
                     recover_time = float(time)
-            print(output[o])
+            # print(output[o])
             results += [(exec, snapshot_time, recover_time)]
 
 
@@ -137,25 +137,22 @@ def run_qemu():
         aot = cmd[i]
         results1.append(
             pool.apply_async(
-                common_util.run_qemu_checkpoint_checkpoint,
-                (aot, folder[i],arg[i], "OMP_NUM_THREADS=1"),
+                common_util.run_qemu_checkpoint_restore,
+                (aot, folder[i], arg[i], envs[i]),
             )
         )
     # print the results
-    result1 = [x.get() for x in results1]
-    write_to_csv_raw(results1, "ckpt_restore_latency_qemu.csv")
+    results1 = [x.get() for x in results1]
+    write_to_csv_raw(results1, "ckpt_restore_latency_qemu_raw.csv")
     for exec, output in results1:
         for o in range(len(output)):
             lines = output[o].split("\n")
             for line in lines:
-                if line.__contains__("Dumping finished successfully"):
-                    time = line.split(" ")[0].replace("(", "").replace(")", "")
-                    snapshot_time = float(time)
-                if line.__contains__("Running post-resume scripts"):
-                    time = line.split(" ")[0].replace("(", "").replace(")", "")
-                    recover_time = float(time)
-            print(exec, snapshot_time, recover_time)
-            results += [(exec, snapshot_time, recover_time)]
+                if line.__contains__("total time: "):
+                    time = line.split(" ")[-2]
+                    snapshot_time = float(time)/1000
+            print(exec, snapshot_time)
+            results += [(exec, snapshot_time, 0.0)]
 
 
 def write_to_csv_raw(data, filename):
@@ -250,7 +247,9 @@ if __name__ == "__main__":
     # print(results)
     # print(len(arg),len(cmd),len(envs))
     # results = [('a=b linpack.aot', 4.147552, 2.550483), ('a=b linpack.aot', 4.164721, 2.58253), ('a=b llama.aot stories15M.bin', 0.238909, 2.58253), ('a=b llama.aot stories15M.bin', 0.238602, 2.58253)]
-    run_criu()
-    write_to_csv(results, "ckpt_restore_latency_criu.csv")
-    plot(results, "ckpt_restore_latency_criu.pdf")
-    # run_qemu()
+    # run_criu()
+    # write_to_csv(results, "ckpt_restore_latency_criu.csv")
+    # plot(results, "ckpt_restore_latency_criu.pdf")
+    run_qemu()
+    write_to_csv(results, "ckpt_restore_latency_qemu.csv")
+    plot(results, "ckpt_restore_latency_qemu.pdf")

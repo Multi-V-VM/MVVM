@@ -6,7 +6,7 @@ from collections import defaultdict
 from matplotlib import pyplot as plt
 
 cmd = [
-   "linpack",
+    "linpack",
 ]
 arg = [
     [],
@@ -14,19 +14,35 @@ arg = [
 
 
 pool = Pool(processes=40)
-results = []
+
+mvvm_results = []
+qemu_x86_64_results = []
+qemu_aarch64_results = []
+hcontainer_results = []
+native_results = []
+
+
 def run_mvvm():
     global results
     results1 = []
     for _ in range(common_util.trial):
-     for i in range(len(cmd)):
-        for j in range(len(common_util.aot_variant)):
-            for env in common_util.list_of_arg:
-                aot = cmd[i] + common_util.aot_variant[j]
-                results1.append(pool.apply_async(common_util.run, (aot, arg[i], env)))
+        for i in range(len(cmd)):
+            for j in range(len(common_util.aot_variant)):
+                for env in common_util.list_of_arg:
+                    aot = cmd[i] + common_util.aot_variant[j]
+                    results1.append(
+                        pool.apply_async(common_util.run, (aot, arg[i], env))
+                    )
     # print the results
-    results += [x.get() for x in results1]
-
+    results1 = [x.get() for x in results1]
+    for exec, output in results:
+        print(exec)
+        lines = output.split("\n")
+        for line in lines:
+            if line.__contains__("Execution time:"):
+                exec_time = line.split(" ")[-1]
+            print(exec, exec_time)
+    native_results.append((exec, exec_time))
 
 def run_hcontainer():
     global results
@@ -36,7 +52,8 @@ def run_hcontainer():
             aot = cmd[i]
             results1.append(
                 pool.apply_async(
-                    common_util.run_hcontainer, (aot, "linpack", arg[i], "OMP_NUM_THREADS=1")
+                    common_util.run_hcontainer,
+                    (aot, "linpack", arg[i], "OMP_NUM_THREADS=1"),
                 )
             )
     # print the results
@@ -51,7 +68,8 @@ def run_qemu_x86_64():
             aot = cmd[i]
             results1.append(
                 pool.apply_async(
-                    common_util.run_qemu_x86_64, (aot, "linpack", arg[i], "OMP_NUM_THREADS=1")
+                    common_util.run_qemu_x86_64,
+                    (aot, "linpack", arg[i], "OMP_NUM_THREADS=1"),
                 )
             )
     # print the results
@@ -82,30 +100,41 @@ def run_native():
             aot = cmd[i]
             results1.append(
                 pool.apply_async(
-                    common_util.run_native, (aot, "linpack", arg[i], "OMP_NUM_THREADS=1")
+                    common_util.run_native,
+                    (aot, "linpack", arg[i], "OMP_NUM_THREADS=1"),
                 )
             )
-    
+    results1 = [x.get() for x in results1]
+    for exec, output in results:
+        print(exec)
+        lines = output.split("\n")
+        for line in lines:
+            if line.__contains__("real"):
+                exec_time = line.split(" ")[-1]
+    native_results.append((exec, exec_time))
     # print the results
-    results += [x.get() for x in results1]
+
 
 def write_to_csv(data, filename):
     # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
 
-    with open(filename, 'w', newline='') as csvfile:
+    with open(filename, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         # Optionally write headers
-        writer.writerow(['name', 'mvvm', 'hcontainer', 'qemu_x86_64', 'qemu_aach64', 'native'])
+        writer.writerow(
+            ["name", "mvvm", "hcontainer", "qemu_x86_64", "qemu_aach64", "native"]
+        )
 
         # Write the data
         for row in data:
             writer.writerow(row)
-            
+
+
 # print the results
 def plot(result):
     workloads = defaultdict(list)
     for workload, snapshot, recovery in result:
-        workloads[workload.split("1")[0]].append((snapshot, recovery))
+        workloads[workload].append((snapshot, recovery))
 
     # Calculate the medians and standard deviations for each workload
     statistics = {}
@@ -167,20 +196,8 @@ def plot(result):
 if __name__ == "__main__":
     run_native()
     run_qemu_x86_64()
-
     # print the results
     run_qemu_aarch64()
-
     run_hcontainer()
-    for exec, output in results:
-        print(exec)
-        lines = output.split("\n")
-        for line in lines:
-            if (
-                line.__contains__("Execution time:")
-                or line.__contains__("real")
-                or line.__contains__("user")
-            ):
-                print(line)
 
     write_to_csv(results, "linpack_result.csv")
