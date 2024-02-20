@@ -13,7 +13,7 @@ arg = [
 ]
 
 
-pool = Pool(processes=40)
+pool = Pool(processes=1)
 
 mvvm_results = []
 qemu_x86_64_results = []
@@ -44,6 +44,7 @@ def run_mvvm():
             print(exec, exec_time)
     native_results.append((exec, exec_time))
 
+
 def run_hcontainer():
     global results
     results1 = []
@@ -57,7 +58,14 @@ def run_hcontainer():
                 )
             )
     # print the results
-    results += [x.get() for x in results1]
+    results1 = [x.get() for x in results1]
+    for exec, output in results1:
+        print(exec, output)
+        lines = output.split("\n")
+        for line in lines:
+            if line.__contains__("user"):
+                exec_time = float(line.split(" ")[0].replace("user", ""))
+    hcontainer_results.append((exec, exec_time))
 
 
 def run_qemu_x86_64():
@@ -73,7 +81,14 @@ def run_qemu_x86_64():
                 )
             )
     # print the results
-    results += [x.get() for x in results1]
+    results1 = [x.get() for x in results1]
+    for exec, output in results1:
+        print(exec, output)
+        lines = output.split("\n")
+        for line in lines:
+            if line.__contains__("user"):
+                exec_time = float(line.split(" ")[0].replace("user", ""))
+    qemu_x86_64_results.append((exec, exec_time))
 
 
 def run_qemu_aarch64():
@@ -88,8 +103,14 @@ def run_qemu_aarch64():
                     (aot, "linpack", arg[i], "OMP_NUM_THREADS=1"),
                 )
             )
-    # print the results
-    results += [x.get() for x in results1]
+    results1 = [x.get() for x in results1]
+    for exec, output in results1:
+        print(exec, output)
+        lines = output.split("\n")
+        for line in lines:
+            if line.__contains__("user"):
+                exec_time = float(line.split(" ")[0].replace("user", ""))
+    qemu_aarch64_results.append((exec, exec_time))
 
 
 def run_native():
@@ -105,20 +126,19 @@ def run_native():
                 )
             )
     results1 = [x.get() for x in results1]
-    for exec, output in results:
-        print(exec)
+    for exec, output in results1:
+        print(exec, output)
         lines = output.split("\n")
         for line in lines:
-            if line.__contains__("real"):
-                exec_time = line.split(" ")[-1]
+            if line.__contains__("user"):
+                exec_time = float(line.split(" ")[0].replace("user", ""))
     native_results.append((exec, exec_time))
-    # print the results
 
 
-def write_to_csv(data, filename):
+def write_to_csv(filename):
     # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
 
-    with open(filename, "w", newline="") as csvfile:
+    with open(filename, "a+", newline="") as csvfile:
         writer = csv.writer(csvfile)
         # Optionally write headers
         writer.writerow(
@@ -126,71 +146,18 @@ def write_to_csv(data, filename):
         )
 
         # Write the data
-        for row in data:
-            writer.writerow(row)
+        for idx, row in enumerate(mvvm_results):
+            writer.writerow(
+                [
+                    row[0],
+                    row[1],
+                    hcontainer_results[idx][1],
+                    qemu_x86_64_results[idx][1],
+                    qemu_aarch64_results[idx][1],
+                    native_results[idx][1],
+                ]
+            )
 
-
-# print the results
-def plot(result):
-    workloads = defaultdict(list)
-    for workload, snapshot, recovery in result:
-        workloads[workload].append((snapshot, recovery))
-
-    # Calculate the medians and standard deviations for each workload
-    statistics = {}
-    for workload, times in workloads.items():
-        snapshots, recoveries = zip(*times)
-        statistics[workload] = {
-            "snapshot_median": np.median(snapshots),
-            "recovery_median": np.median(recoveries),
-            "snapshot_std": np.std(snapshots),
-            "recovery_std": np.std(recoveries),
-        }
-
-    # Plotting
-    fig, ax = plt.subplots()
-
-    # Define the bar width and positions
-    bar_width = 0.35
-    index = np.arange(len(statistics))
-
-    # Plot the bars for each workload
-    # for i, (workload, stats) in enumerate(statistics.items()):
-    #     ax.bar(index[i], stats['snapshot_median'], bar_width, yerr=stats['snapshot_std'], capsize=5, label=f'Snapshot')
-    #     ax.bar(index[i] + bar_width, stats['recovery_median'], bar_width, yerr=stats['recovery_std'], capsize=5, label=f'Recovery')
-    for i, (workload, stats) in enumerate(statistics.items()):
-        ax.bar(
-            index[i],
-            stats["snapshot_median"],
-            bar_width,
-            yerr=stats["snapshot_std"],
-            capsize=5,
-            color="blue",
-            label="Snapshot" if i == 0 else "",
-        )
-        ax.bar(
-            index[i] + bar_width,
-            stats["recovery_median"],
-            bar_width,
-            yerr=stats["recovery_std"],
-            capsize=5,
-            color="red",
-            label="Recovery" if i == 0 else "",
-        )
-
-    # Labeling and formatting
-    ax.set_xlabel("Workload")
-    ax.set_ylabel("Time")
-    ax.set_title("Median and Variation of Snapshot and Recovery Times by Workload")
-    ax.set_xticks(index + bar_width / 2)
-    ax.set_xticklabels(statistics.keys())
-    ax.legend()
-
-    # Show the plot
-    plt.tight_layout()
-    plt.show()
-    plt.savefig("ckpt_restore_latency.pdf")
-    # %%
 
 
 if __name__ == "__main__":
@@ -200,4 +167,4 @@ if __name__ == "__main__":
     run_qemu_aarch64()
     run_hcontainer()
 
-    write_to_csv(results, "linpack_result.csv")
+    write_to_csv("linpack_result.csv")

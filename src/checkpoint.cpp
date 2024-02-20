@@ -29,9 +29,12 @@ std::ostringstream re{};
 FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
+long snapshot_memory = 0;
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     auto start = std::chrono::high_resolution_clock::now();
+    if (snapshot_memory == 0)
+        snapshot_memory = get_rss();
 #if WASM_ENABLE_LIB_PTHREAD != 0
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
@@ -192,12 +195,13 @@ void serialize_to_file(WASMExecEnv *instance) {
     }
     // finish filling vector
 #endif
-
+    auto used_memory = get_rss();
     struct_pack::serialize_to(*writer, as);
     auto end = std::chrono::high_resolution_clock::now();
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     SPDLOG_INFO("Snapshot time: {} s", dur.count() / 1000000.0);
+    SPDLOG_INFO("Memory usage: {} MB", (used_memory - snapshot_memory) / 1024 /1024);
     exit(EXIT_SUCCESS);
 }
 

@@ -11,8 +11,8 @@ INITRD_PATH=/boot/initrd.img-6.4.0+
 IMAGE_PATH=/opt/qemu-image.img
 
  ${QEMU_SYSTEM_BINARY} \
-    -smp 1 --enable-kvm -cpu host \
-    -numa node,cpus=0,memdev=mem0,nodeid=0 \
+    -smp 4 --enable-kvm -cpu host \
+    -numa node,cpus=0-3,memdev=mem0,nodeid=0 \
     -object memory-backend-ram,id=mem0,size=4G \
 	 -m 4G,slots=1,maxmem=6G \
     -kernel ${BZIMAGE_PATH} -nographic  -append "root=/dev/sda rw console=ttyS0" \

@@ -30,14 +30,14 @@ def get_func_index(func, file):
 
 list_of_arg = [
     "OMP_NUM_THREADS=1",
-    # "OMP_NUM_THREADS=2",
-    # "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=2",
+    "OMP_NUM_THREADS=4",
     # "OMP_NUM_THREADS=8",
 ]
 # aot_variant = [".aot"]
 # aot_variant = ["-ckpt-every-dirty.aot"]
 aot_variant = ["-pure.aot", "-stack.aot", "-ckpt.aot", "-ckpt-br.aot"]
-trial = 10
+trial = 1
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -253,7 +253,7 @@ def run_qemu_checkpoint(
     aot_file: str, folder: str, arg: list[str], env: str
 ) -> tuple[str, str]:
     file = aot_file.replace(".aot", "")
-    cmd = f"../artifact/prepare_checkpoint.sh {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
+    cmd = f"../artifact/prepare_checkpoint.sh env {env} {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     env_arg = dict([env.split("=")])
@@ -289,7 +289,7 @@ def run(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
 
 
 def run_hcontainer(file: str, folder: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"time /mnt1/MVVM/bench/{folder}/build_x86/{file} {' '.join(arg)}"
+    cmd = f"/usr/bin/time /mnt1/MVVM/bench/{folder}/build_x86/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -304,10 +304,12 @@ def run_hcontainer(file: str, folder: str, arg: list[str], env: str) -> tuple[st
 
 
 def run_native(file: str, folder: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"time {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
+    cmd = f"/usr/bin/time {pwd}/bench/{folder}/build/{file} {' '.join(arg)}".strip()
     print(cmd)
     cmd = cmd.split()
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    env_arg = dict([env.split("=")])
+
+    result = subprocess.run(cmd, env=env_arg, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         output = result.stderr.decode("utf-8")
     except:
@@ -321,7 +323,7 @@ def run_native(file: str, folder: str, arg: list[str], env: str) -> tuple[str, s
 def run_qemu_x86_64(
     file: str, folder: str, arg: list[str], env: str
 ) -> tuple[str, str]:
-    cmd = f"time qemu-x86_64 {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
+    cmd = f"/usr/bin/time /usr/bin/qemu-x86_64 {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -338,7 +340,7 @@ def run_qemu_x86_64(
 def run_qemu_aarch64(
     file: str, folder: str, arg: list[str], env: str
 ) -> tuple[str, str]:
-    cmd = f"time qemu-aarch64 {pwd}/bench/{folder}/build_aarch64_native/{file} {' '.join(arg)}"
+    cmd = f"/usr/bin/time /usr/bin/qemu-aarch64 {pwd}/bench/{folder}/build_aarch64_native/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
