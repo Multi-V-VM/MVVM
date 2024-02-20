@@ -34,10 +34,10 @@ list_of_arg = [
     "OMP_NUM_THREADS=4",
     # "OMP_NUM_THREADS=8",
 ]
-# aot_variant = [".aot"]
+aot_variant = [".aot"]
 # aot_variant = ["-ckpt-every-dirty.aot"]
-aot_variant = ["-pure.aot", "-stack.aot", "-ckpt.aot", "-ckpt-br.aot"]
-trial = 1
+# aot_variant = ["-pure.aot", "-stack.aot", "-ckpt.aot", "-ckpt-br.aot"]
+trial = 10
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -62,7 +62,7 @@ def run_checkpoint_restore(
 
 
 def run_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} -c 1000"
+    cmd = f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} -c 10000"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

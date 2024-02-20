@@ -18,7 +18,7 @@ extern WAMRInstance *wamr;
 
 void WAMRModuleInstance::dump_impl(WASMModuleInstance *env) {
     // The first thread will dump the memory
-    if (((WAMRExecEnv *)this)->cur_count == wamr->exec_env->handle) {
+    if (((WAMRExecEnv *)this)->cur_count == ((uint64_t)wamr->exec_env->handle)) {
         for (int i = 0; i < env->memory_count; i++) {
             auto local_mem = WAMRMemoryInstance();
             dump(&local_mem, env->memories[i]);

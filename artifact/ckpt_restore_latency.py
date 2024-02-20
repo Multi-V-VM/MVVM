@@ -178,12 +178,73 @@ def write_to_csv(data, filename):
         for row in data:
             writer.writerow(row)
 
+# print the results
+def plot_qemu(result, file_name="ckpt_restore_latency_qemu.pdf"):
+    workloads = defaultdict(list)
+    for workload, Total, Down in result:
+        if Total !=0 or Down !=0: 
+            workloads[workload.replace("OMP_NUM_THREADS=","").replace("-g20","").replace("-n300","").replace(" -f ","").replace("-vn300","").replace("maze-6404.txt","").replace("stories15M.bin","").replace("-z tokenizer.bin -t 0.0","").strip()].append((Total, Down))
 
+    # Calculate the medians and standard deviations for each workload
+    statistics = {}
+    for workload, times in workloads.items():
+        Totals, recoveries = zip(*times)
+        statistics[workload] = {
+            "Total_median": np.median(Totals),
+            "Down_median": np.median(recoveries),
+            "Total_std": np.std(Totals),
+            "Down_std": np.std(recoveries),
+        }
+
+    # Plotting
+    fig, ax = plt.subplots(figsize=(15, 7))
+    # Define the bar width and positions
+    bar_width = 0.35
+    index = np.arange(len(statistics))
+
+    # Plot the bars for each workload
+    # for i, (workload, stats) in enumerate(statistics.items()):
+    #     ax.bar(index[i], stats['Total_median'], bar_width, yerr=stats['Total_std'], capsize=5, label=f'Total')
+    #     ax.bar(index[i] + bar_width, stats['Down_median'], bar_width, yerr=stats['Down_std'], capsize=5, label=f'Down')
+    for i, (workload, stats) in enumerate(statistics.items()):
+        ax.bar(
+            index[i],
+            stats["Total_median"],
+            bar_width,
+            yerr=stats["Total_std"],
+            capsize=5,
+            color="blue",
+            label="Total" if i == 0 else "",
+        )
+        ax.bar(
+            index[i] + bar_width,
+            stats["Down_median"],
+            bar_width,
+            yerr=stats["Down_std"],
+            capsize=5,
+            color="red",
+            label="Down" if i == 0 else "",
+        )
+
+    # Labeling and formatting
+    ax.set_xlabel("Workload")
+    ax.set_ylabel("Time")
+    ax.set_title("Median and Variation of Total and Down Times by Workload")
+    ax.set_xticks(index + bar_width / 2)
+    ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
+    ax.set_xticklabels(ticklabel, rotation=45)
+    ax.legend()
+
+    # Show the plot
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(file_name)
+    
 # print the results
 def plot(result, file_name="ckpt_restore_latency.pdf"):
     workloads = defaultdict(list)
     for workload, snapshot, recovery in result:
-        workloads[workload.split("1")[0]].append((snapshot, recovery))
+        workloads[workload.replace("OMP_NUM_THREADS=","").replace("-g15","").replace("-n300","").replace(" -f ","").replace("-vn300","").replace("maze-6404.txt","").replace("stories15M.bin","").replace("-z tokenizer.bin -t 0.0","").strip()].append((snapshot, recovery))
 
     # Calculate the medians and standard deviations for each workload
     statistics = {}
@@ -243,13 +304,12 @@ def plot(result, file_name="ckpt_restore_latency.pdf"):
 
 
 if __name__ == "__main__":
-    # run_mvvm()
-    # print(results)
-    # print(len(arg),len(cmd),len(envs))
-    # results = [('a=b linpack.aot', 4.147552, 2.550483), ('a=b linpack.aot', 4.164721, 2.58253), ('a=b llama.aot stories15M.bin', 0.238909, 2.58253), ('a=b llama.aot stories15M.bin', 0.238602, 2.58253)]
-    # run_criu()
-    # write_to_csv(results, "ckpt_restore_latency_criu.csv")
-    # plot(results, "ckpt_restore_latency_criu.pdf")
+    run_mvvm()
+    print(results)
+    print(len(arg),len(cmd),len(envs))
+    run_criu()
+    write_to_csv(results, "ckpt_restore_latency_criu.csv")
+    plot_qemu(results, "ckpt_restore_latency_criu.pdf")
     run_qemu()
     write_to_csv(results, "ckpt_restore_latency_qemu.csv")
-    plot(results, "ckpt_restore_latency_qemu.pdf")
+    plot_qemu(results,"ckpt_restore_latency_qemu.pdf")
