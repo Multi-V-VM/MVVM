@@ -6,22 +6,30 @@ import numpy as np
 from matplotlib import pyplot as plt
 from multiprocessing import Pool
 
-folder = [
+cmd = [
     "linpack",
-    "llama","llama",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
+    "llama",
+    "rgbd_tum",
+    "bfs",
+    "bc",
+    "bfs",
+    "cc",
+    "cc_sv",
+    "pr",
+    "pr_spmv",
+    "sssp",
+    "tc",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
     "redis",
     "hdastar",
-    "hdastar",
-    "hdastar",
 ]
-cmd = [
+folder = [
     "linpack",
     "llama",
     "orb_slam2",
@@ -42,8 +50,6 @@ cmd = [
     "mg",
     "sp",
     "redis",
-    "hdastar",
-    "hdastar",
     "hdastar",
 ]
 arg = [
@@ -95,11 +101,10 @@ envs = [
 
 
 pool = Pool(processes=1)
-results = []
 
 
 def run_mvvm():
-    global results
+    results = []
     results1 = []
 
     for i, c in enumerate(cmd):
@@ -124,12 +129,11 @@ def run_mvvm():
                     recover_time = float(time)
 
             results += [(exec, snapshot_time, recover_time)]
-    # print the results
-    # results += results1
+    return results
 
 
 def run_criu():
-    global results
+    results = []
     results1 = []
     for i in range(len(cmd)):
         aot = cmd[i]
@@ -154,10 +158,11 @@ def run_criu():
                     recover_time = float(time)
             # print(output[o])
             results += [(exec, snapshot_time, recover_time)]
+    return results
 
 
 def run_qemu():
-    global results
+    results = []
     results1 = []
 
     for i in range(len(cmd)):
@@ -177,9 +182,10 @@ def run_qemu():
             for line in lines:
                 if line.__contains__("total time: "):
                     time = line.split(" ")[-2]
-                    snapshot_time = float(time)/1000
+                    snapshot_time = float(time) / 1000
             print(exec, snapshot_time)
             results += [(exec, snapshot_time, 0.0)]
+    return results
 
 
 def write_to_csv_raw(data, filename):
@@ -205,12 +211,23 @@ def write_to_csv(data, filename):
         for row in data:
             writer.writerow(row)
 
+
 # print the results
 def plot_qemu(result, file_name="ckpt_restore_latency_qemu.pdf"):
     workloads = defaultdict(list)
     for workload, Total, Down in result:
-        if Total !=0 or Down !=0: 
-            workloads[workload.replace("OMP_NUM_THREADS=","").replace("-g20","").replace("-n300","").replace(" -f ","").replace("-vn300","").replace("maze-6404.txt","").replace("stories15M.bin","").replace("-z tokenizer.bin -t 0.0","").strip()].append((Total, Down))
+        if Total != 0 or Down != 0:
+            workloads[
+                workload.replace("OMP_NUM_THREADS=", "")
+                .replace("-g20", "")
+                .replace("-n300", "")
+                .replace(" -f ", "")
+                .replace("-vn300", "")
+                .replace("maze-6404.txt", "")
+                .replace("stories15M.bin", "")
+                .replace("-z tokenizer.bin -t 0.0", "")
+                .strip()
+            ].append((Total, Down))
 
     # Calculate the medians and standard deviations for each workload
     statistics = {}
@@ -266,12 +283,23 @@ def plot_qemu(result, file_name="ckpt_restore_latency_qemu.pdf"):
     plt.tight_layout()
     plt.show()
     plt.savefig(file_name)
-    
+
+
 # print the results
 def plot(result, file_name="ckpt_restore_latency.pdf"):
     workloads = defaultdict(list)
     for workload, snapshot, recovery in result:
-        workloads[workload.replace("OMP_NUM_THREADS=","").replace("-g15","").replace("-n300","").replace(" -f ","").replace("-vn300","").replace("maze-6404.txt","").replace("stories15M.bin","").replace("-z tokenizer.bin -t 0.0","").strip()].append((snapshot, recovery))
+        workloads[
+            workload.replace("OMP_NUM_THREADS=", "")
+            .replace("-g15", "")
+            .replace("-n300", "")
+            .replace(" -f ", "")
+            .replace("-vn300", "")
+            .replace("maze-6404.txt", "")
+            .replace("stories15M.bin", "")
+            .replace("-z tokenizer.bin -t 0.0", "")
+            .strip()
+        ].append((snapshot, recovery))
 
     # Calculate the medians and standard deviations for each workload
     statistics = {}
@@ -330,13 +358,152 @@ def plot(result, file_name="ckpt_restore_latency.pdf"):
     # %%
 
 
+# print the results
+def plot_whole(
+    result_mvvm, result_criu, result_qemu, file_name="ckpt_restore_latency_whole.pdf"
+):
+    workloads = defaultdict(list)
+    for workload, snapshot, recovery in result_mvvm:
+        workloads[
+            workload.replace("OMP_NUM_THREADS=", "")
+            .replace("-g15", "")
+            .replace("-n300", "")
+            .replace(" -f ", "")
+            .replace("-vn300", "")
+            .replace("maze-6404.txt", "")
+            .replace("stories15M.bin", "")
+            .replace("-z tokenizer.bin -t 0.0", "")
+            .strip()
+        ].append((snapshot, recovery))
+    workloads_criu = defaultdict(list)
+    for workload, snapshot, recovery in result_criu:
+        workloads_criu[
+            workload.replace("OMP_NUM_THREADS=", "")
+            .replace("-g15", "")
+            .replace("-n300", "")
+            .replace(" -f ", "")
+            .replace("-vn300", "")
+            .replace("maze-6404.txt", "")
+            .replace("stories15M.bin", "")
+            .replace("-z tokenizer.bin -t 0.0", "")
+            .strip()
+        ].append((snapshot, recovery))
+
+    workloads_qemu = defaultdict(list)
+    for workload, snapshot, recovery in result_qemu:
+        workloads_qemu[
+            workload.replace("OMP_NUM_THREADS=", "")
+            .replace("-g15", "")
+            .replace("-n300", "")
+            .replace(" -f ", "")
+            .replace("-vn300", "")
+            .replace("maze-6404.txt", "")
+            .replace("stories15M.bin", "")
+            .replace("-z tokenizer.bin -t 0.0", "")
+            .strip()
+        ].append((snapshot))
+
+    # Calculate the medians and standard deviations for each workload
+    statistics = {}
+    for workload, times in workloads.items():
+        snapshots, recoveries = zip(*times)
+        snapshots_criu, recoveries_criu = zip(*workloads_criu[workload])
+        snapshots_criu, recoveries_criu = zip(*workloads_qemu[workload])
+        snapshots_qemu = zip(*workloads_qemu[workload])
+        statistics[workload] = {
+            "snapshot_median": np.median(snapshots),
+            "recovery_median": np.median(recoveries),
+            "snapshot_std": np.std(snapshots),
+            "recovery_std": np.std(recoveries),
+            "criu_snapshot_median": np.median(snapshots_criu),
+            "criu_recovery_median": np.median(recoveries_criu),
+            "criu_snapshot_std": np.std(snapshots_criu),
+            "criu_recovery_std": np.std(recoveries_criu),
+            "qemu_snapshot_median": np.median(snapshots),
+            "qemu_snapshot_std": np.std(snapshots_qemu),
+        }
+
+    # Plotting
+    fig, ax = plt.subplots(figsize=(15, 7))
+    # Define the bar width and positions
+    bar_width = 0.35
+    index = np.arange(len(statistics))
+
+    # Plot the bars for each workload
+    # for i, (workload, stats) in enumerate(statistics.items()):
+    #     ax.bar(index[i], stats['snapshot_median'], bar_width, yerr=stats['snapshot_std'], capsize=5, label=f'Snapshot')
+    #     ax.bar(index[i] + bar_width, stats['recovery_median'], bar_width, yerr=stats['recovery_std'], capsize=5, label=f'Recovery')
+    for i, (workload, stats) in enumerate(statistics.items()):
+        ax.bar(
+            index[i],
+            stats["snapshot_median"],
+            bar_width,
+            yerr=stats["snapshot_std"],
+            capsize=5,
+            color="blue",
+            label="MVVM Snapshot" if i == 0 else "",
+        )
+        ax.bar(
+            index[i] + bar_width,
+            stats["recovery_median"],
+            bar_width,
+            yerr=stats["recovery_std"],
+            capsize=5,
+            color="red",
+            label="MVVM Recovery" if i == 0 else "",
+        )
+        ax.bar(
+            index[i],
+            stats["criu_snapshot_median"],
+            bar_width,
+            yerr=stats["criu_snapshot_std"],
+            capsize=5,
+            color="cyan",
+            label="CRIU Snapshot" if i == 0 else "",
+        )
+        ax.bar(
+            index[i] + bar_width,
+            stats["criu_recovery_median"],
+            bar_width,
+            yerr=stats["criu_recovery_std"],
+            capsize=5,
+            color="magenta",
+            label="CRIU Recovery" if i == 0 else "",
+        )
+        ax.bar(
+            index[i],
+            stats["qemu_snapshot_median"],
+            bar_width,
+            yerr=stats["qemu_snapshot_std"],
+            capsize=5,
+            color="green",
+            label="QEMU Total" if i == 0 else "",
+        )
+
+    # Labeling and formatting
+    ax.set_xlabel("Workload")
+    ax.set_ylabel("Time")
+    ax.set_xticks(index + bar_width / 2)
+    ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
+    ax.set_xticklabels(ticklabel)
+    ax.legend()
+
+    # Show the plot
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(file_name)
+    # %%
+
+
 if __name__ == "__main__":
-    run_mvvm()
+    mvvm_result = run_mvvm()
     print(results)
-    print(len(arg),len(cmd),len(envs))
-    run_criu()
-    write_to_csv(results, "ckpt_restore_latency_criu.csv")
-    plot_qemu(results, "ckpt_restore_latency_criu.pdf")
-    run_qemu()
-    write_to_csv(results, "ckpt_restore_latency_qemu.csv")
-    plot_qemu(results,"ckpt_restore_latency_qemu.pdf")
+    write_to_csv(mvvm_result, "ckpt_restore_latency.csv")
+
+    print(len(arg), len(cmd), len(envs))
+    criu_result = run_criu()
+    write_to_csv(criu_result, "ckpt_restore_latency_criu.csv")
+    # plot_qemu(results, "ckpt_restore_latency_criu.pdf")
+    qemu_result = run_qemu()
+    write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
+    # plot_qemu(results, "ckpt_restore_latency_qemu.pdf")
