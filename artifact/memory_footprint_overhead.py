@@ -9,142 +9,95 @@ from matplotlib import pyplot as plt
 
 cmd = [
     "linpack",
-    "llama","llama",
+    "llama",
     "rgbd_tum",
-    "bfs", "bfs", "bfs",
-    "bfs", "bfs", "bfs",
-    "bfs", "bfs", "bfs",
-    "bfs", "bfs", "bfs",
-    "bfs", "bfs", "bfs",
-    "bfs", "bfs", "bfs",
-    "bfs", "bfs", "bfs",
-    "bfs", "bfs", "bfs",
-    "bfs", "bfs", "bfs",
-    "bfs", "bfs", "bfs",
-    "bc", "bc", "bc",
-    "bc", "bc", "bc",
-    "bfs", "bfs", "bfs",
-    "cc", "cc", "cc",
-    "cc_sv", "cc_sv", "cc_sv",
-    "pr", "pr", "pr",
-    "pr_spmv", "pr_spmv", "pr_spmv",
-    "sssp", "sssp", "sssp",
-    "tc", "tc", "tc",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
-    "nas","nas","nas",
+    "bfs",
+    "bc",
+    "bfs",
+    "cc",
+    "cc_sv",
+    "pr",
+    "pr_spmv",
+    "sssp",
+    "tc",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
     "redis",
-    "hdastar",
-    "hdastar",
     "hdastar",
 ]
 folder = [
     "linpack",
-    "llama","llama",
+    "llama",
     "orb_slam2",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "gapbs","gapbs","gapbs",
-    "bt","bt","bt",
-    "cg","cg","cg",
-    "ep","ep","ep",
-    "ft","ft","ft",
-    "lu","lu","lu",
-    "mg","mg","mg",
-    "sp","sp","sp",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "bt",
+    "cg",
+    "ep",
+    "ft",
+    "lu",
+    "mg",
+    "sp",
     "redis",
-    "hdastar",
-    "hdastar",
     "hdastar",
 ]
 arg = [
     [],
-    ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["stories15M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,","./TUM3.yaml","./","./associations/fr1_xyz.txt"],
-    ["-g20", "-n300"],["-g20", "-n300"],["-g20", "-n300"],
-    ["-u20", "-n300"],["-u20", "-n300"],["-u20", "-n300"],
-    ["-f", "./road.sg", "-n300"],["-f", "./road.sg", "-n300"],["-f", "./road.sg", "-n300"],
-    ["-g20", "-n300"],["-g20", "-n300"],["-g20", "-n300"],
-    ["-g20", "-n300"],["-g20", "-n300"],["-g20", "-n300"],
-    ["-g20", "-n300"],["-g20", "-n300"],["-g20", "-n300"],
-    ["-g20", "-n300"],["-g20", "-n300"],["-g20", "-n300"],
-    ["-g20", "-n300"],["-g20", "-n300"],["-g20", "-n300"],
-    ["-g20", "-n300"],["-g20", "-n300"],["-g20", "-n300"],
-    ["-g20", "-n300"],["-g20", "-n300"],["-g20", "-n300"],
-    ["-g20", "-vn300"],["-g20", "-vn300"],["-g20", "-vn300"],
-    ["-g20", "-vn300"],["-g20", "-vn300"],["-g20", "-vn300"],
-    ["-f", "./road.sg", "-n300"],["-f", "./road.sg", "-n300"],["-f", "./road.sg", "-n300"],
-    ["-g20", "-vn300"],["-g20", "-vn300"],["-g20", "-vn300"],
-    ["-g20", "-vn300"],["-g20", "-vn300"],["-g20", "-vn300"],
-    ["-g20", "-vn300"],["-g20", "-vn300"],["-g20", "-vn300"],
-    ["-g20", "-vn300"],["-g20", "-vn300"],["-g20", "-vn300"],
-    ["-g20", "-vn300"],["-g20", "-vn300"],["-g20", "-vn300"],
-    ["-g20", "-n300"],["-g20", "-n300"],["-g20", "-n300"],
-    [],[],[],
-    [],[],[],
-    [],[],[],
-    [],[],[],
-    [],[],[],
-    [],[],[],
-    [],[],[],
+    ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
+    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
+    ["-f", "./road.sg", "-n300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-f", "./road.sg", "-n300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-n300"],
     [],
-    ["maze-6404.txt", "2"],
-    ["maze-6404.txt", "4"],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
     ["maze-6404.txt", "8"],
 ]
 envs = [
     "a=b",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2",
+    "OMP_NUM_THREADS=4",
     "a=b",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=1","OMP_NUM_THREADS=2","OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
     "a=b",
-    "a=b","a=b","a=b",
+    "a=b",
 ]
 
 pool = Pool(processes=10)
@@ -177,6 +130,7 @@ def run_mvvm():
     # print the results
     # results += results1
 
+
 def write_to_csv(data, filename):
     # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
 
@@ -189,11 +143,24 @@ def write_to_csv(data, filename):
         for row in data:
             writer.writerow(row)
 
+
 # print the results
 def plot(result, file_name="memory_footprint_overhead.pdf"):
     workloads = defaultdict(list)
     for workload, memory in result:
-        workloads[workload.replace("OMP_NUM_THREADS=","").replace("-g20","").replace("a=b","").replace("./ORBvoc.txt, ./TUM3.yaml ./ ./associations/fr1_xyz.txt","").replace("-n300","").replace(" -f ","").replace("-vn300","").replace("maze-6404.txt","").replace("stories15M.bin","").replace("-z tokenizer.bin -t 0.0","").strip()].append(memory)
+        workloads[
+            workload.replace("OMP_NUM_THREADS=", "")
+            .replace("-g20", "")
+            .replace("a=b", "")
+            .replace("./ORBvoc.txt, ./TUM3.yaml ./ ./associations/fr1_xyz.txt", "")
+            .replace("-n300", "")
+            .replace(" -f ", "")
+            .replace("-vn300", "")
+            .replace("maze-6404.txt", "")
+            .replace("stories110M.bin", "")
+            .replace("-z tokenizer.bin -t 0.0", "")
+            .strip()
+        ].append(memory)
 
     # Calculate the medians and standard deviations for each workload
     statistics = {}
@@ -231,8 +198,9 @@ def plot(result, file_name="memory_footprint_overhead.pdf"):
     plt.savefig(file_name)
     plt.show()
 
+
 if __name__ == "__main__":
-    print(len(arg),len(cmd),len(envs),len(folder))
+    print(len(arg), len(cmd), len(envs), len(folder))
     run_mvvm()
     write_to_csv(results, "memmory_footprint_overhead.csv")
     plot(results, "memmory_footprint_overhead.pdf")
