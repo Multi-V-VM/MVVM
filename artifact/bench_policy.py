@@ -3,9 +3,7 @@ import common_util
 from multiprocessing import Pool
 
 cmd = [
-    "linpack",
     "llama",
-    "rgbd_tum",
     "bfs",
     "bc",
     "bfs",
@@ -22,13 +20,9 @@ cmd = [
     "lu",
     "mg",
     "sp",
-    "redis",
-    "hdastar",
 ]
 folder = [
-    "linpack",
     "llama",
-    "ORB_SLAM2",
     "gapbs",
     "gapbs",
     "gapbs",
@@ -45,13 +39,9 @@ folder = [
     "nas",
     "nas",
     "nas",
-    "redis",
-    "hdastar",
 ]
 arg = [
-    [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
     ["-f", "./road.sg", "-n300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
@@ -68,31 +58,25 @@ arg = [
     [],
     [],
     [],
-    [],
-    ["maze-6404.txt", "8"],
 ]
 envs = [
-    "a=b",
-    "OMP_NUM_THREADS=4",
-    "a=b",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "a=b",
-    "a=b",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
 ]
 
 pool = Pool(processes=1)
@@ -115,7 +99,7 @@ def run_mvvm():
         lines = output.split("\n")
         for line in lines:
             if line.__contains__("Execution time:"):
-                exec_time = line.split(" ")[-1]
+                exec_time = line.split(" ")[-2]
                 print(exec, exec_time)
         results.append((exec , exec_time)) # discover 4 aot_variant
     return results
@@ -247,4 +231,4 @@ if __name__ == "__main__":
     qemu_aarch64_results = run_qemu_aarch64()
     hcontainer_results = run_hcontainer()
 
-    write_to_csv("llama_result.csv")
+    write_to_csv("policy.csv")

@@ -34,10 +34,18 @@ list_of_arg = [
     "OMP_NUM_THREADS=4",
     # "OMP_NUM_THREADS=8",
 ]
-aot_variant = [".aot"]
+# aot_variant = [".aot"]
 # aot_variant = ["-ckpt-every-dirty.aot"]
-# aot_variant = ["-pure.aot", "-stack.aot", "-ckpt.aot", "-ckpt-br.aot"]
-trial = 1
+aot_variant = [
+    ".aot",
+    "-pure.aot",
+    "-stack.aot",
+    "-ckpt.aot",
+    "-ckpt-br.aot",
+    "-ckpt-loop.aot",
+    "-ckpt-loop-dirty.aot",
+]
+trial = 10
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -240,7 +248,7 @@ def run_qemu_checkpoint_restore(
         os.system(f"nohup ../artifact/qemu_migrate_client.sh &")
         os.system(f"nohup ../artifact/qemu_migrate_server.sh &")
         time.sleep(20)
-        
+
         checkpoint_result = run_qemu_checkpoint(aot_file, folder, arg, env)
         # Return a combined result or just the checkpoint result as needed
 
@@ -309,7 +317,9 @@ def run_native(file: str, folder: str, arg: list[str], env: str) -> tuple[str, s
     cmd = cmd.split()
     env_arg = dict([env.split("=")])
 
-    result = subprocess.run(cmd, env=env_arg, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = subprocess.run(
+        cmd, env=env_arg, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     try:
         output = result.stderr.decode("utf-8")
     except:

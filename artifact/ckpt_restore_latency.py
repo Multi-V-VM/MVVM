@@ -535,15 +535,15 @@ def plot_whole(
 
 
 if __name__ == "__main__":
-    mvvm_result = run_mvvm()
-    write_to_csv(mvvm_result, "ckpt_restore_latency_profile.csv")
+    # mvvm_result = run_mvvm()
+    # write_to_csv(mvvm_result, "ckpt_restore_latency_profile.csv")
 
     # print(len(arg), len(cmd), len(envs))
-    # criu_result = run_criu()
-    # write_to_csv(criu_result, "ckpt_restore_latency_criu.csv")
-    # plot_qemu(results, "ckpt_restore_latency_criu.pdf")
-    # qemu_result = run_qemu()
-    # write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
+    criu_result = run_criu()
+    write_to_csv(criu_result, "ckpt_restore_latency_criu.csv")
+    # plot(criu_result, "ckpt_restore_latency_criu.pdf")
+    qemu_result = run_qemu()
+    write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
     # mvvm_result = read_from_csv("ckpt_restore_latency.csv")
     # criu_result = read_from_csv("ckpt_restore_latency_criu.csv")
     # print(criu_result)

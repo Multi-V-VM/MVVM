@@ -116,7 +116,7 @@ def run_mvvm():
         lines = output.split("\n")
         for line in lines:
             if line.__contains__("Execution time:"):
-                exec_time = line.split(" ")[-1]
+                exec_time = line.split(" ")[-2]
                 print(exec, exec_time)
         results.append((exec , exec_time)) # discover 4 aot_variant
     return results

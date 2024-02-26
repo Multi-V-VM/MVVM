@@ -104,38 +104,32 @@ def run_mvvm():
     results1 = []
     for _ in range(common_util.trial):
         for i in range(len(cmd)):
-            for j in range(len(common_util.aot_variant)):
-                for env in common_util.list_of_arg:
-                    aot = cmd[i] + common_util.aot_variant[j]
-                    results1.append(
-                        pool.apply_async(common_util.run, (aot, arg[i], env))
-                    )
+            aot = cmd[i] + ".aot"
+            results1.append(pool.apply_async(common_util.run, (aot, arg[i], envs[i])))
     # print the results
     results1 = [x.get() for x in results1]
     for exec, output in results1:
         lines = output.split("\n")
         for line in lines:
             if line.__contains__("Execution time:"):
-                exec_time = line.split(" ")[-1]
+                exec_time = line.split(" ")[-2]
                 print(exec, exec_time)
-        results.append((exec , exec_time)) # discover 4 aot_variant
+        results.append((exec, exec_time))  # discover 4 aot_variant
     return results
-    
 
 
 def run_hcontainer():
     results = []
     results1 = []
     for _ in range(common_util.trial):
-        for env in common_util.envs:
-            for i in range(len(cmd)):
-                aot = cmd[i]
-                results1.append(
-                    pool.apply_async(
-                        common_util.run_hcontainer,
-                        (aot, "linpack", arg[i], env),
-                    )
+        for i in range(len(cmd)):
+            aot = cmd[i]
+            results1.append(
+                pool.apply_async(
+                    common_util.run_hcontainer,
+                    (aot, "linpack", arg[i], envs[i]),
                 )
+            )
     # print the results
     results1 = [x.get() for x in results1]
     for exec, output in results1:
@@ -147,8 +141,9 @@ def run_hcontainer():
         results.append((exec, exec_time))
     return results
 
+
 def run_qemu_x86_64():
-    results= []
+    results = []
     results1 = []
     for _ in range(common_util.trial):
         for i in range(len(cmd)):
@@ -170,6 +165,7 @@ def run_qemu_x86_64():
         results.append((exec, exec_time))
     return results
 
+
 def run_qemu_aarch64():
     results = []
     results1 = []
@@ -190,7 +186,7 @@ def run_qemu_aarch64():
             if line.__contains__("user"):
                 exec_time = float(line.split(" ")[0].replace("user", ""))
         results.append((exec, exec_time))
-                
+
     return results
 
 
@@ -215,6 +211,7 @@ def run_native():
                 exec_time = float(line.split(" ")[0].replace("user", ""))
         results.append((exec, exec_time))
     return results
+
 
 def write_to_csv(filename):
     # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
@@ -248,4 +245,4 @@ if __name__ == "__main__":
     qemu_aarch64_results = run_qemu_aarch64()
     hcontainer_results = run_hcontainer()
 
-    write_to_csv("llama_result.csv")
+    write_to_csv("comparison.csv")
