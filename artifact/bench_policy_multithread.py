@@ -107,8 +107,8 @@ def run_mvvm():
     results_4 = []
     results_5 = []
     results_6 = []
-    results=[]
-    name=[]
+    results = []
+    name = []
     results1 = []
     for _ in range(common_util.trial):
         for i in range(len(cmd)):
@@ -125,7 +125,7 @@ def run_mvvm():
             if line.__contains__("Execution time:"):
                 exec_time = line.split(" ")[-2]
                 # print(exec, exec_time)
-        
+
         for a in common_util.aot_variant:
             if exec.__contains__(a):
                 if a == "-pure.aot":
@@ -143,7 +143,18 @@ def run_mvvm():
                 else:
                     results_0.append(exec_time)
                     name.append(exec)
-    results = list(zip(name, results_0, results_1, results_2, results_3, results_4, results_5, results_6))
+    results = list(
+        zip(
+            name,
+            results_0,
+            results_1,
+            results_2,
+            results_3,
+            results_4,
+            results_5,
+            results_6,
+        )
+    )
     return results
 
 
@@ -169,17 +180,56 @@ def write_to_csv(filename):
         # Write the data
         for idx, row in enumerate(mvvm_results):
             writer.writerow(
-                [
-                    row[0],
-                    row[1],
-                    row[2],
-                    row[3],
-                    row[4],
-                    row[5],
-                    row[6],
-                    row[7]
-                ]
+                [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]]
             )
+
+import matplotlib.pyplot as plt
+import numpy as np
+def plot(results):
+    keys = []
+    weights = {
+        "aot": [],
+        "stack": [],
+        "ckpt-br": []
+    }
+    for k, v in results.items():
+        keys.append(k.replace("-g15","").replace("-n300","").replace(" -f ","").replace("-vn300","").replace("maze-6404.txt","").replace("stories15M.bin","").strip())
+        for w in weights:
+            weights[w].append(v[w])
+    width = 0.5
+
+    fig, ax = plt.subplots(figsize=(20, 10))
+
+    bottom = np.zeros(len(keys))
+
+    for boolean, weight_count in weights.items():
+        p = ax.bar(keys, weight_count, width, label=boolean, bottom=bottom)
+        bottom += weight_count
+
+
+    ax.set_xticklabels(keys, rotation=45)
+    ax.set_ylabel('Execution time (s)')
+    # add note at aot
+    # for i in range(len(keys)):
+    #     ax.text(i, 0, "{:.2f}".format(weights["aot"][i]), ha='center', va='bottom')
+    # add note at stack
+    # for i in range(len(keys)):
+    #     ax.text(i, weights["aot"][i], "{:.2f}".format(weights["stack"][i]), ha='center', va='bottom')
+    # add note at ckpt
+    # for i in range(len(keys)):
+    #     ax.text(i, weights["aot"][i] + weights["stack"][i], "{:.2f}".format(weights["ckpt"][i]), ha='center', va='bottom')
+    # add note at ckpt-br
+    # for i in range(len(keys)):
+    #     ax.text(i, weights["aot"][i] + weights["stack"][i] + weights["ckpt"][i], "{:.2f}".format(weights["ckpt-br"][i]), ha='center', va='bottom')
+    # add note at total
+    # for i in range(len(keys)):
+    #     ax.text(i, weights["aot"][i] + weights["stack"][i] + weights["ckpt"][i] + weights["ckpt-br"][i], "total: {:.2f}".format(weights["aot"][i] + weights["stack"][i] + weights["ckpt"][i] + weights["ckpt-br"][i]), ha='center', va='bottom')
+    # add text at upper left
+    ax.legend(loc="upper right")
+
+    # plt.show()
+
+    plt.savefig("performance_multithread.pdf")
 
 
 if __name__ == "__main__":
