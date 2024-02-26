@@ -4,10 +4,7 @@ from multiprocessing import Pool
 
 
 cmd = [
-    "linpack",
     "llama",
-    "rgbd_tum",
-    "bfs",
     "bc",
     "bfs",
     "cc",
@@ -23,14 +20,10 @@ cmd = [
     "lu",
     "mg",
     "sp",
-    "redis",
     "hdastar",
 ]
 folder = [
-    "linpack",
     "llama",
-    "ORB_SLAM2",
-    "gapbs",
     "gapbs",
     "gapbs",
     "gapbs",
@@ -46,17 +39,13 @@ folder = [
     "nas",
     "nas",
     "nas",
-    "redis",
     "hdastar",
 ]
 arg = [
-    [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
-    ["-f", "./road.sg", "-n300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
-    ["-f", "./road.sg", "-n300"],
+    ["-g20", "-vn300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
@@ -69,13 +58,9 @@ arg = [
     [],
     [],
     [],
-    [],
     ["maze-6404.txt", "8"],
 ]
 envs = [
-    "a=b",
-    "OMP_NUM_THREADS=4",
-    "a=b",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
@@ -92,7 +77,7 @@ envs = [
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
-    "a=b",
+    "OMP_NUM_THREADS=4",
     "a=b",
 ]
 
@@ -183,17 +168,24 @@ def write_to_csv(filename):
                 [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]]
             )
 
+
 import matplotlib.pyplot as plt
 import numpy as np
+
+
 def plot(results):
     keys = []
-    weights = {
-        "aot": [],
-        "stack": [],
-        "ckpt-br": []
-    }
+    weights = {"aot": [], "stack": [], "ckpt-br": []}
     for k, v in results.items():
-        keys.append(k.replace("-g15","").replace("-n300","").replace(" -f ","").replace("-vn300","").replace("maze-6404.txt","").replace("stories15M.bin","").strip())
+        keys.append(
+            k.replace("-g15", "")
+            .replace("-n300", "")
+            .replace(" -f ", "")
+            .replace("-vn300", "")
+            .replace("maze-6404.txt", "")
+            .replace("stories15M.bin", "")
+            .strip()
+        )
         for w in weights:
             weights[w].append(v[w])
     width = 0.5
@@ -206,9 +198,8 @@ def plot(results):
         p = ax.bar(keys, weight_count, width, label=boolean, bottom=bottom)
         bottom += weight_count
 
-
     ax.set_xticklabels(keys, rotation=45)
-    ax.set_ylabel('Execution time (s)')
+    ax.set_ylabel("Execution time (s)")
     # add note at aot
     # for i in range(len(keys)):
     #     ax.text(i, 0, "{:.2f}".format(weights["aot"][i]), ha='center', va='bottom')

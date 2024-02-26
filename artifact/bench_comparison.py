@@ -8,7 +8,6 @@ cmd = [
     "linpack",
     "llama",
     "rgbd_tum",
-    "bfs",
     "bc",
     "bfs",
     "cc",
@@ -39,7 +38,6 @@ folder = [
     "gapbs",
     "gapbs",
     "gapbs",
-    "gapbs",
     "nas",
     "nas",
     "nas",
@@ -54,10 +52,9 @@ arg = [
     [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
     ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
-    ["-f", "./road.sg", "-n300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
-    ["-f", "./road.sg", "-n300"],
+    ["-g20", "-vn300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
@@ -77,7 +74,6 @@ envs = [
     "a=b",
     "OMP_NUM_THREADS=4",
     "a=b",
-    "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
@@ -237,40 +233,34 @@ def write_to_csv(filename):
                 ]
             )
 
-def plot(results):
-    # items = ["bt", "cg", "ep", "ft", "lu", "mg", "sp", "linpack", "llama"]
-    # hcontainer_values = [261.77, 111.80, 0.0035, 205.29, 29.10, 62.92, 0.28, 27.15, 12.00]
-    # mvvm_values = [85.05, 27.64, 0.000179, 39.12, 8.83, 18.80, 0.118, 35.48, 3.54]
-    # native_values = [46.84, 27.88, 0.00, 28.96, 8.56, 9.34, 0.07, 35.0, 2.86]
-    # qemu_values = [1936.74, 473.24, 0.02, 1376.74, 373.91, 646.23, 2.75, 24.48, 45.18]
 
+def plot(results):
     # Number of groups and bar width
-    n = len(items)
+    n = len(results)
     bar_width = 0.2
 
-    # Setting the positions of the bars on the x-axis
     index = np.arange(n)
-
-    # Creating figure
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    # Plotting
-    for i in range(len(results)):
-        bar1 = ax.bar(index, zip(* ), bar_width, label='HContainer')
-        bar2 = ax.bar(index + bar_width, mvvm_values, bar_width, label='MVVM')
-        bar3 = ax.bar(index + 2 * bar_width, native_values, bar_width, label='Native')
-        bar4 = ax.bar(index + 3 * bar_width, qemu_values, bar_width, label='QEMU')
+    # Unpack the results for each environment
+    hcontainer_values, mvvm_values, native_values, qemu_values = zip(*results)
 
-    # Adding labels, title, and legend
-    ax.set_ylabel('Latency (s)')
-    # ax.set_title('Performance comparison between different techniques')
+    # Plotting
+    bar1 = ax.bar(index, hcontainer_values, bar_width, label="HContainer")
+    bar2 = ax.bar(index + bar_width, mvvm_values, bar_width, label="MVVM")
+    bar3 = ax.bar(index + 2 * bar_width, native_values, bar_width, label="Native")
+    bar4 = ax.bar(index + 3 * bar_width, qemu_values, bar_width, label="QEMU")
+
+    ax.set_ylabel("Latency (s)")
     ax.set_xticks(index + bar_width * 1.5)
-    ax.set_xticklabels(items)
+    ax.set_xticklabels(cmd)
     ax.legend()
 
     # Display the plot
     # plt.show()
     plt.savefig("performance_comparison.pdf")
+
+
 if __name__ == "__main__":
     mvvm_results = run_mvvm()
     native_results = run_native()
@@ -280,3 +270,18 @@ if __name__ == "__main__":
     hcontainer_results = run_hcontainer()
 
     write_to_csv("comparison.csv")
+    results = []
+    for idx in range(len(mvvm_results)):
+        # Assuming the second element of each tuple is the performance metric,
+        # and that all lists are aligned and of the same length.
+        combined_result = (
+            hcontainer_results[idx][1],  # HContainer value
+            mvvm_results[idx][1],  # MVVM value
+            qemu_x86_64_results[idx][1]
+            + qemu_aarch64_results[idx][
+                1
+            ],  # Sum of QEMU x86_64 and QEMU AArch64 values
+            native_results[idx][1],  # Native value
+        )
+        results.append(combined_result)
+    plot(results)

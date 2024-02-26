@@ -3,8 +3,9 @@ import common_util
 from multiprocessing import Pool
 
 cmd = [
+    "linpack",
     "llama",
-    "bfs",
+    "rgbd_tum",
     "bc",
     "bfs",
     "cc",
@@ -20,10 +21,12 @@ cmd = [
     "lu",
     "mg",
     "sp",
+    "redis",
 ]
 folder = [
+    "linpack",
     "llama",
-    "gapbs",
+    "ORB_SLAM2",
     "gapbs",
     "gapbs",
     "gapbs",
@@ -39,10 +42,12 @@ folder = [
     "nas",
     "nas",
     "nas",
+    "redis",
 ]
 arg = [
+    [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["-f", "./road.sg", "-n300"],
+    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
     ["-f", "./road.sg", "-n300"],
@@ -58,8 +63,12 @@ arg = [
     [],
     [],
     [],
+    [],
 ]
 envs = [
+    "a=b",
+    "OMP_NUM_THREADS=1",
+    "a=b",
     "OMP_NUM_THREADS=1",
     "OMP_NUM_THREADS=1",
     "OMP_NUM_THREADS=1",
@@ -75,8 +84,7 @@ envs = [
     "OMP_NUM_THREADS=1",
     "OMP_NUM_THREADS=1",
     "OMP_NUM_THREADS=1",
-    "OMP_NUM_THREADS=1",
-    "OMP_NUM_THREADS=1",
+    "a=b",
 ]
 
 pool = Pool(processes=1)
@@ -108,14 +116,14 @@ def run_hcontainer():
     results = []
     results1 = []
     for _ in range(common_util.trial):
-            for i in range(len(cmd)):
-                aot = cmd[i]
-                results1.append(
-                    pool.apply_async(
-                        common_util.run_hcontainer,
-                        (aot, "linpack", arg[i], envs[i]),
-                    )
+        for i in range(len(cmd)):
+            aot = cmd[i]
+            results1.append(
+                pool.apply_async(
+                    common_util.run_hcontainer,
+                    (aot, "linpack", arg[i], envs[i]),
                 )
+            )
     # print the results
     results1 = [x.get() for x in results1]
     for exec, output in results1:
