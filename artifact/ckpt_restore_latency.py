@@ -19,29 +19,6 @@ cmd = [
     "pr_spmv",
     "sssp",
     "tc",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "redis",
-    "hdastar",
-]
-folder = [
-    "linpack",
-    "llama",
-    "orb_slam2",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
     "bt",
     "cg",
     "ep",
@@ -49,6 +26,29 @@ folder = [
     "lu",
     "mg",
     "sp",
+    "redis",
+    "hdastar",
+]
+folder = [
+    "linpack",
+    "llama",
+    "ORB_SLAM2",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
     "redis",
     "hdastar",
 ]
@@ -124,11 +124,14 @@ def run_mvvm():
                 if line.__contains__("Snapshot time:"):
                     time = line.split(" ")[-2]
                     snapshot_time = float(time)
+                if line.__contains__("Snapshot Memory:"):
+                    time = line.split(" ")[-2]
+                    snapshot_memory = float(time)
                 if line.__contains__("Recover time:"):
                     time = line.split(" ")[-1]
                     recover_time = float(time)
 
-            results += [(exec, snapshot_time, recover_time)]
+            results += [(exec, snapshot_time, recover_time, snapshot_memory)]
     return results
 
 
@@ -199,6 +202,19 @@ def write_to_csv_raw(data, filename):
         csvfile.write(str(data))
 
 
+def write_to_csv_profile(data, filename):
+    # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
+
+    with open(filename, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        # Optionally write headers
+        writer.writerow(["name", "snapshot time(s)", "recovery time(s)"])
+
+        # Write the data
+        for row in data:
+            writer.writerow(row)
+
+
 def write_to_csv(data, filename):
     # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
 
@@ -210,6 +226,16 @@ def write_to_csv(data, filename):
         # Write the data
         for row in data:
             writer.writerow(row)
+
+
+def read_from_csv(filename):
+    with open(filename, "r") as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)
+        results = []
+        for row in reader:
+            results.append((row[0], float(row[1]), float(row[2])))
+        return results
 
 
 # print the results
@@ -362,6 +388,9 @@ def plot(result, file_name="ckpt_restore_latency.pdf"):
 def plot_whole(
     result_mvvm, result_criu, result_qemu, file_name="ckpt_restore_latency_whole.pdf"
 ):
+    font = {"size": 18}
+
+    plt.rc("font", **font)
     workloads = defaultdict(list)
     for workload, snapshot, recovery in result_mvvm:
         workloads[
@@ -372,6 +401,7 @@ def plot_whole(
             .replace("-vn300", "")
             .replace("maze-6404.txt", "")
             .replace("stories15M.bin", "")
+            .replace(".aot", "")
             .replace("-z tokenizer.bin -t 0.0", "")
             .strip()
         ].append((snapshot, recovery))
@@ -401,15 +431,15 @@ def plot_whole(
             .replace("stories15M.bin", "")
             .replace("-z tokenizer.bin -t 0.0", "")
             .strip()
-        ].append((snapshot))
+        ].append((snapshot, recovery))
 
     # Calculate the medians and standard deviations for each workload
     statistics = {}
     for workload, times in workloads.items():
         snapshots, recoveries = zip(*times)
+        print(workload, workloads_criu[workload])
         snapshots_criu, recoveries_criu = zip(*workloads_criu[workload])
-        snapshots_criu, recoveries_criu = zip(*workloads_qemu[workload])
-        snapshots_qemu = zip(*workloads_qemu[workload])
+        snapshots_qemu, recoveries_qemu = zip(*workloads_qemu[workload])
         statistics[workload] = {
             "snapshot_median": np.median(snapshots),
             "recovery_median": np.median(recoveries),
@@ -426,7 +456,7 @@ def plot_whole(
     # Plotting
     fig, ax = plt.subplots(figsize=(15, 7))
     # Define the bar width and positions
-    bar_width = 0.35
+    bar_width = 0.7 / 5
     index = np.arange(len(statistics))
 
     # Plot the bars for each workload
@@ -434,6 +464,15 @@ def plot_whole(
     #     ax.bar(index[i], stats['snapshot_median'], bar_width, yerr=stats['snapshot_std'], capsize=5, label=f'Snapshot')
     #     ax.bar(index[i] + bar_width, stats['recovery_median'], bar_width, yerr=stats['recovery_std'], capsize=5, label=f'Recovery')
     for i, (workload, stats) in enumerate(statistics.items()):
+        ax.bar(
+            index[i],
+            stats["snapshot_median"],
+            bar_width,
+            yerr=stats["snapshot_std"],
+            capsize=5,
+            color="blue",
+            label="MVVM Snapshot" if i == 0 else "",
+        )
         ax.bar(
             index[i],
             stats["snapshot_median"],
@@ -453,7 +492,7 @@ def plot_whole(
             label="MVVM Recovery" if i == 0 else "",
         )
         ax.bar(
-            index[i],
+            index[i] + 2 * bar_width,
             stats["criu_snapshot_median"],
             bar_width,
             yerr=stats["criu_snapshot_std"],
@@ -462,7 +501,7 @@ def plot_whole(
             label="CRIU Snapshot" if i == 0 else "",
         )
         ax.bar(
-            index[i] + bar_width,
+            index[i] + 3 * bar_width,
             stats["criu_recovery_median"],
             bar_width,
             yerr=stats["criu_recovery_std"],
@@ -471,7 +510,7 @@ def plot_whole(
             label="CRIU Recovery" if i == 0 else "",
         )
         ax.bar(
-            index[i],
+            index[i] + 4 * bar_width,
             stats["qemu_snapshot_median"],
             bar_width,
             yerr=stats["qemu_snapshot_std"],
@@ -485,7 +524,7 @@ def plot_whole(
     ax.set_ylabel("Time")
     ax.set_xticks(index + bar_width / 2)
     ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
-    ax.set_xticklabels(ticklabel)
+    ax.set_xticklabels(ticklabel, fontsize=10)
     ax.legend()
 
     # Show the plot
@@ -497,13 +536,17 @@ def plot_whole(
 
 if __name__ == "__main__":
     mvvm_result = run_mvvm()
-    print(results)
-    write_to_csv(mvvm_result, "ckpt_restore_latency.csv")
+    write_to_csv(mvvm_result, "ckpt_restore_latency_profile.csv")
 
-    print(len(arg), len(cmd), len(envs))
-    criu_result = run_criu()
-    write_to_csv(criu_result, "ckpt_restore_latency_criu.csv")
+    # print(len(arg), len(cmd), len(envs))
+    # criu_result = run_criu()
+    # write_to_csv(criu_result, "ckpt_restore_latency_criu.csv")
     # plot_qemu(results, "ckpt_restore_latency_criu.pdf")
-    qemu_result = run_qemu()
-    write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
+    # qemu_result = run_qemu()
+    # write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
+    # mvvm_result = read_from_csv("ckpt_restore_latency.csv")
+    # criu_result = read_from_csv("ckpt_restore_latency_criu.csv")
+    # print(criu_result)
+    # qemu_result = read_from_csv("ckpt_restore_latency_qemu.csv")
+    # plot_whole(mvvm_result, criu_result, qemu_result)
     # plot_qemu(results, "ckpt_restore_latency_qemu.pdf")

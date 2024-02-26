@@ -20,29 +20,6 @@ cmd = [
     "pr_spmv",
     "sssp",
     "tc",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "redis",
-    "hdastar",
-]
-folder = [
-    "linpack",
-    "llama",
-    "orb_slam2",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
-    "gapbs",
     "bt",
     "cg",
     "ep",
@@ -50,6 +27,29 @@ folder = [
     "lu",
     "mg",
     "sp",
+    "redis",
+    "hdastar",
+]
+folder = [
+    "linpack",
+    "llama",
+    "ORB_SLAM2",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
+    "nas",
     "redis",
     "hdastar",
 ]
@@ -76,6 +76,30 @@ arg = [
     [],
     ["maze-6404.txt", "8"],
 ]
+envs = [
+    "a=b",
+    "OMP_NUM_THREADS=4",
+    "a=b",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
+    "a=b",
+    "a=b",
+]
+
 envs = [
     "a=b",
     "OMP_NUM_THREADS=4",
@@ -144,6 +168,17 @@ def write_to_csv(data, filename):
             writer.writerow(row)
 
 
+def read_from_csv(filename):
+    # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
+    results = []
+    with open(filename, "r", newline="\n") as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)
+        for row in reader:
+            results.append((row[0], int(row[1])))
+    return results
+
+
 # print the results
 def plot(result, file_name="memory_footprint_overhead.pdf"):
     workloads = defaultdict(list)
@@ -158,9 +193,10 @@ def plot(result, file_name="memory_footprint_overhead.pdf"):
             .replace("-vn300", "")
             .replace("maze-6404.txt", "")
             .replace("stories110M.bin", "")
+            .replace(".aot", "")
             .replace("-z tokenizer.bin -t 0.0", "")
             .strip()
-        ].append(memory)
+        ].append(memory / 1024 / 1024)
 
     # Calculate the medians and standard deviations for each workload
     statistics = {}
@@ -171,6 +207,8 @@ def plot(result, file_name="memory_footprint_overhead.pdf"):
         }
 
     # Plotting
+    font = {"size": 18}
+    plt.rc("font", **font)
     fig, ax = plt.subplots(figsize=(15, 7))
     bar_width = 0.35
     index = np.arange(len(statistics))
@@ -188,10 +226,10 @@ def plot(result, file_name="memory_footprint_overhead.pdf"):
 
     # Labeling and formatting
     ax.set_xlabel("Workload")
-    ax.set_ylabel("Memory Footprint (MB)")
+    ax.set_ylabel("Memory Footprint (GB)")
     # ax.set_title("Median and Standard Deviation of Memory Footprint by Workload")
     ax.set_xticks(index)
-    ax.set_xticklabels(statistics.keys(), rotation=45)
+    ax.set_xticklabels(statistics.keys(), fontsize=10)
     ax.legend()
 
     plt.tight_layout()
@@ -200,7 +238,8 @@ def plot(result, file_name="memory_footprint_overhead.pdf"):
 
 
 if __name__ == "__main__":
-    print(len(arg), len(cmd), len(envs), len(folder))
-    run_mvvm()
-    write_to_csv(results, "memmory_footprint_overhead.csv")
+    # print(len(arg), len(cmd), len(envs), len(folder))
+    # run_mvvm()
+    # write_to_csv(results, "memmory_footprint_overhead.csv")
+    results = read_from_csv("memmory_footprint_overhead.csv")
     plot(results, "memmory_footprint_overhead.pdf")

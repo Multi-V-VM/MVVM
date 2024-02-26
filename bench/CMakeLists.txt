@@ -9,7 +9,30 @@ else ()
 endif ()
 
 include(ExternalProject)
-
+ExternalProject_Add(ORB_SLAM2
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -DCMAKE_BUILD_TYPE=Release
+        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
+        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+        ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
+        BUILD_COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./rgbd_tum ${CMAKE_CURRENT_BINARY_DIR}/rgbd_tum.wasm
+)
+ExternalProject_Add(ORB_SLAM2-native
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -DCMAKE_BUILD_TYPE=Release
+        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+        ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
+        BUILD_COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./rgbd_tum ${CMAKE_CURRENT_BINARY_DIR}/rgbd_tum
+)
 ExternalProject_Add(gapbs
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gapbs
         UPDATE_COMMAND ""
@@ -255,7 +278,7 @@ if (WAMR_BUILD_AOT)
     bench_wamr_app(mg)
     bench_wamr_app(sp)
     bench_wamr_app(linpack)
-    # bench_wamr_app(rgbd_tum)
+    bench_wamr_app(rgbd_tum)
     bench_wamr_app(llama)
     bench_wamr_app(hdastar)
 endif ()

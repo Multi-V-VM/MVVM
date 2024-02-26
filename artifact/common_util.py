@@ -37,7 +37,7 @@ list_of_arg = [
 aot_variant = [".aot"]
 # aot_variant = ["-ckpt-every-dirty.aot"]
 # aot_variant = ["-pure.aot", "-stack.aot", "-ckpt.aot", "-ckpt-br.aot"]
-trial = 10
+trial = 1
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -289,7 +289,7 @@ def run(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
 
 
 def run_hcontainer(file: str, folder: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"/usr/bin/time /mnt1/MVVM/bench/{folder}/build_x86/{file} {' '.join(arg)}"
+    cmd = f"/usr/bin/time {pwd}/bench/{folder}/build_x86/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

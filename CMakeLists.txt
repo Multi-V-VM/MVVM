@@ -131,7 +131,7 @@ if (LINUX)
     add_subdirectory(gateway)
 endif ()
 
-file(GLOB_RECURSE SOURCE_FILES src/logging.cpp src/wamr*.cpp)
+file(GLOB_RECURSE SOURCE_FILES src/wamr*.cpp)
 add_library(MVVM_export ${SOURCE_FILES} ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_restore src/restore.cpp ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_checkpoint src/checkpoint.cpp ${UNCOMMON_SHARED_SOURCE})

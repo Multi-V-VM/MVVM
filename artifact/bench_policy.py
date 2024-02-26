@@ -2,7 +2,6 @@ import csv
 import common_util
 from multiprocessing import Pool
 
-
 cmd = [
     "linpack",
     "llama",

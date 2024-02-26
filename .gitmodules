@@ -38,3 +38,6 @@
 [submodule "bench/lammps"]
 	path = bench/lammps
 	url = https://github.com/Multi-V-VM/lammps
+[submodule "bench/ORB_SLAM2"]
+	path = bench/ORB_SLAM2
+	url = https://github.com/Multi-V-VM/ORB_SLAM2
