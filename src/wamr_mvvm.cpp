@@ -11,6 +11,10 @@
  */
 
 #include "wamr.h"
+#if defined (_WIN32)
+#include <windows.h>
+#include <detours/detours.h>
+#endif
 
 bool WAMRInstance::get_int3_addr() {
     if (!is_aot)
@@ -107,10 +111,34 @@ bool WAMRInstance::get_int3_addr() {
     }
     return true;
 }
+#if defined(_WIN32)
+extern "C" int raise(int sig);
+
+// Pointer to the original 'raise' function
+static int (WINAPI *TrueRaise)(int sig) = raise;
+
+// Our replacement function
+inline int WINAPI  MyRaise(int sig) {
+    return 0;
+}
+#endif
 
 bool WAMRInstance::replace_int3_with_nop() {
     if (!is_aot)
         return true;
+#if defined(_WIN32)
+    DetourRestoreAfterWith();
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach(&(PVOID&)TrueRaise, MyRaise);
+
+    if (DetourTransactionCommit() == NO_ERROR) {
+        SPDLOG_DEBUG("Successfully detoured raise.\n");
+    } else {
+        SPDLOG_DEBUG("Failed to detour raise.\n");
+        return false;
+    }
+#else
     auto module = get_module();
     auto code = static_cast<unsigned char *>(module->code);
     auto code_size = module->code_size;
@@ -157,6 +185,7 @@ bool WAMRInstance::replace_int3_with_nop() {
 #if defined(__APPLE__)
     pthread_jit_write_protect_np(1);
 #endif
+#endif
     return true;
 }
 
@@ -197,6 +226,18 @@ bool WAMRInstance::replace_mfence_with_nop() {
 }
 
 bool WAMRInstance::replace_nop_with_int3() {
+#if defined(_WIN32)
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    // Detach the detour, restoring the original function
+    DetourDetach(&(PVOID&)TrueRaise, MyRaise);
+    if (DetourTransactionCommit() == NO_ERROR) {
+        SPDLOG_DEBUG("Successfully detoured raise.\n");
+    } else {
+        SPDLOG_DEBUG("Failed to detour raise.\n");
+        return false;
+    }
+#else
     if (!is_aot)
         return true;
     auto module = get_module();
@@ -226,4 +267,5 @@ bool WAMRInstance::replace_nop_with_int3() {
         os_mprotect(mmap_addr, total_size, map_prot);
     }
     return true;
+#endif
 }
