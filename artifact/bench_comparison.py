@@ -18,7 +18,6 @@ cmd = [
     "tc",
     "bt",
     "cg",
-    "ep",
     "ft",
     "lu",
     "mg",
@@ -44,7 +43,6 @@ folder = [
     "nas",
     "nas",
     "nas",
-    "nas",
     "redis",
     "hdastar",
 ]
@@ -59,8 +57,7 @@ arg = [
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
-    ["-g20", "-n300"],
-    [],
+    ["-g20", "-n1"],
     [],
     [],
     [],
@@ -88,13 +85,10 @@ envs = [
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
     "a=b",
     "a=b",
 ]
-
 pool = Pool(processes=1)
-
 
 def run_mvvm():
     results = []
@@ -124,7 +118,7 @@ def run_hcontainer():
             results1.append(
                 pool.apply_async(
                     common_util.run_hcontainer,
-                    (aot, "linpack", arg[i], envs[i]),
+                    (aot, folder[i], arg[i], envs[i]),
                 )
             )
     # print the results
@@ -133,9 +127,19 @@ def run_hcontainer():
         print(exec, output)
         lines = output.split("\n")
         for line in lines:
-            if line.__contains__("user"):
-                exec_time = float(line.split(" ")[0].replace("user", ""))
-        results.append((exec, exec_time))
+            if line.__contains__("elapsed"):
+                # Split the time string into minutes, seconds, and milliseconds
+                minutes, seconds = line.split(" ")[2].replace("elapsed", "").split(":")
+                seconds, milliseconds = seconds.split(".")
+
+                # Convert each part to seconds (note that milliseconds are converted and added as a fraction of a second)
+                total_seconds = (
+                    int(minutes) * 60 + int(seconds) + int(milliseconds) / 1000
+                )
+
+                print(total_seconds)
+                exec_time = total_seconds
+                results.append((exec, exec_time))
     return results
 
 
@@ -148,7 +152,7 @@ def run_qemu_x86_64():
             results1.append(
                 pool.apply_async(
                     common_util.run_qemu_x86_64,
-                    (aot, "linpack", arg[i], envs[i]),
+                    (aot, folder[i], arg[i], envs[i]),
                 )
             )
     # print the results
@@ -157,9 +161,19 @@ def run_qemu_x86_64():
         print(exec, output)
         lines = output.split("\n")
         for line in lines:
-            if line.__contains__("user"):
-                exec_time = float(line.split(" ")[0].replace("user", ""))
-        results.append((exec, exec_time))
+            if line.__contains__("elapsed"):
+                # Split the time string into minutes, seconds, and milliseconds
+                minutes, seconds = line.split(" ")[2].replace("elapsed", "").split(":")
+                seconds, milliseconds = seconds.split(".")
+
+                # Convert each part to seconds (note that milliseconds are converted and added as a fraction of a second)
+                total_seconds = (
+                    int(minutes) * 60 + int(seconds) + int(milliseconds) / 1000
+                )
+
+                print(total_seconds)
+                exec_time = total_seconds
+                results.append((exec, exec_time))
     return results
 
 
@@ -172,7 +186,7 @@ def run_qemu_aarch64():
             results1.append(
                 pool.apply_async(
                     common_util.run_qemu_aarch64,
-                    (aot, "linpack", arg[i], envs[i]),
+                    (aot, folder[i], arg[i], envs[i]),
                 )
             )
     results1 = [x.get() for x in results1]
@@ -180,10 +194,19 @@ def run_qemu_aarch64():
         print(exec, output)
         lines = output.split("\n")
         for line in lines:
-            if line.__contains__("user"):
-                exec_time = float(line.split(" ")[0].replace("user", ""))
-        results.append((exec, exec_time))
+            if line.__contains__("elapsed"):
+                # Split the time string into minutes, seconds, and milliseconds
+                minutes, seconds = line.split(" ")[2].replace("elapsed", "").split(":")
+                seconds, milliseconds = seconds.split(".")
 
+                # Convert each part to seconds (note that milliseconds are converted and added as a fraction of a second)
+                total_seconds = (
+                    int(minutes) * 60 + int(seconds) + int(milliseconds) / 1000
+                )
+
+                print(total_seconds)
+                exec_time = total_seconds
+                results.append((exec, exec_time))
     return results
 
 
@@ -196,7 +219,7 @@ def run_native():
             results1.append(
                 pool.apply_async(
                     common_util.run_native,
-                    (aot, "linpack", arg[i], envs[i]),
+                    (aot, folder[i], arg[i], envs[i]),
                 )
             )
     results1 = [x.get() for x in results1]
@@ -204,9 +227,19 @@ def run_native():
         print(exec, output)
         lines = output.split("\n")
         for line in lines:
-            if line.__contains__("user"):
-                exec_time = float(line.split(" ")[0].replace("user", ""))
-        results.append((exec, exec_time))
+            if line.__contains__("elapsed"):
+                # Split the time string into minutes, seconds, and milliseconds
+                minutes, seconds = line.split(" ")[2].replace("elapsed", "").split(":")
+                seconds, milliseconds = seconds.split(".")
+
+                # Convert each part to seconds (note that milliseconds are converted and added as a fraction of a second)
+                total_seconds = (
+                    int(minutes) * 60 + int(seconds) + int(milliseconds) / 1000
+                )
+
+                print(total_seconds)
+                exec_time = total_seconds
+                results.append((exec, exec_time))
     return results
 
 
@@ -232,32 +265,111 @@ def write_to_csv(filename):
                     native_results[idx][1],
                 ]
             )
-
+def read_from_csv(filename):
+    with open(filename, "r") as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)
+        results = []
+        for row in reader:
+            results.append((row[0], float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5])))
+        return results
 
 def plot(results):
-    # Number of groups and bar width
-    n = len(results)
-    bar_width = 0.2
+    font = {'size': 18}
+ 
+    plt.rc('font', **font)
+    workloads = defaultdict(list)
+    for workload,hcontainer_values, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values in results:
+            workloads[
+                workload.replace("OMP_NUM_THREADS=", "")
+                .replace("-g20", "")
+                .replace("-n300", "")
+                .replace(" -f ", "")
+                .replace("-vn300", "")
+                .replace("maze-6404.txt", "")
+                .replace("stories110M.bin", "")
+                .replace("-z tokenizer.bin -t 0.0", "")
+                .strip()
+            ].append(( hcontainer_values, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values))
 
-    index = np.arange(n)
-    fig, ax = plt.subplots(figsize=(12, 6))
+    statistics = {}
+    for workload, times in workloads.items():
+        hcontainer_values, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values= zip(*times)
+        statistics[workload] = {
+            "hcontainer_median": np.median(hcontainer_values),
+            "mvvm_median": np.median(mvvm_values),
+            "qemu_x86_64_median" :np.median(qemu_x86_64_values),
+            "qemu_aarch64_median" :np.median(qemu_aarch64_values),
+            "native_median" :np.median(native_values),
+            "hcontainer_std": np.std(hcontainer_values),
+            "mvvm_std": np.std(mvvm_values),
+            "qemu_x86_64_std" :np.std(qemu_x86_64_values),
+            "qemu_aarch64_std" :np.std(qemu_aarch64_values),
+            "native_std" :np.std(native_values),
+        }
 
-    # Unpack the results for each environment
-    hcontainer_values, mvvm_values, native_values, qemu_values = zip(*results)
+    fig, ax = plt.subplots(figsize=(20, 10))
+    index = np.arange(len(statistics))
+    bar_width = 0.7/5
 
-    # Plotting
-    bar1 = ax.bar(index, hcontainer_values, bar_width, label="HContainer")
-    bar2 = ax.bar(index + bar_width, mvvm_values, bar_width, label="MVVM")
-    bar3 = ax.bar(index + 2 * bar_width, native_values, bar_width, label="Native")
-    bar4 = ax.bar(index + 3 * bar_width, qemu_values, bar_width, label="QEMU")
+    for i, (workload, stats) in enumerate(statistics.items()):
+        ax.bar(
+            index[i],
+            stats["hcontainer_median"],
+            bar_width,
+            yerr=stats["hcontainer_std"],
+            capsize=5,
+            color="blue",
+            label="hcontainer" if i == 0 else "",
+        )
+        ax.bar(
+            index[i] + bar_width,
+            stats["mvvm_median"],
+            bar_width,
+            yerr=stats["mvvm_std"],
+            capsize=5,
+            color="red",
+            label="mvvm" if i == 0 else "",
+        )
+        ax.bar(
+            index[i]+ bar_width *2,
+            stats["qemu_x86_64_median"],
+            bar_width,
+            yerr=stats["qemu_x86_64_std"],
+            capsize=5,
+            color="brown",
+            label="qemu_x86_64" if i == 0 else "",
+        )
+        ax.bar(
+            index[i]+ bar_width*3,
+            stats["qemu_aarch64_median"],
+            bar_width,
+            yerr=stats["qemu_aarch64_std"],
+            capsize=5,
+            color="purple",
+            label="qemu_aarch64" if i == 0 else "",
+        )
+        ax.bar(
+            index[i]+ bar_width*4,
+            stats["native_median"],
+            bar_width,
+            yerr=stats["native_std"],
+            capsize=5,
+            color="cyan",
+            label="native" if i == 0 else "",
+        )
+        # ax.set_xlabel(workload)
+    ticklabel = (x for x in list(statistics.keys()))
+    print(statistics.keys())
+    ax.set_xticks(index)
 
-    ax.set_ylabel("Latency (s)")
-    ax.set_xticks(index + bar_width * 1.5)
-    ax.set_xticklabels(cmd)
+    ax.set_xticklabels(ticklabel,fontsize =10)
+    ax.set_ylabel("Execution time (s)")
     ax.legend()
 
-    # Display the plot
-    # plt.show()
+    # add text at upper left
+    ax.legend(loc="upper right")
+
     plt.savefig("performance_comparison.pdf")
 
 
@@ -265,23 +377,11 @@ if __name__ == "__main__":
     mvvm_results = run_mvvm()
     native_results = run_native()
     qemu_x86_64_results = run_qemu_x86_64()
-    # print the results
+    # # print the results
     qemu_aarch64_results = run_qemu_aarch64()
     hcontainer_results = run_hcontainer()
 
     write_to_csv("comparison.csv")
-    results = []
-    for idx in range(len(mvvm_results)):
-        # Assuming the second element of each tuple is the performance metric,
-        # and that all lists are aligned and of the same length.
-        combined_result = (
-            hcontainer_results[idx][1],  # HContainer value
-            mvvm_results[idx][1],  # MVVM value
-            qemu_x86_64_results[idx][1]
-            + qemu_aarch64_results[idx][
-                1
-            ],  # Sum of QEMU x86_64 and QEMU AArch64 values
-            native_results[idx][1],  # Native value
-        )
-        results.append(combined_result)
+    
+    results = read_from_csv("comparison.csv")
     plot(results)
