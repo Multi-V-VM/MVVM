@@ -1,0 +1,12 @@
+name,mvvm,native
+a=b linpack.aot,20.722633,20.57
+"a=b rgbd_tum.aot ./ORBvoc.txt, ./TUM3.yaml ./ ./associations/fr1_xyz.txt",1679.497309,6.014
+OMP_NUM_THREADS=4 bc.aot -g20 -vn300,583.025857,129.39
+OMP_NUM_THREADS=4 sssp.aot -g20 -vn300,726.861742,31.63
+OMP_NUM_THREADS=4 bt.aot,231.107716,55.55
+OMP_NUM_THREADS=4 cg.aot,87.744345,90.79
+OMP_NUM_THREADS=4 ft.aot,110.019402,84.02
+OMP_NUM_THREADS=4 lu.aot,0.103716,0.01
+OMP_NUM_THREADS=4 mg.aot,79.522478,5.17
+OMP_NUM_THREADS=4 sp.aot,46.774105,24.89
+a=b redis.aot,86.2,18.78
