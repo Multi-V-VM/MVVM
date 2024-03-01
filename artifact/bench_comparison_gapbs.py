@@ -6,56 +6,46 @@ import numpy as np
 from collections import defaultdict
 
 cmd = [
-    "linpack",
-    "llama",
-    "rgbd_tum",
-    "bt",
-    "cg",
-    "ft",
-    "lu",
-    "mg",
-    "sp",
-    "redis",
-    "hdastar",
+    "bc",
+    "bfs",
+    "cc",
+    "cc_sv",
+    "pr",
+    "pr_spmv",
+    "sssp",
+    "tc",
 ]
 folder = [
-    "linpack",
-    "llama",
-    "ORB_SLAM2",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "nas",
-    "redis",
-    "hdastar",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+
 ]
 arg = [
-    [],
-    ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    ["maze-6404.txt", "8"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-vn300"],
+    ["-g20", "-n1"],
+
 ]
 envs = [
-    "a=b",
-    "OMP_NUM_THREADS=4",
-    "a=b",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
     "OMP_NUM_THREADS=4",
-    "a=b",
-    "a=b",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
 ]
 pool = Pool(processes=20)
 
@@ -75,48 +65,6 @@ def run_mvvm():
                 exec_time = line.split(" ")[-2]
                 print(exec, exec_time)
         results.append((exec, exec_time))  # discover 4 aot_variant
-    return results
-
-
-def run_hcontainer():
-    results = []
-    results1 = []
-    for _ in range(common_util.trial):
-        for i in range(len(cmd)):
-            aot = cmd[i]
-            results1.append(
-                pool.apply_async(
-                    common_util.run_hcontainer,
-                    (aot, folder[i], arg[i], envs[i]),
-                )
-            )
-    # print the results
-    results1 = [x.get() for x in results1]
-    for exec, output in results1:
-        print(exec, output)
-        lines = output.split("\n")
-        for line in lines:
-            if line.__contains__("elapsed"):
-                try:
-                    minutes, seconds = line.split()[2].replace("elapsed", "").split(":")
-                    seconds, milliseconds = seconds.split(".")
-
-                    # Convert each part to seconds (note that milliseconds are converted and added as a fraction of a second)
-                    total_seconds = (
-                        int(minutes) * 60 + int(seconds) + int(milliseconds) / 1000
-                    )
-
-                    print(total_seconds)
-                    exec_time = total_seconds
-                except:
-                    try:
-                        from datetime import datetime
-
-                        time_object = datetime.strptime(line.split()[2].replace("elapsed", ""), "%H:%M:%S").time()
-                        print(time_object)
-                    except:
-                        exec_time = float(line.split()[0].replace("user", ""))
-                results.append((exec, exec_time))
     return results
 
 
@@ -251,7 +199,7 @@ def write_to_csv(filename):
         writer = csv.writer(csvfile)
         # Optionally write headers
         writer.writerow(
-            ["name", "mvvm", "hcontainer", "qemu_x86_64", "qemu_aach64", "native"]
+            ["name", "mvvm", "qemu_x86_64", "qemu_aach64", "native"]
         )
 
         # Write the data
@@ -260,7 +208,6 @@ def write_to_csv(filename):
                 [
                     row[0],
                     row[1],
-                    hcontainer_results[idx][1],
                     qemu_x86_64_results[idx][1],
                     qemu_aarch64_results[idx][1],
                     native_results[idx][1],
@@ -272,7 +219,7 @@ def read_from_csv(filename):
         next(reader)
         results = []
         for row in reader:
-            results.append((row[0], float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5])))
+            results.append((row[0], float(row[1]), float(row[2]), float(row[3]), float(row[4])))
         return results
 
 def plot(results):
@@ -280,7 +227,7 @@ def plot(results):
  
     plt.rc('font', **font)
     workloads = defaultdict(list)
-    for workload, mvvm_values,hcontainer_values, qemu_x86_64_values,qemu_aarch64_values,native_values in results:
+    for workload, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values in results:
             workloads[
                 workload.replace("OMP_NUM_THREADS=", "")
                 .replace("-g20", "")
@@ -291,18 +238,16 @@ def plot(results):
                 .replace("stories110M.bin", "")
                 .replace("-z tokenizer.bin -t 0.0", "")
                 .strip()
-            ].append(( hcontainer_values, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values))
+            ].append((  mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values))
 
     statistics = {}
     for workload, times in workloads.items():
-        hcontainer_values, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values= zip(*times)
+        mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values= zip(*times)
         statistics[workload] = {
-            "hcontainer_median": np.median(hcontainer_values),
             "mvvm_median": np.median(mvvm_values),
             "qemu_x86_64_median" :np.median(qemu_x86_64_values),
             "qemu_aarch64_median" :np.median(qemu_aarch64_values),
             "native_median" :np.median(native_values),
-            "hcontainer_std": np.std(hcontainer_values),
             "mvvm_std": np.std(mvvm_values),
             "qemu_x86_64_std" :np.std(qemu_x86_64_values),
             "qemu_aarch64_std" :np.std(qemu_aarch64_values),
@@ -316,15 +261,6 @@ def plot(results):
     for i, (workload, stats) in enumerate(statistics.items()):
         ax.bar(
             index[i],
-            stats["hcontainer_median"],
-            bar_width,
-            yerr=stats["hcontainer_std"],
-            capsize=5,
-            color="blue",
-            label="hcontainer" if i == 0 else "",
-        )
-        ax.bar(
-            index[i] + bar_width,
             stats["mvvm_median"],
             bar_width,
             yerr=stats["mvvm_std"],
@@ -333,7 +269,7 @@ def plot(results):
             label="mvvm" if i == 0 else "",
         )
         ax.bar(
-            index[i]+ bar_width *2,
+            index[i]+ bar_width *1,
             stats["qemu_x86_64_median"],
             bar_width,
             yerr=stats["qemu_x86_64_std"],
@@ -342,7 +278,7 @@ def plot(results):
             label="qemu_x86_64" if i == 0 else "",
         )
         ax.bar(
-            index[i]+ bar_width*3,
+            index[i]+ bar_width*2,
             stats["qemu_aarch64_median"],
             bar_width,
             yerr=stats["qemu_aarch64_std"],
@@ -351,7 +287,7 @@ def plot(results):
             label="qemu_aarch64" if i == 0 else "",
         )
         ax.bar(
-            index[i]+ bar_width*4,
+            index[i]+ bar_width*3,
             stats["native_median"],
             bar_width,
             yerr=stats["native_std"],
@@ -371,7 +307,7 @@ def plot(results):
     # add text at upper left
     ax.legend(loc="upper right")
 
-    plt.savefig("performance_comparison.pdf")
+    plt.savefig("performance_comparison_gapbs.pdf")
 
 
 if __name__ == "__main__":
@@ -380,9 +316,8 @@ if __name__ == "__main__":
     qemu_x86_64_results = run_qemu_x86_64()
     # # print the results
     qemu_aarch64_results = run_qemu_aarch64()
-    hcontainer_results = run_hcontainer()
 
-    write_to_csv("comparison.csv")
+    write_to_csv("comparison_gapbs.csv")
     
-    results = read_from_csv("comparison.csv")
+    results = read_from_csv("comparison_gapbs.csv")
     plot(results)
