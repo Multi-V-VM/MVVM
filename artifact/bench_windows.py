@@ -3,6 +3,7 @@ import common_util
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 cmd = [
     "linpack",
@@ -33,7 +34,7 @@ folder = [
 arg = [
     [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
+    ["./ORBvoc.txt", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
     [],
     [],
     [],
@@ -71,25 +72,7 @@ def run_mvvm():
         lines = output.split("\n")
         for line in lines:
             if line.__contains__("Execution time:"):
-                exec_time = line.split(" ")[-2]
-                print(exec, exec_time)
-                results.append((exec, exec_time))  # discover 4 aot_variant
-    return results
-
-
-def run_wamr():
-    results = []
-    results1 = []
-    for _ in range(common_util.trial):
-        for i in range(len(cmd)):
-            aot = cmd[i] + "-pure.aot"
-            results1.append(common_util.run(aot, arg[i], envs[i]))
-    # print the results
-    for exec, output in results1:
-        lines = output.split("\n")
-        for line in lines:
-            if line.__contains__("Execution time:"):
-                exec_time = line.split(" ")[-2]
+                exec_time = line.split()[-2]
                 print(exec, exec_time)
                 results.append((exec, exec_time))  # discover 4 aot_variant
     return results
@@ -101,25 +84,39 @@ def run_native():
     for _ in range(common_util.trial):
         for i in range(len(cmd)):
             aot = cmd[i]
-            results1.append(
-                common_util.run_native(aot, folder[i], arg[i], envs[i]),
-            )
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(lambda: results.append(common_util.run_native(aot, folder[i], arg[i], envs[i])))
+                try:
+                    result = future.result(timeout=100)  # 5 seconds timeout
+                except TimeoutError:
+                    print("Operation timed out")
+                # results1.append(
+                #     common_util.run_native(aot, folder[i], arg[i], envs[i]),
+                # )
     for exec, output in results1:
         print(exec, output)
         lines = output.split("\n")
         for line in lines:
             if line.__contains__("elapsed"):
-                # Split the time string into minutes, seconds, and milliseconds
-                minutes, seconds = line.split(" ")[2].replace("elapsed", "").split(":")
-                seconds, milliseconds = seconds.split(".")
+                try:
+                    minutes, seconds = line.split()[2].replace("elapsed", "").split(":")
+                    seconds, milliseconds = seconds.split(".")
 
-                # Convert each part to seconds (note that milliseconds are converted and added as a fraction of a second)
-                total_seconds = (
-                    int(minutes) * 60 + int(seconds) + int(milliseconds) / 1000
-                )
+                    # Convert each part to seconds (note that milliseconds are converted and added as a fraction of a second)
+                    total_seconds = (
+                        int(minutes) * 60 + int(seconds) + int(milliseconds) / 1000
+                    )
 
-                print(total_seconds)
-                exec_time = total_seconds
+                    print(total_seconds)
+                    exec_time = total_seconds
+                except:
+                    try:
+                        from datetime import datetime
+
+                        time_object = datetime.strptime(line.split()[2].replace("elapsed", ""), "%H:%M:%S").time()
+                        print(time_object)
+                    except:
+                        exec_time = float(line.split()[0].replace("user", ""))
                 results.append((exec, exec_time))
     return results
 
@@ -130,7 +127,7 @@ def write_to_csv(filename):
     with open(filename, "a+", newline="") as csvfile:
         writer = csv.writer(csvfile)
         # Optionally write headers
-        writer.writerow(["name", "mvvm", "wamr", "native"])
+        writer.writerow(["name", "mvvm", "native"])
 
         # Write the data
         for idx, row in enumerate(mvvm_results):
@@ -138,7 +135,6 @@ def write_to_csv(filename):
                 [
                     row[0],
                     row[1],
-                    wamr_results[idx][1],
                     native_results[idx][1],
                 ]
             )
@@ -150,14 +146,14 @@ def read_from_csv(filename):
         next(reader)
         results = []
         for row in reader:
-            results.append((row[0], float(row[1]), float(row[2]), float(row[3])))
+            results.append((row[0], float(row[1]), float(row[2])))
         return results
 
 
 # print the results
 def plot(result, file_name="windows.pdf"):
     workloads = defaultdict(list)
-    for workload, mvvm, wamr, native in result:
+    for workload, mvvm, native in result:
         workloads[
             workload.replace("OMP_NUM_THREADS=", "")
             .replace("-g15", "")
@@ -172,18 +168,16 @@ def plot(result, file_name="windows.pdf"):
             .replace("./associations/fr1_xyz.txt", "")
             .replace("./", "")
             .strip()
-        ].append((mvvm, wamr, native))
+        ].append((mvvm,  native))
 
     # Calculate the medians and standard deviations for each workload
     statistics = {}
     for workload, times in workloads.items():
-        mvvms, wamr,native = zip(*times)
+        mvvms, native = zip(*times)
         statistics[workload] = {
             "mvvm_median": np.median(mvvms),
-            "wamr_median": np.median(wamr),
             "native_median": np.median(native),
             "mvvm_std": np.std(mvvms),
-            "wamr_std": np.std(wamr),
             "native_std": np.std(native),
         }
     font = {"size": 14}
@@ -193,7 +187,7 @@ def plot(result, file_name="windows.pdf"):
     # Plotting
     fig, ax = plt.subplots(figsize=(15, 7))
     # Define the bar width and positions
-    bar_width = 0.7 / 3
+    bar_width = 0.7 /2
     index = np.arange(len(statistics))
 
     # Plot the bars for each workload
@@ -212,15 +206,6 @@ def plot(result, file_name="windows.pdf"):
         )
         ax.bar(
             index[i] + bar_width,
-            stats["wamr_median"],
-            bar_width,
-            yerr=stats["wamr_std"],
-            capsize=5,
-            color="red",
-            label="WAMR" if i == 0 else "",
-        )
-        ax.bar(
-            index[i] + 2 * bar_width,
             stats["native_median"],
             bar_width,
             yerr=stats["native_std"],
@@ -230,7 +215,7 @@ def plot(result, file_name="windows.pdf"):
         )
     # Labeling and formatting
     ax.set_ylabel("Time(s)")
-    ax.set_xticks(index + bar_width / 2)
+    ax.set_xticks(index + bar_width )
     ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
     ax.set_xticklabels(ticklabel, fontsize=10)
     ax.legend()
@@ -243,13 +228,13 @@ def plot(result, file_name="windows.pdf"):
 
 
 if __name__ == "__main__":
-    mvvm_results = run_mvvm()
-    wamr_results = run_wamr()
-    native_results = run_native()
+    # mvvm_results = run_mvvm()
+    # wamr_results = run_wamr()
+    # native_results = run_native()
     # print the results
-    print(mvvm_results)
-    print(wamr_results)
-    print(native_results)
+    mvvm_results=run_mvvm()
+    # wamr_results=run_wamr()
+    native_results=run_native()
     write_to_csv("windows.csv")
-    # results = read_from_csv("windows.csv")
-    # plot(results)
+    results = read_from_csv("windows.csv")
+    plot(results)
