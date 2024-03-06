@@ -24,12 +24,11 @@
 #include <arpa/inet.h>
 #endif
 
-FreadStream *reader;
-FwriteStream *writer;
+ReadStream *reader;
+WriteStream *writer;
 WAMRInstance *wamr = nullptr;
-
-void serialize_to_file(WASMExecEnv *instance) {}
-
+std::vector<std::unique_ptr<WAMRExecEnv>> as;
+long snapshot_memory = 0;
 int main(int argc, char **argv) {
     spdlog::cfg::load_env_levels();
     cxxopts::Options options("MVVM", "Migratable Velocity Virtual Machine, to ship the VM state to another machine");
@@ -37,20 +36,12 @@ int main(int argc, char **argv) {
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
         "h,help", "The value for epoch value", cxxopts::value<bool>()->default_value("false"))(
+        "i,source_addr", "The next hop to offload", cxxopts::value<std::string>()->default_value(""))(
+        "e,source_port", "The next hop port to offload", cxxopts::value<int>()->default_value("0"))(
+        "o,offload_addr", "The next hop to offload", cxxopts::value<std::string>()->default_value(""))(
+        "s,offload_port", "The next hop port to offload", cxxopts::value<int>()->default_value("0"))(
         "c,count", "The value for epoch value", cxxopts::value<size_t>()->default_value("0"));
     // Can first discover from the wasi context.
-    auto removeExtension = [](std::string &filename) {
-        size_t dotPos = filename.find_last_of('.');
-        std::string res;
-        if (dotPos != std::string::npos) {
-            // Extract the substring before the period
-            res = filename.substr(0, dotPos);
-        } else {
-            // If there's no period in the string, it means there's no extension.
-            SPDLOG_ERROR("No extension found.");
-        }
-        return res;
-    };
 
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {
@@ -58,13 +49,30 @@ int main(int argc, char **argv) {
         exit(0);
     }
     auto target = result["target"].as<std::string>();
+    auto source_addr = result["source_addr"].as<std::string>();
+    auto source_port = result["source_port"].as<int>();
+    auto offload_addr = result["offload_addr"].as<std::string>();
+    auto offload_port = result["offload_port"].as<int>();
     auto count = result["count"].as<size_t>();
 
     snapshot_threshold = count;
     register_sigtrap();
 
-    reader = new FreadStream((removeExtension(target) + ".bin").c_str());
     wamr = new WAMRInstance(target.c_str(), false);
+    wamr->instantiate();
+
+    wamr->get_int3_addr();
+    wamr->replace_int3_with_nop();
+    if (source_addr.empty())
+        reader = new FreadStream((removeExtension(target) + ".bin").c_str()); // writer
+    else
+        reader = new SocketReadStream(source_addr.c_str(), source_port);
+
+    if (offload_addr.empty())
+        writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+    else
+        writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
+
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
     // is server for all and the is server?
 #if !defined(_WIN32)
@@ -78,7 +86,7 @@ int main(int argc, char **argv) {
         SPDLOG_DEBUG("new ip {}.{}.{}.{}:{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3],
                      src_addr.port);
         // got from wamr
-        for (auto &[fd, socketMetaData] : a[a.size() - 1]->module_inst.wasi_ctx.socket_fd_map) {
+        for (auto &[_, socketMetaData] : a[a.size() - 1]->module_inst.wasi_ctx.socket_fd_map) {
             wamr->op_data.is_tcp |= socketMetaData.type;
             is_tcp_server |= socketMetaData.is_server;
         }

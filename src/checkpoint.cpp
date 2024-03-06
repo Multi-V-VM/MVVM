@@ -26,184 +26,10 @@
 
 WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
-FwriteStream *writer;
+WriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 long snapshot_memory = 0;
-void serialize_to_file(WASMExecEnv *instance) {
-    // gateway
-    auto start = std::chrono::high_resolution_clock::now();
-    if (snapshot_memory == 0)
-        snapshot_memory = get_rss();
-#if WASM_ENABLE_LIB_PTHREAD != 0
-    auto cluster = wasm_exec_env_get_cluster(instance);
-    auto all_count = bh_list_length(&cluster->exec_env_list);
-    // fill vector
-
-    std::unique_lock as_ul(wamr->as_mtx);
-    SPDLOG_DEBUG("get lock");
-    wamr->ready++;
-    wamr->lwcp_list[((uint64_t)instance->handle)]++;
-    if (wamr->ready == all_count) {
-        wamr->should_snapshot = true;
-    }
-    // If we're not all ready
-    SPDLOG_DEBUG("thread {}, with {} ready out of {} total", ((uint64_t)instance->handle), wamr->ready, all_count);
-#endif
-#if !defined(_WIN32)
-    if (!wamr->socket_fd_map_.empty() && wamr->should_snapshot) {
-        // tell gateway to keep alive the server
-        struct sockaddr_in addr {};
-        int fd = 0;
-        ssize_t rc;
-        SocketAddrPool src_addr{};
-        bool is_server = false;
-        for (auto [tmp_fd, sock_data] : wamr->socket_fd_map_) {
-            if (sock_data.is_server) {
-                is_server = true;
-                break;
-            }
-        }
-        wamr->op_data.op = is_server ? MVVM_SOCK_SUSPEND_TCP_SERVER : MVVM_SOCK_SUSPEND;
-
-        for (auto [tmp_fd, sock_data] : wamr->socket_fd_map_) {
-            int idx = wamr->op_data.size;
-            src_addr = sock_data.socketAddress;
-            auto tmp_ip4 =
-                fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);
-            auto tmp_ip6 =
-                fmt::format("{}:{}:{}:{}:{}:{}:{}:{}", src_addr.ip6[0], src_addr.ip6[1], src_addr.ip6[2],
-                            src_addr.ip6[3], src_addr.ip6[4], src_addr.ip6[5], src_addr.ip6[6], src_addr.ip6[7]);
-            if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
-                src_addr = wamr->local_addr;
-                src_addr.port = sock_data.socketAddress.port;
-            }
-            SPDLOG_INFO("addr: {} {}.{}.{}.{}  port: {}", tmp_fd, src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2],
-                        src_addr.ip4[3], src_addr.port);
-            // make the rest coroutine?
-            tmp_ip4 = fmt::format("{}.{}.{}.{}", sock_data.socketSentToData.dest_addr.ip.ip4[0],
-                                  sock_data.socketSentToData.dest_addr.ip.ip4[1],
-                                  sock_data.socketSentToData.dest_addr.ip.ip4[2],
-                                  sock_data.socketSentToData.dest_addr.ip.ip4[3]);
-            tmp_ip6 = fmt::format(
-                "{}:{}:{}:{}:{}:{}:{}:{}", sock_data.socketSentToData.dest_addr.ip.ip6[0],
-                sock_data.socketSentToData.dest_addr.ip.ip6[1], sock_data.socketSentToData.dest_addr.ip.ip6[2],
-                sock_data.socketSentToData.dest_addr.ip.ip6[3], sock_data.socketSentToData.dest_addr.ip.ip6[4],
-                sock_data.socketSentToData.dest_addr.ip.ip6[5], sock_data.socketSentToData.dest_addr.ip.ip6[6],
-                sock_data.socketSentToData.dest_addr.ip.ip6[7]);
-            if (tmp_ip4 == "0.0.0.0" || tmp_ip6 == "0:0:0:0:0:0:0:0") {
-                if (!wamr->op_data.is_tcp) {
-                    if (sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip4 == "0.0.0.0" ||
-                        !sock_data.socketSentToData.dest_addr.ip.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
-                        wamr->op_data.addr[idx][1].is_4 = sock_data.socketRecvFromDatas[0].src_addr.ip.is_4;
-                        std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketRecvFromDatas[0].src_addr.ip.ip4,
-                                    sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip4));
-                        std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketRecvFromDatas[0].src_addr.ip.ip6,
-                                    sizeof(sock_data.socketRecvFromDatas[0].src_addr.ip.ip6));
-                        wamr->op_data.addr[idx][1].port = sock_data.socketRecvFromDatas[0].src_addr.port;
-                    } else {
-                        wamr->op_data.addr[idx][1].is_4 = sock_data.socketSentToData.dest_addr.ip.is_4;
-                        std::memcpy(wamr->op_data.addr[idx][1].ip4, sock_data.socketSentToData.dest_addr.ip.ip4,
-                                    sizeof(sock_data.socketSentToData.dest_addr.ip.ip4));
-                        std::memcpy(wamr->op_data.addr[idx][1].ip6, sock_data.socketSentToData.dest_addr.ip.ip6,
-                                    sizeof(sock_data.socketSentToData.dest_addr.ip.ip6));
-                        wamr->op_data.addr[idx][1].port = sock_data.socketSentToData.dest_addr.port;
-                    }
-                } else {
-                    // if it's not socket
-                    if (!is_server) {
-                        int tmp_fd = 0;
-                        unsigned int size_ = sizeof(sockaddr_in);
-                        sockaddr_in *ss = (sockaddr_in *)malloc(size_);
-                        wamr->invoke_sock_getsockname(tmp_fd, (sockaddr **)&ss, &size_);
-                        if (ss->sin_family == AF_INET) {
-                            auto *ipv4 = (struct sockaddr_in *)ss;
-                            uint32_t ip = ntohl(ipv4->sin_addr.s_addr);
-                            wamr->op_data.addr[idx][1].is_4 = true;
-                            wamr->op_data.addr[idx][1].ip4[0] = (ip >> 24) & 0xFF;
-                            wamr->op_data.addr[idx][1].ip4[1] = (ip >> 16) & 0xFF;
-                            wamr->op_data.addr[idx][1].ip4[2] = (ip >> 8) & 0xFF;
-                            wamr->op_data.addr[idx][1].ip4[3] = ip & 0xFF;
-                            wamr->op_data.addr[idx][1].port = ntohs(ipv4->sin_port);
-                        } else {
-                            auto *ipv6 = (struct sockaddr_in6 *)ss;
-                            wamr->op_data.addr[idx][1].is_4 = false;
-                            const auto *bytes = (const uint8_t *)ipv6->sin6_addr.s6_addr;
-                            for (int i = 0; i < 16; i += 2) {
-                                wamr->op_data.addr[idx][1].ip6[i / 2] = (bytes[i] << 8) + bytes[i + 1];
-                            }
-                            wamr->op_data.addr[idx][1].port = ntohs(ipv6->sin6_port);
-                        }
-                        free(ss);
-                    } else if (sock_data.is_server) {
-                        wamr->op_data.size--;
-                    }
-                }
-            }
-            SPDLOG_DEBUG("dest_addr: {}.{}.{}.{}:{}", wamr->op_data.addr[idx][1].ip4[0],
-                         wamr->op_data.addr[idx][1].ip4[1], wamr->op_data.addr[idx][1].ip4[2],
-                         wamr->op_data.addr[idx][1].ip4[3], wamr->op_data.addr[idx][1].port);
-            wamr->op_data.size += 1;
-        }
-        // Create a socket
-        if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-            SPDLOG_ERROR("socket error");
-            throw std::runtime_error("socket error");
-        }
-
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(MVVM_SOCK_PORT);
-
-        // Convert IPv4 and IPv6 addresses from text to binary form
-        if (inet_pton(AF_INET, MVVM_SOCK_ADDR, &addr.sin_addr) <= 0) {
-            SPDLOG_ERROR("AF_INET not supported");
-            exit(EXIT_FAILURE);
-        }
-        // Connect to the server
-        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-            SPDLOG_ERROR("Connection Failed {}", errno);
-            exit(EXIT_FAILURE);
-        }
-
-        SPDLOG_DEBUG("Connected successfully");
-        rc = send(fd, &wamr->op_data, sizeof(struct mvvm_op_data), 0);
-        if (rc == -1) {
-            SPDLOG_ERROR("send error");
-            exit(EXIT_FAILURE);
-        }
-
-        // Clean up
-        close(fd);
-    }
-#endif
-#if WASM_ENABLE_LIB_PTHREAD != 0
-    if (wamr->ready < all_count) {
-        // Then wait for someone else to get here and finish the job
-        std::condition_variable as_cv;
-        as_cv.wait(as_ul);
-    }
-    wasm_cluster_suspend_all_except_self(cluster, instance);
-    auto elem = (WASMExecEnv *)bh_list_first_elem(&cluster->exec_env_list);
-    while (elem) {
-        instance = elem;
-#endif // windows has no threads so only does it once
-        auto a = new WAMRExecEnv();
-        dump(a, instance);
-        as.emplace_back(a);
-#if WASM_ENABLE_LIB_PTHREAD != 0
-        elem = (WASMExecEnv *)bh_list_elem_next(elem);
-    }
-    // finish filling vector
-#endif
-    auto used_memory = get_rss();
-    struct_pack::serialize_to(*writer, as);
-    auto end = std::chrono::high_resolution_clock::now();
-    // get duration in us
-    auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    SPDLOG_INFO("Snapshot time: {} s", dur.count() / 1000000.0);
-    SPDLOG_INFO("Memory usage: {} MB", (used_memory - snapshot_memory) / 1024 /1024);
-    exit(EXIT_SUCCESS);
-}
 
 int main(int argc, char *argv[]) {
     spdlog::cfg::load_env_levels();
@@ -227,19 +53,10 @@ int main(int argc, char *argv[]) {
         "i,is_debug", "The value for is_debug value", cxxopts::value<bool>()->default_value("false"))(
         "f,function", "The function index to test execution", cxxopts::value<int>()->default_value("0"))(
         "x,function_count", "The function count to stop", cxxopts::value<int>()->default_value("0"))(
+        "o,offload_addr", "The next hop to offload", cxxopts::value<std::string>()->default_value(""))(
+        "s,offload_port", "The next hop port to offload", cxxopts::value<int>()->default_value("0"))(
         "c,count", "The step index to test execution", cxxopts::value<int>()->default_value("0"));
-    auto removeExtension = [](std::string &filename) {
-        size_t dotPos = filename.find_last_of('.');
-        std::string res;
-        if (dotPos != std::string::npos) {
-            // Extract the substring before the period
-            res = filename.substr(0, dotPos);
-        } else {
-            // If there's no period in the string, it means there's no extension.
-            SPDLOG_ERROR("No extension found.");
-        }
-        return res;
-    };
+
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {
         std::cout << options.help() << std::endl;
@@ -252,6 +69,8 @@ int main(int argc, char *argv[]) {
     auto env = result["env"].as<std::vector<std::string>>();
     auto arg = result["arg"].as<std::vector<std::string>>();
     auto addr = result["addr"].as<std::vector<std::string>>();
+    auto offload_addr = result["offload_addr"].as<std::string>();
+    auto offload_port = result["offload_port"].as<int>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
     snapshot_threshold = result["count"].as<int>();
     stop_func_threshold = result["function_count"].as<int>();
@@ -270,13 +89,15 @@ int main(int argc, char *argv[]) {
         SPDLOG_DEBUG("arg {}", e);
     }
     register_sigtrap();
-
-    writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+    if (offload_addr.empty())
+        writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+    else
+        writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
-    // wamr->get_int3_addr();
-    // wamr->replace_int3_with_nop();
+    wamr->get_int3_addr();
+    wamr->replace_int3_with_nop();
 
     // freopen("output.txt", "w", stdout);
 #if defined(_WIN32)

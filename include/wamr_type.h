@@ -13,6 +13,8 @@
 #ifndef MVVM_WAMR_TYPE_H
 #define MVVM_WAMR_TYPE_H
 #include "wasm_runtime.h"
+#include "wamr_serializer.h"
+
 struct WAMRType {
     uint16 param_count;
     uint16 result_count;

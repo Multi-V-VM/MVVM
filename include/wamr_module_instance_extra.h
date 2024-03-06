@@ -16,6 +16,7 @@
 #if WASM_ENABLE_WASI_NN != 0
 #include "wamr_wasi_nn_context.h"
 #endif
+#include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <memory>
 #include <vector>

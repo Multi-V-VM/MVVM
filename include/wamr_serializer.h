@@ -27,4 +27,20 @@ concept CheckerTrait = requires(T &t, K k) {
     { t->equal_impl(k) } -> std::convertible_to<bool>;
 };
 
+template <typename T, typename WriteDataType>
+concept WriterStreamTrait = requires(T &t, const WriteDataType *data, std::size_t size) {
+    // Requires a write method that accepts WriteDataType and returns void or a boolean.
+    { t.write(data, size) } -> std::same_as<bool>;
+};
+
+template <typename T, typename ReadDataType>
+concept ReaderStreamTrait = requires(T &t, ReadDataType *data, std::size_t size) {
+    // Requires a read method that accepts a pointer to ReadDataType and size, returns bool.
+    { t.read(data, size) } -> std::same_as<bool>;
+    // Requires an ignore method that accepts size and returns bool.
+    { t.ignore(size) } -> std::same_as<bool>;
+    // Requires a tellg method that returns std::size_t.
+    { t.tellg() } -> std::same_as<std::size_t>;
+};
+
 #endif // MVVM_WAMR_SERIALIZER_H

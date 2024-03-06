@@ -88,6 +88,7 @@ struct mvvm_op_data {
     int size;
     SocketAddrPool addr[MVVM_MAX_ADDR][2];
 };
+std::string removeExtension(std::string &);
 bool is_ip_in_cidr(const char *base_ip, int subnet_mask_len, uint32_t ip);
 bool is_ipv6_in_cidr(const char *base_ip_str, int subnet_mask_len, struct in6_addr *ip);
 long get_rss();

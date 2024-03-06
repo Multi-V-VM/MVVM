@@ -32,8 +32,6 @@ std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 long snapshot_memory = 0;
 
-void serialize_to_file(WASMExecEnv *instance) {}
-
 std::vector<std::vector<size_t>> stack_record;
 void unwind(WASMExecEnv *instance) {
     auto cur_frame = (AOTFrame *)instance->cur_frame;
@@ -46,9 +44,7 @@ void unwind(WASMExecEnv *instance) {
     stack_record.emplace_back(stack);
 }
 
-void profile_sigint_handler(int sig) {
-    wamr->replace_nop_with_int3();
-}
+void profile_sigint_handler(int sig) { wamr->replace_nop_with_int3(); }
 
 void profile_sigtrap_handler(int sig) {
     auto exec_env = wamr->get_exec_env();
@@ -84,9 +80,8 @@ void profile_register_sigint() {
 
 int main(int argc, char *argv[]) {
     spdlog::cfg::load_env_levels();
-    cxxopts::Options options(
-        "MVVM_profile",
-        "Migratable Velocity Virtual Machine profile part, to find the hotspot function.");
+    cxxopts::Options options("MVVM_profile",
+                             "Migratable Velocity Virtual Machine profile part, to find the hotspot function.");
     options.add_options()("t,target", "The webassembly file to execute",
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(
         "j,jit", "Whether the jit mode or interp mode", cxxopts::value<bool>()->default_value("false"))(
@@ -105,7 +100,7 @@ int main(int argc, char *argv[]) {
         "f,function", "The function index to test execution", cxxopts::value<int>()->default_value("0"))(
         "x,function_count", "The function count to stop", cxxopts::value<int>()->default_value("0"))(
         "c,count", "The step index to test execution", cxxopts::value<int>()->default_value("0"))(
-        "w,wasm", "The wasm file",  cxxopts::value<std::string>()->default_value(""));
+        "w,wasm", "The wasm file", cxxopts::value<std::string>()->default_value(""));
     auto removeExtension = [](std::string &filename) {
         size_t dotPos = filename.find_last_of('.');
         std::string res;
@@ -232,7 +227,7 @@ int main(int argc, char *argv[]) {
         func_name[e] = name;
     }
     pclose(pipe);
-    
+
     // print the result
     std::cout << "Last level function called count\n"
               << "--------------------------------\n"
