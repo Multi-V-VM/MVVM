@@ -65,17 +65,17 @@ int main(int argc, char **argv) {
     wamr->replace_int3_with_nop();
     if (source_addr.empty())
         reader = new FreadStream((removeExtension(target) + ".bin").c_str()); // writer
+#if !defined(_WIN32)
     else
         reader = new SocketReadStream(source_addr.c_str(), source_port);
-
+#endif
+    auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
     if (offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+#if !defined(_WIN32)
     else
         writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
-
-    auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
     // is server for all and the is server?
-#if !defined(_WIN32)
     if (!a[a.size() - 1]
              ->module_inst.wasi_ctx.socket_fd_map.empty()) { // new ip, old ip // only if tcp requires keepalive
         // tell gateway to stop keep alive the server

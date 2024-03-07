@@ -26,7 +26,7 @@
 
 WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
-WriteStream *writer;
+SocketWriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 long snapshot_memory = 0;
@@ -91,8 +91,10 @@ int main(int argc, char *argv[]) {
     register_sigtrap();
     if (offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+#ifndef _WIN32
     else
         writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
+#endif
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
