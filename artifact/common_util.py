@@ -3,7 +3,7 @@ import os
 import asyncio
 import time
 
-pwd = "/mnt1/MVVM"
+pwd = "/mnt/MVVM"
 
 
 def get_func_index(func, file):
@@ -40,8 +40,7 @@ aot_variant = [
     ".aot",
     "-pure.aot",
     "-stack.aot",
-    "-ckpt.aot",
-    "-ckpt-br.aot",
+    "-ckpt-every-dirty.aot",
     "-ckpt-loop.aot",
     "-ckpt-loop-dirty.aot",
 ]
@@ -281,8 +280,39 @@ def run_qemu_checkpoint(
     return (exec, output)
 
 
-def run(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
+def run(aot_file: str, arg: list[str], env: str, extra:str="") -> tuple[str, str]:
+    cmd = f"./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}"
+    print(cmd)
+    cmd = cmd.split()
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        output = result.stdout.decode("utf-8")
+    except:
+        output = result.stdout
+    exec = " ".join([env] + [aot_file] + arg)
+    # print(exec)
+    # print(output)
+    return (exec, output)
+
+def run_checkpoint_restore_slowtier(
+    aot_file: str, folder, arg: list[str], env: str, extra:str=""
+) -> tuple[str, str, str, str]:
+    # Execute run_checkpoint and capture its result
+    res = []
+    for _ in range(trial):
+        checkpoint_result = run(aot_file, folder, arg, env,extra)
+
+        # Execute run_restore with the same arguments (or modify as needed)
+        restore_result = run_criu_restore(aot_file, arg, env)
+        # print(checkpoint_result, restore_result)
+        # Return a combined result or just the checkpoint result as needed
+
+        res.append(checkpoint_result[1] + restore_result[1])
+    return (checkpoint_result[0], res)
+
+
+def run_slowtier(aot_file: str, arg: list[str], env: str, extra:str="") -> tuple[str, str]:
+    cmd = f"ssh epyc {pwd}/MVVM_checkpoint -t {pwd}/build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -333,7 +363,7 @@ def run_native(file: str, folder: str, arg: list[str], env: str) -> tuple[str, s
 def run_qemu_x86_64(
     file: str, folder: str, arg: list[str], env: str
 ) -> tuple[str, str]:
-    cmd = f"/usr/bin/time /usr/bin/qemu-x86_64 {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
+    cmd = f"/usr/bin/time /usr/bin/qemu-x86_64 -E {env} {pwd}/bench/{folder}/build/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -350,7 +380,7 @@ def run_qemu_x86_64(
 def run_qemu_aarch64(
     file: str, folder: str, arg: list[str], env: str
 ) -> tuple[str, str]:
-    cmd = f"/usr/bin/time /usr/bin/qemu-aarch64 {pwd}/bench/{folder}/build_aarch64_native/{file} {' '.join(arg)}"
+    cmd = f"/usr/bin/time /usr/bin/qemu-aarch64 -E {env} {pwd}/bench/{folder}/build_aarch64_native/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
