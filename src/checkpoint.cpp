@@ -26,7 +26,7 @@
 
 WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
-SocketWriteStream *writer;
+WriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 long snapshot_memory = 0;
@@ -89,6 +89,7 @@ int main(int argc, char *argv[]) {
         SPDLOG_DEBUG("arg {}", e);
     }
     register_sigtrap();
+    register_sigint();
     if (offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
 #ifndef _WIN32
@@ -101,29 +102,6 @@ int main(int argc, char *argv[]) {
     wamr->get_int3_addr();
     wamr->replace_int3_with_nop();
 
-    // freopen("output.txt", "w", stdout);
-#if defined(_WIN32)
-    // Define the sigaction structure
-    signal(SIGINT, sigint_handler);
-#else
-    // Define the sigaction structure
-    struct sigaction sa {};
-
-    // Clear the structure
-    sigemptyset(&sa.sa_mask);
-
-    // Set the signal handler function
-    sa.sa_handler = sigint_handler;
-
-    // Set the flags
-    sa.sa_flags = SA_RESTART;
-
-    // Register the signal handler for SIGINT
-    if (sigaction(SIGINT, &sa, nullptr) == -1) {
-        SPDLOG_ERROR("Error: cannot handle SIGINT");
-        return 1;
-    }
-#endif
     // get current time
     auto start = std::chrono::high_resolution_clock::now();
 

@@ -4,7 +4,7 @@ import asyncio
 import time
 
 pwd = "/mnt/MVVM"
-
+slowtier = "epyc"
 
 def get_func_index(func, file):
     cmd = ["wasm2wat", "--enable-all", file]
@@ -280,7 +280,7 @@ def run_qemu_checkpoint(
     return (exec, output)
 
 
-def run(aot_file: str, arg: list[str], env: str, extra:str="") -> tuple[str, str]:
+def run(aot_file: str, arg: list[str], env: str, extra: str = "") -> tuple[str, str]:
     cmd = f"./MVVM_checkpoint -t ../build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}"
     print(cmd)
     cmd = cmd.split()
@@ -294,25 +294,29 @@ def run(aot_file: str, arg: list[str], env: str, extra:str="") -> tuple[str, str
     # print(output)
     return (exec, output)
 
+
 def run_checkpoint_restore_slowtier(
-    aot_file: str, folder, arg: list[str], env: str, extra:str=""
-) -> tuple[str, str, str, str]:
+    aot_file: str, folder, arg: list[str], env: str, extra1: str = "", extra2 :str= ""
+):
     # Execute run_checkpoint and capture its result
     res = []
-    for _ in range(trial):
-        checkpoint_result = run(aot_file, folder, arg, env,extra)
+    for i in range(trial):
+        os.system(f"./run_with_cpu_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} &")
 
         # Execute run_restore with the same arguments (or modify as needed)
-        restore_result = run_criu_restore(aot_file, arg, env)
+        os.system(f"ssh {slowtier} ./run_with_cpu_monitoring.sh ./MVVM_restore -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} &")
+
         # print(checkpoint_result, restore_result)
         # Return a combined result or just the checkpoint result as needed
 
-        res.append(checkpoint_result[1] + restore_result[1])
+        res.append(f"./bench/{aot_file}{i}.log")
     return (checkpoint_result[0], res)
 
 
-def run_slowtier(aot_file: str, arg: list[str], env: str, extra:str="") -> tuple[str, str]:
-    cmd = f"ssh epyc {pwd}/MVVM_checkpoint -t {pwd}/build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}"
+def run_slowtier(
+    aot_file: str, arg: list[str], env: str, extra: str = ""
+) -> tuple[str, str]:
+    cmd = f"ssh {slowtier} {pwd}/MVVM_checkpoint -t {pwd}/build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

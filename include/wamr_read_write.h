@@ -21,12 +21,12 @@
 #include <unistd.h>
 #endif
 struct WriteStream {
-     virtual bool write(const char *data, std::size_t sz) const {};
+    virtual bool write(const char *data, std::size_t sz) const {};
 };
 struct ReadStream {
-     virtual bool read(char *data, std::size_t sz) const {};
-     virtual bool ignore(std::size_t sz) const {};
-     virtual std::size_t tellg() const {};
+    virtual bool read(char *data, std::size_t sz) const {};
+    virtual bool ignore(std::size_t sz) const {};
+    virtual std::size_t tellg() const {};
 };
 struct FwriteStream : public WriteStream {
     FILE *file;
@@ -198,15 +198,16 @@ public:
         qp_init_attr.send_cq = cq;
         qp_init_attr.recv_cq = cq;
         qp_init_attr.qp_type = IBV_QPT_RC; // Reliable Connection
-        qp_init_attr.cap.max_send_wr = 1; // Max Work Requests
-        qp_init_attr.cap.max_recv_wr = 1;
+        qp_init_attr.cap.max_send_wr = 10; // Max Work Requests
+        qp_init_attr.cap.max_recv_wr = 10;
         qp_init_attr.cap.max_send_sge = 1; // Max Scatter/Gather Elements
         qp_init_attr.cap.max_recv_sge = 1;
         qp = ibv_create_qp(pd, &qp_init_attr);
 
         // Allocate and register memory region
         buffer = std::malloc(buffer_size);
-        mr = ibv_reg_mr(pd, buffer, buffer_size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE);
+        mr = ibv_reg_mr(pd, buffer, buffer_size,
+                        IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE);
 
         // Connection setup, exchange QP info with the peer, etc., are omitted for simplicity
     }
@@ -270,9 +271,7 @@ public:
 
         return true;
     }
-    std::size_t tellg() const {
-        return position;
-    }
+    std::size_t tellg() const { return position; }
 
     ~RDMAReadStream() {
         ibv_dereg_mr(mr);
@@ -299,7 +298,32 @@ class RDMAWriteStream {
 public:
     explicit RDMAWriteStream(const char *device_name, std::size_t buffer_size) : buffer_size(buffer_size) {
         // Initialization (device, PD, CQ, QP, buffer, and MR) is similar to RDMAReadStream
+        // Initialize RDMA device
+        struct ibv_device **dev_list = ibv_get_device_list(NULL);
+        context = ibv_open_device(*dev_list);
 
+        // Allocate Protection Domain
+        pd = ibv_alloc_pd(context);
+
+        // Create Completion Queue
+        cq = ibv_create_cq(context, 1, NULL, NULL, 0);
+
+        // Initialize QP
+        struct ibv_qp_init_attr qp_init_attr;
+        memset(&qp_init_attr, 0, sizeof(qp_init_attr));
+        qp_init_attr.send_cq = cq;
+        qp_init_attr.recv_cq = cq;
+        qp_init_attr.qp_type = IBV_QPT_RC; // Reliable Connection
+        qp_init_attr.cap.max_send_wr = 10; // Max Work Requests
+        qp_init_attr.cap.max_recv_wr = 10;
+        qp_init_attr.cap.max_send_sge = 1; // Max Scatter/Gather Elements
+        qp_init_attr.cap.max_recv_sge = 1;
+        qp = ibv_create_qp(pd, &qp_init_attr);
+
+        // Allocate and register memory region
+        buffer = std::malloc(buffer_size);
+        mr = ibv_reg_mr(pd, buffer, buffer_size,
+                        IBV_ACCESS_LOCAL_READ | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ);
         // Assume remote_address and remote_key are set up through some initialization method
     }
 

@@ -94,6 +94,7 @@ void lightweight_uncheckpoint(WASMExecEnv *);
 void wamr_wait(wasm_exec_env_t);
 void sigint_handler(int sig);
 void register_sigtrap();
+void register_sigint();
 void sigtrap_handler(int sig);
 extern size_t snapshot_threshold;
 extern int stop_func_threshold;

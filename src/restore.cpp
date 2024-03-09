@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 
     snapshot_threshold = count;
     register_sigtrap();
-
+    register_sigint();
     wamr = new WAMRInstance(target.c_str(), false);
     wamr->instantiate();
 

@@ -291,7 +291,7 @@ def plot(results):
     plt.savefig("performance_singlethread.pdf")
 
 if __name__ == "__main__":
-    mvvm_results = run_mvvm()
-    write_to_csv("policy.csv")
+#    mvvm_results = run_mvvm()
+#   write_to_csv("policy.csv")
     mvvm_results = read_from_csv("policy.csv")
     plot(mvvm_results)

@@ -34,7 +34,7 @@ folder = [
 arg = [
     [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
+    ["./ORBvoc.txt", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
     [],
     [],
     [],
@@ -46,14 +46,14 @@ arg = [
 ]
 envs = [
     "a=b",
-    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=1",
     "a=b",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
     "a=b",
     "a=b",
 ]
@@ -289,7 +289,7 @@ def plot(results):
                 .replace("-vn300", "")
                 .replace("maze-6404.txt", "")
                 .replace("stories110M.bin", "")
-                .replace("-z tokenizer.bin -t 0.0", "")
+                .replace("-z tokenizer.bin -t 0.0", "").replace("a=b", "")
                 .strip()
             ].append(( hcontainer_values, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values))
 
