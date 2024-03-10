@@ -3,8 +3,10 @@ import os
 import asyncio
 import time
 
-pwd = "/mnt/MVVM"
-slowtier = "epyc"
+pwd = "/home/victoryang00/MVVM"
+slowtier = "dennard.soe.ucsc.edu"
+burst = "mac"
+
 
 def get_func_index(func, file):
     cmd = ["wasm2wat", "--enable-all", file]
@@ -296,27 +298,71 @@ def run(aot_file: str, arg: list[str], env: str, extra: str = "") -> tuple[str, 
 
 
 def run_checkpoint_restore_slowtier(
-    aot_file: str, folder, arg: list[str], env: str, extra1: str = "", extra2 :str= ""
+    aot_file: str,
+    folder,
+    arg: list[str],
+    env: str,
+    extra1: str = "",
+    extra2: str = "",
+    extra3: str = "",
 ):
     # Execute run_checkpoint and capture its result
     res = []
     for i in range(trial):
-        os.system(f"./run_with_cpu_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} &")
+        os.system(
+            f"../artifact/run_with_cpu_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} &"
+        )
 
         # Execute run_restore with the same arguments (or modify as needed)
-        os.system(f"ssh {slowtier} ./run_with_cpu_monitoring.sh ./MVVM_restore -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} &")
+        os.system(
+            f"ssh {slowtier} {pwd}/artifact/run_with_cpu_monitoring.sh {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra2} &"
+        )
 
+        os.system(
+            f"../artifact/run_with_cpu_monitoring.sh ./MVVM_restore -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra3} &"
+        )
         # print(checkpoint_result, restore_result)
         # Return a combined result or just the checkpoint result as needed
 
         res.append(f"./bench/{aot_file}{i}.log")
-    return (checkpoint_result[0], res)
+    return res
+
+
+def run_checkpoint_restore_burst(
+    aot_file: str,
+    folder,
+    arg: list[str],
+    env: str,
+    extra1: str = "",
+    extra2: str = "",
+    extra3: str = "",
+):
+    # Execute run_checkpoint and capture its result
+    res = []
+    for i in range(trial):
+        os.system(
+            f"../artifact/run_with_energy_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} &"
+        )
+
+        # Execute run_restore with the same arguments (or modify as needed)
+        os.system(
+            f"ssh {burst} {pwd}/artifact/run_with_energy_monitoring_mac.sh {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra2} &"
+        )
+
+        os.system(
+            f"../artifact/run_with_energy_monitoring.sh ./MVVM_restore -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra3} &"
+        )
+        # print(checkpoint_result, restore_result)
+        # Return a combined result or just the checkpoint result as needed
+
+        res.append(f"./bench/{aot_file}{i}.log")
+    return res
 
 
 def run_slowtier(
     aot_file: str, arg: list[str], env: str, extra: str = ""
 ) -> tuple[str, str]:
-    cmd = f"ssh {slowtier} {pwd}/MVVM_checkpoint -t {pwd}/build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}"
+    cmd = f"ssh {slowtier} {pwd}/build/MVVM_checkpoint -t {pwd}/build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

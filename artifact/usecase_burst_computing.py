@@ -28,7 +28,7 @@ envs = [
 pool = Pool(processes=20)
 
 
-def get_fasttier_result():
+def get_cloud_result():
     results = []
     results1 = []
     for _ in range(common_util.trial):
@@ -46,7 +46,7 @@ def get_fasttier_result():
         results.append((exec, exec_time))  # discover 4 aot_variant
 
 
-def get_slowtier_result():
+def get_edge_result():
     results = []
     results1 = []
     for _ in range(common_util.trial):
@@ -108,7 +108,15 @@ def get_burst_compute():
             aot = cmd[i] + ".aot"
             results1.append(
                 pool.apply_async(
-                    common_util.run_checkpoint_restore_slowtier, (aot, arg[i], envs[i])
+                    common_util.run_checkpoint_restore_burst,
+                    (
+                        aot,
+                        arg[i],
+                        envs[i],
+                        f"-o {ip[0]} -s {port}",
+                        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port}",
+                        f"-i {ip[1]} -e {new_port}",
+                    ),  # energy
                 )
             )
     # print the results
@@ -141,13 +149,113 @@ def write_to_csv(filename):
             writer.writerow([row[0], row[1], slowtier[1], snapshot[1]])
 
 
-def plot():
-    fasttier = get_fasttier_result()
-    slowtier = get_slowtier_result()
+def read_from_csv(filename):
+    results = []
+    with open(filename, "r") as csvfile:
+        reader = csv.reader(csvfile)
+        for idx, row in enumerate(reader):
+            if idx == 0:
+                continue
+            results.append(row)
+    return results
+
+
+def plot(file_name):
+    workloads = defaultdict(list)
+    for workload, fasttier, slowtier, snapshot in results:
+        workloads[
+            workload.replace("OMP_NUM_THREADS=", "")
+            .replace("-g15", "")
+            .replace("-n300", "")
+            .replace(" -f ", "")
+            .replace("-vn300", "")
+            .replace("maze-6404.txt", "")
+            .replace("stories110M.bin", "")
+            .replace("-z tokenizer.bin -t 0.0", "")
+            .replace("ORBvoc.txt", "")
+            .replace("TUM3.yaml", "")
+            .replace("./associations/fr1_xyz.txt", "")
+            .replace("./", "")
+            .strip()
+        ].append((fasttier, slowtier, snapshot))
+
+    # Calculate the medians and standard deviations for each workload
+    statistics = {}
+    for workload, times in workloads.items():
+        fasttiers, slowtier, snapshots = zip(*times)
+        statistics[workload] = {
+            "fasttier_median": np.median(fasttiers),
+            "snapshot_median": np.median(snapshots),
+            "slowtier_median": np.median(slowtier),
+            "fasttier_std": np.std(fasttiers),
+            "snapshot_std": np.std(snapshots),
+            "slowtier_std": np.std(slowtier),
+        }
+    font = {"size": 14}
+
+    # using rc function
+    plt.rc("font", **font)
+    # Plotting
+    fig, ax = plt.subplots(figsize=(15, 7))
+    # Define the bar width and positions
+    bar_width = 0.7 / 2
+    index = np.arange(len(statistics))
+
+    for i, (workload, stats) in enumerate(statistics.items()):
+        ax.bar(
+            index[i],
+            stats["fasttier_median"],
+            bar_width,
+            yerr=stats["fasttier_std"],
+            capsize=5,
+            color="blue",
+            label="fasttier" if i == 0 else "",
+        )
+        ax.bar(
+            index[i] + bar_width,
+            stats["slowtier_median"],
+            bar_width,
+            yerr=stats["slowtier_std"],
+            capsize=5,
+            color="green",
+            label="slowtier" if i == 0 else "",
+        )
+        ax.bar(
+            index[i] + bar_width,
+            stats["snapshot_median"],
+            bar_width,
+            yerr=stats["snapshot_std"],
+            capsize=5,
+            color="green",
+            label="snapshot" if i == 0 else "",
+        )
+    # Labeling and formatting
+    ax.set_ylabel("Time(s)")
+    ax.set_xticks(index + bar_width)
+    ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
+    ax.set_xticklabels(ticklabel, fontsize=10)
+    ax.legend()
+
+    # Show the plot
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(file_name)
+    # %%
+
+
+def plog_time():
+    pass
+
+
+if __name__ == "__main__":
+    fasttier = get_cloud_result()
+    slowtier = get_edge_result()
     snapshot = get_snapshot_overhead()
     reu = get_burst_compute()
     # plot skew
     write_to_csv("burst_computing.csv")
 
     results = read_from_csv("burst_computing.csv")
+
     plot(results)
+    plog_time(results)
