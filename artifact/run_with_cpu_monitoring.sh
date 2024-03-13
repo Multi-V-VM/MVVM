@@ -9,16 +9,18 @@ while true; do
     if [ "$line" == "" ]; then
         break
     fi
-    echo $line >>$1.energy.out
+    date >> $1.ps.out
+    echo $line >>$1.ps.out
     for child in $(pgrep -P $pid1); do
         line=$(ps auxh -q $child)
         if [ "$line" == "" ]; then
             continue
         fi
-        echo $line >>$1.energy.out
+        date >> $1.ps.out
+        echo $line >>$1.ps.out
     done
-    sleep 0.005
-    if ! ps -p $pid >/dev/null; then
+    sleep 0.01
+    if ! ps -p $pid1 >/dev/null; then
         sleep 0.5
     fi
 done

@@ -4,10 +4,11 @@ from multiprocessing import Pool
 from matplotlib import pyplot as plt
 import numpy as np
 from collections import defaultdict
+import json
 
-ip = ["128.114.53.32", "128.114.53.24"]
-port = 1234
-new_port = 1235
+ip = ["128.114.53.32", "128.114.59.234"]
+port = 12346
+new_port = 12353
 
 cmd = [
     "bc",  # low priority task
@@ -45,6 +46,7 @@ def get_fasttier_result():
                 exec_time = line.split(" ")[-2]
                 print(exec, exec_time)
         results.append((exec, exec_time))  # discover 4 aot_variant
+    return results
 
 
 def get_slowtier_result():
@@ -68,6 +70,7 @@ def get_slowtier_result():
                 exec_time = line.split(" ")[-2]
                 print(exec, exec_time)
         results.append((exec, exec_time))  # discover 4 aot_variant
+    return results
 
 
 def get_snapshot_overhead():
@@ -76,57 +79,41 @@ def get_snapshot_overhead():
     for _ in range(common_util.trial):
         for i in range(len(cmd)):
             aot = cmd[i] + ".aot"
-            results1.append(
-                pool.apply_async(
-                    common_util.run_checkpoint_restore_slowtier,
-                    (
-                        aot,
-                        arg[i],
-                        envs[i],
-                        f"-o {ip[0]} -s {port}",
-                        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port}",
-                        f"-i {ip[1]} -e {new_port}",
-                    ),
-                )
+            results1 = common_util.run_checkpoint_restore_slowtier_overhead(
+                aot,
+                arg[i],
+                envs[i],
+                f"-o {ip[1]} -s {port}",
+                f"-i {ip[1]} -e {port}",
             )
-    results1 = [x.get() for x in results1]
-    for exec, output in results1:
-        lines = output.split("\n")
-        for line in lines:
-            if line.__contains__("Snapshot time:"):
-                exec_time = line.split(" ")[-2]
-                print(exec, exec_time)
-        results.append((exec, exec_time))  # discover 4 aot_variant
+
+            for exec, output in results1:
+                lines = output.split("\n")
+                print(lines)
+                for line in lines:
+                    if line.__contains__("Snapshot time:"):
+                        exec_time = line.split(" ")[-2]
+                        print(exec, exec_time)
+                results.append((exec, exec_time))  # discover 4 aot_variant
+    return results
 
 
 def get_optimiztic_compute_overhead():
     results = []
     results1 = []
-    for _ in range(common_util.trial):
-        for i in range(len(cmd)):
-            aot = cmd[i] + ".aot"
-            results1.append(
-                pool.apply_async(
-                    common_util.run_checkpoint_restore_slowtier,
-                    (
-                        aot,
-                        arg[i],
-                        envs[i],
-                        f"-o {ip[0]} -s {port}",
-                        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port}",
-                        f"-i {ip[1]} -e {new_port}",
-                    ),
-                )
-            )
-    # print the results
-    results1 = [x.get() for x in results1]
-    for exec, output in results1:
-        lines = output.split("\n")
-        for line in lines:
-            if line.__contains__("Snapshot time:"):
-                exec_time = line.split(" ")[-2]
-                print(exec, exec_time)
-        results.append((exec, exec_time))  # discover 4 aot_variant
+    aot = cmd[0] + ".aot"
+    aot1 = cmd[1] + ".aot"
+    results1 = common_util.run_checkpoint_restore_slowtier(
+        aot,
+        arg[0],
+        aot1,
+        arg[1],
+        envs[0],
+        f"-o {ip[1]} -s {port}",
+        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port}",
+        f"-i {ip[0]} -e {new_port}",
+    )
+    return results1
 
 
 def write_to_csv(filename):
@@ -145,7 +132,7 @@ def write_to_csv(filename):
 
         # Write the data
         for idx, row in enumerate(fasttier):
-            writer.writerow([row[0], row[1], slowtier[1], snapshot[1]])
+            writer.writerow([row[0], row[1], slowtier[idx][1], snapshot[idx][1]])
 
 
 def read_from_csv(filename):
@@ -177,11 +164,14 @@ def plot(file_name):
             .replace("./", "")
             .strip()
         ].append((fasttier, slowtier, snapshot))
-
+    # print(workloads)
     # Calculate the medians and standard deviations for each workload
     statistics = {}
     for workload, times in workloads.items():
         fasttiers, slowtier, snapshots = zip(*times)
+        fasttiers = np.array(fasttiers).astype(float)
+        slowtier = np.array(slowtier).astype(float)
+        snapshots = np.array(snapshots).astype(float)
         statistics[workload] = {
             "fasttier_median": np.median(fasttiers),
             "snapshot_median": np.median(snapshots),
@@ -238,26 +228,108 @@ def plot(file_name):
     # Show the plot
     plt.tight_layout()
     plt.show()
-    plt.savefig(file_name)
+    plt.savefig("optimisitc_computing.pdf")
     # %%
 
+def parse_time(time_string):
+    # Split the time string into components
+    components = time_string.split(':')
+    hours = int(components[0])
+    minutes = int(components[1])
+    seconds, milliseconds = map(int, components[2].split('.'))
+    
+    # Calculate the total seconds
+    total_seconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000
+    
+    return total_seconds
 
-def plog_time():
-    pass
+def plot_time(reu):
+    # get from reu
+    # start time -> end time -> start time
+    reu = reu.split("\\n")
+    state = 0
+    time = []
+    exec_time = [[],[],[],[]]
+    for line in reu:
+        try:
+            if line.__contains__("Trial"):
+                to_append = float(line.split(" ")[-1].replace("\\r",""))
+                if to_append<0.001 and to_append>0:
+                    exec_time[state].append(to_append)
+                # print(exec_time)
+                # print("exec_time ",exec_time[-1])
+            if line.__contains__("Snapshot ") or line.__contains__("Execution "):
+                time.append(parse_time(line.split(" ")[1].replace("]","")))
+                print("time ",time)
+                state += 1
+        except:
+            print(line)
+    # print(exec_time)
+    
+    # print(time)
+    # record time
+    fig, ax = plt.subplots()
+    base = time[0]-sum(exec_time[0])
+    time_spots2 = [time[1]-sum(exec_time[1])-base]
+    for i in exec_time[1]:
+        # Add the current increment to the last time spot
+        new_time_spot = time_spots2[-1] + i
+        # Append the new time spot to the sequence
+        time_spots2.append(new_time_spot)
+    time_spots2.pop(0)
+    
+    time_spots = [time[0]-sum(exec_time[0])-base]
+    for i in exec_time[0]:
+        # Add the current increment to the last time spot
+        new_time_spot = time_spots[-1] + i
+        # Append the new time spot to the sequence
+        time_spots.append(new_time_spot)
+    time_spots.pop(0)
+    to_pop = len(time_spots)
+    time_spots.append(time[2]-sum(exec_time[2])-base)
+    
+    for i in exec_time[2]:
+        # Add the current increment to the last time spot
+        new_time_spot = time_spots[-1] + i
+        # Append the new time spot to the sequence
+        time_spots.append(new_time_spot)
+    time_spots.pop(to_pop-1)
+    
+    to_pop = len(time_spots)
+    time_spots.append(time[3]-sum(exec_time[3])-base)
+    for i in exec_time[3]:
+        # Add the current increment to the last time spot
+        new_time_spot = time_spots[-1] + i
+        # Append the new time spot to the sequence
+        time_spots.append(new_time_spot)
+    time_spots.pop(to_pop-1)
+    print(time[3]-sum(exec_time[3]))
+    ax.plot( time_spots, exec_time[0]+exec_time[2] +exec_time[3] ,"blue")
+    ax.plot(time_spots2, exec_time[1], "r")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Average Trial Time (s)")
+    plt.savefig("optimistic.pdf")
 
 
 if __name__ == "__main__":
     # fasttier = get_fasttier_result()
     # slowtier = get_slowtier_result()
-    snapshot = get_snapshot_overhead()
+    # snapshot = get_snapshot_overhead()
     # print("fasttier = ", fasttier)
     # print("slowtier = ", slowtier)
-    print("snapshot = ", snapshot)
-    # plot skew
-    write_to_csv("burst_computing.csv")
+    # print("snapshot = ", snapshot)
+    # # plot skew
+    # write_to_csv("optimisitc_computing.csv")
 
-    results = read_from_csv("burst_computing.csv")
+    # results = read_from_csv("optimisitc_computing.csv")
 
-    plot(results)
+    # plot(results)
     reu = get_optimiztic_compute_overhead()
-    plog_time(results)
+    with open('optimistic.txt', 'w') as f:
+        f.write(str(reu))
+    reu = ""
+    with open("optimistic.txt", "r") as f:
+        reu = f.read()
+    # print(reu)
+    plot_time(reu)
+    

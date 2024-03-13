@@ -6,7 +6,7 @@ import numpy as np
 from collections import defaultdict
 
 ip = ["128.114.53.32", "192.168.0.1"]
-port = 1234
+port = 12346
 new_port = 1235
 cmd = [
     "redis",  # low priority task
@@ -14,7 +14,7 @@ cmd = [
 ]
 folder = [
     "redis",
-    "ORB_SLAM2",  # networkbound?
+    "ORB_SLAM2",  # frame per cents
 ]
 arg = [
     [],
@@ -84,10 +84,10 @@ def get_snapshot_overhead():
             results1.append(
                 pool.apply_async(
                     common_util.run_checkpoint_restore_slowtier,
-                    (aot, arg[i], envs[i]),
+                    (aot, arg[i], envs[i],
                     f"-o {ip[0]} -s {port}",
                     f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port}",
-                    f"-i {ip[1]} -e {new_port}",
+                    f"-i {ip[1]} -e {new_port}")
                 )
             )
     results1 = [x.get() for x in results1]
@@ -103,32 +103,19 @@ def get_snapshot_overhead():
 def get_burst_compute():
     results = []
     results1 = []
-    for _ in range(common_util.trial):
-        for i in range(len(cmd)):
-            aot = cmd[i] + ".aot"
-            results1.append(
-                pool.apply_async(
-                    common_util.run_checkpoint_restore_burst,
-                    (
-                        aot,
-                        arg[i],
-                        envs[i],
-                        f"-o {ip[0]} -s {port}",
-                        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port}",
-                        f"-i {ip[1]} -e {new_port}",
-                    ),  # energy
-                )
-            )
-    # print the results
-    results1 = [x.get() for x in results1]
-    for exec, output in results1:
-        lines = output.split("\n")
-        for line in lines:
-            if line.__contains__("Snapshot time:"):
-                exec_time = line.split(" ")[-2]
-                print(exec, exec_time)
-        results.append((exec, exec_time))  # discover 4 aot_variant
-
+    aot = cmd[0] + ".aot"
+    aot1 = cmd[1] + ".aot"
+    results1 = common_util.run_checkpoint_restore_burst(
+        aot,
+        arg[0],
+        aot1,
+        arg[1],
+        envs[0],
+        f"-o {ip[1]} -s {port}",
+        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port}",
+        f"-i {ip[0]} -e {new_port}",
+    )
+    return results1
 
 def write_to_csv(filename):
     # 'data' is a list of tuples, e.g., [(checkpoint_result_0, checkpoint_result_1, restore_result_2), ...]
@@ -251,11 +238,14 @@ if __name__ == "__main__":
     fasttier = get_cloud_result()
     slowtier = get_edge_result()
     snapshot = get_snapshot_overhead()
-    reu = get_burst_compute()
+    print("fasttier = ", fasttier)
+    print("slowtier = ", slowtier)
+    print("snapshot = ", snapshot)
     # plot skew
     write_to_csv("burst_computing.csv")
 
     results = read_from_csv("burst_computing.csv")
+    reu = get_burst_compute()
 
     plot(results)
     plog_time(results)
