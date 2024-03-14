@@ -3,11 +3,37 @@ import os
 import asyncio
 import time
 
-# pwd = "/Users/victoryang00/Documents/project/MVVM-bench/"
-pwd = "/mnt/MVVM"
+pwd = "/Users/victoryang00/Documents/project/MVVM-bench/"
+# pwd = "/mnt/MVVM"
 slowtier = "epyc"
 burst = "mac"
 
+def parse_time(time_string):
+    # Split the time string into components
+    components = time_string.split(":")
+    hours = int(components[0])
+    minutes = int(components[1])
+    seconds, milliseconds = map(int, components[2].split("."))
+
+    # Calculate the total seconds
+    total_seconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000
+
+    return total_seconds
+
+
+def parse_time_no_msec(time_string):
+    # Split the time string into components
+    components = time_string.split(":")
+    hours = int(components[0])
+    minutes = int(components[1])
+    seconds = int(components[2])
+
+    # Calculate the total seconds
+    total_seconds = hours * 3600 + minutes * 60 + seconds
+    if total_seconds < 10000:
+        print(time_string)
+        raise ValueError
+    return total_seconds
 
 def get_func_index(func, file):
     cmd = ["wasm2wat", "--enable-all", file]
@@ -363,6 +389,7 @@ def run_checkpoint_restore_slowtier(
         f"script -q /dev/null -c 'ssh -t {slowtier} {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file1} {extra2}' >> MVVM_restore.1.out &"
     )
     os.system(f"ssh -t {slowtier} {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore &")
+    # print(f"ssh -t {slowtier} bash -c 'cd {pwd}/build && {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore' &")
     os.system(
         f"script -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.out &"
     )
@@ -372,10 +399,10 @@ def run_checkpoint_restore_slowtier(
     os.system(
         f"../artifact/run_with_cpu_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} &"
     )
-    os.system("mv MVVM_checkpoint.out MVVM_checkpoint.1.out")
-    os.system("mv MVVM_checkpoint.ps.out MVVM_checkpoint.ps.1.out")
     os.system("sleep 10")
     os.system(f"pkill -SIGINT -f MVVM_checkpoint")
+    os.system("mv MVVM_checkpoint.out MVVM_checkpoint.1.out")
+    os.system("mv MVVM_checkpoint.ps.out MVVM_checkpoint.ps.1.out")
     os.system(
         f"../artifact/run_with_cpu_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
     )
@@ -384,6 +411,7 @@ def run_checkpoint_restore_slowtier(
     # print(checkpoint_result, restore_result)
     # Return a combined result or just the checkpoint result as needed
     os.system("sleep 100")
+    os.system(f"scp -r {slowtier}:{pwd}/build/MVVM_restore.ps.out ./MVVM_restore.ps.1.out")
     
     cmd = f"cat ./MVVM_checkpoint.out ./MVVM_checkpoint.1.out ./MVVM_restore.1.out ./MVVM_restore.out"
     cmd = cmd.split()
@@ -407,6 +435,11 @@ def run_checkpoint_restore_burst(
     extra1: str = "",
     extra2: str = "",
     extra3: str = "",
+    extra4: str = "",
+    extra5: str = "",
+    extra6: str = "",
+    extra7: str = "",
+    extra8: str = "",
 ):
     # Execute run_checkpoint and capture its result
     res = []
@@ -416,7 +449,7 @@ def run_checkpoint_restore_burst(
     os.system(
         f"script -q /dev/null -c 'ssh -t {burst} {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file1} {extra2}' >> MVVM_restore.1.out &"
     )
-    os.system(f"ssh -t {burst} ../artifact/run_with_energy_monitoring.sh MVVM_restore 1 &")
+    os.system(f"ssh -t {burst} bash -c ../artifact/run_with_energy_monitoring.sh MVVM_restore 1 &")
     os.system(
         f"script -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.out &"
     )
@@ -431,10 +464,10 @@ def run_checkpoint_restore_burst(
     os.system("sleep 10")
     os.system(f"pkill -SIGINT -f MVVM_checkpoint")
     os.system(
-        f"../artifact/run_with_energy_monitoring_mac.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
-    )
+        f"../artifact/run_with_energy_monitoring_mac.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra4}"
+    ) #redis
     os.system(f"ssh -t {burst} pkill -SIGINT -f MVVM_restore")
-    
+    os.system(f"")
     # print(checkpoint_result, restore_result)
     # Return a combined result or just the checkpoint result as needed
     os.system("sleep 100")
