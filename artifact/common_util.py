@@ -2,11 +2,29 @@ import subprocess
 import os
 import asyncio
 import time
+import numpy as np
 
-pwd = "/Users/victoryang00/Documents/project/MVVM-bench/"
-# pwd = "/mnt/MVVM"
+pwd_mac = "/Users/victoryang00/Documents/project/MVVM-bench/"
+pwd = "/mnt/MVVM"
 slowtier = "epyc"
 burst = "mac"
+
+
+def get_avg_99percent(data):
+    group_size = 10000
+    num_groups = len(data) // group_size
+    grouped_data = np.reshape(data[:num_groups * group_size], (num_groups, group_size))
+    avg_values = np.mean(grouped_data, axis=1)
+    percentile99_values = np.percentile(grouped_data, 99, axis=1)
+
+    # Extend the calculated values to match the original size of the data
+    avg_extended = np.repeat(avg_values, group_size)
+    percentile99_extended = np.repeat(percentile99_values, group_size)
+
+    # Append the remaining data points to the extended arrays
+    avg_extended = np.concatenate((avg_extended, [avg_values[-1]] * (len(data) - len(avg_extended))))
+    percentile99_extended = np.concatenate((percentile99_extended, [percentile99_values[-1]] * (len(data) - len(percentile99_extended))))
+    return avg_extended, percentile99_extended
 
 def parse_time(time_string):
     # Split the time string into components
@@ -34,6 +52,7 @@ def parse_time_no_msec(time_string):
         print(time_string)
         raise ValueError
     return total_seconds
+
 
 def get_func_index(func, file):
     cmd = ["wasm2wat", "--enable-all", file]
@@ -73,7 +92,7 @@ aot_variant = [
     "-ckpt-loop.aot",
     "-ckpt-loop-dirty.aot",
 ]
-trial = 2
+trial = 1
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -324,6 +343,51 @@ def run(aot_file: str, arg: list[str], env: str, extra: str = "") -> tuple[str, 
     return (exec, output)
 
 
+def run_checkpoint_restore_burst_overhead(
+    aot_file: str,
+    arg: list[str],
+    env: str,
+    extra1: str = "",
+    extra2: str = "",
+):
+    # Execute run_checkpoint and capture its result
+    res = []
+    for i in range(trial):
+        # Execute run_restore with the same arguments (or modify as needed)
+        os.system(
+            f"script -f -q /dev/null -c 'ssh -t {burst} ./MVVM_restore -t ./bench/{aot_file} {extra2}' &"
+        )
+        print(
+            f"script -f -q /dev/null -c 'ssh -t {burst} ./MVVM_restore -t ./bench/{aot_file} {extra2}' &"
+        )
+        os.system("sleep 40")
+
+        os.system(
+            f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} > ./bench/{aot_file}{i}.log &"
+        )
+        print(
+            f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} > ./bench/{aot_file}{i}.log &"
+        )
+        os.system("sleep 20")
+        os.system("pkill -SIGINT -f MVVM_checkpoint")
+        # os.system(f"ssh {burst} tcpkill -i eno2 port 12346")
+        # print(checkpoint_result, restore_result)
+        # Return a combined result or just the checkpoint result as needed
+        os.system("sleep 60")
+        os.system(f"ssh {burst} pkill -f MVVM_restore")
+        cmd = f"cat ./bench/{aot_file}{i}.log"
+        cmd = cmd.split()
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            output = result.stdout.decode("utf-8")
+        except:
+            output = result.stdout
+        # print(output)
+        exec = " ".join([env] + [aot_file] + arg)
+        res.append((exec, output))
+    return res
+
+
 def run_checkpoint_restore_slowtier_overhead(
     aot_file: str,
     arg: list[str],
@@ -350,7 +414,6 @@ def run_checkpoint_restore_slowtier_overhead(
             f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} > ./bench/{aot_file}{i}.log &"
         )
         os.system("sleep 10")
-        os.system("pkill -SIGINT -f MVVM_checkpoint")
         os.system("pkill -SIGINT -f MVVM_checkpoint")
         os.system(f"ssh {slowtier} pkill -f MVVM_restore")
         # os.system(f"ssh {slowtier} tcpkill -i eno2 port 12346")
@@ -407,12 +470,14 @@ def run_checkpoint_restore_slowtier(
         f"../artifact/run_with_cpu_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
     )
     os.system(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
-    
+
     # print(checkpoint_result, restore_result)
     # Return a combined result or just the checkpoint result as needed
     os.system("sleep 100")
-    os.system(f"scp -r {slowtier}:{pwd}/build/MVVM_restore.ps.out ./MVVM_restore.ps.1.out")
-    
+    os.system(
+        f"scp -r {slowtier}:{pwd}/build/MVVM_restore.ps.out ./MVVM_restore.ps.1.out"
+    )
+
     cmd = f"cat ./MVVM_checkpoint.out ./MVVM_checkpoint.1.out ./MVVM_restore.1.out ./MVVM_restore.out"
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -420,12 +485,15 @@ def run_checkpoint_restore_slowtier(
         output = result.stdout.decode("utf-8")
     except:
         output = result.stdout
-    
+
     exec = " ".join([env] + [aot_file] + arg)
     res.append((exec, output))
     return res
 
-
+def exec_with_log(cmd):
+    print(cmd)
+    os.system(cmd)
+    
 def run_checkpoint_restore_burst(
     aot_file: str,
     arg: list[str],
@@ -440,56 +508,102 @@ def run_checkpoint_restore_burst(
     extra6: str = "",
     extra7: str = "",
     extra8: str = "",
+    extra9: str = "",
 ):
     # Execute run_checkpoint and capture its result
     res = []
-    os.system("rm ./*.out")
-    os.system(f"ssh -t {burst} rm {pwd}/build/*.out")
+    exec_with_log("rm ./*.out")
+    exec_with_log("pkill MVVM_checkpoint")
+    exec_with_log("pkill MVVM_restore")
+    exec_with_log(f"ssh -t {burst} pkill MVVM_checkpoint")
+    exec_with_log(f"ssh -t {burst} pkill MVVM_restore")
+    exec_with_log(f"ssh -t {burst} rm {pwd_mac}/build/*.out")
     # Execute run_restore with the same arguments (or modify as needed)
-    os.system(
-        f"script -q /dev/null -c 'ssh -t {burst} {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file1} {extra2}' >> MVVM_restore.1.out &"
+    exec_with_log(
+        f"script -f -q /dev/null -c 'ssh -t {burst} ./MVVM_restore -t ./bench/{aot_file1} {extra2}' >> MVVM_restore.0.out &"
     )
-    os.system(f"ssh -t {burst} bash -c ../artifact/run_with_energy_monitoring.sh MVVM_restore 1 &")
-    os.system(
-        f"script -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.out &"
+    exec_with_log(
+        f"ssh -t {burst} {pwd_mac}/artifact/run_with_energy_monitoring_mac.sh MVVM_restore 0 {aot_file} &"
     )
-    os.system(f"../artifact/run_with_energy_monitoring.sh MVVM_restore 2 &")
-    
-    os.system("sleep 15")
-    os.system(
-        f"./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} &"
-    )
-    os.system("../artifact/run_with_energy_monitoring.sh MVVM_checkpoint 1 &")
 
-    os.system("sleep 10")
-    os.system(f"pkill -SIGINT -f MVVM_checkpoint")
-    os.system(
-        f"../artifact/run_with_energy_monitoring_mac.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra4}"
-    ) #redis
-    os.system(f"ssh -t {burst} pkill -SIGINT -f MVVM_restore")
-    os.system(f"")
-    # print(checkpoint_result, restore_result)
-    # Return a combined result or just the checkpoint result as needed
-    os.system("sleep 100")
+    exec_with_log(f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.1.out &")
+    exec_with_log(
+        f"../artifact/run_with_energy_monitoring.sh MVVM_restore 1 {aot_file} &"
+    )
+    exec_with_log(f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra7}' >> MVVM_restore.4.out &")
+    exec_with_log(
+        f"../artifact/run_with_energy_monitoring.sh MVVM_restore 4 {aot_file1} &"
+    )
+    exec_with_log("sleep 10")
+    exec_with_log(
+        f"./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} > MVVM_checkpoint.0.out &"
+    )
+    exec_with_log(
+        f"../artifact/run_with_energy_monitoring.sh MVVM_checkpoint 0 {aot_file} &"
+    )
+
+    exec_with_log("sleep 10")
+    exec_with_log(
+        f"script -f -q /dev/null -c 'ssh -t {burst}  ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra6}' > MVVM_checkpoint.1.out &"
+    )
+    # exec_with_log(f"ssh -t mac ../artifact/run_with_energy_monitoring_mac.sh MVVM_checkpoint 1 {aot_file} &")
+    exec_with_log(f"pkill -SIGINT MVVM_checkpoint")
     
-    cmd = f"cat ./MVVM_checkpoint.out ./MVVM_checkpoint.1.out ./MVVM_restore.1.out ./MVVM_restore.out"
+    exec_with_log("sleep 100")
+    
+    exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_restore")
+    exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_checkpoint")
+    exec_with_log(
+        f"script -f -q /dev/null -c 'ssh -t {burst} ./MVVM_restore -t ./bench/{aot_file1} {extra4}' >> MVVM_restore.2.out &"
+    )
+    exec_with_log(
+        f"script -f -q /dev/null -c 'ssh -t {burst} ./MVVM_restore -t ./bench/{aot_file} {extra8}' >> MVVM_restore.5.out &"
+    )
+    exec_with_log("sleep 100")
+    exec_with_log(f"pkill -SIGINT MVVM_restore")
+    exec_with_log(f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra9}' >> MVVM_restore.6.out &")
+    exec_with_log(f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra5}' >> MVVM_restore.3.out &")
+    # Return a combined result or just the checkpoint result as needed
+   
+    exec_with_log("sleep 100")
+    exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_restore")
+    exec_with_log(f"sleep 1000")
+    exec_with_log(f"scp {burst}:{pwd_mac}/build/*.*.out ./")
+    cmd = f"cat ./MVVM_checkpoint.0.out ./MVVM_checkpoint.1.out ./MVVM_restore.0.out ./MVVM_restore.1.out ./MVVM_restore.2.out ./MVVM_restore.3.out ./MVVM_restore.4.out ./MVVM_restore.5.out ./MVVM_restore.6.out"
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         output = result.stdout.decode("utf-8")
     except:
         output = result.stdout
-    
+
     exec = " ".join([env] + [aot_file] + arg)
     res.append((exec, output))
     return res
-
 
 
 def run_slowtier(
     aot_file: str, arg: list[str], env: str, extra: str = ""
 ) -> tuple[str, str]:
     cmd = f"ssh {slowtier} {pwd}/build/MVVM_checkpoint -t {pwd}/build/bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}"
+    print(cmd)
+    cmd = cmd.split()
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        output = result.stdout.decode("utf-8")
+    except:
+        output = result.stdout
+    exec = " ".join([env] + [aot_file] + arg)
+    # print(exec)
+    # print(output)
+    return (exec, output)
+
+
+def run_burst(
+    aot_file: str, arg: list[str], env: str, extra: str = ""
+) -> tuple[str, str]:
+    os.system(f"script -q /dev/null -c 'ssh -t {burst} ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}' > burst.out")
+    cmd = ("cat burst.out")
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

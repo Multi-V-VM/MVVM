@@ -103,6 +103,9 @@ public:
 
     std::string aot_file_path{};
     std::string wasm_file_path{};
+    std::condition_variable int3_cv{};
+    std::mutex int3_mtx{};
+    std::unique_lock<std::mutex> int3_ul;
     std::vector<std::size_t> int3_addr{};
     std::vector<std::pair<std::size_t, std::size_t>> switch_addr{};
     std::vector<const char *> dir_{};
@@ -124,7 +127,7 @@ public:
     std::vector<struct sync_op_t> sync_ops;
     bool should_snapshot{};
     std::string policy{};
-    WASMMemoryInstance **tmp_buf;
+    WASMMemoryInstance **tmp_buf = nullptr;
     uint32 tmp_buf_size{};
     std::vector<struct sync_op_t>::iterator sync_iter;
     std::map<uint64, uint64> tid_map;

@@ -14,6 +14,7 @@
 #include "wamr_wasi_context.h"
 #include <condition_variable>
 #include <cstdlib>
+#include <mutex>
 extern WAMRInstance *wamr;
 size_t snapshot_threshold;
 size_t call_count = 0;
@@ -487,12 +488,13 @@ void print_memory(WASMExecEnv *exec_env) {
 void segfault_handler(int sig) {
     // auto end = std::chrono::high_resolution_clock::now();
     // auto dur = std::chronro::duration_cast<std::chrono::milliseconds>(end - wamr->time);
-    auto exec_env = wamr->get_exec_env();
-    print_exec_env_debug_info(exec_env);
-    print_memory(exec_env);
+    // auto exec_env = wamr->get_exec_env();
+    // print_exec_env_debug_info(exec_env);
+    // print_memory(exec_env);
     // printf("Execution time: %f s\n", dur.count() / 1000000.0);
-
-    exit(EXIT_FAILURE);
+    // serialize_to_file(exec_env);
+    wamr->int3_cv.wait(wamr->int3_ul);
+    // exit(EXIT_FAILURE);
 }
 void sigtrap_handler(int sig) {
     // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
@@ -539,12 +541,12 @@ void register_sigtrap() {
             SPDLOG_ERROR("Error: cannot handle SIGSYS");
             exit(-1);
         } else {
-            // if (sigaction(SIGSEGV, &sb, nullptr) == -1) {
-            //    SPDLOG_ERROR("Error: cannot handle SIGSEGV");
-            //     exit(-1);
-            // } else {
-            //     SPDLOG_DEBUG( "SIGSEGV registered");
-            // }
+            if (sigaction(SIGSEGV, &sb, nullptr) == -1) {
+                SPDLOG_ERROR("Error: cannot handle SIGSEGV");
+                exit(-1);
+            } else {
+                SPDLOG_DEBUG("SIGSEGV registered");
+            }
             SPDLOG_DEBUG("SIGSYS registered");
         }
         SPDLOG_DEBUG("SIGTRAP registered");
@@ -560,23 +562,11 @@ void sigint_handler(int sig) {
     }
     fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     checkpoint = true;
+    wamr->int3_ul = std::unique_lock(wamr->int3_mtx);
     wamr->replace_nop_with_int3();
-#if defined(_WIN32)
-    signal(SIGINT, SIG_DFL);
-    SPDLOG_DEBUG("SIGINT registered");
-#else
-    struct sigaction sa {};
-    // Clear the structure
-    sigemptyset(&sa.sa_mask);
-    // Set the signal handler function
-    sa.sa_handler = SIG_DFL;
-    // Set the flags
-    sa.sa_flags = SA_RESTART;
-    // Register the signal handler for SIGINT
-    if (sigaction(SIGINT, &sa, nullptr) == -1) {
-        SPDLOG_ERROR("Error: cannot restore SIGINT SIG_DFL");
-    }
-#endif
+    wamr->int3_cv.notify_all();
+
+    register_sigtrap();
 }
 void register_sigint() {
 #if defined(_WIN32)

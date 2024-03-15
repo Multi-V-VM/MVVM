@@ -1,6 +1,6 @@
 import csv
 import common_util
-from common_util import parse_time, parse_time_no_msec
+from common_util import parse_time, parse_time_no_msec,get_avg_99percent
 from multiprocessing import Pool
 from matplotlib import pyplot as plt
 import numpy as np
@@ -188,7 +188,7 @@ def plot(file_name):
     # Plotting
     fig, ax = plt.subplots(figsize=(15, 7))
     # Define the bar width and positions
-    bar_width = 0.7 / 2
+    bar_width = 0.7 / 3
     index = np.arange(len(statistics))
 
     for i, (workload, stats) in enumerate(statistics.items()):
@@ -211,12 +211,12 @@ def plot(file_name):
             label="slowtier" if i == 0 else "",
         )
         ax.bar(
-            index[i] + bar_width,
+            index[i] + 2*bar_width,
             stats["snapshot_median"],
             bar_width,
             yerr=stats["snapshot_std"],
             capsize=5,
-            color="green",
+            color="red",
             label="snapshot" if i == 0 else "",
         )
     # Labeling and formatting
@@ -229,7 +229,7 @@ def plot(file_name):
     # Show the plot
     plt.tight_layout()
     plt.show()
-    plt.savefig("optimisitc_computing.pdf")
+    plt.savefig("optimistic_computing.pdf")
     # %%
 
 
@@ -362,9 +362,12 @@ def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
         # Append the new time spot to the sequence
         time_spots.append(new_time_spot)
     time_spots.pop(to_pop - 1)
-    print(time[3] - sum(exec_time[3]))
-    ax.plot(time_spots, exec_time[1] + exec_time[2] + exec_time[3], "blue")
-    ax.plot(time_spots2, exec_time[0], "r")
+    avg_extended, percentile99_extended = get_avg_99percent(exec_time[1] + exec_time[2] + exec_time[3])
+    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(exec_time[0])
+    ax.plot(time_spots, avg_extended, "blue")
+    # ax.plot(time_spots, percentile99_extended, color="purple", linestyle="--")
+    ax.plot(time_spots2, avg_exec_time1, "r")
+    # ax.plot(time_spots2, percentile_99_exec_time1, color="pink", linestyle="--")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Average Trial Time (s)")
     plt.savefig("optimistic.pdf")
@@ -479,9 +482,9 @@ if __name__ == "__main__":
     # # plot skew
     # write_to_csv("optimisitc_computing.csv")
 
-    # results = read_from_csv("optimisitc_computing.csv")
+    results = read_from_csv("optimistic_computing.csv")
 
-    # plot(results)
+    plot(results)
     # reu = get_optimiztic_compute_overhead()
     # with open("optimistic.txt", "w") as f:
     #     f.write(str(reu))
