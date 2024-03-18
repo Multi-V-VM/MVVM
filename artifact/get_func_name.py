@@ -18,9 +18,16 @@ def get_func_name(func, file):
         and not x.__contains__("(table (;")
         and not x.__contains__("global.get")
     ]
+
+    import_count = len([
+        x
+        for x in output
+        if x.__contains__("(import ")
+    ])
+
     for i in range(len(output1)):
         if i == func:
-            return output1[i].split(" ")[3]
+            return output1[i].split(" ")[3] + "-funcid-" + str(i - import_count)
 
 if __name__ == "__main__":
     import sys

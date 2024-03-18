@@ -32,13 +32,15 @@ std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
 long snapshot_memory = 0;
 
-std::vector<std::vector<size_t>> stack_record;
+std::vector<std::vector<std::pair<size_t, size_t>>> stack_record;
 void unwind(WASMExecEnv *instance) {
     auto cur_frame = (AOTFrame *)instance->cur_frame;
-    std::vector<size_t> stack;
+    auto ip = cur_frame->ip_offset;
+    std::vector<std::pair<size_t, size_t>> stack;
     while (cur_frame != nullptr) {
         auto func_index = cur_frame->func_index;
-        stack.emplace_back(func_index);
+        auto ip = cur_frame->ip_offset;
+        stack.emplace_back(func_index, ip);
         cur_frame = cur_frame->prev_frame;
     }
     stack_record.emplace_back(stack);
@@ -159,8 +161,8 @@ int main(int argc, char *argv[]) {
     std::atomic<bool> enable_send_sigint{false};
     auto send_sigint_thread = std::thread([&]() {
         while (true) {
-            // sample every 50ms
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            // sample every 10ms
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             if (enable_send_sigint.load())
                 kill(getpid(), SIGINT);
         }
@@ -188,14 +190,17 @@ int main(int argc, char *argv[]) {
     SPDLOG_INFO("Execution time: {} s", dur.count() / 1000000.0);
 
     std::map<size_t, size_t> func_count, last_func_count;
+    std::map<size_t, std::map<size_t, size_t>> ip_count_per_func;
     std::map<size_t, std::string> func_name;
+    std::map<size_t, size_t> aot_idx;
     for (const auto &stack : stack_record) {
         if (stack.empty())
             continue;
-        last_func_count[stack[0]]++;
-        for (auto f : stack) {
+        last_func_count[stack[0].first]++;
+        for (auto [f, ip] : stack) {
             func_count[f]++;
             func_name[f] = "";
+            ip_count_per_func[f][ip]++;
         }
     }
 
@@ -224,24 +229,56 @@ int main(int argc, char *argv[]) {
     for (const auto &e : func_idx) {
         std::string name;
         ss >> name;
+        size_t idx;
+        ss >> idx;
         func_name[e] = name;
+        aot_idx[e] = idx;
     }
     pclose(pipe);
 
     // print the result
     std::cout << "Last level function called count\n"
-              << "--------------------------------\n"
-              << std::endl;
-    for (const auto &e : last_func_count) {
-        std::cout << std::format("{} {}\n", func_name[e.first], e.second);
+              << "--------------------------------\n";
+    std::vector<size_t> last_func_idx;
+    std::transform(last_func_count.begin(), last_func_count.end(), std::back_inserter(last_func_idx),
+                   [](const std::pair<size_t, size_t> &p) { return p.first; });
+    std::sort(last_func_idx.begin(), last_func_idx.end(),
+              [&last_func_count](size_t a, size_t b) { return last_func_count[a] > last_func_count[b]; });
+    for (const auto &e : last_func_idx) {
+        std::cout << std::format("{} {}\n", func_name[e], last_func_count[e]);
+        std::cout << "IP count:\n";
+        for (auto [ip, cnt] : ip_count_per_func[e]) {
+            std::cout << std::format("func {} ip {} count {}\n", e, ip, cnt);
+        }
     }
     std::cout << std::endl;
     std::cout << "Total function called count\n"
-              << "--------------------------\n"
-              << std::endl;
-    for (const auto &e : func_count) {
-        std::cout << std::format("{} {}\n", func_name[e.first], e.second);
+              << "--------------------------\n";
+    std::sort(func_idx.begin(), func_idx.end(),
+              [&func_count](size_t a, size_t b) { return func_count[a] > func_count[b]; });
+    for (const auto &e : func_idx) {
+        std::cout << std::format("{} {}\n", func_name[e], func_count[e]);
     }
+
+    std::ofstream out(target + ".pgo");
+    size_t total_sample_count = stack_record.size();
+    std::vector<std::pair<size_t, size_t>> pgo_list;
+    for (const auto &e : last_func_idx) {
+        for (auto [ip, cnt] : ip_count_per_func[e]) {
+            auto freq = (double)cnt / (double)total_sample_count;
+            if (freq > 0.15) {
+                std::cout << std::format("pgo name {} idx {} ip {} freq {}\n", func_name[e], aot_idx[e], ip, freq);
+                pgo_list.emplace_back(aot_idx[e], ip);
+            } else {
+                std::cout << std::format("no pgo name {} idx {} ip {} freq {}\n", func_name[e], aot_idx[e], ip, freq);
+            }
+        }
+    }
+    out << pgo_list.size() << std::endl;
+    for (const auto &e : pgo_list) {
+        out << e.first << " " << e.second << std::endl;
+    }
+    std::cout << "PGO file has been written to " << target + ".pgo" << std::endl;
 
     return 0;
 }

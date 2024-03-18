@@ -9,7 +9,10 @@ set(HOST_PREFIX ${WASI_SDK_DIR}/bin/)
 enable_testing()
 function(wamr_app input)
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-            COMMAND ${HOST_PREFIX}clang  -fopenmp=libomp -lomp -Wno-implicit-function-declaration -O3 -Wno-int-conversion --target=wasm32-wasi-threads -lwasi-emulated-getpid  -lwasi-emulated-process-clocks -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -g -pthread -Wl,--max-memory=3355443200 -z stack-size=65536 -Wl,--export-all -Wl,--allow-undefined -Wl,--allow-undefined-file=${WASI_SDK_DIR}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${WAMR_DIR}/samples/socket-api/wasm-app-prefix/src/wasm-app-build/libsocket_wasi_ext.a -I${WAMR_DIR}/core/iwasm/libraries/lib-socket/inc ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+            # single thread
+            COMMAND ${HOST_PREFIX}clang -Wno-implicit-function-declaration -Wno-int-conversion --target=wasm32-wasi-threads -lwasi-emulated-getpid  -lwasi-emulated-process-clocks -lwasi-emulated-mman -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -g -fopenmp=libomp -lomp -pthread -Wl,--max-memory=3355443200 -z stack-size=65536 -Wl,--allow-undefined  -Wl,--export-all -Wl,--allow-undefined-file=${WASI_SDK_DIR}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${WAMR_DIR}/samples/socket-api/wasm-app-prefix/src/wasm-app-build/libsocket_wasi_ext.a -I${WAMR_DIR}/core/iwasm/libraries/lib-socket/inc ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+            # openmp multi-thread
+            # COMMAND ${HOST_PREFIX}clang  -fopenmp=libomp -lomp -Wno-implicit-function-declaration -O3 -Wno-int-conversion --target=wasm32-wasi-threads -lwasi-emulated-getpid  -lwasi-emulated-process-clocks -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -g -pthread -Wl,--max-memory=3355443200 -z stack-size=65536 -Wl,--export-all -Wl,--allow-undefined -Wl,--allow-undefined-file=${WASI_SDK_DIR}/share/wasi-sysroot/share/wasm32-wasi-threads/undefined-symbols.txt --sysroot=${HOST_PREFIX}/../share/wasi-sysroot ${WAMR_DIR}/samples/socket-api/wasm-app-prefix/src/wasm-app-build/libsocket_wasi_ext.a -I${WAMR_DIR}/core/iwasm/libraries/lib-socket/inc ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${input}.c
     )
     add_custom_target(${input}_wamr ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm)
@@ -38,17 +41,23 @@ function(wamr_app input)
         )
         add_custom_target(${input}_ckpt_loop_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot)
 
-        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot
-                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-loop-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter.aot
+                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-counter-loop-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
                 DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
         )
-        add_custom_target(${input}_ckpt_loop_dirty_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot)
+        add_custom_target(${input}_ckpt_loop_counter_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter.aot)
 
-        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot
-                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-br-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-        )
-        add_custom_target(${input}_ckpt_br_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot)
+        # add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot
+        #         COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-loop-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        #         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        # )
+        # add_custom_target(${input}_ckpt_loop_dirty_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot)
+
+        # add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot
+        #         COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-br-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        #         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        # )
+        # add_custom_target(${input}_ckpt_br_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-br.aot)
         
         add_test(NAME ${input}_checkpoint COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_checkpoint --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
         add_test(NAME ${input}_restore COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_restore --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
@@ -59,6 +68,8 @@ function(wamr_app input)
 endfunction()
 
 wamr_app(counter)
+wamr_app(vadd)
+wamr_app(sgemm)
 wamr_app(read-file)
 wamr_app(gups)
 wamr_app(gemm)
