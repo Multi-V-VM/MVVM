@@ -3,17 +3,220 @@ import os
 import asyncio
 import time
 import numpy as np
+import matplotlib.pyplot as plt
+from collections import defaultdict
+import csv
 
 pwd_mac = "/Users/victoryang00/Documents/project/MVVM-bench/"
-pwd = "/mnt/MVVM"
+pwd = "/mnt1/MVVM"
 slowtier = "epyc"
 burst = "mac"
 
 
+def calculate_averages_comparison(results):
+    workload_normalized = defaultdict(list)
+
+    # Step 1: Normalize values for each workload
+    for (
+        workload,
+        mvvm_values,
+        hcontainer_values,
+        qemu_x86_64_values,
+        qemu_aarch64_values,
+        native_values,
+    ) in results:
+        if not workload.__contains__("sp") and not workload.__contains__("lu") and not workload.__contains__("tc"):
+            # Assuming 'pure' is always non-zero
+            workload_normalized[workload].append(
+                {
+                    "native": 1,  # Baseline
+                    "mvvm": mvvm_values / native_values if native_values else 0,
+                    "hcontainer": hcontainer_values / native_values if native_values else 0,
+                    "qemu_x86_64": qemu_x86_64_values / native_values if native_values else 0,
+                    "qemu_aarch64": qemu_aarch64_values / native_values if native_values else 0,
+                }
+            )
+            print(workload,workload_normalized[workload])
+
+    # Step 2 and 3: Calculate total average for each policy
+    total_averages = defaultdict(float)
+    for workload, policies in workload_normalized.items():
+        for policy, values in policies[0].items():
+            total_averages[policy] += values
+
+    # Divide by the number of workloads to get the average
+    num_workloads = len(workload_normalized)
+    for policy in total_averages:
+        total_averages[policy] /= num_workloads
+
+    return dict(total_averages)
+
+
+def calculate_averages(results):
+    workload_normalized = defaultdict(list)
+
+    # Step 1: Normalize values for each workload
+    for workload, aot,pure, stack, loop, loop_dirty in results:
+        # Assuming 'pure' is always non-zero
+        workload_normalized[workload].append(
+            {
+                "pure": 1,  # Baseline
+                "aot": aot / pure if pure else 0,
+                "stack": stack / pure if pure else 0,
+                "loop": loop / pure if pure else 0,
+                "loop_dirty": loop_dirty / pure if pure else 0,
+            }
+        )
+
+    # Step 2 and 3: Calculate total average for each policy
+    total_averages = defaultdict(float)
+    for workload, policies in workload_normalized.items():
+        for policy, values in policies[0].items():
+            total_averages[policy] += values
+
+    # Divide by the number of workloads to get the average
+    num_workloads = len(workload_normalized)
+    for policy in total_averages:
+        total_averages[policy] /= num_workloads
+
+    return dict(total_averages)
+
+
+def plot(results, file_name):
+    font = {"size": 18}
+    plt.rc("font", **font)
+    workloads = defaultdict(list)
+
+    # Simplifying and grouping your data
+    for workload, aot,pure, stack, loop, loop_dirty in results:
+        workloads[workload.split(" ")[1].replace(".aot", "")].append(
+            (pure, aot, stack, loop, loop_dirty)
+        )
+
+    # Calculate statistics
+    statistics = {}
+    for workload, times in workloads.items():
+        pures, aots, stacks, loops, loop_dirtys = zip(*times)
+        statistics[workload] = [
+            ("pure", np.median(pures), np.std(pures)),
+            ("aot", np.median(aots), np.std(aots)),
+            ("stack", np.median(stacks), np.std(stacks)),
+            ("loop", np.median(loops), np.std(loops)),
+            ("loop_dirty", np.median(loop_dirtys), np.std(loop_dirtys)),
+        ]
+
+    fig, ax = plt.subplots(figsize=(20, 10))
+    index = np.arange(len(statistics))
+    bar_width = 0.7  # Adjusted for visual clarity
+    color = {
+        "pure": "green",
+        "aot": "cyan",
+        "stack": "purple",
+        "loop": "brown",
+        "loop_dirty": "red",
+    }
+    for i, (workload, stats) in enumerate(statistics.items()):
+        sorted_stats = sorted(stats, key=lambda x: -x[1])  # Sort by median time
+
+        for j, (label, median, std) in enumerate(sorted_stats):
+            ax.bar(
+                index[i],
+                median,
+                bar_width,
+                yerr=std,
+                color=color[label],
+                capsize=5,
+                label=f"{label}" if i == 0 else "",
+            )
+
+    ax.set_xticks(index)  # Adjust this based on the number of bars per group
+    ax.set_xticklabels(statistics.keys(), fontsize=18)
+    ax.set_ylabel("Execution Time (s)")
+    plt.tight_layout()
+    ax.legend(loc="upper right")
+
+    plt.savefig(file_name)
+
+
+def plot_whole(results, file_name):
+    font = {"size": 20}
+    plt.rc("font", **font)
+    fig, ax = plt.subplots(figsize=(20, 10))
+
+    # Simplifying and grouping your data
+    for idx, result in enumerate(results):
+        with open(result, "r") as csvfile:
+            reader = csv.reader(csvfile)
+            next(reader)
+            results = []
+            for row in reader:
+                results.append(
+                    (
+                        row[0],
+                        float(row[1]),
+                        float(row[2]),
+                        float(row[3]),
+                        float(row[5]),
+                        float(row[6]),
+                    )
+                )
+
+        workloads = defaultdict(list)
+        for workload, aot,pure, stack, loop, loop_dirty in results:
+            workloads[workload.split(" ")[1].replace(".aot", "")].append(
+                (pure, aot, stack, loop, loop_dirty)
+            )
+
+        # Calculate statistics
+        statistics = {}
+        for workload, times in workloads.items():
+            pures, aots, stacks, loops, loop_dirtys = zip(*times)
+            statistics[workload] = [
+                ("pure", np.median(pures), np.std(pures)),
+                ("aot", np.median(aots), np.std(aots)),
+                ("stack", np.median(stacks), np.std(stacks)),
+                ("loop", np.median(loops), np.std(loops)),
+                ("loop_dirty", np.median(loop_dirtys), np.std(loop_dirtys)),
+            ]
+
+        index = np.arange(len(statistics))
+        bar_width = 0.7 / 3  # Adjusted for visual clarity
+        color = {
+            "pure": "green",
+            "aot": "cyan",
+            "stack": "purple",
+            "loop": "brown",
+            "loop_dirty": "red",
+        }
+        for i, (workload, stats) in enumerate(statistics.items()):
+            sorted_stats = sorted(stats, key=lambda x: -x[1])  # Sort by median time
+
+            for j, (label, median, std) in enumerate(sorted_stats):
+                ax.bar(
+                    index[i] + bar_width * idx,
+                    median,
+                    bar_width,
+                    yerr=std,
+                    color=color[label],
+                    capsize=5,
+                    label=f"{label}" if i == 0 and idx == 0 else "",
+                )
+
+    ax.set_xticks(
+        index + bar_width
+    )  # Adjust this based on the number of bars per group
+    ax.set_xticklabels(statistics.keys(), fontsize=20)
+    ax.set_ylabel("Execution Time (s)")
+    plt.tight_layout()
+    ax.legend(loc="upper right")
+
+    plt.savefig(file_name)
+
+
 def get_avg_99percent(data):
-    group_size = 10000
+    group_size = 1000
     num_groups = len(data) // group_size
-    grouped_data = np.reshape(data[:num_groups * group_size], (num_groups, group_size))
+    grouped_data = np.reshape(data[: num_groups * group_size], (num_groups, group_size))
     avg_values = np.mean(grouped_data, axis=1)
     percentile99_values = np.percentile(grouped_data, 99, axis=1)
 
@@ -22,9 +225,17 @@ def get_avg_99percent(data):
     percentile99_extended = np.repeat(percentile99_values, group_size)
 
     # Append the remaining data points to the extended arrays
-    avg_extended = np.concatenate((avg_extended, [avg_values[-1]] * (len(data) - len(avg_extended))))
-    percentile99_extended = np.concatenate((percentile99_extended, [percentile99_values[-1]] * (len(data) - len(percentile99_extended))))
+    avg_extended = np.concatenate(
+        (avg_extended, [avg_values[-1]] * (len(data) - len(avg_extended)))
+    )
+    percentile99_extended = np.concatenate(
+        (
+            percentile99_extended,
+            [percentile99_values[-1]] * (len(data) - len(percentile99_extended)),
+        )
+    )
     return avg_extended, percentile99_extended
+
 
 def parse_time(time_string):
     # Split the time string into components
@@ -88,11 +299,11 @@ aot_variant = [
     ".aot",
     "-pure.aot",
     "-stack.aot",
-    "-ckpt-every-dirty.aot",
+    # "-ckpt-every-dirty.aot",
     "-ckpt-loop.aot",
     "-ckpt-loop-dirty.aot",
 ]
-trial = 1
+trial = 10
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -451,13 +662,15 @@ def run_checkpoint_restore_slowtier(
     os.system(
         f"script -q /dev/null -c 'ssh -t {slowtier} {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file1} {extra2}' >> MVVM_restore.1.out &"
     )
-    os.system(f"ssh -t {slowtier} {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore &")
+    os.system(
+        f"ssh -t {slowtier} {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore &"
+    )
     # print(f"ssh -t {slowtier} bash -c 'cd {pwd}/build && {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore' &")
     os.system(
         f"script -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.out &"
     )
     os.system(f"../artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore &")
-    
+
     os.system("sleep 15")
     os.system(
         f"../artifact/run_with_cpu_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} &"
@@ -490,10 +703,12 @@ def run_checkpoint_restore_slowtier(
     res.append((exec, output))
     return res
 
+
 def exec_with_log(cmd):
     print(cmd)
     os.system(cmd)
-    
+
+
 def run_checkpoint_restore_burst(
     aot_file: str,
     arg: list[str],
@@ -526,11 +741,15 @@ def run_checkpoint_restore_burst(
         f"ssh -t {burst} {pwd_mac}/artifact/run_with_energy_monitoring_mac.sh MVVM_restore 0 {aot_file} &"
     )
 
-    exec_with_log(f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.1.out &")
+    exec_with_log(
+        f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.1.out &"
+    )
     exec_with_log(
         f"../artifact/run_with_energy_monitoring.sh MVVM_restore 1 {aot_file} &"
     )
-    exec_with_log(f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra7}' >> MVVM_restore.4.out &")
+    exec_with_log(
+        f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra7}' >> MVVM_restore.4.out &"
+    )
     exec_with_log(
         f"../artifact/run_with_energy_monitoring.sh MVVM_restore 4 {aot_file1} &"
     )
@@ -548,9 +767,9 @@ def run_checkpoint_restore_burst(
     )
     # exec_with_log(f"ssh -t mac ../artifact/run_with_energy_monitoring_mac.sh MVVM_checkpoint 1 {aot_file} &")
     exec_with_log(f"pkill -SIGINT MVVM_checkpoint")
-    
+
     exec_with_log("sleep 100")
-    
+
     exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_restore")
     exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_checkpoint")
     exec_with_log(
@@ -561,10 +780,14 @@ def run_checkpoint_restore_burst(
     )
     exec_with_log("sleep 100")
     exec_with_log(f"pkill -SIGINT MVVM_restore")
-    exec_with_log(f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra9}' >> MVVM_restore.6.out &")
-    exec_with_log(f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra5}' >> MVVM_restore.3.out &")
+    exec_with_log(
+        f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra9}' >> MVVM_restore.6.out &"
+    )
+    exec_with_log(
+        f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra5}' >> MVVM_restore.3.out &"
+    )
     # Return a combined result or just the checkpoint result as needed
-   
+
     exec_with_log("sleep 100")
     exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_restore")
     exec_with_log(f"sleep 1000")
@@ -602,8 +825,10 @@ def run_slowtier(
 def run_burst(
     aot_file: str, arg: list[str], env: str, extra: str = ""
 ) -> tuple[str, str]:
-    os.system(f"script -q /dev/null -c 'ssh -t {burst} ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}' > burst.out")
-    cmd = ("cat burst.out")
+    os.system(
+        f"script -q /dev/null -c 'ssh -t {burst} ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra}' > burst.out"
+    )
+    cmd = "cat burst.out"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -690,3 +915,4 @@ if __name__ == "__main__":
     print(get_func_index("__wasi_fd_read", "./test/read-file.wasm"))
     print(get_func_index("sendto", "./test/client.wasm"))
     print(get_func_index("atomic_wait", "./bench/hdastar.wasm"))
+    plot_whole(["policy.csv", "policy_multithread.csv", "policy_mac.csv"], "policy.pdf")
