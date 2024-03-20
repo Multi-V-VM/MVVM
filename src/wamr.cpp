@@ -15,6 +15,7 @@
 #include "platform_common.h"
 #include "wamr_export.h"
 #include "wamr_native.h"
+#include "wamr_read_write.h"
 #include "wasm_export.h"
 #include "wasm_interp.h"
 #include "wasm_runtime.h"
@@ -973,11 +974,18 @@ void serialize_to_file(WASMExecEnv *instance) {
     // finish filling vector
 #endif
     auto used_memory = get_rss();
-    struct_pack::serialize_to(*writer, as);
+    if (dynamic_cast<RDMAWriteStream *>(writer)) {
+        auto buffer = struct_pack::serialize(as);
+        ((RDMAWriteStream *)writer)->buffer = buffer.data();
+        ((RDMAWriteStream *)writer)->position = buffer.size();
+    } else
+        struct_pack::serialize_to(*writer, as);
+
     auto end = std::chrono::high_resolution_clock::now();
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     SPDLOG_INFO("Snapshot time: {} s", dur.count() / 1000000.0);
     SPDLOG_INFO("Memory usage: {} MB", (used_memory - snapshot_memory) / 1024 / 1024);
+    delete writer;
     exit(EXIT_SUCCESS);
 }

@@ -245,10 +245,10 @@ int main(int argc, char *argv[]) {
     std::sort(last_func_idx.begin(), last_func_idx.end(),
               [&last_func_count](size_t a, size_t b) { return last_func_count[a] > last_func_count[b]; });
     for (const auto &e : last_func_idx) {
-        std::cout << std::format("{} {}\n", func_name[e], last_func_count[e]);
+        std::cout << fmt::format("{} {}\n", func_name[e], last_func_count[e]);
         std::cout << "IP count:\n";
         for (auto [ip, cnt] : ip_count_per_func[e]) {
-            std::cout << std::format("func {} ip {} count {}\n", e, ip, cnt);
+            std::cout << fmt::format("func {} ip {} count {}\n", e, ip, cnt);
         }
     }
     std::cout << std::endl;
@@ -257,7 +257,7 @@ int main(int argc, char *argv[]) {
     std::sort(func_idx.begin(), func_idx.end(),
               [&func_count](size_t a, size_t b) { return func_count[a] > func_count[b]; });
     for (const auto &e : func_idx) {
-        std::cout << std::format("{} {}\n", func_name[e], func_count[e]);
+        std::cout << fmt::format("{} {}\n", func_name[e], func_count[e]);
     }
 
     std::ofstream out(target + ".pgo");
@@ -267,10 +267,10 @@ int main(int argc, char *argv[]) {
         for (auto [ip, cnt] : ip_count_per_func[e]) {
             auto freq = (double)cnt / (double)total_sample_count;
             if (freq > 0.15) {
-                std::cout << std::format("pgo name {} idx {} ip {} freq {}\n", func_name[e], aot_idx[e], ip, freq);
+                std::cout << fmt::format("pgo name {} idx {} ip {} freq {}\n", func_name[e], aot_idx[e], ip, freq);
                 pgo_list.emplace_back(aot_idx[e], ip);
             } else {
-                std::cout << std::format("no pgo name {} idx {} ip {} freq {}\n", func_name[e], aot_idx[e], ip, freq);
+                std::cout << fmt::format("no pgo name {} idx {} ip {} freq {}\n", func_name[e], aot_idx[e], ip, freq);
             }
         }
     }

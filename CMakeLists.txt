@@ -41,6 +41,7 @@ elseif (LINUX)
             /opt/OpenBLAS/include/
             $ENV{BLAS_HOME}/include)
     message(${BLAS_INCLUDE_DIRS})
+    set(WIN_EXTRA_LIBS ibverbs rdmacm)
 else ()
     set(WAMR_BUILD_PLATFORM "windows")
     set(WAMR_BUILD_LIB_PTHREAD 1)

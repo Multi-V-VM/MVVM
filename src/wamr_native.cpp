@@ -71,6 +71,14 @@ static void dgemm_wrapper(wasm_exec_env_t exec_env, int32_t m, int32_t n, int32_
 #endif
 #endif
 }
+static void lambda_read_wrapper(wasm_exec_env_t exec_env, int32_t m){
+    fprintf(stderr, "lambda_read_wrapper: %d\n", m);
+    
+}
+static void lambda_write_wrapper(wasm_exec_env_t exec_env, int32_t m){
+    fprintf(stderr, "lambda_write_wrapper: %d\n", m);
+
+}
 static NativeSymbol ns1[] = {
     REG_NATIVE_FUNC(dgemm, "(iiiF*i*iF*i)"),
 };

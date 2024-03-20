@@ -21,7 +21,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install Dependency
-      run: sudo apt install libssl-dev gcc-13 g++-13 libspdlog-dev libfmt-dev llvm-14-dev libedit-dev libcxxopts-dev libpfm4-dev ninja-build libpcap-dev libopenblas-pthread-dev
+      run: sudo apt install libssl-dev gcc-13 g++-13 libspdlog-dev libfmt-dev llvm-14-dev libedit-dev libcxxopts-dev libpfm4-dev ninja-build libpcap-dev libopenblas-pthread-dev ibverbs-providers
       
     - name: Checkout
       run: |

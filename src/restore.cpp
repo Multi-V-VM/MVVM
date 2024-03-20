@@ -29,6 +29,7 @@ WriteStream *writer;
 WAMRInstance *wamr = nullptr;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 long snapshot_memory = 0;
+
 int main(int argc, char **argv) {
     spdlog::cfg::load_env_levels();
     cxxopts::Options options("MVVM", "Migratable Velocity Virtual Machine, to ship the VM state to another machine");
@@ -40,7 +41,8 @@ int main(int argc, char **argv) {
         "e,source_port", "The next hop port to offload", cxxopts::value<int>()->default_value("0"))(
         "o,offload_addr", "The next hop to offload", cxxopts::value<std::string>()->default_value(""))(
         "s,offload_port", "The next hop port to offload", cxxopts::value<int>()->default_value("0"))(
-        "c,count", "The value for epoch value", cxxopts::value<size_t>()->default_value("0"));
+        "c,count", "The value for epoch value", cxxopts::value<size_t>()->default_value("0"))(
+        "r,rdma", "Whether to use RDMA device", cxxopts::value<bool>()->default_value("0"));
     // Can first discover from the wasi context.
 
     auto result = options.parse(argc, argv);
@@ -54,6 +56,7 @@ int main(int argc, char **argv) {
     auto offload_addr = result["offload_addr"].as<std::string>();
     auto offload_port = result["offload_port"].as<int>();
     auto count = result["count"].as<size_t>();
+    auto rdma = result["rdma"].as<bool>();
 
     snapshot_threshold = count;
     register_sigtrap();
@@ -66,6 +69,10 @@ int main(int argc, char **argv) {
     if (source_addr.empty())
         reader = new FreadStream((removeExtension(target) + ".bin").c_str()); // writer
 #if !defined(_WIN32)
+#if __linux__
+    else if(rdma)
+        reader = new RDMAReadStream(source_addr.c_str(), source_port);
+#endif
     else
         reader = new SocketReadStream(source_addr.c_str(), source_port);
 #endif
@@ -73,6 +80,10 @@ int main(int argc, char **argv) {
     if (offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
 #if !defined(_WIN32)
+#if __linux__
+    else if(rdma)
+        writer = new RDMAWriteStream(offload_addr.c_str(), offload_port);
+#endif
     else
         writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
     // is server for all and the is server?

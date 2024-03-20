@@ -55,7 +55,8 @@ int main(int argc, char *argv[]) {
         "x,function_count", "The function count to stop", cxxopts::value<int>()->default_value("0"))(
         "o,offload_addr", "The next hop to offload", cxxopts::value<std::string>()->default_value(""))(
         "s,offload_port", "The next hop port to offload", cxxopts::value<int>()->default_value("0"))(
-        "c,count", "The step index to test execution", cxxopts::value<int>()->default_value("0"));
+        "c,count", "The step index to test execution", cxxopts::value<int>()->default_value("0"))(
+        "r,rdma", "Whether to use RDMA device", cxxopts::value<bool>()->default_value("0"));
 
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {
@@ -72,6 +73,7 @@ int main(int argc, char *argv[]) {
     auto offload_addr = result["offload_addr"].as<std::string>();
     auto offload_port = result["offload_port"].as<int>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
+    auto rdma = result["rdma"].as<bool>();
     snapshot_threshold = result["count"].as<int>();
     stop_func_threshold = result["function_count"].as<int>();
     is_debug = result["is_debug"].as<bool>();
@@ -93,6 +95,10 @@ int main(int argc, char *argv[]) {
     if (offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
 #ifndef _WIN32
+#if __linux__
+    else if (rdma)
+        writer = new RDMAWriteStream(offload_addr.c_str(), offload_port);
+#endif
     else
         writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
 #endif

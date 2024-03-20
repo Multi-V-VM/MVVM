@@ -167,8 +167,8 @@ task<void> SyncAndBlockTraffic(string src_ip, string dst_ip, short_word dstport,
     Sniffer(filter, iface, PacketHandler);
 
     // TCP connections setup
-    auto tcp_v_to_s = make_unique<TCPConnection>(src_ip, dst_ip, srcport, dstport, iface, TCPConnection::ESTABLISHED);
-    auto tcp_s_to_v = make_unique<TCPConnection>(dst_ip, src_ip, dstport, srcport, iface, TCPConnection::ESTABLISHED);
+    auto tcp_v_to_s = make_unique<TCPConnection>(src_ip, dst_ip, srcport, dstport, iface, 4);
+    auto tcp_s_to_v = make_unique<TCPConnection>(dst_ip, src_ip, dstport, srcport, iface, 4);
 
     // Synchronize the ACK and SEQ numbers
     tcp_v_to_s->Sync();
