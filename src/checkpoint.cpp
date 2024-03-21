@@ -29,7 +29,6 @@ std::ostringstream re{};
 WriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
-long snapshot_memory = 0;
 
 int main(int argc, char *argv[]) {
     spdlog::cfg::load_env_levels();

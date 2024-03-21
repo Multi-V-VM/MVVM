@@ -30,7 +30,6 @@ std::ostringstream re{};
 FwriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
-long snapshot_memory = 0;
 
 std::vector<std::vector<std::pair<size_t, size_t>>> stack_record;
 void unwind(WASMExecEnv *instance) {

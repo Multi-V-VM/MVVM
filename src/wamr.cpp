@@ -41,7 +41,6 @@
 WAMRInstance::ThreadArgs **argptr;
 std::counting_semaphore<100> wakeup(0);
 std::counting_semaphore<100> thread_init(0);
-extern long snapshot_memory;
 extern WriteStream *writer;
 extern std::vector<std::unique_ptr<WAMRExecEnv>> as;
 
@@ -811,8 +810,7 @@ long get_rss() {
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     auto start = std::chrono::high_resolution_clock::now();
-    if (snapshot_memory == 0)
-        snapshot_memory = get_rss();
+
 #if WASM_ENABLE_LIB_PTHREAD != 0
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
@@ -973,19 +971,22 @@ void serialize_to_file(WASMExecEnv *instance) {
     }
     // finish filling vector
 #endif
-    auto used_memory = get_rss();
+#if __linux__
     if (dynamic_cast<RDMAWriteStream *>(writer)) {
         auto buffer = struct_pack::serialize(as);
-        ((RDMAWriteStream *)writer)->buffer = buffer.data();
+        ((RDMAWriteStream *)writer)->buffer = buffer;
         ((RDMAWriteStream *)writer)->position = buffer.size();
+        SPDLOG_DEBUG("Snapshot size: {}\n", buffer.size());
+        delete ((RDMAWriteStream *)writer);
+
     } else
+#endif
         struct_pack::serialize_to(*writer, as);
 
     auto end = std::chrono::high_resolution_clock::now();
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     SPDLOG_INFO("Snapshot time: {} s", dur.count() / 1000000.0);
-    SPDLOG_INFO("Memory usage: {} MB", (used_memory - snapshot_memory) / 1024 / 1024);
-    delete writer;
+    SPDLOG_INFO("Memory usage: {} MB", get_rss() / 1024 / 1024);
     exit(EXIT_SUCCESS);
 }

@@ -15,6 +15,7 @@
 #include "wamr_serializer.h"
 #include "wasm_runtime.h"
 #include <memory>
+#include <span>
 #include <vector>
 struct WAMRMemoryInstance {
     /* Module type */
@@ -35,7 +36,7 @@ struct WAMRMemoryInstance {
      *   when memory is re-allocated, the heap data and memory data
      *   must be copied to new memory also
      */
-    std::vector<uint8> memory_data;
+    std::span<uint8_t> memory_data;
 
     /* Heap data base address */
     std::vector<uint8> heap_data;
@@ -47,8 +48,9 @@ struct WAMRMemoryInstance {
         cur_page_count = env->cur_page_count;
         max_page_count = env->max_page_count;
         is_shared_memory = env->is_shared_memory;
-        memory_data.resize(env->memory_data_size);
-        memcpy(memory_data.data(), env->memory_data, env->memory_data_size);
+        // memory_data.resize(env->memory_data_size);
+        memory_data = std::span<uint8_t>(env->memory_data, env->memory_data_size);
+        // memcpy(memory_data.data(), env->memory_data, env->memory_data_size);
         heap_data = std::vector<uint8>(env->heap_data, env->heap_data_end);
     };
     void restore_impl(WASMMemoryInstance *env);

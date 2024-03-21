@@ -10,7 +10,7 @@
  *  UC Santa Cruz Sluglab.
  */
 
-#include "struct_pack/struct_pack.hpp"
+#include "ylt/struct_pack.hpp"
 #include "wamr.h"
 #include "wamr_exec_env.h"
 #include "wamr_export.h"
@@ -28,7 +28,6 @@ ReadStream *reader;
 WriteStream *writer;
 WAMRInstance *wamr = nullptr;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
-long snapshot_memory = 0;
 
 int main(int argc, char **argv) {
     spdlog::cfg::load_env_levels();
