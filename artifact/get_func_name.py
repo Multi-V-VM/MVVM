@@ -27,13 +27,17 @@ def get_func_name(func, file):
 
     for i in range(len(output1)):
         if i == func:
-            return output1[i].split(" ")[3] + "-funcid-" + str(i - import_count)
+            return output1[i].split(" ")[3], i - import_count
 
 if __name__ == "__main__":
     import sys
     wasm = sys.argv[1]
     names = []
+    aot_idxes = []
     for i in range(2, len(sys.argv)):
         idx = int(sys.argv[i])
-        names.append(get_func_name(idx, wasm))
-    print(names)
+        name, aot_idx = get_func_name(idx, wasm)
+        names.append(name)
+        aot_idxes.append(aot_idx)
+    for i in range(len(names)):
+        print(f"{names[i]} {aot_idxes[i]}")
