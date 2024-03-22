@@ -23,7 +23,7 @@ void WAMRBranchBlock::dump_impl(WASMBranchBlock *env) {
 
     if (env->frame_sp) {
         frame_sp = reinterpret_cast<uint8 *>(env->frame_sp) -
-                   wamr->get_exec_env()->wasm_stack.s.bottom; // offset to the wasm_stack_top
+                   wamr->get_exec_env()->wasm_stack.bottom; // offset to the wasm_stack_top
     }
 
     cell_num = env->cell_num;
@@ -36,7 +36,7 @@ void WAMRBranchBlock::restore_impl(WASMBranchBlock *env) const {
         env->target_addr = wamr->get_func()->code + target_addr;
 
     if (frame_sp) {
-        uint8 *local_sp = wamr->get_exec_env()->wasm_stack.s.bottom + frame_sp;
+        uint8 *local_sp = wamr->get_exec_env()->wasm_stack.bottom + frame_sp;
         env->frame_sp = reinterpret_cast<uint32 *>(local_sp);
     }
 

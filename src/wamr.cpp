@@ -517,17 +517,12 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     }
 
     auto main_env = cur_env;
-    auto main_saved_call_chain = main_env->restore_call_chain;
     cur_thread = ((uint64_t)main_env->handle);
-
-    fprintf(stderr, "main_env created %p %p\n\n", main_env, main_saved_call_chain);
-
-    main_env->is_restore = true;
-
-    main_env->restore_call_chain = nullptr;
 
 //    invoke_init_c();
 #if WASM_ENABLE_LIB_PTHREAD != 0
+    SPDLOG_ERROR("no impl");
+    exit(-1);
     spawn_child(main_env, true);
 #endif
     // restart main thread execution
@@ -542,10 +537,10 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
         fprintf(stderr, "wakeup.release\n");
         wakeup.release(100);
 
-        cur_env->is_restore = true;
-        cur_env->restore_call_chain = main_saved_call_chain;
 #if WASM_ENABLE_LIB_PTHREAD != 0
-        fprintf(stderr, "invoke main %p %p\n", cur_env, cur_env->restore_call_chain);
+        SPDLOG_ERROR("no impl");
+        exit(-1);
+        fprintf(stderr, "invoke main %p %u\n", cur_env, cur_env->call_chain_size);
         // replay sync ops to get OS state matching
         wamr_handle_map(execEnv.front()->cur_count, ((uint64_t)main_env->handle));
 
@@ -604,15 +599,19 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
         SPDLOG_DEBUG("pthread_create_wrapper, func {}\n", child_env->cur_count);
         // module_inst = wasm_runtime_instantiate(module, stack_size, heap_size, error_buf, sizeof(error_buf));
         if (tid_start_arg_map.find(child_env->cur_count) != tid_start_arg_map.end()) {
+            SPDLOG_ERROR("no impl");
+            exit(-1);
             // find the parent env
-            auto *saved_env = cur_env->restore_call_chain;
-            cur_env->restore_call_chain = NULL;
+            auto saved_call_chain_size = cur_env->call_chain_size;
+            auto saved_stack_size = cur_env->wasm_stack.top_boundary - cur_env->wasm_stack.bottom;
+            auto saved_stack = (char *)malloc(saved_stack_size);
+            memcpy(saved_stack, cur_env->wasm_stack.bottom, saved_stack_size);
             exec_env->is_restore = true;
             // main thread
             thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count].first);
-            cur_env->restore_call_chain = saved_env;
-            exec_env->is_restore = false;
-
+            cur_env->call_chain_size = saved_call_chain_size;
+            memcpy(cur_env->wasm_stack.bottom, saved_stack, saved_stack_size);
+            free(saved_stack);
         } else {
             exec_env->is_restore = true;
             pthread_create_wrapper(cur_env, nullptr, nullptr, id, id); // tid_map
@@ -682,11 +681,8 @@ WASMExecEnv *restore_env(WASMModuleInstanceCommon *module_inst) {
     auto exec_env = wasm_exec_env_create_internal(module_inst, wamr->stack_size);
     restore(child_env, exec_env);
 
-    auto s = exec_env->restore_call_chain;
-
     wamr->cur_thread = ((uint64_t)exec_env->handle);
     exec_env->is_restore = true;
-    fprintf(stderr, "restore_env: %p %p\n", exec_env, s);
 
     return exec_env;
 }

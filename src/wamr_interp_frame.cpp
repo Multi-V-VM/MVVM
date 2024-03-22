@@ -62,7 +62,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         int i = 0;
         for (auto &&csp_item : csp) {
             restore(csp_item.get(), env->csp_bottom + i);
-            SPDLOG_ERROR("csp_bottom {}", ((uint8 *)env->csp_bottom + i) - wamr->get_exec_env()->wasm_stack.s.bottom);
+            SPDLOG_ERROR("csp_bottom {}", ((uint8 *)env->csp_bottom + i) - wamr->get_exec_env()->wasm_stack.bottom);
             i++;
         }
 
@@ -70,7 +70,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
     }
     SPDLOG_INFO("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip, (void *)env->sp,
-                (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
+                (void *)wamr->get_exec_env()->wasm_stack.bottom);
 }
 
 #if WASM_ENABLE_AOT != 0
@@ -243,7 +243,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         e->cell_num = cell_num;                                                                                        \
         e->begin_addr = frame_ip - cur_func->u.func->code;                                                             \
         e->target_addr = (_target_addr)-cur_func->u.func->code;                                                        \
-        e->frame_sp = reinterpret_cast<uint8 *>(frame_sp - (param_cell_num)) - exec_env->wasm_stack.s.bottom;          \
+        e->frame_sp = reinterpret_cast<uint8 *>(frame_sp - (param_cell_num)) - exec_env->wasm_stack.bottom;          \
         csp.emplace_back(std::move(e));                                                                                \
     }
 
@@ -266,7 +266,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         csp.resize(csp.size() - (n));                                                                                  \
         frame_ip = cur_func->u.func->code + csp.back()->target_addr;                                                   \
         /* copy arity values of block */                                                                               \
-        frame_sp = reinterpret_cast<uint32 *>(exec_env->wasm_stack.s.bottom + csp.back()->frame_sp);                   \
+        frame_sp = reinterpret_cast<uint32 *>(exec_env->wasm_stack.bottom + csp.back()->frame_sp);                   \
         cell_num_to_copy = csp.back()->cell_num;                                                                       \
         frame_sp += cell_num_to_copy;                                                                                  \
     } while (0)
