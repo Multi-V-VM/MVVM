@@ -56,7 +56,7 @@ folder = [
 arg = [
     [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
+    ["./ORBvoc.txt", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
     ["-f", "./road.sg", "-n300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],

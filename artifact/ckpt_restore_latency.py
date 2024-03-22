@@ -55,7 +55,7 @@ folder = [
 arg = [
     [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
+    ["./ORBvoc.txt", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
     ["-f", "./road.sg", "-n300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
@@ -100,95 +100,95 @@ envs = [
 ]
 
 
-pool = Pool(processes=1)
+# pool = Pool(processes=1)
 
 
-def run_mvvm():
-    results = []
-    results1 = []
+# def run_mvvm():
+#     results = []
+#     results1 = []
 
-    for i, c in enumerate(cmd):
-        aot = cmd[i] + common_util.aot_variant[0]
-        results1.append(
-            pool.apply_async(
-                common_util.run_checkpoint_restore,
-                (aot, arg[i], envs[i]),
-            )
-        )
-    results1 = [x.get() for x in results1]
-    write_to_csv(results1, "ckpt_restore_latency_raw.csv")
-    for exec, output in results1:
-        for o in range(len(output)):
-            lines = output[o].split("\n")
-            for line in lines:
-                if line.__contains__("Snapshot time:"):
-                    time = line.split(" ")[-2]
-                    snapshot_time = float(time)
-                if line.__contains__("Snapshot Memory:"):
-                    time = line.split(" ")[-2]
-                    snapshot_memory = float(time)
-                if line.__contains__("Recover time:"):
-                    time = line.split(" ")[-1]
-                    recover_time = float(time)
+#     for i, c in enumerate(cmd):
+#         aot = cmd[i] + common_util.aot_variant[0]
+#         results1.append(
+#             pool.apply_async(
+#                 common_util.run_checkpoint_restore,
+#                 (aot, arg[i], envs[i]),
+#             )
+#         )
+#     results1 = [x.get() for x in results1]
+#     write_to_csv(results1, "ckpt_restore_latency_raw.csv")
+#     for exec, output in results1:
+#         for o in range(len(output)):
+#             lines = output[o].split("\n")
+#             for line in lines:
+#                 if line.__contains__("Snapshot time:"):
+#                     time = line.split(" ")[-2]
+#                     snapshot_time = float(time)
+#                 if line.__contains__("Snapshot Memory:"):
+#                     time = line.split(" ")[-2]
+#                     snapshot_memory = float(time)
+#                 if line.__contains__("Recover time:"):
+#                     time = line.split(" ")[-1]
+#                     recover_time = float(time)
 
-            results += [(exec, snapshot_time, recover_time, snapshot_memory)]
-    return results
-
-
-def run_criu():
-    results = []
-    results1 = []
-    for i in range(len(cmd)):
-        aot = cmd[i]
-        results1.append(
-            pool.apply_async(
-                common_util.run_criu_checkpoint_restore,
-                (aot, folder[i], arg[i], envs[i]),
-            )
-        )
-    # print the results
-    results1 = [x.get() for x in results1]
-    write_to_csv_raw(results1, "ckpt_restore_latency_criu_raw.csv")
-    for exec, output in results1:
-        for o in range(len(output)):
-            lines = output[o].split("\n")
-            for line in lines:
-                if line.__contains__("Dumping finished successfully"):
-                    time = line.split(" ")[0].replace("(", "").replace(")", "")
-                    snapshot_time = float(time)
-                if line.__contains__("Restore finished successfully."):
-                    time = line.split(" ")[0].replace("(", "").replace(")", "")
-                    recover_time = float(time)
-            # print(output[o])
-            results += [(exec, snapshot_time, recover_time)]
-    return results
+#             results += [(exec, snapshot_time, recover_time, snapshot_memory)]
+#     return results
 
 
-def run_qemu():
-    results = []
-    results1 = []
+# def run_criu():
+#     results = []
+#     results1 = []
+#     for i in range(len(cmd)):
+#         aot = cmd[i]
+#         results1.append(
+#             pool.apply_async(
+#                 common_util.run_criu_checkpoint_restore,
+#                 (aot, folder[i], arg[i], envs[i]),
+#             )
+#         )
+#     # print the results
+#     results1 = [x.get() for x in results1]
+#     write_to_csv_raw(results1, "ckpt_restore_latency_criu_raw.csv")
+#     for exec, output in results1:
+#         for o in range(len(output)):
+#             lines = output[o].split("\n")
+#             for line in lines:
+#                 if line.__contains__("Dumping finished successfully"):
+#                     time = line.split(" ")[0].replace("(", "").replace(")", "")
+#                     snapshot_time = float(time)
+#                 if line.__contains__("Restore finished successfully."):
+#                     time = line.split(" ")[0].replace("(", "").replace(")", "")
+#                     recover_time = float(time)
+#             # print(output[o])
+#             results += [(exec, snapshot_time, recover_time)]
+#     return results
 
-    for i in range(len(cmd)):
-        aot = cmd[i]
-        results1.append(
-            pool.apply_async(
-                common_util.run_qemu_checkpoint_restore,
-                (aot, folder[i], arg[i], envs[i]),
-            )
-        )
-    # print the results
-    results1 = [x.get() for x in results1]
-    write_to_csv_raw(results1, "ckpt_restore_latency_qemu_raw.csv")
-    for exec, output in results1:
-        for o in range(len(output)):
-            lines = output[o].split("\n")
-            for line in lines:
-                if line.__contains__("total time: "):
-                    time = line.split(" ")[-2]
-                    snapshot_time = float(time) / 1000
-            print(exec, snapshot_time)
-            results += [(exec, snapshot_time, 0.0)]
-    return results
+
+# def run_qemu():
+#     results = []
+#     results1 = []
+
+#     for i in range(len(cmd)):
+#         aot = cmd[i]
+#         results1.append(
+#             pool.apply_async(
+#                 common_util.run_qemu_checkpoint_restore,
+#                 (aot, folder[i], arg[i], envs[i]),
+#             )
+#         )
+#     # print the results
+#     results1 = [x.get() for x in results1]
+#     write_to_csv_raw(results1, "ckpt_restore_latency_qemu_raw.csv")
+#     for exec, output in results1:
+#         for o in range(len(output)):
+#             lines = output[o].split("\n")
+#             for line in lines:
+#                 if line.__contains__("total time: "):
+#                     time = line.split(" ")[-2]
+#                     snapshot_time = float(time) / 1000
+#             print(exec, snapshot_time)
+#             results += [(exec, snapshot_time, 0.0)]
+#     return results
 
 
 def write_to_csv_raw(data, filename):
@@ -449,7 +449,7 @@ def plot_whole(
             "criu_recovery_median": np.median(recoveries_criu),
             "criu_snapshot_std": np.std(snapshots_criu),
             "criu_recovery_std": np.std(recoveries_criu),
-            "qemu_snapshot_median": np.median(snapshots),
+            "qemu_snapshot_median": np.median(snapshots_qemu),
             "qemu_snapshot_std": np.std(snapshots_qemu),
         }
 
@@ -529,24 +529,25 @@ def plot_whole(
 
     # Show the plot
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     plt.savefig(file_name)
     # %%
 
+    # %%
 
 if __name__ == "__main__":
     # mvvm_result = run_mvvm()
     # write_to_csv(mvvm_result, "ckpt_restore_latency_profile.csv")
 
     # print(len(arg), len(cmd), len(envs))
-    criu_result = run_criu()
-    write_to_csv(criu_result, "ckpt_restore_latency_criu.csv")
+    # criu_result = run_criu()
+    # write_to_csv(criu_result, "ckpt_restore_latency_criu.csv")
     # plot(criu_result, "ckpt_restore_latency_criu.pdf")
-    qemu_result = run_qemu()
-    write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
-    # mvvm_result = read_from_csv("ckpt_restore_latency.csv")
-    # criu_result = read_from_csv("ckpt_restore_latency_criu.csv")
+    # qemu_result = run_qemu()
+    # write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
+    mvvm_result = read_from_csv("ckpt_restore_latency.csv")
+    criu_result = read_from_csv("ckpt_restore_latency_criu.csv")
     # print(criu_result)
-    # qemu_result = read_from_csv("ckpt_restore_latency_qemu.csv")
-    # plot_whole(mvvm_result, criu_result, qemu_result)
+    qemu_result = read_from_csv("ckpt_restore_latency_qemu.csv")
+    plot_whole(mvvm_result, criu_result, qemu_result)
     # plot_qemu(results, "ckpt_restore_latency_qemu.pdf")
