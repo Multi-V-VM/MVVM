@@ -521,8 +521,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 
 //    invoke_init_c();
 #if WASM_ENABLE_LIB_PTHREAD != 0
-    SPDLOG_ERROR("no impl");
-    exit(-1);
+    // SPDLOG_ERROR("no impl");
+    // exit(-1);
     spawn_child(main_env, true);
 #endif
     // restart main thread execution
@@ -967,6 +967,10 @@ void serialize_to_file(WASMExecEnv *instance) {
     }
     // finish filling vector
 #endif
+    auto end1 = std::chrono::high_resolution_clock::now();
+    // get duration in us
+    auto dur1 = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start);
+    SPDLOG_INFO("Snapshot Overhead: {} s", dur1.count() / 1000000.0);
 #if __linux__
     if (dynamic_cast<RDMAWriteStream *>(writer)) {
         auto buffer = struct_pack::serialize(as);

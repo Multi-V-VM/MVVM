@@ -365,9 +365,9 @@ def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
     avg_extended, percentile99_extended = get_avg_99percent(exec_time[1] + exec_time[2] + exec_time[3])
     avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(exec_time[0])
     ax.plot(time_spots, avg_extended, "blue")
-    # ax.plot(time_spots, percentile99_extended, color="purple", linestyle="--")
+    ax.plot(time_spots, percentile99_extended, color="purple", linestyle="--")
     ax.plot(time_spots2, avg_exec_time1, "r")
-    # ax.plot(time_spots2, percentile_99_exec_time1, color="pink", linestyle="--")
+    ax.plot(time_spots2, percentile_99_exec_time1, color="pink", linestyle="--")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Average Trial Time (s)")
     plt.savefig("optimistic.pdf")
@@ -482,9 +482,9 @@ if __name__ == "__main__":
     # # plot skew
     # write_to_csv("optimisitc_computing.csv")
 
-    results = read_from_csv("optimistic_computing.csv")
+    # results = read_from_csv("optimistic_computing.csv")
 
-    plot(results)
+    # plot(results)
     # reu = get_optimiztic_compute_overhead()
     # with open("optimistic.txt", "w") as f:
     #     f.write(str(reu))

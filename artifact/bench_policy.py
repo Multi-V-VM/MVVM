@@ -1,9 +1,7 @@
 import csv
 import common_util
 from multiprocessing import Pool
-import matplotlib.pyplot as plt
-import numpy as np
-from collections import defaultdict
+from common_util import plot, calculate_averages
 
 cmd = [
     "llama",
@@ -123,13 +121,13 @@ def run_mvvm():
                     results_1.append(exec_time)
                 elif a == "-stack.aot":
                     results_2.append(exec_time)
-                elif a == "-ckpt-every-dirty.aot":
+                elif a == "-ckpt-loop-counter.aot":
                     results_3.append(exec_time)
                 elif a == "-ckpt-loop.aot":
                     results_4.append(exec_time)
                 elif a == "-ckpt-loop-dirty.aot":
                     results_5.append(exec_time)
-                elif a==".aot" and not exec.__contains__("-pure.aot") and not exec.__contains__("-stack.aot")and not exec.__contains__("-ckpt-every-dirty.aot") and not exec.__contains__("-ckpt-loop.aot") and not exec.__contains__("-ckpt-loop-dirty.aot"):
+                elif a==".aot" and not exec.__contains__("-pure.aot") and not exec.__contains__("-stack.aot")and not exec.__contains__("-ckpt-loop-counter.aot") and not exec.__contains__("-ckpt-loop.aot") and not exec.__contains__("-ckpt-loop-dirty.aot"):
                     results_0.append(exec_time)
                     name.append(exec)
     results = list(
@@ -178,120 +176,12 @@ def read_from_csv(filename):
         next(reader)
         results = []
         for row in reader:
-            results.append((row[0], float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6])))
+            results.append((row[0], float(row[1]), float(row[2]), float(row[3]), float(row[5]), float(row[6])))
         return results
-    
-def plot(results):
-    font = {'size': 18}
- 
-    plt.rc('font', **font)
-    workloads = defaultdict(list)
-    for workload,pure, aot, stack,ckpt_every,loop,loop_dirty in results:
-            workloads[
-                workload.replace("OMP_NUM_THREADS=", "")
-                .replace("-g20", "")
-                .replace("-n300", "")
-                .replace(" -f ", "")
-                .replace("-vn300", "")
-                .replace("maze-6404.txt", "")
-                .replace("stories110M.bin", "")
-                .replace("-z tokenizer.bin -t 0.0", "")
-                .strip()
-            ].append(( pure,aot, stack,loop,loop_dirty,ckpt_every))
-
-    statistics = {}
-    for workload, times in workloads.items():
-        pures,aots, stacks,loops,loop_dirtys,ckpt_everys= zip(*times)
-        statistics[workload] = {
-            "pure_median": np.median(pures),
-            "aot_median": np.median(aots),
-            "loop_median" :np.median(loops),
-            "loop_dirty_median" :np.median(loop_dirtys),
-            "ckpt_every_median" :np.median(ckpt_everys),
-            "stack_median": np.median(stacks),
-            "pure_std": np.std(pures),
-            "aot_std": np.std(aots),
-            "loop_std" :np.std(loops),
-            "loop_dirty_std" :np.std(loop_dirtys),
-            "ckpt_every_std" :np.std(ckpt_everys),
-            "stack_std": np.std(stacks),
-        }
-
-    fig, ax = plt.subplots(figsize=(20, 10))
-    index = np.arange(len(statistics))
-    bar_width = 0.7
-
-    for i, (workload, stats) in enumerate(statistics.items()):
-        ax.bar(
-            index[i],
-            stats["ckpt_every_median"],
-            bar_width,
-            yerr=stats["ckpt_every_std"],
-            capsize=5,
-            color="blue",
-            label="ckpt_every" if i == 0 else "",
-        )
-        ax.bar(
-            index[i],
-            stats["loop_dirty_median"],
-            bar_width,
-            yerr=stats["loop_dirty_std"],
-            capsize=5,
-            color="red",
-            label="loop_dirty" if i == 0 else "",
-        )
-        ax.bar(
-            index[i],
-            stats["loop_median"],
-            bar_width,
-            yerr=stats["loop_std"],
-            capsize=5,
-            color="brown",
-            label="loop" if i == 0 else "",
-        )
-        ax.bar(
-            index[i],
-            stats["stack_median"],
-            bar_width,
-            yerr=stats["stack_std"],
-            capsize=5,
-            color="purple",
-            label="stack" if i == 0 else "",
-        )
-        ax.bar(
-            index[i],
-            stats["aot_median"],
-            bar_width,
-            yerr=stats["aot_std"],
-            capsize=5,
-            color="cyan",
-            label="aot" if i == 0 else "",
-        )
-        ax.bar(
-            index[i],
-            stats["pure_median"],
-            bar_width,
-            yerr=stats["pure_std"],
-            capsize=5,
-            color="green",
-            label="pure" if i == 0 else "",
-        )
-        # ax.set_xlabel(workload)
-    ticklabel = (x for x in list(statistics.keys()))
-    print(statistics.keys())
-    ax.set_xticks(index)
-
-    ax.set_xticklabels(ticklabel,fontsize =10)
-    ax.set_ylabel("Execution time (s)")
-    ax.legend()
-
-    # add text at upper left
-    ax.legend(loc="upper right")
-
-    plt.savefig("performance_singlethread.pdf")
 
 if __name__ == "__main__":
-#    mvvm_results = run_mvvm()
-#   write_to_csv("policy.csv")
+    mvvm_results = run_mvvm()
+    write_to_csv("policy.csv")
     mvvm_results = read_from_csv("policy.csv")
-    plot(mvvm_results)
+    plot(mvvm_results, "policy_singlethread.pdf")
+    print(calculate_averages(mvvm_results))

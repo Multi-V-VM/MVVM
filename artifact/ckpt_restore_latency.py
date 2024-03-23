@@ -388,13 +388,13 @@ def plot(result, file_name="ckpt_restore_latency.pdf"):
 def plot_whole(
     result_mvvm, result_criu, result_qemu, file_name="ckpt_restore_latency_whole.pdf"
 ):
-    font = {"size": 18}
+    font = {"size": 20}
 
     plt.rc("font", **font)
     workloads = defaultdict(list)
     for workload, snapshot, recovery in result_mvvm:
         workloads[
-            workload.replace("OMP_NUM_THREADS=", "")
+            workload.replace("OMP_NUM_THREADS=2", "").replace("OMP_NUM_THREADS=4", "").replace("hdastar", "hda").replace("stories15M.bin", "")
             .replace("-g15", "")
             .replace("-n300", "")
             .replace(" -f ", "")
@@ -408,7 +408,7 @@ def plot_whole(
     workloads_criu = defaultdict(list)
     for workload, snapshot, recovery in result_criu:
         workloads_criu[
-            workload.replace("OMP_NUM_THREADS=", "")
+            workload.replace("OMP_NUM_THREADS=2", "").replace("OMP_NUM_THREADS=4", "").replace("hdastar", "hda").replace("stories15M.bin", "")
             .replace("-g15", "")
             .replace("-n300", "")
             .replace(" -f ", "")
@@ -422,7 +422,7 @@ def plot_whole(
     workloads_qemu = defaultdict(list)
     for workload, snapshot, recovery in result_qemu:
         workloads_qemu[
-            workload.replace("OMP_NUM_THREADS=", "")
+            workload.replace("OMP_NUM_THREADS=2", "").replace("OMP_NUM_THREADS=4", "").replace("hdastar", "hda").replace("stories15M.bin", "")
             .replace("-g15", "")
             .replace("-n300", "")
             .replace(" -f ", "")
@@ -456,7 +456,7 @@ def plot_whole(
     # Plotting
     fig, ax = plt.subplots(figsize=(15, 7))
     # Define the bar width and positions
-    bar_width = 0.7 / 5
+    bar_width = 0.7 / 4
     index = np.arange(len(statistics))
 
     # Plot the bars for each workload
@@ -524,7 +524,7 @@ def plot_whole(
     ax.set_ylabel("Time")
     ax.set_xticks(index + bar_width / 2)
     ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
-    ax.set_xticklabels(ticklabel, fontsize=10)
+    ax.set_xticklabels(ticklabel, fontsize=20)
     ax.legend()
 
     # Show the plot
@@ -542,12 +542,12 @@ if __name__ == "__main__":
     # print(len(arg), len(cmd), len(envs))
     # criu_result = run_criu()
     # write_to_csv(criu_result, "ckpt_restore_latency_criu.csv")
-    # plot(criu_result, "ckpt_restore_latency_criu.pdf")
+    # # plot(criu_result, "ckpt_restore_latency_criu.pdf")
     # qemu_result = run_qemu()
     # write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
     mvvm_result = read_from_csv("ckpt_restore_latency.csv")
     criu_result = read_from_csv("ckpt_restore_latency_criu.csv")
-    # print(criu_result)
+    print(criu_result)
     qemu_result = read_from_csv("ckpt_restore_latency_qemu.csv")
     plot_whole(mvvm_result, criu_result, qemu_result)
     # plot_qemu(results, "ckpt_restore_latency_qemu.pdf")
