@@ -240,9 +240,8 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
         uint32 argv[3];
         argv[0] = buffer_for_wasm; // pass the buffer_ address for WASM space
         argv[1] = option; // the size of buffer_
-        argv[2] = 15; // the size of buffer_
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
-        wasm_runtime_call_wasm(exec_env, func, 3, argv);
+        wasm_runtime_call_wasm(exec_env, func, 2, argv);
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
         return ((int)argv[0]);
     }
@@ -339,6 +338,7 @@ int WAMRInstance::invoke_preopen(uint32 fd, const std::string &path) {
     if (buffer_for_wasm != 0) {
         uint32 argv[3];
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
+        buffer_[path.size()] = '\0';
         argv[0] = fd; // pass the buffer_ address for WASM space
         argv[1] = buffer_for_wasm; // the size of buffer_
         argv[2] = 102; // O_RW | O_CREATE
@@ -506,8 +506,9 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 
     argptr = (ThreadArgs **)malloc(sizeof(void *) * execEnv.size());
     set_wasi_args(execEnv.front()->module_inst.wasi_ctx);
-
+    instantiate();
     this->time = std::chrono::high_resolution_clock::now();
+    invoke_init_c();
 
     restore(execEnv.front(), cur_env);
     if (tid_start_arg_map.find(execEnv.back()->cur_count) != tid_start_arg_map.end()) {
@@ -526,7 +527,10 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 
     main_env->restore_call_chain = nullptr;
 
-//    invoke_init_c();
+//    std::string path = "./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848156.474862.png";
+//    invoke_fopen( path,4);
+//    path = "./rgbd_dataset_freiburg3_long_office_household_validation/depth";
+//    invoke_fopen( path,5);
 #if WASM_ENABLE_LIB_PTHREAD != 0
     spawn_child(main_env, true);
 #endif

@@ -34,14 +34,14 @@ elseif (LINUX)
     set(WAMR_BUILD_LIB_PTHREAD_SEMAPHORE 1)
     set(WAMR_BUILD_LIB_WASI_THREADS 1)
     set(WAMR_BUILD_THREAD_MGR 1)
-    set(BLAS_LIBRARIES -lopenblas)
+    set(BLAS_LIBRARIES -lopenblas -libverbs -lrdmacm)
     find_path(BLAS_INCLUDE_DIRS cblas.h
             /usr/include
             /usr/local/include
             /opt/OpenBLAS/include/
             $ENV{BLAS_HOME}/include)
     message(${BLAS_INCLUDE_DIRS})
-    set(WIN_EXTRA_LIBS ibverbs rdmacm)
+    # set(WIN_EXTRA_LIBS ibverbs rdmacm)
 else ()
     set(WAMR_BUILD_PLATFORM "windows")
     set(WAMR_BUILD_LIB_PTHREAD 1)

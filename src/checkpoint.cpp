@@ -91,8 +91,11 @@ int main(int argc, char *argv[]) {
     }
     register_sigtrap();
     register_sigint();
+    for (int i =0; i<10;i++)
+        fopen("checkpoint.log", "w"); // open naive file for bubble
     if (offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+
 #ifndef _WIN32
 #if __linux__
     else if (rdma)
@@ -104,9 +107,9 @@ int main(int argc, char *argv[]) {
     wamr = new WAMRInstance(target.c_str(), is_jit);
     wamr->set_wasi_args(dir, map_dir, env, arg, addr, ns_pool);
     wamr->instantiate();
-    wamr->get_int3_addr();
-    wamr->replace_int3_with_nop();
-    wamr->replace_mfence_with_nop();
+    // wamr->get_int3_addr();
+    // wamr->replace_int3_with_nop();
+    // wamr->replace_mfence_with_nop();
 
     // get current time
     auto start = std::chrono::high_resolution_clock::now();

@@ -912,7 +912,7 @@ def run_qemu_aarch64(
 
 if __name__ == "__main__":
     print(get_func_index("$recv ", "./test/tcp_client.wasm"))
-    print(get_func_index("__wasi_fd_read", "./test/read-file.wasm"))
+    print(get_func_index("printf", "./test/read-file.wasm"))
     print(get_func_index("sendto", "./test/client.wasm"))
     print(get_func_index("atomic_wait", "./bench/hdastar.wasm"))
     plot_whole(["policy.csv", "policy_multithread.csv", "policy_mac.csv"], "policy.pdf")
