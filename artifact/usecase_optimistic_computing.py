@@ -7,7 +7,7 @@ import numpy as np
 from collections import defaultdict
 import sys
 
-ip = ["128.114.53.32", "128.114.59.234"]
+ip = ["192.168.0.24", "192.168.0.23"]
 port = 12346
 new_port = 12353
 
@@ -20,8 +20,8 @@ folder = [
     "gapbs",
 ]
 arg = [
-    ["-g10", "-n100000"],
-    ["-g10", "-n1000000"],
+    ["-g20", "-n100"],
+    ["-g20", "-n1000"],
 ]
 envs = [
     "OMP_NUM_THREADS=1",
@@ -84,8 +84,8 @@ def get_snapshot_overhead():
                 aot,
                 arg[i],
                 envs[i],
-                f"-o {ip[1]} -s {port}",
-                f"-i {ip[1]} -e {port}",
+                f"-o {ip[1]} -s {port} -r",
+                f"-i {ip[1]} -e {port} -r",
             )
 
             for exec, output in results1:
@@ -110,9 +110,9 @@ def get_optimiztic_compute_overhead():
         aot1,
         arg[1],
         envs[0],
-        f"-o {ip[1]} -s {port}",
-        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port}",
-        f"-i {ip[0]} -e {new_port}",
+        f"-o {ip[1]} -s {port} -r",
+        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port} -r",
+        f"-i {ip[0]} -e {new_port} -r",
     )
     return results1
 
@@ -482,10 +482,10 @@ if __name__ == "__main__":
     # # plot skew
     # write_to_csv("optimisitc_computing.csv")
 
-    results = read_from_csv("optimistic_computing.csv")
+    # results = read_from_csv("optimistic_computing.csv")
 
-    plot(results)
-    # reu = get_optimiztic_compute_overhead()
+    # plot(results)
+    reu = get_optimiztic_compute_overhead()
     # with open("optimistic.txt", "w") as f:
     #     f.write(str(reu))
     reu = ""

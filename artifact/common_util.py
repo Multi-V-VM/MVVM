@@ -8,9 +8,10 @@ from collections import defaultdict
 import csv
 
 pwd_mac = "/Users/victoryang00/Documents/project/MVVM-bench/"
-pwd = "/mnt1/MVVM"
-slowtier = "epyc"
+pwd = "/mnt/MVVM"
+slowtier = "giga-root"
 burst = "mac"
+energy = "bana"
 
 
 def calculate_averages_comparison(results):
@@ -599,6 +600,7 @@ def run_checkpoint_restore_burst_overhead(
     return res
 
 
+
 def run_checkpoint_restore_slowtier_overhead(
     aot_file: str,
     arg: list[str],
@@ -662,25 +664,21 @@ def run_checkpoint_restore_slowtier(
     os.system(
         f"script -q /dev/null -c 'ssh -t {slowtier} {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file1} {extra2}' >> MVVM_restore.1.out &"
     )
-    os.system(
-        f"ssh -t {slowtier} {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore &"
-    )
     # print(f"ssh -t {slowtier} bash -c 'cd {pwd}/build && {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore' &")
     os.system(
         f"script -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.out &"
     )
-    os.system(f"../artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore &")
 
     os.system("sleep 15")
     os.system(
-        f"../artifact/run_with_cpu_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} &"
+        f"./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} &"
     )
     os.system("sleep 10")
     os.system(f"pkill -SIGINT -f MVVM_checkpoint")
     os.system("mv MVVM_checkpoint.out MVVM_checkpoint.1.out")
     os.system("mv MVVM_checkpoint.ps.out MVVM_checkpoint.ps.1.out")
     os.system(
-        f"../artifact/run_with_cpu_monitoring.sh ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
+        f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
     )
     os.system(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
 
@@ -703,10 +701,66 @@ def run_checkpoint_restore_slowtier(
     res.append((exec, output))
     return res
 
-
 def exec_with_log(cmd):
     print(cmd)
     os.system(cmd)
+    
+def run_checkpoint_restore_outrage(
+    aot_file: str,
+    arg: list[str],
+    env: str,
+    time:int,
+    time1:int,
+    time2:int,
+    extra1: str = "",
+    extra2: str = "",
+    extra3: str = "",
+    extra4: str = "",
+):
+    # Execute run_checkpoint and capture its result
+    res = []
+    exec_with_log("rm ./*.out")
+    exec_with_log("pkill MVVM_checkpoint")
+    exec_with_log("pkill MVVM_restore")
+    exec_with_log(f"ssh -t {energy} pkill MVVM_checkpoint")
+    exec_with_log(f"ssh -t {energy} pkill MVVM_restore")
+    exec_with_log(f"ssh -t {slowtier} pkill MVVM_checkpoint")
+    exec_with_log(f"ssh -t {slowtier} pkill MVVM_restore")
+    exec_with_log(f"ssh -t {energy} rm {pwd}/build/*.out")
+    exec_with_log(f"ssh -t {slowtier} rm {pwd}/build/*.out")
+    # Execute run_restore with the same arguments (or modify as needed)
+    exec_with_log(
+        f"script -f -q /dev/null -c 'ssh -t {energy} ./MVVM_restore -t ./bench/{aot_file} {extra2}' >> MVVM_restore.1.out &"
+    )
+    exec_with_log(
+       f"script -f -q /dev/null -c 'ssh -t {slowtier} ./MVVM_restore -t ./bench/{aot_file} {extra3}' >> MVVM_restore.2.out &"
+    )
+    exec_with_log(
+       f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra4}' >> MVVM_restore.3.out &"
+    )
+    exec_with_log(f"sleep {time}")
+    exec_with_log(
+        f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra1} > MVVM_checkpoint.0.out &"
+    )
+    exec_with_log(f"sleep {time1}")
+    exec_with_log(f"ssh -t {energy} pkill -SIGINT MVVM_restore")
+    exec_with_log(f"sleep {time2}")
+    exec_with_log(f"ssh -t {slowtier} pkill -SIGINT MVVM_restore")
+    exec_with_log(f"sleep 100")
+    
+    exec_with_log(f"scp {burst}:{pwd}/build/*.*.out ./")
+    cmd = f"cat ./MVVM_checkpoint.0.out ./MVVM_checkpoint.1.out ./MVVM_restore.0.out ./MVVM_restore.1.out ./MVVM_restore.2.out ./MVVM_restore.3.out ./MVVM_restore.4.out ./MVVM_restore.5.out ./MVVM_restore.6.out"
+    cmd = cmd.split()
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        output = result.stdout.decode("utf-8")
+    except:
+        output = result.stdout
+
+    exec = " ".join([env] + [aot_file] + arg)
+    res.append((exec, output))
+    return res
+
 
 
 def run_checkpoint_restore_burst(
