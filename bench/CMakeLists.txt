@@ -9,30 +9,30 @@ else ()
 endif ()
 
 include(ExternalProject)
-ExternalProject_Add(ORB_SLAM2
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
-        UPDATE_COMMAND ""
-        PATCH_COMMAND ""
-        CONFIGURE_COMMAND ${CMAKE_COMMAND}
-        -DCMAKE_BUILD_TYPE=Release
-        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
-        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
-        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
-        ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
-        BUILD_COMMAND ${CMAKE_COMMAND} --build .
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./rgbd_tum ${CMAKE_CURRENT_BINARY_DIR}/rgbd_tum.wasm
-)
-ExternalProject_Add(ORB_SLAM2-native
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
-        UPDATE_COMMAND ""
-        PATCH_COMMAND ""
-        CONFIGURE_COMMAND ${CMAKE_COMMAND}
-        -DCMAKE_BUILD_TYPE=Release
-        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
-        ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
-        BUILD_COMMAND ${CMAKE_COMMAND} --build .
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./rgbd_tum ${CMAKE_CURRENT_BINARY_DIR}/rgbd_tum
-)
+# ExternalProject_Add(ORB_SLAM2
+#         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
+#         UPDATE_COMMAND ""
+#         PATCH_COMMAND ""
+#         CONFIGURE_COMMAND ${CMAKE_COMMAND}
+#         -DCMAKE_BUILD_TYPE=Release
+#         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+#         -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk-pthread.cmake
+#         -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+#         ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
+#         BUILD_COMMAND ${CMAKE_COMMAND} --build .
+#         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./rgbd_tum ${CMAKE_CURRENT_BINARY_DIR}/rgbd_tum.wasm
+# )
+# ExternalProject_Add(ORB_SLAM2-native
+#         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
+#         UPDATE_COMMAND ""
+#         PATCH_COMMAND ""
+#         CONFIGURE_COMMAND ${CMAKE_COMMAND}
+#         -DCMAKE_BUILD_TYPE=Release
+#         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+#         ${CMAKE_CURRENT_SOURCE_DIR}/ORB_SLAM2
+#         BUILD_COMMAND ${CMAKE_COMMAND} --build .
+#         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./rgbd_tum ${CMAKE_CURRENT_BINARY_DIR}/rgbd_tum
+# )
 ExternalProject_Add(gapbs
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gapbs
         UPDATE_COMMAND ""
@@ -169,29 +169,29 @@ ExternalProject_Add(llama-native
         BUILD_COMMAND ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./llama ${CMAKE_CURRENT_BINARY_DIR}/llama
 )
-ExternalProject_Add(linpack
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/linpack
-        UPDATE_COMMAND ""
-        PATCH_COMMAND ""
-        CONFIGURE_COMMAND ${CMAKE_COMMAND}
-        -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
-        -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk.cmake
-        -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
-        ${CMAKE_CURRENT_SOURCE_DIR}/linpack
-        BUILD_COMMAND ${CMAKE_COMMAND} --build .
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./linpack ${CMAKE_CURRENT_BINARY_DIR}/linpack.wasm
-)
-ExternalProject_Add(linpack-native
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/linpack
-        UPDATE_COMMAND ""
-        PATCH_COMMAND ""
-        CONFIGURE_COMMAND ${CMAKE_COMMAND}
-        -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
-        ${CMAKE_CURRENT_SOURCE_DIR}/linpack
-        BUILD_COMMAND ${CMAKE_COMMAND} --build .
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./linpack ${CMAKE_CURRENT_BINARY_DIR}/linpack
-)
+# ExternalProject_Add(linpack
+#         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/linpack
+#         UPDATE_COMMAND ""
+#         PATCH_COMMAND ""
+#         CONFIGURE_COMMAND ${CMAKE_COMMAND}
+#         -GNinja -DWASI_SDK_DIR=${WASI_SDK} -DWASI_SDK_PREFIX=${WASI_SDK}
+#         -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK}/share/cmake/wasi-sdk.cmake
+#         -DCMAKE_BUILD_TYPE=Release
+#         -DCMAKE_SYSROOT=${WASI_SDK}/share/wasi-sysroot -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+#         ${CMAKE_CURRENT_SOURCE_DIR}/linpack
+#         BUILD_COMMAND ${CMAKE_COMMAND} --build .
+#         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./linpack ${CMAKE_CURRENT_BINARY_DIR}/linpack.wasm
+# )
+# ExternalProject_Add(linpack-native
+#         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/linpack
+#         UPDATE_COMMAND ""
+#         PATCH_COMMAND ""
+#         CONFIGURE_COMMAND ${CMAKE_COMMAND}
+#         -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
+#         ${CMAKE_CURRENT_SOURCE_DIR}/linpack
+#         BUILD_COMMAND ${CMAKE_COMMAND} --build .
+#         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ./linpack ${CMAKE_CURRENT_BINARY_DIR}/linpack
+# )
 ExternalProject_Add(hdastar
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/hdastar
         UPDATE_COMMAND ""
@@ -218,6 +218,17 @@ ExternalProject_Add(hdastar-native
 )
 
 if (WAMR_BUILD_AOT)
+    function(bench_wamr_app_compile_opt_counter input counter)
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot
+                COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${input}-pure.aot.simple_func ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot.simple_func.opt
+                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc
+                --checkpoint-freq=${counter} --disable-aux-stack-check --enable-counter-loop-checkpoint
+                -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm ${CMAKE_CURRENT_BINARY_DIR}/${input}-pure.aot
+        )
+        add_custom_target(${input}_ckpt_loop_counter_${counter}_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot)
+    endfunction()
+
     function(bench_wamr_app input)
         add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-pure.aot
                 COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-pure.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
@@ -225,35 +236,62 @@ if (WAMR_BUILD_AOT)
         )
         add_custom_target(${input}_pure_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-pure.aot)
 
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-stack-opt.aot
+                COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${input}-pure.aot.simple_func ${CMAKE_CURRENT_BINARY_DIR}/${input}-stack-opt.aot.simple_func.opt
+                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-dump-call-stack -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-stack-opt.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm ${CMAKE_CURRENT_BINARY_DIR}/${input}-pure.aot
+        )
+        add_custom_target(${input}_stack_opt_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-stack-opt.aot)
+
         add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-stack.aot
                 COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-dump-call-stack -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-stack.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
                 DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
         )
-        add_custom_target(${input}_stack_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-stack.aot)
+        add_custom_target(${input}_stack_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-stack.aot)
 
-        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot
-                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-func.aot
+                COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${input}-pure.aot.simple_func ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-func.aot.simple_func.opt
+                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc
+                        --disable-aux-stack-check --enable-checkpoint
+                        -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-func.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm ${CMAKE_CURRENT_BINARY_DIR}/${input}-pure.aot
         )
-        add_custom_target(${input}_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
+        add_custom_target(${input}_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-func.aot)
 
-        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot
-                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-loop-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        bench_wamr_app_compile_opt_counter(${input} 2)
+        bench_wamr_app_compile_opt_counter(${input} 16)
+        bench_wamr_app_compile_opt_counter(${input} 256)
+        bench_wamr_app_compile_opt_counter(${input} 65536)
+        bench_wamr_app_compile_opt_counter(${input} 1048576)
+        add_custom_target(
+                ${input}_bench_compile
+                DEPENDS ${input}_pure_compile
+                        ${input}_stack_opt_compile
+                        ${input}_compile
+                        ${input}_ckpt_loop_counter_2_compile
+                        ${input}_ckpt_loop_counter_16_compile 
+                        ${input}_ckpt_loop_counter_256_compile
+                        ${input}_ckpt_loop_counter_65536_compile
+                        ${input}_ckpt_loop_counter_1048576_compile
         )
-        add_custom_target(${input}_ckpt_loop_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot)
 
-        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot
-                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-loop-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-        )
-        add_custom_target(${input}_ckpt_loop_dirty_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot)
+        # add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot
+        #         COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-loop-checkpoint -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        #         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        # )
+        # add_custom_target(${input}_ckpt_loop_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop.aot)
 
-        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot
-                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-every-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-        )
-        add_custom_target(${input}_ckpt_every_dirty_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot)
+        # add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot
+        #         COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-loop-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        #         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        # )
+        # add_custom_target(${input}_ckpt_loop_dirty_compile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot)
+
+        # add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot
+        #         COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc --disable-aux-stack-check --enable-every-checkpoint --enable-aux-stack-dirty-bit -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        #         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+        # )
+        # add_custom_target(${input}_ckpt_every_dirty_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-every-dirty.aot)
 
         add_test(NAME bench_${input}_checkpoint COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_checkpoint --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
         add_test(NAME bench_${input}_restore COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../MVVM_restore --target ${CMAKE_CURRENT_BINARY_DIR}/${input}.aot)
@@ -277,8 +315,8 @@ if (WAMR_BUILD_AOT)
     bench_wamr_app(lu)
     bench_wamr_app(mg)
     bench_wamr_app(sp)
-    bench_wamr_app(linpack)
-    bench_wamr_app(rgbd_tum)
+#     bench_wamr_app(linpack)
+#     bench_wamr_app(rgbd_tum)
     bench_wamr_app(llama)
     bench_wamr_app(hdastar)
 endif ()
