@@ -7,7 +7,7 @@ from common_util import parse_time, parse_time_no_msec, get_avg_99percent
 from collections import defaultdict
 import subprocess
 
-ip = ["128.114.53.32", "128.114.59.134"]
+ip = ["192.168.0.24", "192.168.0.23"]
 port = 12347
 port2 = 12346
 new_port = 1235
@@ -27,7 +27,7 @@ arg = [
     [
         "./ORBvoc.txt",
         "./TUM3.yaml",
-        "./",
+        "./rgbd_dataset_freiburg3_long_office_household_validation",
         "./associations/fr3_office_val.txt",
     ],
 ]
@@ -263,8 +263,10 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
                 # print("exec_time ",exec_time[-1])
             if line.__contains__("ttrack"):
                 to_append = float(line.split(" ")[-1].replace("\\r", ""))
+                # print(exec_time)
+                # print("exec_time ",exec_time[-1])
                 if to_append > 0:
-                    exec_time[state].append(to_append + 1)
+                    exec_time[state].append(to_append)
             if line.__contains__("Snapshot "):
                 # print("line ", line)
                 time.append(
@@ -277,11 +279,11 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
                 time.append(parse_time(line.split(" ")[1].replace("]", "")))
                 print("time ", time)
                 state += 1
-        except:
+        except :
             print(line)
     # print(exec_time)
     # print(exec_time1)
-    # # print(time)
+    # print(time)
     # record time
     fig, ax = plt.subplots()
     base = time[0] - sum(exec_time[0])
@@ -299,7 +301,9 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
         time_spots.pop(to_pop)
         if idx != len(exec_time) - 1:
             time_spots.append(time[idx + 1] - sum(exec_time[idx + 1]) - base)
-
+    print(len(time))
+    print(len(exec_time1))
+    print(len(exec_time))
     time_spots1 = [time[5] - sum(exec_time1[0]) - base]
 
     for idx, i in enumerate(exec_time1):
@@ -310,8 +314,9 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
             # Append the new time spot to the sequence
             time_spots1.append(new_time_spot)
         time_spots1.pop(to_pop)
-        if idx != len(exec_time1) - 1:
-            time_spots1.append(time[idx + 6] - sum(exec_time1[idx + 1]) - base)
+        print(idx, len(exec_time1) - 1, len(time) - 1, len(time_spots1) - 1)
+        if idx != len(exec_time1) -1:
+            time_spots1.append(time[idx + 6] - sum(exec_time1[idx+1]) - base)
     avg_extended, percentile99_extended = get_avg_99percent(sum_aot)
     avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(sum_aot1)
     ax.plot(time_spots, avg_extended, "blue")
@@ -445,64 +450,64 @@ if __name__ == "__main__":
     reu = ""
     with open("burst.txt", "r") as f:
         reu = f.read()
-    with open("MVVM_checkpoint.ps.1.out") as f:
-        checkpoint1 = f.read()
-    with open("MVVM_checkpoint.ps.out") as f:
-        checkpoint = f.read()
-    with open("MVVM_restore.ps.6.out") as f:
-        restore6 = f.read()
-    with open("MVVM_restore.ps.5.out") as f:
-        restore5 = f.read()
-    with open("MVVM_restore.ps.4.out") as f:
-        restore4 = f.read()
-    with open("MVVM_restore.ps.3.out") as f:
-        restore3 = f.read()
-    with open("MVVM_restore.ps.2.out") as f:
-        restore2 = f.read()
-    with open("MVVM_restore.ps.1.out") as f:
-        restore1 = f.read()
-    with open("MVVM_restore.ps.out") as f:
-        restore = f.read()
+    # with open("MVVM_checkpoint.ps.1.out") as f:
+    #     checkpoint1 = f.read()
+    # with open("MVVM_checkpoint.ps.out") as f:
+    #     checkpoint = f.read()
+    # with open("MVVM_restore.ps.6.out") as f:
+    #     restore6 = f.read()
+    # with open("MVVM_restore.ps.5.out") as f:
+    #     restore5 = f.read()
+    # with open("MVVM_restore.ps.4.out") as f:
+    #     restore4 = f.read()
+    # with open("MVVM_restore.ps.3.out") as f:
+    #     restore3 = f.read()
+    # with open("MVVM_restore.ps.2.out") as f:
+    #     restore2 = f.read()
+    # with open("MVVM_restore.ps.1.out") as f:
+    #     restore1 = f.read()
+    # with open("MVVM_restore.ps.out") as f:
+    #     restore = f.read()
 
-    with open("MVVM_checkpoint.energy.1.out") as f:
-        checkpoint_energy1 = f.read()
-    with open("MVVM_checkpoint.energy.out") as f:
-        checkpoint_energy = f.read()
-    with open("MVVM_restore.energy.6.out") as f:
-        restore_energy6 = f.read()
-    with open("MVVM_restore.energy.5.out") as f:
-        restore_energy5 = f.read()
-    with open("MVVM_restore.energy.4.out") as f:
-        restore_energy4 = f.read()
-    with open("MVVM_restore.energy.3.out") as f:
-        restore_energy3 = f.read()
-    with open("MVVM_restore.energy.2.out") as f:
-        restore_energy2 = f.read()
-    with open("MVVM_restore.energy.1.out") as f:
-        restore_energy1 = f.read()
-    with open("MVVM_restore.energy.out") as f:
-        restore_energy = f.read()
+    # with open("MVVM_checkpoint.energy.1.out") as f:
+    #     checkpoint_energy1 = f.read()
+    # with open("MVVM_checkpoint.energy.out") as f:
+    #     checkpoint_energy = f.read()
+    # with open("MVVM_restore.energy.6.out") as f:
+    #     restore_energy6 = f.read()
+    # with open("MVVM_restore.energy.5.out") as f:
+    #     restore_energy5 = f.read()
+    # with open("MVVM_restore.energy.4.out") as f:
+    #     restore_energy4 = f.read()
+    # with open("MVVM_restore.energy.3.out") as f:
+    #     restore_energy3 = f.read()
+    # with open("MVVM_restore.energy.2.out") as f:
+    #     restore_energy2 = f.read()
+    # with open("MVVM_restore.energy.1.out") as f:
+    #     restore_energy1 = f.read()
+    # with open("MVVM_restore.energy.out") as f:
+    #     restore_energy = f.read()
 
     plot_time(
         reu,
-        # None,
-        # None,
-        # None,
-        # None,
-        [
-            checkpoint_energy,
-            restore_energy,
-            restore_energy1,
-            restore_energy3,
-            restore_energy2,
-        ],
-        [checkpoint1, restore3, restore4, restore5, restore6],
-        [
-            checkpoint_energy1,
-            restore_energy3,
-            restore_energy4,
-            restore_energy5,
-            restore_energy6,
-        ],
-        [checkpoint1, restore3, restore4, restore5, restore6],
+        None,
+        None,
+        None,
+        None,
+        # [
+        #     checkpoint_energy,
+        #     restore_energy,
+        #     restore_energy1,
+        #     restore_energy3,
+        #     restore_energy2,
+        # ],
+        # [checkpoint1, restore3, restore4, restore5, restore6],
+        # [
+        #     checkpoint_energy1,
+        #     restore_energy3,
+        #     restore_energy4,
+        #     restore_energy5,
+        #     restore_energy6,
+        # ],
+        # [checkpoint1, restore3, restore4, restore5, restore6],
     )

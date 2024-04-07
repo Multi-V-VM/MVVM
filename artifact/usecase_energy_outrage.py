@@ -102,7 +102,7 @@ def get_cloud_result(data):
     print(predictions)
 
 # Convert the CSV data to a DataFrame
-    df = pd.read_csv(pd.compat.StringIO(data))
+    df = pd.read_csv(data)
 
     # Convert the 'run_start_time' column to datetime format
     df['run_start_time'] = pd.to_datetime(df['run_start_time'])
@@ -196,8 +196,8 @@ if __name__ == "__main__":
     # write_to_csv("outrage_computing.csv")
 
     time,time1,time2 = get_cloud_result("eaglei_outages_2020.csv")
-    # plot(results)
-    reu = get_eneragy_outrage(time,time1,time2)
+    print(time,time1,time2)
+    reu = get_eneragy_outrage(10,30,40)
     with open("outrage.txt", "w") as f:
         f.write(str(reu))
     reu = ""
