@@ -782,7 +782,18 @@ def run_checkpoint_restore_outrage(
     res.append((exec, output))
     return res
 
+    # Split the command into arguments
+    print(command)
+    args = command.split()
+    # Execute the command and capture the PID
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    pid = process.pid
+    exec_with_log("sleep 1")
+    # Wait for the command to finish and capture the output
+    # stdout, stderr = process.communicate()
 
+    # Return the PID, stdout, and stderr
+    return pid
 
 def run_checkpoint_restore_burst(
     aot_file: str,
@@ -933,6 +944,97 @@ def run_checkpoint_restore_burst(
     # exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_restore")
     # exec_with_log(f"sleep 1000")
     # exec_with_log(f"scp {burst}:{pwd_mac}/build/*.*.out ./")
+    exec_with_log("rm ./*.out")
+    exec_with_log("sudo pkill MVVM_checkpoint")
+    exec_with_log("sudo pkill MVVM_restore")
+    exec_with_log(f"ssh -t {burst} pkill MVVM_checkpoint")
+    exec_with_log(f"ssh -t {burst} pkill MVVM_restore")
+    exec_with_log(f"ssh -t {burst} rm {pwd_mac}/build/*.out")
+    # Execute run_restore with the same arguments (or modify as needed)
+    exec_with_log(
+        f"script -f -q /dev/null -c 'ssh -t {burst} ./MVVM_restore -t ./bench/{aot_file1} {extra2}' >> MVVM_restore.0.out &"
+    )
+    exec_with_log(
+        f"ssh -t {burst} {pwd_mac}/artifact/run_with_energy_monitoring_mac.sh MVVM_restore 0 {aot_file} &"
+    )
+
+    exec_with_log(
+        f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.1.out &"
+    )
+    exec_with_log(
+        f"sudo ../artifact/run_with_energy_monitoring.sh MVVM_restore 1 {aot_file} &"
+    )
+    exec_with_log(
+        f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra7}' >> MVVM_restore.4.out &"
+    )
+    exec_with_log(
+        f"sudo ../artifact/run_with_energy_monitoring.sh MVVM_restore 4 {aot_file1} &"
+    )
+    exec_with_log("sleep 100")
+
+    exec_with_log(
+        f"./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} > MVVM_checkpoint.0.out &"
+    )
+    exec_with_log(
+        f"sudo ../artifact/run_with_energy_monitoring.sh MVVM_checkpoint 0 {aot_file} &"
+    )
+    
+    exec_with_log("sleep 500")
+
+    exec_with_log(
+        f"script -f -q /dev/null -c 'ssh -t {burst}  ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} {extra6}' > MVVM_checkpoint.1.out &"
+    )
+    exec_with_log(
+        f"ssh -t {burst} {pwd_mac}/artifact/run_with_energy_monitoring_mac.sh MVVM_checkpoint 1 {aot_file1} &"
+    )
+    exec_with_log("sleep 20")
+    # exec_with_log(f"ssh -t mac ../artifact/run_with_energy_monitoring_mac.sh MVVM_checkpoint 1 {aot_file} &")
+    exec_with_log(f"pkill -SIGINT MVVM_checkpoint")
+    exec_with_log("sleep 1")
+    exec_with_log(f"pkill -SIGINT MVVM_checkpoint")
+    exec_with_log(f"pkill -SIGINT MVVM_checkpoint")
+    exec_with_log(f"pkill -SIGINT MVVM_checkpoint")
+
+    exec_with_log("sleep 100")
+    exec_with_log(f"ssh -t {burst} kill -SIGINT -f MVVM_checkpoint") # kill 0 and checkpoint 1
+    exec_with_log("sleep 1")
+    exec_with_log(f"ssh -t {burst} kill -SIGINT -f MVVM_restore")
+    
+    exec_with_log("sleep 100")
+    exec_with_log(
+        f"script -f -q /dev/null -c 'ssh -t {burst} ./MVVM_restore -t ./bench/{aot_file1} {extra4}' >> MVVM_restore.2.out &"
+    )
+    exec_with_log(
+        f"ssh -t {burst} {pwd_mac}/artifact/run_with_energy_monitoring_mac.sh MVVM_restore 2 {aot_file} &"
+    )
+    exec_with_log(
+        f"script -f -q /dev/null -c 'ssh -t {burst} ./MVVM_restore -t ./bench/{aot_file} {extra8}' >> MVVM_restore.5.out &"
+    )
+    exec_with_log(
+        f"ssh -t {burst} {pwd_mac}/artifact/run_with_energy_monitoring_mac.sh MVVM_restore 5 {aot_file1} &"
+    )
+
+    exec_with_log("sleep 150")
+    exec_with_log(f"pkill -SIGINT MVVM_restore")
+    exec_with_log(f"sleep 1")
+    exec_with_log(
+        f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra9}' >> MVVM_restore.6.out &"
+    )
+    exec_with_log(
+    f"sudo ../artifact/run_with_energy_monitoring.sh MVVM_restore 6 {aot_file1} &"
+    )
+    exec_with_log(
+        f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra5}' >> MVVM_restore.3.out &"
+    )
+    exec_with_log(
+        f"sudo ../artifact/run_with_energy_monitoring.sh MVVM_restore 3 {aot_file} &"
+    )
+    # Return a combined result or just the checkpoint result as needed
+
+    exec_with_log("sleep 50")
+    exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_restore")
+    exec_with_log(f"sleep 1000")
+    exec_with_log(f"scp {burst}:{pwd_mac}/build/*.*.out ./")
     cmd = f"cat ./MVVM_checkpoint.0.out ./MVVM_checkpoint.1.out ./MVVM_restore.0.out ./MVVM_restore.1.out ./MVVM_restore.2.out ./MVVM_restore.3.out ./MVVM_restore.4.out ./MVVM_restore.5.out ./MVVM_restore.6.out"
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -944,7 +1046,6 @@ def run_checkpoint_restore_burst(
     exec = " ".join([env] + [aot_file] + arg)
     res.append((exec, output))
     return res
-
 
 def run_slowtier(
     aot_file: str, arg: list[str], env: str, extra: str = ""
@@ -1057,3 +1158,6 @@ if __name__ == "__main__":
     print(get_func_index("sendto", "./test/client.wasm"))
     print(get_func_index("atomic_wait", "./bench/hdastar.wasm"))
     plot_whole(["policy.csv", "policy_multithread.csv", "policy_mac.csv"], "policy.pdf")
+    # read_csv_from_file("policy.csv")
+    
+    calculate_averages_comparison()

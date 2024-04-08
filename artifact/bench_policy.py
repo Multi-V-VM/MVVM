@@ -294,4 +294,5 @@ if __name__ == "__main__":
 #    mvvm_results = run_mvvm()
 #   write_to_csv("policy.csv")
     mvvm_results = read_from_csv("policy.csv")
-    plot(mvvm_results)
+    # plot(mvvm_results)
+    print(calcualte_averages(mvvm_results)

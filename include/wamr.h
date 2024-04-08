@@ -92,7 +92,11 @@ std::string removeExtension(std::string &);
 bool is_ip_in_cidr(const char *base_ip, int subnet_mask_len, uint32_t ip);
 bool is_ipv6_in_cidr(const char *base_ip_str, int subnet_mask_len, struct in6_addr *ip);
 long get_rss();
-
+#define NUM_CHA_COUNTERS 4
+#define NUM_TILE_ENABLED 24
+#define EPOCHS 1
+#define LOOP_NUM 64 * 1024 * 1024
+#define MSRFLIENAME "/dev/cpu/0/msr"
 class WAMRInstance {
 public:
     WASMExecEnv *cur_env{};
@@ -101,6 +105,14 @@ public:
     WASMModuleCommon *module;
     WASMFunctionInstanceCommon *func{};
 
+uint64_t cha_perfevtsel[NUM_CHA_COUNTERS];
+long cha_counts[NUM_TILE_ENABLED][NUM_CHA_COUNTERS][2]; // 28 tiles per socket, 4 counters per tile, 2 times (before
+                                                        // and after)
+uint64_t counters_changes[NUM_TILE_ENABLED];
+uint64_t core2cha_map[NUM_TILE_ENABLED];
+long max_diff{};
+int fd;
+long msr_val;
     std::string aot_file_path{};
     std::string wasm_file_path{};
     std::condition_variable int3_cv{};
@@ -155,6 +167,7 @@ public:
     bool get_int3_addr();
     bool replace_int3_with_nop();
     bool replace_mfence_with_nop();
+    long get_inst_diff();
     bool replace_nop_with_int3();
     void replay_sync_ops(bool, wasm_exec_env_t);
     WASMFunction *get_func();

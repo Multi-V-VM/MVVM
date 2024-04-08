@@ -499,9 +499,10 @@ void segfault_handler(int sig) {
 void sigtrap_handler(int sig) {
     // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     auto exec_env = wamr->get_exec_env();
-    // if (sig == SIGSEGV) {
-    //     serialize_to_file(exec_env);
-    // }
+    wamr->get_inst_diff();
+    if (sig == SIGSEGV) {
+        serialize_to_file(exec_env);
+    }
 //    print_exec_env_debug_info(exec_env);
 //    print_memory(exec_env);
 #if defined(_WIN32)
@@ -565,7 +566,6 @@ void sigint_handler(int sig) {
     wamr->int3_ul = std::unique_lock(wamr->int3_mtx);
     wamr->replace_nop_with_int3();
     wamr->int3_cv.notify_all();
-
     register_sigtrap();
 }
 void register_sigint() {

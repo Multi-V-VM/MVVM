@@ -9,19 +9,32 @@ cmd = [
     "linpack",
     "llama",
     "rgbd_tum",
+    "bc",
+    "bfs",
+    "cc",
+    "cc_sv",
+    "pr",
+    "pr_spmv",
+    "sssp",
     "bt",
     "cg",
     "ft",
     "lu",
     "mg",
-    "sp",
     "redis",
-    "hdastar",
+    "hdastar"
 ]
 folder = [
     "linpack",
     "llama",
-    "ORB_SLAM2",
+    "ORB_SLAM2"
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
+    "gapbs",
     "nas",
     "nas",
     "nas",
@@ -29,12 +42,19 @@ folder = [
     "nas",
     "nas",
     "redis",
-    "hdastar",
+    "hdastar"
 ]
 arg = [
     [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
+    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
+    ["-g20","-n1"],
+    ["-g20","-n1"],
+    ["-g20","-n1"],
+    ["-g20","-n1"],
+    ["-g20","-n1"],
+    ["-g20","-n1"],
+    ["-g20","-n1"],
     [],
     [],
     [],
@@ -42,7 +62,7 @@ arg = [
     [],
     [],
     [],
-    ["maze-6404.txt", "8"],
+    ["maze-6404.txt", "8"]
 ]
 envs = [
     "a=b",
@@ -54,8 +74,15 @@ envs = [
     "OMP_NUM_THREADS=1",
     "OMP_NUM_THREADS=1",
     "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
     "a=b",
-    "a=b",
+    "a=b"
 ]
 pool = Pool(processes=20)
 
@@ -260,9 +287,9 @@ def write_to_csv(filename):
                 [
                     row[0],
                     row[1],
-                    hcontainer_results[idx][1],
-                    qemu_x86_64_results[idx][1],
-                    qemu_aarch64_results[idx][1],
+                    # hcontainer_results[idx][1],
+                    # qemu_x86_64_results[idx][1],
+                    # qemu_aarch64_results[idx][1],
                     native_results[idx][1],
                 ]
             )
@@ -272,7 +299,7 @@ def read_from_csv(filename):
         next(reader)
         results = []
         for row in reader:
-            results.append((row[0], float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5])))
+            results.append((row[0], float(row[1]),float(row[2])))
         return results
 
 def plot(results):
@@ -280,7 +307,7 @@ def plot(results):
  
     plt.rc('font', **font)
     workloads = defaultdict(list)
-    for workload, mvvm_values,hcontainer_values, qemu_x86_64_values,qemu_aarch64_values,native_values in results:
+    for workload, mvvm_values,native_values in results:
             workloads[
                 workload.replace("OMP_NUM_THREADS=", "")
                 .replace("-g20", "")
@@ -291,23 +318,24 @@ def plot(results):
                 .replace("stories110M.bin", "")
                 .replace("-z tokenizer.bin -t 0.0", "").replace("a=b", "")
                 .strip()
-            ].append(( hcontainer_values, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values))
+            ].append(( mvvm_values,native_values))
 
     statistics = {}
     for workload, times in workloads.items():
-        hcontainer_values, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values= zip(*times)
+        mvvm_values,native_values= zip(*times)
         statistics[workload] = {
-            "hcontainer_median": np.median(hcontainer_values),
+            # "hcontainer_median": np.median(hcontainer_values),
             "mvvm_median": np.median(mvvm_values),
-            "qemu_x86_64_median" :np.median(qemu_x86_64_values),
-            "qemu_aarch64_median" :np.median(qemu_aarch64_values),
+            # "qemu_x86_64_median" :np.median(qemu_x86_64_values),
+            # "qemu_aarch64_median" :np.median(qemu_aarch64_values),
             "native_median" :np.median(native_values),
-            "hcontainer_std": np.std(hcontainer_values),
+            # "hcontainer_std": np.std(hcontainer_values),
             "mvvm_std": np.std(mvvm_values),
-            "qemu_x86_64_std" :np.std(qemu_x86_64_values),
-            "qemu_aarch64_std" :np.std(qemu_aarch64_values),
+            # "qemu_x86_64_std" :np.std(qemu_x86_64_values),
+            # "qemu_aarch64_std" :np.std(qemu_aarch64_values),
             "native_std" :np.std(native_values),
         }
+        print(workload, np.mean(mvvm_values )/np.mean(native_values))
 
     fig, ax = plt.subplots(figsize=(20, 10))
     index = np.arange(len(statistics))
@@ -373,16 +401,32 @@ def plot(results):
 
     plt.savefig("performance_comparison.pdf")
 
+def calculate_averages_comparison(result):
+    averages = defaultdict(list)
+    for workload, mvvm_values, hcontainer_values, qemu_x86_64_values, qemu_aarch64_values, native_values in result:
+        averages[workload].append((mvvm_values, hcontainer_values, qemu_x86_64_values, qemu_aarch64_values, native_values))
+    for workload, values in averages.items():
+        mvvm_values, hcontainer_values, qemu_x86_64_values, qemu_aarch64_values, native_values = zip(*values)
+        averages[workload] = {
+            "mvvm": np.mean(mvvm_values),
+            "hcontainer": np.mean(hcontainer_values),
+            "qemu_x86_64": np.mean(qemu_x86_64_values),
+            "qemu_aarch64": np.mean(qemu_aarch64_values),
+            "native": np.mean(native_values),
+        }
+        print(workload, np.mean(mvvm_values )/np.mean(native_values))
+    return averages
 
 if __name__ == "__main__":
-    mvvm_results = run_mvvm()
-    native_results = run_native()
-    qemu_x86_64_results = run_qemu_x86_64()
-    # # print the results
-    qemu_aarch64_results = run_qemu_aarch64()
-    hcontainer_results = run_hcontainer()
+    # mvvm_results = [("../build/bench/hdastar.aot -a maze-6404.txt -a 8 -e",8.858212),("a=b linpack.aot", 30.06617),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 27.584174),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 39.399803),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 35.02072),("OMP_NUM_THREADS=1 cc.aot -g20 -n1", 34.987732),("OMP_NUM_THREADS=1 cc_sv.aot -g20 -n1", 34.784216),("OMP_NUM_THREADS=1 pr.aot -g20 -n1", 35.168331),("OMP_NUM_THREADS=1 pr_spmv.aot -g20 -n1", 34.65938),("OMP_NUM_THREADS=1 sssp.aot -g20 -n1", 7.692912),("OMP_NUM_THREADS=1 bt.aot", 84.808419),("OMP_NUM_THREADS=1 cg.aot", 32.366688),("OMP_NUM_THREADS=1 ft.aot", 40.790877),("OMP_NUM_THREADS=1 lu.aot", 0.046912),("OMP_NUM_THREADS=1 mg.aot", 26.732236),("OMP_NUM_THREADS=1 sp.aot", 17.464637),("a=b redis.aot", 241.176576),("a=b hdastar.aot maze-6404.txt 8", 10.279565),("a=b linpack.aot", 30.664042),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 27.640625),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 39.096505),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 36.460657),("OMP_NUM_THREADS=1 cc.aot -g20 -n1", 35.169937),("OMP_NUM_THREADS=1 cc_sv.aot -g20 -n1", 35.485751),("OMP_NUM_THREADS=1 pr.aot -g20 -n1", 34.885553),("OMP_NUM_THREADS=1 pr_spmv.aot -g20 -n1", 35.549893),("OMP_NUM_THREADS=1 sssp.aot -g20 -n1", 7.329971),("OMP_NUM_THREADS=1 bt.aot", 86.088249),("OMP_NUM_THREADS=1 cg.aot", 32.833793),("OMP_NUM_THREADS=1 ft.aot", 40.034767),("OMP_NUM_THREADS=1 lu.aot", 0.057583),("OMP_NUM_THREADS=1 mg.aot", 26.62458),("OMP_NUM_THREADS=1 sp.aot", 14.515114),("a=b redis.aot", 242.994483),("a=b hdastar.aot maze-6404.txt 8", 8.858212),("a=b linpack.aot", 29.008376),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 26.573535),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 38.873074),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 35.951567),("OMP_NUM_THREADS=1 cc.aot -g20 -n1", 36.361035),("OMP_NUM_THREADS=1 cc_sv.aot -g20 -n1", 36.665305),("OMP_NUM_THREADS=1 pr.aot -g20 -n1", 35.160924),("OMP_NUM_THREADS=1 pr_spmv.aot -g20 -n1", 35.670047),("OMP_NUM_THREADS=1 sssp.aot -g20 -n1", 8.158749),("OMP_NUM_THREADS=1 bt.aot", 84.352398),("OMP_NUM_THREADS=1 cg.aot", 32.104601),("OMP_NUM_THREADS=1 ft.aot", 41.463589),("OMP_NUM_THREADS=1 lu.aot", 0.064426),("OMP_NUM_THREADS=1 mg.aot", 27.602197),("OMP_NUM_THREADS=1 sp.aot", 15.584595),("a=b redis.aot", 243.237992),("a=b hdastar.aot maze-6404.txt 8", 7.957386),("a=b linpack.aot", 29.836055),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 29.451285),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 40.336093),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 34.768868),("OMP_NUM_THREADS=1 cc.aot -g20 -n1", 36.469427),("OMP_NUM_THREADS=1 cc_sv.aot -g20 -n1", 35.957681),("OMP_NUM_THREADS=1 pr.aot -g20 -n1", 34.0922),("OMP_NUM_THREADS=1 pr_spmv.aot -g20 -n1", 35.300618),("OMP_NUM_THREADS=1 sssp.aot -g20 -n1", 6.360993),("OMP_NUM_THREADS=1 bt.aot", 84.563536),("OMP_NUM_THREADS=1 cg.aot", 33.101476),("OMP_NUM_THREADS=1 ft.aot", 42.240096),("OMP_NUM_THREADS=1 lu.aot", 0.057878),("OMP_NUM_THREADS=1 mg.aot", 27.767437),("OMP_NUM_THREADS=1 sp.aot", 15.144339),("a=b redis.aot", 244.64784),("a=b hdastar.aot maze-6404.txt 8", 9.845638),("a=b linpack.aot", 32.447804),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 26.982592),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 38.718143),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 36.129443),("OMP_NUM_THREADS=1 cc.aot -g20 -n1", 35.03907),("OMP_NUM_THREADS=1 cc_sv.aot -g20 -n1", 34.671518),("OMP_NUM_THREADS=1 pr.aot -g20 -n1", 35.304735),("OMP_NUM_THREADS=1 pr_spmv.aot -g20 -n1", 34.817553),("OMP_NUM_THREADS=1 sssp.aot -g20 -n1", 7.387042),("OMP_NUM_THREADS=1 bt.aot", 86.865323),("OMP_NUM_THREADS=1 cg.aot", 32.358395),("OMP_NUM_THREADS=1 ft.aot", 40.465195),("OMP_NUM_THREADS=1 lu.aot", 0.083769),("OMP_NUM_THREADS=1 mg.aot", 28.080219),("OMP_NUM_THREADS=1 sp.aot", 15.638535),("a=b redis.aot", 240.778638),("a=b hdastar.aot maze-6404.txt 8", 7.96329),("a=b linpack.aot", 30.748278),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 27.416494),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 40.131322),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 34.184033),("OMP_NUM_THREADS=1 cc.aot -g20 -n1", 35.302234),("OMP_NUM_THREADS=1 cc_sv.aot -g20 -n1", 34.587159),("OMP_NUM_THREADS=1 pr.aot -g20 -n1", 37.009367),("OMP_NUM_THREADS=1 pr_spmv.aot -g20 -n1", 35.375392),("OMP_NUM_THREADS=1 sssp.aot -g20 -n1", 9.916613),("OMP_NUM_THREADS=1 bt.aot", 84.415609),("OMP_NUM_THREADS=1 cg.aot", 34.504724),("OMP_NUM_THREADS=1 ft.aot", 42.205323),("OMP_NUM_THREADS=1 lu.aot", 0.051305),("OMP_NUM_THREADS=1 mg.aot", 27.260932),("OMP_NUM_THREADS=1 sp.aot", 14.469471),("a=b redis.aot", 239.236408),("a=b hdastar.aot maze-6404.txt 8", 8.662038),("a=b linpack.aot", 31.141618),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 27.034958),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 38.442589),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 34.344597),("OMP_NUM_THREADS=1 cc.aot -g20 -n1", 33.162001),("OMP_NUM_THREADS=1 cc_sv.aot -g20 -n1", 34.860809),("OMP_NUM_THREADS=1 pr.aot -g20 -n1", 36.050757),("OMP_NUM_THREADS=1 pr_spmv.aot -g20 -n1", 33.933716),("OMP_NUM_THREADS=1 sssp.aot -g20 -n1", 7.298542),("OMP_NUM_THREADS=1 bt.aot", 86.822154),("OMP_NUM_THREADS=1 cg.aot", 32.695834),("OMP_NUM_THREADS=1 ft.aot", 40.713004),("OMP_NUM_THREADS=1 lu.aot", 0.059475),("OMP_NUM_THREADS=1 mg.aot", 27.964345),("OMP_NUM_THREADS=1 sp.aot", 15.135506),("a=b hdastar.aot maze-6404.txt 8", 8.940171),("a=b linpack.aot", 30.009879),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 26.319805),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 38.590552),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 34.638147),("OMP_NUM_THREADS=1 cc.aot -g20 -n1", 40.229486),("OMP_NUM_THREADS=1 cc_sv.aot -g20 -n1", 34.375108),("OMP_NUM_THREADS=1 pr.aot -g20 -n1", 34.881497),("OMP_NUM_THREADS=1 pr_spmv.aot -g20 -n1", 34.905947),("OMP_NUM_THREADS=1 sssp.aot -g20 -n1", 7.942529),("OMP_NUM_THREADS=1 bt.aot", 81.615473),("OMP_NUM_THREADS=1 cg.aot", 31.900385),("OMP_NUM_THREADS=1 ft.aot", 40.988048),("OMP_NUM_THREADS=1 lu.aot", 0.049904),("OMP_NUM_THREADS=1 mg.aot", 27.595124),("OMP_NUM_THREADS=1 sp.aot", 15.348782),("a=b hdastar.aot maze-6404.txt 8", 10.116388),("a=b linpack.aot", 28.881638),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 26.803026),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 38.192459),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 33.277288),("OMP_NUM_THREADS=1 cc.aot -g20 -n1", 32.89712),("OMP_NUM_THREADS=1 cc_sv.aot -g20 -n1", 33.065028),("OMP_NUM_THREADS=1 pr.aot -g20 -n1", 31.713299),("OMP_NUM_THREADS=1 pr_spmv.aot -g20 -n1", 32.225434),("OMP_NUM_THREADS=1 sssp.aot -g20 -n1", 6.03101),("OMP_NUM_THREADS=1 bt.aot", 76.180545),("OMP_NUM_THREADS=1 cg.aot", 29.029776),("OMP_NUM_THREADS=1 ft.aot", 37.663777),("OMP_NUM_THREADS=1 lu.aot", 0.051351),("OMP_NUM_THREADS=1 mg.aot", 25.954153),("OMP_NUM_THREADS=1 sp.aot", 14.001794),("a=b hdastar.aot maze-6404.txt 8", 8.769647),("a=b linpack.aot", 27.815176),("OMP_NUM_THREADS=1 llama.aot stories110M.bin -z tokenizer.bin -t 0.0", 27.420691),("OMP_NUM_THREADS=1 bc.aot -g20 -n1", 37.163123),("OMP_NUM_THREADS=1 bfs.aot -g20 -n1", 32.739905),("OMP_NUM_THREADS=1 lu.aot", 0.051968),("OMP_NUM_THREADS=1 mg.aot", 23.360445),("OMP_NUM_THREADS=1 sp.aot", 13.984599),("a=b redis.aot", 201.14073),("a=b hdastar.aot maze-6404.txt 8", 10.093217)]
+    # native_results = run_native()
+    # qemu_x86_64_results = run_qemu_x86_64()
+    # # # print the results
+    # qemu_aarch64_results = run_qemu_aarch64()
+    # hcontainer_results = run_hcontainer()
 
-    write_to_csv("comparison.csv")
+    # write_to_csv("comparison.csv")
     
     results = read_from_csv("comparison.csv")
     plot(results)
+    print(calculate_averages_comparison(results))

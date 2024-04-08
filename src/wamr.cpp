@@ -509,6 +509,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     instantiate();
     this->time = std::chrono::high_resolution_clock::now();
     invoke_init_c();
+    // std::string stdout = "/dev/stdout";
+    // invoke_fopen(stdout, 2);
 
     restore(execEnv.front(), cur_env);
     if (tid_start_arg_map.find(execEnv.back()->cur_count) != tid_start_arg_map.end()) {

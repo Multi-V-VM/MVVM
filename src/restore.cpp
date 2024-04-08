@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
         reader = new SocketReadStream(source_addr.c_str(), source_port);
 #endif
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
+    // sleep(10);
     if (offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
 #if !defined(_WIN32)
