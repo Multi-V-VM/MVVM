@@ -745,28 +745,10 @@ def run_checkpoint_restore_outrage(
     exec_with_log(f"sleep {time1}")
     exec_with_log(f"ssh -t {energy} pkill -SIGINT MVVM_restore")
     
-    exec_with_log("sleep 14")
-    exec_with_log(f"ssh -t {energy} pkill -SIGINT MVVM_restore")
-    exec_with_log("sleep 14")
-    exec_with_log(f"ssh -t {energy} pkill -SIGINT MVVM_restore")
-    exec_with_log("sleep 14")
-    exec_with_log(f"ssh -t {energy} pkill -SIGINT MVVM_restore")
     
     exec_with_log(f"sleep {time2}")
-    exec_with_log("sleep 14")
     exec_with_log(f"ssh -t {slowtier} pkill -SIGINT MVVM_restore")
-    exec_with_log("sleep 14")
-    exec_with_log(f"ssh -t {slowtier} pkill -SIGINT MVVM_restore")
-    exec_with_log("sleep 14")
-    exec_with_log(f"ssh -t {slowtier} pkill -SIGINT MVVM_restore")
-    exec_with_log("sleep 14")
     
-    exec_with_log("sleep 14")
-    exec_with_log(f"ssh -t {slowtier} pkill -SIGINT MVVM_restore")
-    exec_with_log("sleep 14")
-    exec_with_log(f"ssh -t {slowtier} pkill -SIGINT MVVM_restore")
-    exec_with_log("sleep 14")
-    exec_with_log(f"ssh -t {slowtier} pkill -SIGINT MVVM_restore")
     exec_with_log(f"sleep 100")
     
     exec_with_log(f"scp {burst}:{pwd}/build/*.*.out ./")
