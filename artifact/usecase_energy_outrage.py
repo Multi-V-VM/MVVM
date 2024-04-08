@@ -147,9 +147,9 @@ def get_eneragy_outrage(time,time1,time2):
         envs[0],
         time,time1,time2,
         f"-o {ip[1]} -s {port}",
-        f"-i {ip[1]} -e {port} -o {ip[2]} -s {new_port} -r",
-        f"-i {ip[2]} -e {new_port} -o {ip[3]} -s {new_port1} -r",
-        f"-i {ip[3]} -e {new_port1} -o {ip[0]} -s {port}",
+        f"-i {ip[1]} -e {port} -o {ip[2]} -s {new_port}",
+        f"-i {ip[2]} -e {new_port} -o {ip[0]} -s {port}",
+        f"-i {ip[0]} -e {port}",
     )
     return results1
 
