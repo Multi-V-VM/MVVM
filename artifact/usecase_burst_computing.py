@@ -7,7 +7,8 @@ from common_util import parse_time, parse_time_no_msec, get_avg_99percent
 from collections import defaultdict
 import subprocess
 
-ip = ["192.168.0.24", "192.168.0.23"]
+# ip = ["192.168.0.24", "192.168.0.23"]
+ip = ["128.114.53.32", "128.114.59.212"]
 port = 12347
 port2 = 12346
 new_port = 1235
@@ -156,118 +157,29 @@ def read_from_csv(filename):
     return results
 
 
-def plot(file_name):
-    workloads = defaultdict(list)
-    for workload, fasttier, slowtier, snapshot in results:
-        workloads[
-            workload.replace("OMP_NUM_THREADS=", "")
-            .replace("-g15", "")
-            .replace("-n300", "")
-            .replace(" -f ", "")
-            .replace("-vn300", "")
-            .replace("maze-6404.txt", "")
-            .replace("stories110M.bin", "")
-            .replace("-z tokenizer.bin -t 0.0", "")
-            .replace("ORBvoc.txt", "")
-            .replace("TUM3.yaml", "")
-            .replace("./associations/fr1_xyz.txt", "")
-            .replace("./", "")
-            .strip()
-        ].append((fasttier, slowtier, snapshot))
-
-    # Calculate the medians and standard deviations for each workload
-    statistics = {}
-    for workload, times in workloads.items():
-        fasttiers, slowtier, snapshots = zip(*times)
-        fasttiers = np.array(fasttiers).astype(float)
-        slowtier = np.array(slowtier).astype(float)
-        snapshots = np.array(snapshots).astype(float)
-        statistics[workload] = {
-            "fasttier_median": np.median(fasttiers),
-            "snapshot_median": np.median(snapshots),
-            "slowtier_median": np.median(slowtier),
-            "fasttier_std": np.std(fasttiers),
-            "snapshot_std": np.std(snapshots),
-            "slowtier_std": np.std(slowtier),
-        }
-    font = {"size": 14}
-
-    # using rc function
-    plt.rc("font", **font)
-    # Plotting
-    fig, ax = plt.subplots(figsize=(15, 7))
-    # Define the bar width and positions
-    bar_width = 0.7 / 3
-    index = np.arange(len(statistics))
-
-    for i, (workload, stats) in enumerate(statistics.items()):
-        ax.bar(
-            index[i],
-            stats["fasttier_median"],
-            bar_width,
-            yerr=stats["fasttier_std"],
-            capsize=5,
-            color="blue",
-            label="fasttier" if i == 0 else "",
-        )
-        ax.bar(
-            index[i] + bar_width,
-            stats["slowtier_median"],
-            bar_width,
-            yerr=stats["slowtier_std"],
-            capsize=5,
-            color="green",
-            label="slowtier" if i == 0 else "",
-        )
-        ax.bar(
-            index[i] + 2 * bar_width,
-            stats["snapshot_median"],
-            bar_width,
-            yerr=stats["snapshot_std"],
-            capsize=5,
-            color="red",
-            label="snapshot" if i == 0 else "",
-        )
-    # Labeling and formatting
-    ax.set_ylabel("Time(s)")
-    ax.set_xticks(index + bar_width)
-    ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
-    ax.set_xticklabels(ticklabel, fontsize=10)
-    ax.legend()
-
-    # Show the plot
-    plt.tight_layout()
-    plt.show()
-    plt.savefig("burst_compute.pdf")
-    # %%
-
-
 def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
     # get from reu
     # start time -> end time -> start time
-    reu = reu.replace("\\n", "\n").split("\n")
+    reu = reu.replace("\\n", "\n").replace("\\r", "\n").split("\n")
     state = 0
     time = []
     exec_time = [[], [], [], [], []]
     exec_time1 = [[], [], [], []]
     for line in reu:
         try:
-            if line.__contains__("Iteration"):
-                to_append = float(line.split(" ")[-2])
-                if to_append > 0:
-                    if state < 5:
-                        exec_time[state].append(to_append)
-                    else:
-                        exec_time1[state - 5].append(to_append)
-                # print(exec_time)
-                # print("exec_time ",exec_time[-1])
             if line.__contains__("ttrack"):
-                to_append = float(line.split(" ")[-1].replace("\\r", ""))
+                to_append = float(line.split(" ")[-1])
+                # print("exec_time ",exec_time[-1])
+                if to_append >= 0:
+                    exec_time[state].append( to_append + 0.2)
+            if line.__contains__("Iteration"):
+                to_append = float(line.split(" ")[-2].replace("\\r", ""))
+                if to_append > 0:
+                    # print(state)
+                    exec_time1[state-5].append(to_append)
                 # print(exec_time)
                 # print("exec_time ",exec_time[-1])
-                if to_append > 0:
-                    exec_time[state].append(to_append)
-            if line.__contains__("Snapshot "):
+            if line.__contains__("Snapshot"):
                 # print("line ", line)
                 time.append(
                     parse_time(line.split(" ")[1].replace("]", ""))
@@ -275,20 +187,30 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
                 )
                 print("time ", time)
                 state += 1
-            if line.__contains__("Execution "):
+            if line.__contains__("Execution"):
                 time.append(parse_time(line.split(" ")[1].replace("]", "")))
                 print("time ", time)
                 state += 1
-        except :
+        except Exception as e:
             print(line)
-    # print(exec_time)
+            # pass
+            print(e)
+    print(exec_time)
     # print(exec_time1)
     # print(time)
     # record time
     fig, ax = plt.subplots()
     base = time[0] - sum(exec_time[0])
-    sum_aot = exec_time[0] + exec_time[1] + exec_time[2] + exec_time[3] + exec_time[4]
-    sum_aot1 = exec_time1[0] + exec_time1[1] + exec_time1[2] + exec_time1[3]
+    sum_aot = (
+        exec_time[0]
+        + exec_time[1]
+        + exec_time[2]
+        + exec_time[3]
+        + exec_time[4]
+    )
+    sum_aot1 = (
+        exec_time1[0] + exec_time1[1] + exec_time1[2] + exec_time1[3]
+    )
     time_spots = [time[0] - sum(exec_time[0]) - base]
 
     for idx, i in enumerate(exec_time):
@@ -301,9 +223,9 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
         time_spots.pop(to_pop)
         if idx != len(exec_time) - 1:
             time_spots.append(time[idx + 1] - sum(exec_time[idx + 1]) - base)
-    print(len(time))
-    print(len(exec_time1))
-    print(len(exec_time))
+    # print(len(time))
+    # print(len(exec_time1))
+    # print(len(exec_time))
     time_spots1 = [time[5] - sum(exec_time1[0]) - base]
 
     for idx, i in enumerate(exec_time1):
@@ -314,121 +236,20 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
             # Append the new time spot to the sequence
             time_spots1.append(new_time_spot)
         time_spots1.pop(to_pop)
-        print(idx, len(exec_time1) - 1, len(time) - 1, len(time_spots1) - 1)
         if idx != len(exec_time1) -1:
             time_spots1.append(time[idx + 6] - sum(exec_time1[idx+1]) - base)
-    avg_extended, percentile99_extended = get_avg_99percent(sum_aot)
-    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(sum_aot1)
+    avg_extended, percentile99_extended = get_avg_99percent(sum_aot,1)
+    sum_aot1 = [x*30000 for x in sum_aot1 ]
+    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(sum_aot1,10000)
     ax.plot(time_spots, avg_extended, "blue")
-    # ax.plot(time_spots, percentile99_extended,  color="purple", linestyle="-")
+    ax.plot(time_spots, percentile99_extended, color="purple", linestyle="-")
     ax.plot(time_spots1, avg_exec_time1, "r")
-    # ax.plot(time_spots1, percentile_99_exec_time1,  color="pink", linestyle="-")
+    ax.plot(time_spots1, percentile_99_exec_time1, color="pink", linestyle="-")
     # ax.plot(time_spots,sum_aot, "blue")
     # ax.plot(time_spots1,sum_aot1, "r")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Average Trial Time (s)")
     plt.savefig("burst.pdf")
-
-    cpu = []
-    memory = []
-    exec_time_aot = []
-    cpu1 = []
-    memory1 = []
-    exec_time_aot1 = []
-    energy = []
-    exec_time_aot_energy = []
-    energy1 = []
-    exec_time_aot_energy1 = []
-
-    for aot in aot_ps:
-        aot = aot.split("\n")
-        for line in aot:
-            try:
-                if line.__contains__("2024"):
-                    exec_time_aot.append(parse_time_no_msec(line.split(" ")[3]))
-                    cpu1.append(0)
-                    memory1.append(0)
-                    # print(exec_time)
-                    # print("exec_time ",exec_time[-1])
-                else:
-                    if float(line.split(" ")[2]) > 10:
-                        cpu1.append(float(line.split(" ")[2]))
-                        memory1.append(float(line.split(" ")[5]))
-                        exec_time_aot.append(exec_time_aot[-1] + 0.5)
-
-            except:
-                print(line)
-    for aot in aot_energy:
-        aot = aot.split("\n")
-        for line in aot:
-            try:
-                if line.__contains__("2024"):
-                    exec_time_aot1.append(parse_time_no_msec(line.split(" ")[3]) - 10)
-                    cpu.append(0)
-                    memory.append(0)
-                    # print(exec_time)
-                    # print("exec_time ",exec_time[-1])
-                else:
-                    if float(line.split(" ")[2]) > 10:
-                        cpu.append(float(line.split(" ")[2]))
-                        memory.append(float(line.split(" ")[5]))
-                        exec_time_aot1.append(exec_time_aot1[-1] + 0.5)
-
-            except:
-                print(line)
-    print(len(exec_time_aot), len(cpu))
-    for line in aot1_ps:
-        try:
-            if line.__contains__("2024"):
-                exec_time_aot.append(parse_time_no_msec(line.split(" ")[3]))
-                cpu.append(0)
-                memory.append(0)
-                # print(exec_time)
-                # print("exec_time ",exec_time[-1])
-            else:
-                if float(line.split(" ")[2]) > 10:
-                    cpu.append(float(line.split(" ")[2]))
-                    memory.append(float(line.split(" ")[5]))
-                    exec_time_aot.append(exec_time_aot[-1] + 0.5)
-
-        except:
-            print(line)
-    print(len(exec_time_aot), len(cpu))
-    for line in aot1_energy:
-        try:
-            if line.__contains__("2024"):
-                exec_time_aot.append(parse_time_no_msec(line.split(" ")[3]))
-                cpu.append(0)
-                memory.append(0)
-                # print(exec_time)
-                # print("exec_time ",exec_time[-1])
-            else:
-                if float(line.split(" ")[2]) > 10:
-                    cpu.append(float(line.split(" ")[2]))
-                    memory.append(float(line.split(" ")[5]))
-                    exec_time_aot.append(exec_time_aot[-1] + 0.5)
-
-        except:
-            print(line)
-    print(exec_time_aot)
-    ax.plot(exec_time_aot, cpu, "b")
-    ax.plot(exec_time_aot1, cpu1, "r")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Average CPU (percentage)")
-    plt.savefig("burst_cpu.pdf")
-    fig, ax = plt.subplots()
-    ax.plot(exec_time_aot, memory, "b")
-    ax.plot(exec_time_aot1, memory1, "r")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Average Memory (B)")
-    plt.savefig("burst_memory.pdf")
-    # parse energy
-    fig, ax = plt.subplots()
-    ax.plot(exec_time_aot_energy, energy, "b")
-    ax.plot(exec_time_aot_energy1, energy1, "r")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Average Energy (B)")
-    plt.savefig("burst_energy.pdf")
 
 
 if __name__ == "__main__":

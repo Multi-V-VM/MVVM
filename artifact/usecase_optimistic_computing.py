@@ -12,8 +12,8 @@ port = 12346
 new_port = 12353
 
 cmd = [
-    "bc",  # low priority task
-    "bfs",  # high priority task
+    "bc",  # high priority task
+    "bfs",  # low priority task
 ]
 folder = [
     "gapbs",
