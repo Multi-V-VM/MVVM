@@ -160,6 +160,10 @@ def read_from_csv(filename):
 def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
     # get from reu
     # start time -> end time -> start time
+    font = {"size": 18}
+
+    plt.rc("font", **font)
+
     reu = reu.replace("\\n", "\n").replace("\\r", "\n").split("\n")
     state = 0
     time = []
@@ -170,13 +174,13 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
             if line.__contains__("ttrack"):
                 to_append = float(line.split(" ")[-1])
                 # print("exec_time ",exec_time[-1])
-                if to_append >= 0:
-                    exec_time[state].append( to_append + 0.2)
+                if to_append >= 0 and to_append < 1:
+                    exec_time[state].append(to_append)
             if line.__contains__("Iteration"):
                 to_append = float(line.split(" ")[-2].replace("\\r", ""))
-                if to_append > 0:
+                if to_append > 0 and to_append < 1:
                     # print(state)
-                    exec_time1[state-5].append(to_append)
+                    exec_time1[state - 5].append(to_append)
                 # print(exec_time)
                 # print("exec_time ",exec_time[-1])
             if line.__contains__("Snapshot"):
@@ -195,29 +199,21 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
             print(line)
             # pass
             print(e)
-    print(exec_time)
-    # print(exec_time1)
+    # print(exec_time)
+    # print(exec_time1[0])
     # print(time)
     # record time
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(20, 10))
     base = time[0] - sum(exec_time[0])
-    sum_aot = (
-        exec_time[0]
-        + exec_time[1]
-        + exec_time[2]
-        + exec_time[3]
-        + exec_time[4]
-    )
-    sum_aot1 = (
-        exec_time1[0] + exec_time1[1] + exec_time1[2] + exec_time1[3]
-    )
+    sum_aot = exec_time[0] + exec_time[1] + exec_time[2] + exec_time[3] + exec_time[4]
+    sum_aot1 = exec_time1[0] + exec_time1[1] + exec_time1[2] + exec_time1[3]
     time_spots = [time[0] - sum(exec_time[0]) - base]
 
     for idx, i in enumerate(exec_time):
         to_pop = len(i) - 1
         for x in i:
             # Add the current increment to the last time spot
-            new_time_spot = time_spots[-1] + x
+            new_time_spot = time_spots[-1] + x * 500
             # Append the new time spot to the sequence
             time_spots.append(new_time_spot)
         time_spots.pop(to_pop)
@@ -236,15 +232,18 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
             # Append the new time spot to the sequence
             time_spots1.append(new_time_spot)
         time_spots1.pop(to_pop)
-        if idx != len(exec_time1) -1:
-            time_spots1.append(time[idx + 6] - sum(exec_time1[idx+1]) - base)
-    avg_extended, percentile99_extended = get_avg_99percent(sum_aot,1)
-    sum_aot1 = [x*30000 for x in sum_aot1 ]
-    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(sum_aot1,10000)
-    ax.plot(time_spots, avg_extended, "blue")
-    ax.plot(time_spots, percentile99_extended, color="purple", linestyle="-")
-    ax.plot(time_spots1, avg_exec_time1, "r")
-    ax.plot(time_spots1, percentile_99_exec_time1, color="pink", linestyle="-")
+        if idx != len(exec_time1) - 1:
+            time_spots1.append(time[idx + 6] - sum(exec_time1[idx + 1]) - base)
+    # sum_aot = [x * 50000 for x in sum_aot]
+    avg_extended, percentile99_extended = get_avg_99percent(sum_aot, 1)
+    sum_aot1 = [x * 10 for x in sum_aot1]
+    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(sum_aot1, 10000)
+    ax.plot(time_spots, avg_extended, "blue",label="OrbSlam2")
+    # ax.plot(time_spots, percentile99_extended, color="purple", linestyle="-")
+    ax.plot(time_spots1, avg_exec_time1, "r",label="Redis")
+    # ax.plot(time_spots1, percentile_99_exec_time1, color="pink", linestyle="-")
+    # Add a legend to the plot
+    ax.legend()
     # ax.plot(time_spots,sum_aot, "blue")
     # ax.plot(time_spots1,sum_aot1, "r")
     ax.set_xlabel("Time (s)")

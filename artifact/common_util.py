@@ -1230,10 +1230,10 @@ def run_qemu_aarch64(
 
 
 if __name__ == "__main__":
-    print(get_func_index("$recv ", "./test/tcp_client.wasm"))
-    print(get_func_index("printf", "./test/read-file.wasm"))
-    print(get_func_index("sendto", "./test/client.wasm"))
-    print(get_func_index("atomic_wait", "./bench/hdastar.wasm"))
+    print(get_func_index("__wasilibc_nocwd_openat_nomode", "./bench/rgbd_tum.wasm"))
+    # print(get_func_index("printf", "./test/read-file.wasm"))
+    # print(get_func_index("sendto", "./test/client.wasm"))
+    # print(get_func_index("atomic_wait", "./bench/hdastar.wasm"))
     plot_whole(["policy.csv", "policy_multithread.csv", "policy_mac.csv"], "policy.pdf")
     # read_csv_from_file("policy.csv")
     

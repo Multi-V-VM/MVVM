@@ -499,7 +499,7 @@ void segfault_handler(int sig) {
 void sigtrap_handler(int sig) {
     // fprintf(stderr, "Caught signal %d, performing custom logic...\n", sig);
     auto exec_env = wamr->get_exec_env();
-    wamr->get_inst_diff();
+    // wamr->get_inst_diff();
     if (sig == SIGSEGV) {
         serialize_to_file(exec_env);
     }

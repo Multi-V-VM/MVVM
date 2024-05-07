@@ -43,6 +43,9 @@ std::counting_semaphore<100> wakeup(0);
 std::counting_semaphore<100> thread_init(0);
 extern WriteStream *writer;
 extern std::vector<std::unique_ptr<WAMRExecEnv>> as;
+extern std::string offload_addr;
+extern int offload_port;
+extern std::string target;
 
 std::string removeExtension(std::string &filename) {
     size_t dotPos = filename.find_last_of('.');
@@ -509,8 +512,8 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     instantiate();
     this->time = std::chrono::high_resolution_clock::now();
     invoke_init_c();
-    // std::string stdout = "/dev/stdout";
-    // invoke_fopen(stdout, 2);
+    std::string stdout = "/dev/stdout";
+    invoke_preopen(1, stdout);
 
     restore(execEnv.front(), cur_env);
     if (tid_start_arg_map.find(execEnv.back()->cur_count) != tid_start_arg_map.end()) {
@@ -816,7 +819,14 @@ long get_rss() {
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     auto start = std::chrono::high_resolution_clock::now();
-
+    if (writer == nullptr) {
+        if (offload_addr.empty())
+            writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+#if __linux__
+        else
+            writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
+#endif
+    }
 #if WASM_ENABLE_LIB_PTHREAD != 0
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);

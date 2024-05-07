@@ -33,3 +33,5 @@ qemu_migrate
 *funcs
 *dmp
 *bak
+sb2
+build_test

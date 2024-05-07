@@ -29,6 +29,9 @@ std::ostringstream re{};
 WriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
+std::string offload_addr;
+int offload_port;
+std::string target;
 
 int main(int argc, char *argv[]) {
     spdlog::cfg::load_env_levels();
