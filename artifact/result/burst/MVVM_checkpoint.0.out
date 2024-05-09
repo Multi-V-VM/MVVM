@@ -1,0 +1,532 @@
+strAssociationFilename: ./associations/fr3_office_val.txt
+
+ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza.
+This program comes with ABSOLUTELY NO WARRANTY;
+This is free software, and you are welcome to redistribute it
+under certain conditions. See LICENSE.txt.
+
+Input sensor was set to: RGB-D
+
+Loading ORB Vocabulary. This could take a while...
+Vocabulary loaded!
+
+1
+
+2
+
+3
+
+
+Camera Parameters: 
+- fx: 535.4
+- fy: 539.2
+- cx: 320.1
+- cy: 247.6
+- k1: 0
+- k2: 0
+- p1: 0
+- p2: 0
+- fps: 30
+- color order: RGB (ignored if grayscale)
+
+ORB Extractor Parameters: 
+- Number of Features: 1000
+- Scale Levels: 8
+- Scale Factor: 1.2
+- Initial Fast Threshold: 20
+- Minimum Fast Threshold: 7
+
+Depth Threshold (Close/Far Points): 2.98842
+4
+
+[2024-05-05 16:58:20.639] [error] [wamr_export.cpp:380] insert_parent_child 0 1
+[2024-05-05 16:58:20.640] [error] [wamr_export.cpp:364] wamr_handle_map old:< 0 > new:< 140737353897664 >
+5
+
+[2024-05-05 16:58:20.641] [error] [wamr_export.cpp:380] insert_parent_child 0 2
+[2024-05-05 16:58:20.641] [error] [wamr_export.cpp:364] wamr_handle_map old:< 0 > new:< 140737352554176 >
+6
+
+s: ./associations/fr3_office_val.txt
+
+-------
+Start processing sequence ...
+Images in the sequence: 2584
+
+ttrack: 0.001529
+ttrack: 0.000913
+ttrack: 0.000994
+ttrack: 0.001012
+ttrack: 0.000941
+ttrack: 0.000946
+ttrack: 0.000862
+ttrack: 0.000877
+ttrack: 0.000991
+ttrack: 0.000888
+ttrack: 0.000978
+ttrack: 0.000861
+ttrack: 0.000939
+ttrack: 0.000945
+ttrack: 0.000895
+ttrack: 0.001006
+ttrack: 0.000915
+ttrack: 0.000941
+ttrack: 0.000888
+ttrack: 0.000872
+ttrack: 0.001045
+ttrack: 0.000573
+ttrack: 0.000963
+ttrack: 0.000991
+ttrack: 0.000926
+ttrack: 0.000968
+ttrack: 0.000895
+ttrack: 0.000945
+ttrack: 0.001011
+ttrack: 0.000867
+ttrack: 0.000969
+ttrack: 0.001068
+ttrack: 0.000864
+ttrack: 0.000955
+ttrack: 0.000930
+ttrack: 0.000880
+ttrack: 0.000974
+ttrack: 0.000863
+ttrack: 0.000962
+ttrack: 0.000941
+ttrack: 0.000861
+ttrack: 0.000960
+ttrack: 0.000869
+ttrack: 0.000894
+ttrack: 0.000988
+ttrack: 0.000912
+ttrack: 0.000883
+ttrack: 0.001016
+ttrack: 0.000910
+ttrack: 0.001136
+ttrack: 0.000862
+ttrack: 0.000959
+ttrack: 0.001014
+ttrack: 0.001048
+ttrack: 0.000856
+ttrack: 0.000976
+ttrack: 0.000935
+ttrack: 0.000966
+ttrack: 0.000913
+ttrack: 0.000981
+ttrack: 0.000875
+ttrack: 0.001163
+ttrack: 0.000874
+ttrack: 0.000596
+ttrack: 0.001003
+ttrack: 0.001035
+ttrack: 0.000849
+ttrack: 0.001045
+ttrack: 0.000864
+ttrack: 0.000975
+ttrack: 0.000916
+ttrack: 0.000960
+ttrack: 0.000862
+ttrack: 0.000986
+ttrack: 0.000963
+ttrack: 0.000931
+ttrack: 0.000968
+ttrack: 0.000874
+ttrack: 0.000997
+ttrack: 0.001001
+ttrack: 0.000872
+ttrack: 0.000989
+ttrack: 0.000904
+ttrack: 0.000965
+ttrack: 0.001008
+ttrack: 0.000964
+ttrack: 0.000958
+ttrack: 0.000914
+ttrack: 0.000859
+ttrack: 0.000982
+ttrack: 0.000911
+ttrack: 0.000919
+ttrack: 0.001022
+ttrack: 0.000976
+ttrack: 0.000878
+ttrack: 0.000971
+ttrack: 0.000898
+ttrack: 0.000979
+ttrack: 0.000889
+ttrack: 0.001015
+ttrack: 0.001045
+ttrack: 0.000929
+ttrack: 0.000957
+ttrack: 0.000907
+ttrack: 0.000951
+ttrack: 0.000909
+ttrack: 0.000981
+ttrack: 0.000879
+ttrack: 0.000976
+ttrack: 0.000873
+ttrack: 0.000966
+ttrack: 0.000878
+ttrack: 0.001035
+ttrack: 0.000918
+ttrack: 0.000917
+ttrack: 0.001001
+ttrack: 0.000911
+ttrack: 0.000993
+ttrack: 0.000841
+ttrack: 0.000926
+ttrack: 0.000855
+ttrack: 0.000962
+ttrack: 0.000985
+ttrack: 0.000876
+ttrack: 0.000943
+ttrack: 0.000857
+ttrack: 0.001005
+ttrack: 0.000992
+ttrack: 0.000866
+ttrack: 0.000926
+ttrack: 0.000963
+ttrack: 0.000923
+ttrack: 0.000935
+ttrack: 0.000934
+ttrack: 0.000944
+ttrack: 0.000914
+ttrack: 0.000961
+ttrack: 0.000875
+ttrack: 0.000967
+ttrack: 0.000875
+ttrack: 0.000967
+ttrack: 0.000875
+ttrack: 0.000967
+ttrack: 0.000875
+ttrack: 0.000935
+ttrack: 0.000875
+ttrack: 0.000947
+ttrack: 0.000852
+ttrack: 0.000943
+ttrack: 0.000934
+ttrack: 0.000945
+ttrack: 0.000843
+ttrack: 0.000934
+ttrack: 0.000845
+ttrack: 0.000967
+ttrack: 0.000834
+ttrack: 0.000958
+ttrack: 0.000929
+ttrack: 0.000971
+ttrack: 0.000950
+ttrack: 0.000929
+ttrack: 0.000962
+ttrack: 0.000911
+ttrack: 0.000959
+ttrack: 0.001000
+ttrack: 0.000899
+ttrack: 0.000947
+ttrack: 0.000990
+ttrack: 0.000961
+ttrack: 0.000946
+ttrack: 0.001002
+ttrack: 0.000973
+ttrack: 0.000946
+ttrack: 0.000967
+ttrack: 0.001004
+ttrack: 0.000967
+ttrack: 0.001030
+ttrack: 0.000949
+ttrack: 0.000970
+ttrack: 0.000976
+ttrack: 0.000951
+ttrack: 0.000954
+ttrack: 0.000897
+ttrack: 0.000977
+ttrack: 0.000976
+ttrack: 0.000875
+ttrack: 0.000957
+ttrack: 0.000984
+ttrack: 0.000982
+ttrack: 0.000960
+ttrack: 0.001001
+ttrack: 0.000950
+ttrack: 0.000978
+ttrack: 0.000906
+ttrack: 0.000926
+ttrack: 0.000972
+ttrack: 0.000982
+ttrack: 0.000955
+ttrack: 0.000993
+ttrack: 0.000953
+ttrack: 0.000989
+ttrack: 0.000908
+ttrack: 0.000950
+ttrack: 0.000963
+ttrack: 0.000948
+ttrack: 0.000960
+ttrack: 0.000962
+ttrack: 0.000968
+ttrack: 0.000905
+ttrack: 0.000886
+ttrack: 0.000959
+ttrack: 0.000992
+ttrack: 0.001035
+ttrack: 0.001008
+ttrack: 0.000602
+ttrack: 0.001000
+ttrack: 0.001002
+ttrack: 0.000578
+ttrack: 0.000966
+ttrack: 0.000978
+ttrack: 0.000957
+ttrack: 0.001019
+ttrack: 0.000937
+ttrack: 0.000966
+ttrack: 0.000963
+ttrack: 0.000980
+ttrack: 0.000989
+ttrack: 0.000919
+ttrack: 0.000964
+ttrack: 0.000957
+ttrack: 0.000961
+ttrack: 0.001014
+ttrack: 0.000962
+ttrack: 0.001009
+ttrack: 0.000912
+ttrack: 0.000974
+ttrack: 0.000972
+ttrack: 0.001011
+ttrack: 0.000976
+ttrack: 0.000984
+ttrack: 0.000894
+ttrack: 0.001006
+ttrack: 0.000964
+ttrack: 0.000984
+ttrack: 0.001040
+ttrack: 0.000894
+ttrack: 0.000990
+ttrack: 0.000961
+ttrack: 0.000969
+ttrack: 0.000987
+ttrack: 0.000966
+ttrack: 0.000967
+ttrack: 0.000885
+ttrack: 0.000958
+ttrack: 0.000960
+ttrack: 0.000975
+ttrack: 0.000955
+ttrack: 0.000998
+ttrack: 0.000956
+ttrack: 0.000926
+ttrack: 0.000916
+ttrack: 0.000576
+ttrack: 0.000950
+ttrack: 0.000979
+ttrack: 0.000960
+ttrack: 0.000961
+ttrack: 0.000958
+ttrack: 0.000980
+ttrack: 0.000964
+ttrack: 0.001005
+ttrack: 0.000960
+ttrack: 0.000963
+ttrack: 0.000984
+ttrack: 0.001074
+ttrack: 0.000954
+ttrack: 0.000994
+ttrack: 0.000895
+ttrack: 0.000971
+ttrack: 0.000979
+ttrack: 0.000970
+ttrack: 0.000934
+ttrack: 0.000977
+ttrack: 0.000975
+ttrack: 0.000969
+ttrack: 0.000976
+ttrack: 0.004991
+ttrack: 0.001017
+ttrack: 0.000994
+ttrack: 0.000893
+ttrack: 0.001009
+ttrack: 0.001024
+ttrack: 0.000874
+ttrack: 0.000969
+ttrack: 0.000988
+ttrack: 0.000955
+ttrack: 0.000996
+ttrack: 0.000990
+ttrack: 0.001003
+ttrack: 0.000982
+ttrack: 0.000993
+ttrack: 0.000957
+ttrack: 0.000990
+ttrack: 0.000964
+ttrack: 0.000987
+ttrack: 0.000954
+ttrack: 0.001019
+ttrack: 0.000904
+ttrack: 0.000918
+ttrack: 0.000954
+ttrack: 0.000973
+ttrack: 0.000606
+ttrack: 0.001039
+ttrack: 0.000993
+ttrack: 0.001065
+ttrack: 0.001053
+ttrack: 0.000979
+ttrack: 0.000586
+ttrack: 0.000948
+ttrack: 0.000894
+ttrack: 0.001012
+ttrack: 0.000978
+ttrack: 0.000963
+ttrack: 0.000952
+ttrack: 0.000911
+ttrack: 0.000929
+ttrack: 0.000947
+ttrack: 0.000964
+ttrack: 0.000985
+ttrack: 0.001335
+ttrack: 0.001399
+ttrack: 0.001457
+ttrack: 0.001473
+ttrack: 0.000901
+ttrack: 0.001021
+ttrack: 0.000956
+ttrack: 0.001040
+ttrack: 0.000997
+ttrack: 0.000912
+ttrack: 0.000995
+ttrack: 0.000952
+ttrack: 0.001069
+ttrack: 0.000964
+ttrack: 0.001002
+ttrack: 0.001115
+ttrack: 0.000950
+ttrack: 0.000970
+ttrack: 0.000963
+ttrack: 0.000952
+ttrack: 0.000956
+ttrack: 0.000960
+ttrack: 0.000957
+ttrack: 0.000892
+ttrack: 0.000980
+ttrack: 0.000954
+ttrack: 0.001007
+ttrack: 0.000977
+ttrack: 0.000957
+ttrack: 0.000974
+ttrack: 0.000967
+ttrack: 0.000963
+ttrack: 0.000906
+ttrack: 0.000960
+ttrack: 0.000958
+ttrack: 0.000912
+ttrack: 0.000962
+ttrack: 0.000981
+ttrack: 0.000978
+ttrack: 0.000986
+ttrack: 0.000944
+ttrack: 0.000963
+ttrack: 0.000951
+ttrack: 0.001002
+ttrack: 0.000956
+ttrack: 0.000980
+ttrack: 0.000948
+ttrack: 0.000972
+ttrack: 0.000981
+ttrack: 0.000986
+ttrack: 0.000960
+ttrack: 0.000972
+ttrack: 0.000970
+ttrack: 0.000960
+ttrack: 0.000953
+ttrack: 0.000978
+ttrack: 0.000960
+ttrack: 0.000976
+ttrack: 0.000954
+ttrack: 0.000997
+ttrack: 0.000990
+ttrack: 0.000927
+ttrack: 0.000973
+ttrack: 0.000924
+ttrack: 0.000966
+ttrack: 0.000933
+ttrack: 0.000946
+ttrack: 0.000956
+ttrack: 0.000951
+ttrack: 0.000975
+ttrack: 0.000951
+ttrack: 0.000991
+ttrack: 0.000956
+ttrack: 0.000959
+ttrack: 0.000966
+ttrack: 0.000954
+ttrack: 0.000975
+ttrack: 0.000996
+ttrack: 0.000964
+ttrack: 0.000896
+ttrack: 0.000955
+ttrack: 0.001010
+ttrack: 0.000984
+ttrack: 0.000963
+ttrack: 0.001003
+ttrack: 0.000898
+ttrack: 0.000975
+ttrack: 0.001062
+ttrack: 0.000974
+ttrack: 0.000984
+ttrack: 0.000898
+ttrack: 0.000975
+ttrack: 0.000981
+ttrack: 0.000972
+ttrack: 0.001012
+ttrack: 0.000941
+ttrack: 0.001049
+ttrack: 0.001008
+ttrack: 0.000960
+ttrack: 0.001006
+ttrack: 0.000917
+ttrack: 0.000972
+ttrack: 0.001026
+ttrack: 0.000949
+ttrack: 0.001016
+ttrack: 0.000949
+ttrack: 0.001081
+ttrack: 0.000956
+ttrack: 0.000979
+ttrack: 0.000917
+ttrack: 0.000929
+ttrack: 0.000969
+ttrack: 0.000914
+ttrack: 0.000974
+ttrack: 0.000978
+ttrack: 0.000889
+ttrack: 0.000972
+ttrack: 0.000969
+ttrack: 0.001032
+ttrack: 0.000967
+ttrack: 0.000616
+ttrack: 0.001002
+ttrack: 0.000969
+ttrack: 0.001057
+ttrack: 0.000940
+ttrack: [2024-05-05 17:14:54.933] [info] [wamr_interp_frame.cpp:82] function_index 320 ip_offset 42 lp 0x555556271460 sp 0x555556271484 sp_offset 9
+2084816 2084848 2084892 2084820 2084904 0 0 0 2084904 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 129 ip_offset 114 lp 0x555556271408 sp 0x555556271424 sp_offset 7
+2086800 167473184 4 2084816 0 2084816 4 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 14274 ip_offset 32 lp 0x5555562713a0 sp 0x5555562713c8 sp_offset 10
+2 167473208 167473252 0 0 0 0 0 2086800 7 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 14312 ip_offset 27 lp 0x555556271358 sp 0x555556271368 sp_offset 4
+2 167473208 2 167473208 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 289 ip_offset 53 lp 0x555555ced240 sp 0x555555ced260 sp_offset 8
+1885744 1885776 1885868 1885864 1885840 1885896 0 1885896 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 128 ip_offset 114 lp 0x555555ced1e8 sp 0x555555ced204 sp_offset 7
+2088864 167341440 3 1885744 0 1885744 3 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 14274 ip_offset 32 lp 0x555555ced180 sp 0x555555ced1a8 sp_offset 10
+1 167341464 167341508 0 0 0 0 0 2088864 6 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 14312 ip_offset 27 lp 0x555555ced138 sp 0x555555ced148 sp_offset 4
+1 167341464 1 167341464 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 92 ip_offset 4136 lp 0x555555860f30 sp 0x555555860fa8 sp_offset 30
+31306 1884880 1875312 307200 1 1875432 31008 2584 1875448 927 1875632 1875612 1875556 0 2584 2583 1875404 1875500 7416 64 4102465847 399293 4102466758 399293 2936012799 1088328382 0 1067482848 0 31306 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 13821 ip_offset 109 lp 0x555555860ee0 sp 0x555555860ef4 sp_offset 5
+1875840 1884880 1884736 5 1884880 
+[2024-05-05 17:14:54.934] [info] [wamr_interp_frame.cpp:82] function_index 90 ip_offset 40 lp 0x555555860e98 sp 0x555555860e9c sp_offset 1
+0 
+[2024-05-05 17:14:57.810] [info] [wamr.cpp:1005] Snapshot time: 2.877003 s
+[2024-05-05 17:14:57.811] [info] [wamr.cpp:1006] Memory usage: 3375 MB

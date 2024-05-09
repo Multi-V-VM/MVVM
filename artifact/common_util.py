@@ -9,7 +9,7 @@ import csv
 
 pwd_mac = "/Users/victoryang00/Documents/project/MVVM-bench/build"
 pwd = "/mnt/MVVM"
-slowtier = "giga-root"
+slowtier = "epyc"
 burst = "mac"
 energy = "bana"
 
@@ -534,7 +534,6 @@ aot_variant = [
     ".aot",
     "-pure.aot",
     "-stack.aot",
-    # "-ckpt-every-dirty.aot",
     "-ckpt-loop.aot",
     "-ckpt-loop-dirty.aot",
 ]
@@ -892,38 +891,38 @@ def run_checkpoint_restore_slowtier(
 ):
     # Execute run_checkpoint and capture its result
     res = []
-    os.system("rm ./*.out")
-    os.system(f"ssh -t {slowtier} rm {pwd}/build/*.out")
-    # Execute run_restore with the same arguments (or modify as needed)
-    os.system(
-        f"script -q /dev/null -c 'ssh -t {slowtier} {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file1} {extra2}' >> MVVM_restore.1.out &"
-    )
-    # print(f"ssh -t {slowtier} bash -c 'cd {pwd}/build && {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore' &")
-    os.system(
-        f"script -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.out &"
-    )
+    # exec_with_log("rm ./*.out")
+    # # Execute run_restore with the same arguments (or modify as needed)
+    # exec_with_log(
+    #     f"script -q /dev/null -c 'ssh -t {slowtier} {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file1} {extra2}' >> MVVM_restore.1.out &"
+    # )
+    # # print(f"ssh -t {slowtier} bash -c 'cd {pwd}/build && {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore' &")
+    # exec_with_log(
+    #     f"script -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.out &"
+    # )
 
-    os.system("sleep 15")
-    os.system(
-        f"./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} &"
-    )
-    os.system("sleep 10")
-    os.system(f"pkill -SIGINT -f MVVM_checkpoint")
-    os.system("mv MVVM_checkpoint.out MVVM_checkpoint.1.out")
-    os.system("mv MVVM_checkpoint.ps.out MVVM_checkpoint.ps.1.out")
-    os.system(
-        f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env}"
-    )
-    os.system(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
+    # exec_with_log("sleep 15")
+    # exec_with_log(
+    #     f"./MVVM_checkpoint1 -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} >> MVVM_checkpoint.out &"
+    # )
+    # exec_with_log("sleep 20")
+    # # exec_with_log(
+    # #     f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} >> MVVM_checkpoint.1.out &"
+    # # )
 
-    # print(checkpoint_result, restore_result)
-    # Return a combined result or just the checkpoint result as needed
-    os.system("sleep 100")
-    os.system(
-        f"scp -r {slowtier}:{pwd}/build/MVVM_restore.ps.out ./MVVM_restore.ps.1.out"
-    )
+    # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint1")
+    # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint1")
+    # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint1")
+    # exec_with_log(
+    #     f"{env} /mnt/osdi23/MVVM/bench/gapbs/build/{aot_file} {' '.join(arg)} >> MVVM_checkpoint.1.out"
+    # )
+    # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
+    # exec_with_log("sleep 1")
+    # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
+    # exec_with_log("sleep 1")
+    # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
 
-    cmd = f"cat ./MVVM_checkpoint.out ./MVVM_checkpoint.1.out ./MVVM_restore.1.out ./MVVM_restore.out"
+    cmd = f"cat ./MVVM_checkpoint.1.out ./MVVM_checkpoint.out ./MVVM_restore.1.out ./MVVM_restore.out"
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
@@ -1112,7 +1111,7 @@ def run_checkpoint_restore_burst(
     # exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_restore")
     # exec_with_log(f"sleep 1000")
     # exec_with_log(f"scp {burst}:{pwd_mac}/build/*.*.out ./")
-    cmd = f"cat ./MVVM_checkpoint.0.out ./MVVM_restore.0.out ./MVVM_restore.1.out ./MVVM_restore.2.out ./MVVM_restore.3.out ./MVVM_checkpoint.1.out ./MVVM_restore.4.out ./MVVM_restore.5.out ./MVVM_restore.6.out"
+    cmd = f"cat ./MVVM_checkpoint.0.out ./MVVM_restore.0.out ./MVVM_restore.1.out ./MVVM_restore.2.out ./MVVM_restore.3.out ./MVVM_checkpoint.2.out"
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:

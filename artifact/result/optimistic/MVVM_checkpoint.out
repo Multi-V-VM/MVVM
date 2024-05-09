@@ -1,0 +1,162 @@
+[2024-05-08 19:56:57.023] [error] [wamr_export.cpp:380] insert_parent_child 0 1
+[2024-05-08 19:56:57.023] [error] [wamr_export.cpp:364] wamr_handle_map old:< 0 > new:< 140737353897664 >
+wait 0x7fff36e67484 135578740 2 -1 0
+[2024-05-08 19:56:57.024] [error] [wamr_export.cpp:380] insert_parent_child 0 2
+[2024-05-08 19:56:57.024] [error] [wamr_export.cpp:364] wamr_handle_map old:< 0 > new:< 140737352554176 >
+wait 0x7fff36f693c4 136635316 2 -1 0
+[2024-05-08 19:56:57.024] [error] [wamr_export.cpp:380] insert_parent_child 0 3
+[2024-05-08 19:56:57.024] [error] [wamr_export.cpp:364] wamr_handle_map old:< 0 > new:< 140737348400832 >
+Generate Time:       1.11423
+Build Time:          1.68849
+Graph has 1048576 nodes and 15699691 undirected edges for degree: 14
+Trial Time:          0.04853
+Trial Time:          0.04519
+Trial Time:          0.03805
+Trial Time:          0.04185
+Trial Time:          0.03695
+Trial Time:          0.04199
+Trial Time:          0.04253
+Trial Time:          0.04509
+Trial Time:          0.04716
+Trial Time:          0.04580
+Trial Time:          0.03452
+Trial Time:          0.04433
+Trial Time:          0.03506
+Trial Time:          0.04364
+Trial Time:          0.03597
+Trial Time:          0.03476
+Trial Time:          0.04392
+Trial Time:          0.03747
+Trial Time:          0.04506
+Trial Time:          0.04168
+Trial Time:          0.03797
+Trial Time:          0.03676
+Trial Time:          0.03732
+Trial Time:          0.03997
+Trial Time:          0.05834
+Trial Time:          0.03807
+Trial Time:          0.04575
+Trial Time:          0.03588
+Trial Time:          0.03957
+Trial Time:          0.04098
+Trial Time:          0.04609
+Trial Time:          0.04618
+Trial Time:          0.04407
+Trial Time:          0.03644
+Trial Time:          0.04099
+Trial Time:          0.04221
+Trial Time:          0.04474
+Trial Time:          0.03653
+Trial Time:          0.03692
+Trial Time:          0.04183
+Trial Time:          0.04454
+Trial Time:          0.03447
+Trial Time:          0.04445
+Trial Time:          0.04132
+Trial Time:          0.04647
+Trial Time:          0.04299
+Trial Time:          0.03676
+Trial Time:          0.04036
+Trial Time:          0.04517
+Trial Time:          0.03693
+Trial Time:          0.03932
+Trial Time:          0.04154
+Trial Time:          0.04423
+Trial Time:          0.04190
+Trial Time:          0.04551
+Trial Time:          0.04121
+Trial Time:          0.03634
+Trial Time:          0.03485
+Trial Time:          0.04591
+Trial Time:          0.04127
+Trial Time:          0.04526
+Trial Time:          0.03992
+Trial Time:          0.04383
+Trial Time:          0.03612
+Trial Time:          0.04360
+Trial Time:          0.03595
+Trial Time:          0.03951
+Trial Time:          0.03472
+Trial Time:          0.03858
+Trial Time:          0.03996
+Trial Time:          notify 0x7fff36f693c4 136635316 1
+notify 0x7fff36e67484 135578740 1
+wake 0x7fff36f693c4 136635316 2 -1 0
+wake 0x7fff36e67484 135578740 2 -1 0
+wait 0x7fff36e67484 135578740 2 -1 0
+wait 0x7fff36f693c4 136635316 2 -1 0
+wait 0x7fff2ed5e414 275460 2 -1 0
+notify 0x7fff2ed5e414 275460 1
+wake 0x7fff2ed5e414 275460 2 -1 0
+notify 0x7fff36f693c4 136635316 1
+notify 0x7fff36e67484 135578740 1
+wake 0x7fff36f693c4 136635316 2 -1 0
+wake 0x7fff36e67484 135578740 2 -1 0
+wait 0x7fff36e67484 135578740 2 -1 0
+wait 0x7fff3706b384 137692020 2 -1 0
+notify 0x7fff3706b384 137692020 1
+notify 0x7fff36e67484 135578740 1
+wake 0x7fff36e67484 135578740 2 -1 0
+wake 0x7fff3706b384 137692020 2 -1 0
+[2024-05-08 19:58:01.155] [info] [wamr_interp_frame.cpp:82] function_index 1222 ip_offset 181 lp 0x55555583dbb4 sp 0x55555583dbf4 sp_offset 16
+104207008 137692952 115036 133516996 860269 276880 141890432 137692928 1048576 0 860270 3 1048575 134270240 125881600 130075920 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 929 ip_offset 380 lp 0x55555583daf4 sp 0x55555583db2c sp_offset 14
+278 3 3 5 134514324 137692944 137692956 137692952 282000 282196 276896 276880 276904 278 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 810 ip_offset 254 lp 0x55555583da88 sp 0x55555583dabc sp_offset 13
+3 134513856 136637184 3 134514324 5 278 138876 278 3 3 5 134514324 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 835 ip_offset 482 lp 0x55555583da20 sp 0x55555583da4c sp_offset 11
+136637184 137692960 136748 3 136637248 12 1 0 0 3 172 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 887 ip_offset 343 lp 0x55555583d9c8 sp 0x55555583d9dc sp_offset 5
+136637184 137693040 3 0 136637184 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 5410 ip_offset 32 lp 0x55555583d960 sp 0x55555583d988 sp_offset 10
+3 137693160 137693204 0 0 0 0 0 136637184 179 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 5441 ip_offset 27 lp 0x55555583d918 sp 0x55555583d928 sp_offset 4
+3 137693160 3 137693160 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 1222 ip_offset 234 lp 0x555555aae434 sp 0x555555aae474 sp_offset 16
+73581064 136636248 528709 132505628 607427 276880 141890432 136636224 1048576 0 73581052 2 786431 134270240 125881600 130075920 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 929 ip_offset 380 lp 0x555555aae374 sp 0x555555aae3ac sp_offset 14
+278 2 2 5 134514324 136636240 136636252 136636248 282000 282196 276896 276880 276904 278 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 810 ip_offset 254 lp 0x555555aae308 sp 0x555555aae33c sp_offset 13
+2 134513856 135580608 2 134514324 5 278 138876 278 2 2 5 134514324 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 835 ip_offset 482 lp 0x555555aae2a0 sp 0x555555aae2cc sp_offset 11
+135580608 136636256 136748 2 135580672 8 1 0 0 2 172 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 887 ip_offset 343 lp 0x555555aae248 sp 0x555555aae25c sp_offset 5
+135580608 136636336 2 0 135580608 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 5410 ip_offset 32 lp 0x555555aae1e0 sp 0x555555aae208 sp_offset 10
+2 136636456 136636500 0 0 0 0 0 135580608 179 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 5441 ip_offset 27 lp 0x555555aae198 sp 0x555555aae1a8 sp_offset 4
+2 136636456 2 136636456 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 1222 ip_offset 234 lp 0x555555ce2b74 sp 0x555555ce2bb4 sp_offset 16
+46546636 135579672 27717 131610816 383724 276880 141890432 135579648 1048576 0 46546152 1 524287 134270240 125881600 130075920 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 929 ip_offset 380 lp 0x555555ce2ab4 sp 0x555555ce2aec sp_offset 14
+278 1 1 5 134514324 135579664 135579676 135579672 282000 282196 276896 276880 276904 278 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 810 ip_offset 254 lp 0x555555ce2a48 sp 0x555555ce2a7c sp_offset 13
+1 134513856 134524160 1 134514324 5 278 138876 278 1 1 5 134514324 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 835 ip_offset 482 lp 0x555555ce29e0 sp 0x555555ce2a0c sp_offset 11
+134524160 135579680 136748 1 134524224 4 1 0 0 1 172 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 887 ip_offset 343 lp 0x555555ce2988 sp 0x555555ce299c sp_offset 5
+134524160 135579760 1 0 134524160 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 5410 ip_offset 32 lp 0x555555ce2920 sp 0x555555ce2948 sp_offset 10
+1 135579880 135579924 0 0 0 0 0 134524160 179 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 5441 ip_offset 27 lp 0x555555ce28d8 sp 0x555555ce28e8 sp_offset 4
+1 135579880 1 135579880 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 1222 ip_offset 181 lp 0x5555558055e0 sp 0x555555805620 sp_offset 16
+11749540 275320 504734 130454372 94613 276880 141890432 275296 1048576 0 94614 0 262143 134270240 125881600 130075920 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 929 ip_offset 380 lp 0x555555805520 sp 0x555555805558 sp_offset 14
+278 0 0 5 134514324 275312 275324 275320 282000 282196 276896 276880 276904 278 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 810 ip_offset 254 lp 0x5555558054b4 sp 0x5555558054e8 sp_offset 13
+0 134513856 134518016 0 134514324 5 278 138876 278 0 0 5 134514324 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 807 ip_offset 10457 lp 0x5555558053e8 sp 0x555555805460 sp_offset 30
+124720 0 1 5 278 172 276588 134513856 275328 0 0 0 134524096 134502080 0 134513856 0 0 0 1 4 0 0 1 0 0 41 1 0 172 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 1123 ip_offset 54 lp 0x555555805378 sp 0x5555558053ac sp_offset 13
+124720 5 278 276720 276576 0 124720 0 1 5 278 172 276588 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 1232 ip_offset 1557 lp 0x5555558052c0 sp 0x555555805338 sp_offset 30
+282196 282000 1 0 15 18 276592 0 276704 2247441146 443854 141890432 10848 0 31388526 0 18 0 15 0 2247368954 443854 0 0 0 0 124720 5 278 276720 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 1238 ip_offset 1463 lp 0x555555805200 sp 0x55555580527c sp_offset 31
+0 130 276928 126795440 279472 228460 282072 2245675078 443854 309 0 1860199230 3305043139 308 0 3725976628 1074636190 91 4294967295 125881600 1048576 0 3407850528 1067933213 0 282196 282000 228460 0 15 18 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 5016 ip_offset 109 lp 0x5555558051b0 sp 0x5555558051c4 sp_offset 5
+282208 282336 282288 3 282336 
+[2024-05-08 19:58:01.156] [info] [wamr_interp_frame.cpp:82] function_index 52 ip_offset 40 lp 0x555555805168 sp 0x55555580516c sp_offset 1
+0 
+[2024-05-08 19:58:05.043] [info] [wamr.cpp:1005] Snapshot time: 4.887918 s
+[2024-05-08 19:58:05.044] [info] [wamr.cpp:1006] Memory usage: 3230 MB

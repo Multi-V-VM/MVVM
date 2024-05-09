@@ -256,6 +256,7 @@ def plot_time(reu):
     time_spots.pop(to_pop - 1)
     print(time[3] - sum(exec_time[3]))
     ax.plot(time_spots, exec_time[0] + exec_time[1] +exec_time[2] + exec_time[3], "blue")
+    # plot the solar chasing 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Average Trial Time (s)")
     plt.savefig("optimistic.pdf")
@@ -304,9 +305,9 @@ if __name__ == "__main__":
 
     # time,time1,time2 = get_cloud_result("eaglei_outages_2020.csv")
     # print(time,time1,time2)
-    # reu = get_eneragy_outrage(100, 300, 400)
-    # with open("outrage.txt", "w") as f:
-    #     f.write(str(reu))
+    reu = get_eneragy_outrage(100, 300, 400)
+    with open("outrage.txt", "w") as f:
+        f.write(str(reu))
     reu = ""
     with open("outrage.txt", "r") as f:
         reu = f.read()

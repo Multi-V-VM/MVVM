@@ -7,13 +7,13 @@ import numpy as np
 from collections import defaultdict
 import sys
 
-ip = ["192.168.0.24", "192.168.0.23"]
+ip = ["128.114.53.32", "128.114.59.200"]
 port = 12346
 new_port = 12353
 
 cmd = [
     "bc",  # high priority task
-    "bfs",  # low priority task
+    "bfs-ckpt-loop-dirty",  # low priority task
 ]
 folder = [
     "gapbs",
@@ -24,8 +24,8 @@ arg = [
     ["-g20", "-n1000"],
 ]
 envs = [
-    "OMP_NUM_THREADS=1",
-    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
 ]
 
 pool = Pool(processes=1)
@@ -84,8 +84,8 @@ def get_snapshot_overhead():
                 aot,
                 arg[i],
                 envs[i],
-                f"-o {ip[1]} -s {port} -r",
-                f"-i {ip[1]} -e {port} -r",
+                f"-o {ip[1]} -s {port}",
+                f"-i {ip[1]} -e {port}",
             )
 
             for exec, output in results1:
@@ -102,7 +102,7 @@ def get_snapshot_overhead():
 def get_optimiztic_compute_overhead():
     results = []
     results1 = []
-    aot = cmd[0] + ".aot"
+    aot = cmd[0]
     aot1 = cmd[1] + ".aot"
     results1 = common_util.run_checkpoint_restore_slowtier(
         aot,
@@ -110,9 +110,9 @@ def get_optimiztic_compute_overhead():
         aot1,
         arg[1],
         envs[0],
-        f"-o {ip[1]} -s {port} -r",
-        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port} -r",
-        f"-i {ip[0]} -e {new_port} -r",
+        f"-o {ip[1]} -s {port}",
+        f"-i {ip[1]} -e {port} -o {ip[0]} -s {new_port}",
+        f"-i {ip[0]} -e {new_port}",
     )
     return results1
 
@@ -305,6 +305,9 @@ def plot_time(reu):
 def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
     # get from reu
     # start time -> end time -> start time
+    font = {'size': 25}
+ 
+    plt.rc('font', **font)
     reu = reu.split("\\n")
     state = 0
     time = []
@@ -313,7 +316,7 @@ def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
         try:
             if line.__contains__("Trial"):
                 to_append = float(line.split(" ")[-1].replace("\\r", ""))
-                if to_append < 0.001 and to_append > 0:
+                if to_append < 1 and to_append > 0:
                     exec_time[state].append(to_append)
                 # print(exec_time)
                 # print("exec_time ",exec_time[-1])
@@ -326,7 +329,7 @@ def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
     # print(exec_time)
     # print(time)
     # record time
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(20, 10))
     base = time[1] - sum(exec_time[1])
 
     time_spots2 = [time[0] - sum(exec_time[0]) - base]
@@ -362,114 +365,17 @@ def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
         # Append the new time spot to the sequence
         time_spots.append(new_time_spot)
     time_spots.pop(to_pop - 1)
-    avg_extended, percentile99_extended = get_avg_99percent(exec_time[1] + exec_time[2] + exec_time[3])
-    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(exec_time[0])
-    ax.plot(time_spots, avg_extended, "blue")
+    print(exec_time[0])
+    avg_extended, percentile99_extended = get_avg_99percent(exec_time[1] + exec_time[2] + exec_time[3],1)
+    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(exec_time[0],1)
+    ax.plot(time_spots, avg_extended, "blue",label="bfs -g20 -n1000")
     # ax.plot(time_spots, percentile99_extended, color="purple", linestyle="--")
-    ax.plot(time_spots2, avg_exec_time1, "r")
+    ax.plot(time_spots2, avg_exec_time1, "r",label="bc -g20 -n100")
+    ax.legend()
     # ax.plot(time_spots2, percentile_99_exec_time1, color="pink", linestyle="--")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Average Trial Time (s)")
     plt.savefig("optimistic.pdf")
-
-    cpu = []
-    memory = []
-    exec_time_checkpoint = []
-    cpu1 = []
-    memory1 = []
-    exec_time_checkpoint1 = []
-    checkpoint = checkpoint.split("\n")
-    checkpoint1 = checkpoint1.split("\n")
-    restore = restore.split("\n")
-    restore1 = restore1.split("\n")
-
-    for line in checkpoint1:
-        try:
-            if line.__contains__("2024"):
-                exec_time_checkpoint1.append(parse_time_no_msec(line.split(" ")[3]))
-                cpu1.append(0)
-                memory1.append(0)
-                # print(exec_time)
-                # print("exec_time ",exec_time[-1])
-            else:
-                if float(line.split(" ")[2]) > 10:
-                    cpu1.append(float(line.split(" ")[2]))
-                    memory1.append(float(line.split(" ")[5]))
-                    exec_time_checkpoint1.append(exec_time_checkpoint1[-1] + 0.5)
-                else:
-                    exec_time_checkpoint[-1] = exec_time_checkpoint[-1] + 0.5
-        except:
-            print(line)
-    for line in checkpoint:
-        try:
-            if line.__contains__("2024"):
-                exec_time_checkpoint.append(
-                    parse_time_no_msec(line.split(" ")[3])
-                )
-                cpu.append(0)
-                memory.append(0)
-                # print(exec_time)
-                # print("exec_time ",exec_time[-1])
-            else:
-                if float(line.split(" ")[2]) > 10:
-                    cpu.append(float(line.split(" ")[2]))
-                    memory.append(float(line.split(" ")[5]))
-                    exec_time_checkpoint.append(exec_time_checkpoint[-1] + 0.5)
-                else:
-                    exec_time_checkpoint[-1] = exec_time_checkpoint[-1] + 0.5
-        except:
-            print(line)
-    print(len(exec_time_checkpoint), len(cpu))
-    for line in restore1:
-        try:
-            if line.__contains__("2024"):
-                exec_time_checkpoint.append(parse_time_no_msec(line.split(" ")[3]))
-                cpu.append(0)
-                memory.append(0)
-                # print(exec_time)
-                # print("exec_time ",exec_time[-1])
-            else:
-                if float(line.split(" ")[2]) > 10:
-                    cpu.append(float(line.split(" ")[2]))
-                    memory.append(float(line.split(" ")[5]))
-                    exec_time_checkpoint.append(exec_time_checkpoint[-1] + 0.5)
-                else:
-                    exec_time_checkpoint[-1] = exec_time_checkpoint[-1] + 0.5
-        except:
-            print(line)
-    print(exec_time_checkpoint)
-    for line in restore:
-        try:
-            if line.__contains__("2024"):
-                exec_time_checkpoint.append(parse_time_no_msec(line.split(" ")[3]))
-                cpu.append(0)
-                memory.append(0)
-                # print(exec_time)
-                # print("exec_time ",exec_time[-1])
-            else:
-                if float(line.split(" ")[2]) > 10:
-                    cpu.append(float(line.split(" ")[2]))
-                    memory.append(float(line.split(" ")[5]))
-                    exec_time_checkpoint.append(exec_time_checkpoint[-1] + 0.5)
-                else:
-                    exec_time_checkpoint[-1] = exec_time_checkpoint[-1] + 0.5
-        except:
-            print(line)
-    print(len(exec_time_checkpoint), len(cpu))
-
-    fig, ax = plt.subplots()
-
-    ax.plot(exec_time_checkpoint, cpu, "b")
-    ax.plot(exec_time_checkpoint1, cpu1, "r")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Average CPU (percentage)")
-    plt.savefig("optimistic_cpu.pdf")
-    fig, ax = plt.subplots()
-    ax.plot(exec_time_checkpoint, memory, "b")
-    ax.plot(exec_time_checkpoint1, memory1, "r")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Average Memory (B)")
-    plt.savefig("optimistic_memory.pdf")
 
 
 if __name__ == "__main__":
@@ -486,18 +392,18 @@ if __name__ == "__main__":
 
     # plot(results)
     reu = get_optimiztic_compute_overhead()
-    # with open("optimistic.txt", "w") as f:
-    #     f.write(str(reu))
-    reu = ""
+    with open("optimistic.txt", "w") as f:
+        f.write(str(reu))
+    # reu = ""
     with open("optimistic.txt", "r") as f:
         reu = f.read()
-    with open("MVVM_checkpoint.ps.1.out") as f:
-        checkpoint1 = f.read()
-    with open("MVVM_checkpoint.ps.out") as f:
-        checkpoint = f.read()
-    with open("MVVM_restore.ps.1.out") as f:
-        restore1 = f.read()
-    with open("MVVM_restore.ps.out") as f:
-        restore = f.read()
+    # with open("MVVM_checkpoint.ps.1.out") as f:
+    #     checkpoint1 = f.read()
+    # with open("MVVM_checkpoint.ps.out") as f:
+    #     checkpoint = f.read()
+    # with open("MVVM_restore.ps.1.out") as f:
+    #     restore1 = f.read()
+    # with open("MVVM_restore.ps.out") as f:
+    #     restore = f.read()
     # print(reu)
-    plot_time(reu, checkpoint, checkpoint1, restore, restore1)
+    plot_time(reu, None, None, None, None)

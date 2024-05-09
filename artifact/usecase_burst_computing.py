@@ -155,12 +155,13 @@ def read_from_csv(filename):
                 continue
             results.append(row)
     return results
-
+def average(array):
+    return sum(array) / len(array)
 
 def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
     # get from reu
     # start time -> end time -> start time
-    font = {"size": 18}
+    font = {"size": 25}
 
     plt.rc("font", **font)
 
@@ -168,14 +169,19 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
     state = 0
     time = []
     exec_time = [[], [], [], [], []]
-    exec_time1 = [[], [], [], []]
+    exec_time1 = [[]]
     for line in reu:
         try:
-            if line.__contains__("ttrack"):
+            if line.__contains__("ttrack") and state < 5:
                 to_append = float(line.split(" ")[-1])
                 # print("exec_time ",exec_time[-1])
                 if to_append >= 0 and to_append < 1:
                     exec_time[state].append(to_append)
+            elif line.__contains__("ttrack"):
+                to_append = float(line.split(" ")[-1])
+                # print("exec_time ",exec_time[-1])
+                if to_append >= 0 and to_append < 1:
+                    exec_time1[state - 5].append(to_append)
             if line.__contains__("Iteration"):
                 to_append = float(line.split(" ")[-2].replace("\\r", ""))
                 if to_append > 0 and to_append < 1:
@@ -206,29 +212,28 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
     fig, ax = plt.subplots(figsize=(20, 10))
     base = time[0] - sum(exec_time[0])
     sum_aot = exec_time[0] + exec_time[1] + exec_time[2] + exec_time[3] + exec_time[4]
-    sum_aot1 = exec_time1[0] + exec_time1[1] + exec_time1[2] + exec_time1[3]
+    sum_aot1 = exec_time1[0]  # + exec_time1[1] + exec_time1[2] + exec_time1[3]
     time_spots = [time[0] - sum(exec_time[0]) - base]
 
     for idx, i in enumerate(exec_time):
         to_pop = len(i) - 1
         for x in i:
             # Add the current increment to the last time spot
-            new_time_spot = time_spots[-1] + x * 500
+            new_time_spot = time_spots[-1] +0.2
             # Append the new time spot to the sequence
             time_spots.append(new_time_spot)
         time_spots.pop(to_pop)
         if idx != len(exec_time) - 1:
             time_spots.append(time[idx + 1] - sum(exec_time[idx + 1]) - base)
-    # print(len(time))
+    print(len(time))
     # print(len(exec_time1))
     # print(len(exec_time))
     time_spots1 = [time[5] - sum(exec_time1[0]) - base]
-
     for idx, i in enumerate(exec_time1):
         to_pop = len(i) - 1
         for x in i:
             # Add the current increment to the last time spot
-            new_time_spot = time_spots1[-1] + x
+            new_time_spot = time_spots1[-1] + 0.2
             # Append the new time spot to the sequence
             time_spots1.append(new_time_spot)
         time_spots1.pop(to_pop)
@@ -236,18 +241,21 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
             time_spots1.append(time[idx + 6] - sum(exec_time1[idx + 1]) - base)
     # sum_aot = [x * 50000 for x in sum_aot]
     avg_extended, percentile99_extended = get_avg_99percent(sum_aot, 1)
-    sum_aot1 = [x * 10 for x in sum_aot1]
-    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(sum_aot1, 10000)
-    ax.plot(time_spots, avg_extended, "blue",label="OrbSlam2")
+    # sum_aot1 = [x * 10 for x in sum_aot1]
+    avg_exec_time1, percentile99_extended1 = get_avg_99percent(sum_aot1, 4)
+    print("avg_exec_time1 ", exec_time1, "time_spots1 ", time[5])
+    ax.plot(time_spots, avg_extended, "blue", label="MVVM")
     # ax.plot(time_spots, percentile99_extended, color="purple", linestyle="-")
-    ax.plot(time_spots1, avg_exec_time1, "r",label="Redis")
+    ax.plot(time_spots1, avg_exec_time1, "r", label="Native")
     # ax.plot(time_spots1, percentile_99_exec_time1, color="pink", linestyle="-")
     # Add a legend to the plot
     ax.legend()
+    print(average(exec_time[1]+exec_time[3])/average(exec_time[0]+exec_time[2]+exec_time[4]))
+    print(average(sum_aot1)/average(sum_aot))
     # ax.plot(time_spots,sum_aot, "blue")
     # ax.plot(time_spots1,sum_aot1, "r")
     ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Average Trial Time (s)")
+    ax.set_ylabel("second / frame (s)")
     plt.savefig("burst.pdf")
 
 
