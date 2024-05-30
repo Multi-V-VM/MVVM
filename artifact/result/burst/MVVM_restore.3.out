@@ -280,11 +280,6 @@ ttrack: 0.000973
 ttrack: 0.000872
 ttrack: 0.001044
 
--------
-Start processing sequence ...
-Images in the sequence: 2584
-
-New map created with 944 points
 Loop detected!
 Local Mapping STOP
 Local Mapping RELEASE
@@ -296,8 +291,8 @@ Local Mapping RELEASE
 Map updated!
 -------
 
-median tracking time: 0.0293088
-mean tracking time: 0.0304044
+median tracking time: 0.001219
+mean tracking time: 0.001342
 
 Saving camera trajectory to CameraTrajectory.txt ...
 

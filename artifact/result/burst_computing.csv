@@ -1,5 +1,0 @@
-name,fasttier,slowtier,snapshot Time
-OMP_NUM_THREADS=1 redis.aot,44.489052,67.955877,33.1234123
-OMP_NUM_THREADS=1 rgbd_tum.aot ./ORBvoc.txt ./TUM3.yaml ./ ./associations/fr1_xyz.txt,633.195636,1129.423707,44.178581
-OMP_NUM_THREADS=1 redis.aot,44.489052,67.955877,31.167652
-OMP_NUM_THREADS=1 rgbd_tum.aot ./ORBvoc.txt ./TUM3.yaml ./ ./associations/fr1_xyz.txt,633.195636,1129.423707,44.178581

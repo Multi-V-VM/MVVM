@@ -219,7 +219,7 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
         to_pop = len(i) - 1
         for x in i:
             # Add the current increment to the last time spot
-            new_time_spot = time_spots[-1] +0.2
+            new_time_spot = time_spots[-1] + 0.2
             # Append the new time spot to the sequence
             time_spots.append(new_time_spot)
         time_spots.pop(to_pop)
@@ -239,10 +239,10 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
         time_spots1.pop(to_pop)
         if idx != len(exec_time1) - 1:
             time_spots1.append(time[idx + 6] - sum(exec_time1[idx + 1]) - base)
-    # sum_aot = [x * 50000 for x in sum_aot]
-    avg_extended, percentile99_extended = get_avg_99percent(sum_aot, 1)
-    # sum_aot1 = [x * 10 for x in sum_aot1]
-    avg_exec_time1, percentile99_extended1 = get_avg_99percent(sum_aot1, 4)
+    sum_aot = [1 / x for x in sum_aot]
+    avg_extended, percentile99_extended = get_avg_99percent(sum_aot, 6)
+    sum_aot1 = [1 / x for x in sum_aot1]
+    avg_exec_time1, percentile99_extended1 = get_avg_99percent(sum_aot1, 6)
     print("avg_exec_time1 ", exec_time1, "time_spots1 ", time[5])
     ax.plot(time_spots, avg_extended, "blue", label="MVVM")
     # ax.plot(time_spots, percentile99_extended, color="purple", linestyle="-")
@@ -255,7 +255,7 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
     # ax.plot(time_spots,sum_aot, "blue")
     # ax.plot(time_spots1,sum_aot1, "r")
     ax.set_xlabel("Time (s)")
-    ax.set_ylabel("second / frame (s)")
+    ax.set_ylabel("Frames / Second")
     plt.savefig("burst.pdf")
 
 

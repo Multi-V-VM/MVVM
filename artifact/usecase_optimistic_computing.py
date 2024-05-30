@@ -1,6 +1,6 @@
 import csv
 import common_util
-from common_util import parse_time, parse_time_no_msec,get_avg_99percent
+from common_util import parse_time, parse_time_no_msec, get_avg_99percent
 from multiprocessing import Pool
 from matplotlib import pyplot as plt
 import numpy as np
@@ -24,8 +24,8 @@ arg = [
     ["-g20", "-n1000"],
 ]
 envs = [
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
 ]
 
 pool = Pool(processes=1)
@@ -211,7 +211,7 @@ def plot(file_name):
             label="slowtier" if i == 0 else "",
         )
         ax.bar(
-            index[i] + 2*bar_width,
+            index[i] + 2 * bar_width,
             stats["snapshot_median"],
             bar_width,
             yerr=stats["snapshot_std"],
@@ -231,7 +231,6 @@ def plot(file_name):
     plt.show()
     plt.savefig("optimistic_computing.pdf")
     # %%
-
 
 
 def plot_time(reu):
@@ -305,13 +304,13 @@ def plot_time(reu):
 def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
     # get from reu
     # start time -> end time -> start time
-    font = {'size': 25}
- 
-    plt.rc('font', **font)
+    font = {"size": 25}
+
+    plt.rc("font", **font)
     reu = reu.split("\\n")
     state = 0
     time = []
-    exec_time = [[], [], [], []]
+    exec_time = [[], [], [], [], []]
     for line in reu:
         try:
             if line.__contains__("Trial"):
@@ -331,6 +330,13 @@ def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
     # record time
     fig, ax = plt.subplots(figsize=(20, 10))
     base = time[1] - sum(exec_time[1])
+    time_spots1 = [0]
+    for i in exec_time[4]:
+        # Add the current increment to the last time spot
+        new_time_spot = time_spots1[-1] + i
+        # Append the new time spot to the sequence
+        time_spots1.append(new_time_spot)
+    time_spots1.pop(0)
 
     time_spots2 = [time[0] - sum(exec_time[0]) - base]
 
@@ -366,15 +372,24 @@ def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
         time_spots.append(new_time_spot)
     time_spots.pop(to_pop - 1)
     print(exec_time[0])
-    avg_extended, percentile99_extended = get_avg_99percent(exec_time[1] + exec_time[2] + exec_time[3],1)
-    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(exec_time[0],1)
-    ax.plot(time_spots, avg_extended, "blue",label="bfs -g20 -n1000")
+    avg_extended, percentile99_extended = get_avg_99percent(
+        exec_time[1] + exec_time[2] + exec_time[3], 4
+    )
+    avg_extended = [1 / x for x in avg_extended]
+    avg_exec_time1, percentile_99_exec_time1 = get_avg_99percent(exec_time[4], 6)
+    avg_exec_time1 = [1 / x for x in avg_exec_time1]
+    avg_exec_time2, percentile_99_exec_time2 = get_avg_99percent(exec_time[0], 1)
+    avg_exec_time2 = [1 / x for x in avg_exec_time2]
+    ax.plot(time_spots, avg_extended, "blue", label="low-priority")
     # ax.plot(time_spots, percentile99_extended, color="purple", linestyle="--")
-    ax.plot(time_spots2, avg_exec_time1, "r",label="bc -g20 -n100")
+    ax.plot(time_spots1, avg_exec_time1, "green", label="Native low-priority")
+    ax.legend()
+    # ax.plot(time_spots2, percentile_99_exec_time1, color="pink", linestyle="--")
+    # ax.plot(time_spots2, avg_exec_time2, "red", label="Native high-priority")
     ax.legend()
     # ax.plot(time_spots2, percentile_99_exec_time1, color="pink", linestyle="--")
     ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Average Trial Time (s)")
+    ax.set_ylabel("Tirals / Time")
     plt.savefig("optimistic.pdf")
 
 

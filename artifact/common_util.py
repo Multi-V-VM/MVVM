@@ -13,7 +13,6 @@ slowtier = "epyc"
 burst = "mac"
 energy = "bana"
 
-
 aot_variant_freq = [
     "-ckpt-loop-counter-1.aot",
     "-ckpt-loop-counter-4.aot",
@@ -23,41 +22,108 @@ aot_variant_freq = [
     "-ckpt-loop-counter-30.aot",
     "-ckpt-loop-pgo.aot",
     ".aot",
-    "-pure.aot"
+    "-stack.aot",
 ]
+aot_variant_freq1 = [
+    "-ckpt-loop-counter-1.aot",
+    "-ckpt-loop-counter-4.aot",
+    "-ckpt-loop-counter-8.aot",
+    "-ckpt-loop-counter-16.aot",
+    "-ckpt-loop-counter-20.aot",
+    "-ckpt-loop-counter-30.aot",
+    "-ckpt-loop-pgo.aot",
+    ".aot",
+]
+
+
 def plot_loop_counter(results, file_name):
-    font = {"size": 18}
+    font = {"size": 25}
     plt.rc("font", **font)
     workloads = defaultdict(list)
 
     # Simplifying and grouping your data
-    for workload, ckptloopcounter1s, ckptloopcounter4s, ckptloopcounter8s, ckptloopcounter16s, ckptloopcounter20s,ckptloopcounter30s,ckptlooppgos,aots,pures in results:
+    for (
+        workload,
+        ckptloopcounter1s,
+        ckptloopcounter4s,
+        ckptloopcounter8s,
+        ckptloopcounter16s,
+        ckptloopcounter20s,
+        ckptloopcounter30s,
+        ckptlooppgos,
+        aots,
+        pures,
+    ) in results:
         workloads[workload.split(" ")[1].replace(".aot", "")].append(
-            (float(ckptloopcounter1s), float(ckptloopcounter4s), float(ckptloopcounter8s), float(ckptloopcounter16s), float(ckptloopcounter20s),float(ckptloopcounter30s),float(ckptlooppgos),float(aots),float(pures))
+            (
+                float(ckptloopcounter1s),
+                float(ckptloopcounter4s),
+                float(ckptloopcounter8s),
+                float(ckptloopcounter16s),
+                float(ckptloopcounter20s),
+                float(ckptloopcounter30s),
+                float(ckptlooppgos),
+                float(aots),
+                float(pures),
+            )
         )
 
     # Calculate statistics
     statistics = {}
     for workload, times in workloads.items():
-        ckptloopcounter1s, ckptloopcounter4s, ckptloopcounter8s, ckptloopcounter16s, ckptloopcounter20s,ckptloopcounter30s,ckptlooppgos,aots,pures = zip(*times)
-        divisor =np.median(pures)
-        ckptloopcounter1s = [x/divisor for x in ckptloopcounter1s]
-        ckptloopcounter4s = [x/divisor for x in ckptloopcounter4s]
-        ckptloopcounter8s = [x/divisor for x in ckptloopcounter8s]
-        ckptloopcounter16s = [x/divisor for x in ckptloopcounter16s]
+        (
+            ckptloopcounter1s,
+            ckptloopcounter4s,
+            ckptloopcounter8s,
+            ckptloopcounter16s,
+            ckptloopcounter20s,
+            ckptloopcounter30s,
+            ckptlooppgos,
+            aots,
+            pures,
+        ) = zip(*times)
+        divisor = np.median(pures)
+        ckptloopcounter1s = [x / divisor for x in ckptloopcounter1s]
+        ckptloopcounter4s = [x / divisor for x in ckptloopcounter4s]
+        ckptloopcounter8s = [x / divisor for x in ckptloopcounter8s]
+        ckptloopcounter16s = [x / divisor for x in ckptloopcounter16s]
 
-        ckptloopcounter20s = [x/divisor for x in ckptloopcounter20s]
-        ckptloopcounter30s = [x/divisor for x in ckptloopcounter30s]
-        ckptlooppgos = [x/divisor for x in ckptlooppgos]
-        aots = [x/divisor for x in aots]
-        pures = [x/divisor for x in pures]
+        ckptloopcounter20s = [x / divisor for x in ckptloopcounter20s]
+        ckptloopcounter30s = [x / divisor for x in ckptloopcounter30s]
+        ckptlooppgos = [x / divisor for x in ckptlooppgos]
+        aots = [x / divisor for x in aots]
+        pures = [x / divisor for x in pures]
         statistics[workload] = [
-            ("ckptloopcounter1", np.median(ckptloopcounter1s), np.std(ckptloopcounter1s)),
-            ("ckptloopcounter4", np.median(ckptloopcounter4s), np.std(ckptloopcounter4s)),
-            ("ckptloopcounter8", np.median(ckptloopcounter8s), np.std(ckptloopcounter8s)),
-            ("ckptloopcounter16", np.median(ckptloopcounter16s), np.std(ckptloopcounter16s)),
-            ("ckptloopcounter20", np.median(ckptloopcounter20s), np.std(ckptloopcounter20s)),
-            ("ckptloopcounter30", np.median(ckptloopcounter30s), np.std(ckptloopcounter30s)),
+            (
+                "ckptloopcounter1",
+                np.median(ckptloopcounter1s),
+                np.std(ckptloopcounter1s),
+            ),
+            (
+                "ckptloopcounter4",
+                np.median(ckptloopcounter4s),
+                np.std(ckptloopcounter4s),
+            ),
+            (
+                "ckptloopcounter8",
+                np.median(ckptloopcounter8s),
+                np.std(ckptloopcounter8s),
+            ),
+            (
+                "ckptloopcounter16",
+                np.median(ckptloopcounter16s),
+                np.std(ckptloopcounter16s),
+            ),
+            (
+                "ckptloopcounter20",
+                np.median(ckptloopcounter20s),
+                np.std(ckptloopcounter20s),
+            ),
+            (
+                "ckptloopcounter30",
+                np.median(ckptloopcounter30s),
+                np.std(ckptloopcounter30s),
+            ),
             ("ckptlooppgo", np.median(ckptlooppgos), np.std(ckptlooppgos)),
             ("aot", np.median(aots), np.std(aots)),
             ("pure", np.median(pures), np.std(pures)),
@@ -77,20 +143,22 @@ def plot_loop_counter(results, file_name):
         "pure",
         "aot",
     ]
-    x_ = [1, 4, 8, 16, 20, 30,40, 50,60]
+    # x_ = [1, 4, 8, 16, 20, 30, 40, 50, 60]
+    x_ = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    x1_ = ["", "2^1", "2^4", "2^8", "2^16", "2^20", "2^30", "PGO", "Func", "AOT"]
     # x_ = [1<<x for x in x_]
     for i, (workload, stats) in enumerate(statistics.items()):
         # sorted_stats = sorted(stats, key=lambda x: -x[1])  # Sort by median time
-        
+
         x_values = []
         y_values = []
         y_errors = []
-        
+
         for j, (label, median, std) in enumerate(stats):
             x_values.append(x_[j])
             y_values.append(median)
             y_errors.append(std)
-        
+
         ax.errorbar(
             x_values,
             y_values,
@@ -98,48 +166,115 @@ def plot_loop_counter(results, file_name):
             # color=color[workload],
             capsize=5,
             label=workload,
-            marker='o',
-            linestyle='-',
+            marker="o",
+            linestyle="-",
             linewidth=2,
         )
-    ax.set_xticks(x_)  # Adjust this based on the number of bars per group
-    # ax.set_xticklabels(statistics.keys(), fontsize=18)
-    ax.set_ylabel("Execution Time (s)")
+    # ax.set_xticks(x1_)  # Adjust this based on the number of bars per group
+    ax.set_xticklabels(x1_)
+    ax.set_ylabel("Execution Time compared to AOT")
     plt.tight_layout()
     ax.legend(loc="upper right")
 
     plt.savefig(file_name)
 
+
 def plot_loop_counter_snapshot(results, file_name):
-    font = {"size": 18}
+    font = {"size": 25}
     plt.rc("font", **font)
     workloads = defaultdict(list)
 
     # Simplifying and grouping your data
-    for workload, ckptloopcounter1s, ckptloopcounter4s, ckptloopcounter8s, ckptloopcounter16s, ckptloopcounter20s,ckptloopcounter30s in results:
-        workloads[workload.split(" ")[1].replace(".aot", "")].append(
-            (float(ckptloopcounter1s), float(ckptloopcounter4s), float(ckptloopcounter8s), float(ckptloopcounter16s), float(ckptloopcounter20s),float(ckptloopcounter30s))
-        )
+    for (
+        workload,
+        ckptloopcounter1s,
+        ckptloopcounter4s,
+        ckptloopcounter8s,
+        ckptloopcounter16s,
+        ckptloopcounter20s,
+        ckptloopcounter30s,
+        ckptloopcounterpgos,
+        funcs,
+    ) in results:
+        # if workload != "bfs" and workload != "llama" and workload != "ft" and workload != "bc" 
+        if workload != "llama":
+            workloads[workload].append(
+                (
+                    float(ckptloopcounter1s),
+                    float(ckptloopcounter4s),
+                    float(ckptloopcounter8s),
+                    float(ckptloopcounter16s),
+                    float(ckptloopcounter20s),
+                    float(ckptloopcounter30s),
+                    float(ckptloopcounterpgos),
+                    float(funcs),
+                )
+            )
 
     # Calculate statistics
     statistics = {}
     for workload, times in workloads.items():
-        ckptloopcounter1s, ckptloopcounter4s, ckptloopcounter8s, ckptloopcounter16s, ckptloopcounter20s,ckptloopcounter30s = zip(*times)
-        divisor =np.median(ckptloopcounter1s)
-        ckptloopcounter1s = [x/divisor for x in ckptloopcounter1s]
-        ckptloopcounter4s = [x/divisor for x in ckptloopcounter4s]
-        ckptloopcounter8s = [x/divisor for x in ckptloopcounter8s]
-        ckptloopcounter16s = [x/divisor for x in ckptloopcounter16s]
+        (
+            ckptloopcounter1s,
+            ckptloopcounter4s,
+            ckptloopcounter8s,
+            ckptloopcounter16s,
+            ckptloopcounter20s,
+            ckptloopcounter30s,
+            ckptloopcounterpgos,
+            funcss,
+        ) = zip(*times)
+        divisor = np.median(funcs)
+        ckptloopcounter1s = [x / divisor for x in ckptloopcounter1s]
+        ckptloopcounter4s = [x / divisor for x in ckptloopcounter4s]
+        ckptloopcounter8s = [x / divisor for x in ckptloopcounter8s]
+        ckptloopcounter16s = [x / divisor for x in ckptloopcounter16s]
 
-        ckptloopcounter20s = [x/divisor for x in ckptloopcounter20s]
-        ckptloopcounter30s = [x/divisor for x in ckptloopcounter30s]
+        ckptloopcounter20s = [x / divisor for x in ckptloopcounter20s]
+        ckptloopcounter30s = [x / divisor for x in ckptloopcounter30s]
+        ckptloopcounterpgos = [x / divisor for x in ckptloopcounterpgos]
+        funcss = [x / divisor for x in funcss]
         statistics[workload] = [
-            ("ckptloopcounter1", np.median(ckptloopcounter1s), np.std(ckptloopcounter1s)),
-            ("ckptloopcounter4", np.median(ckptloopcounter4s), np.std(ckptloopcounter4s)),
-            ("ckptloopcounter8", np.median(ckptloopcounter8s), np.std(ckptloopcounter8s)),
-            ("ckptloopcounter16", np.median(ckptloopcounter16s), np.std(ckptloopcounter16s)),
-            ("ckptloopcounter20", np.median(ckptloopcounter20s), np.std(ckptloopcounter20s)),
-            ("ckptloopcounter30", np.median(ckptloopcounter30s), np.std(ckptloopcounter30s)),
+            (
+                "ckptloopcounter1",
+                np.median(ckptloopcounter1s),
+                np.std(ckptloopcounter1s),
+            ),
+            (
+                "ckptloopcounter4",
+                np.median(ckptloopcounter4s),
+                np.std(ckptloopcounter4s),
+            ),
+            (
+                "ckptloopcounter8",
+                np.median(ckptloopcounter8s),
+                np.std(ckptloopcounter8s),
+            ),
+            (
+                "ckptloopcounter16",
+                np.median(ckptloopcounter16s),
+                np.std(ckptloopcounter16s),
+            ),
+            (
+                "ckptloopcounter20",
+                np.median(ckptloopcounter20s),
+                np.std(ckptloopcounter20s),
+            ),
+            (
+                "ckptloopcounter30",
+                np.median(ckptloopcounter30s),
+                np.std(ckptloopcounter30s),
+            ),
+            # (
+            #     "ckptloopcounterpgo",
+            #     np.median(ckptloopcounterpgos),
+            #     np.std(ckptloopcounterpgos),
+            # ),
+            # (
+            #     "func",
+            #     np.median(funcss),
+            #     np.std(funcss),
+            # ),
         ]
 
     fig, ax = plt.subplots(figsize=(20, 10))
@@ -152,21 +287,24 @@ def plot_loop_counter_snapshot(results, file_name):
         "ckptloopcounter16",
         "ckptloopcounter20",
         "ckptloopcounter30",
+        "ckptloopcounterpgo",
+        "func",
     ]
-    x_ = [1, 4, 8, 16, 20, 30]
+    x_ = [1, 2, 3, 4, 5, 6]
+    x1_ = ["2^1", "2^4", "2^8", "2^16", "2^20", "2^30"]
     # x_ = [1<<x for x in x_]
     for i, (workload, stats) in enumerate(statistics.items()):
         # sorted_stats = sorted(stats, key=lambda x: -x[1])  # Sort by median time
-        
+
         x_values = []
         y_values = []
         y_errors = []
-        
+
         for j, (label, median, std) in enumerate(stats):
             x_values.append(x_[j])
             y_values.append(median)
             y_errors.append(std)
-        
+
         ax.errorbar(
             x_values,
             y_values,
@@ -174,35 +312,48 @@ def plot_loop_counter_snapshot(results, file_name):
             # color=color[workload],
             capsize=5,
             label=workload,
-            marker='o',
-            linestyle='-',
+            marker="o",
+            linestyle="-",
             linewidth=2,
         )
     ax.set_xticks(x_)  # Adjust this based on the number of bars per group
     # ax.set_xticklabels(statistics.keys(), fontsize=18)
+    ax.set_xticklabels(x1_)
     ax.set_ylabel("Snapshot Time (s)")
     plt.tight_layout()
     ax.legend(loc="upper right")
 
     plt.savefig(file_name)
 
+
 def calculate_loop_counter_averages(results):
     workload_normalized = defaultdict(list)
 
     # Step 1: Normalize values for each workload
-    for workload, ckptloopcounter1, ckptloopcounter4, ckptloopcounter8, ckptloopcounter16, ckptloopcounter20,ckptloopcounter30,ckptlooppgo,aot,pure in results:
+    for (
+        workload,
+        ckptloopcounter1,
+        ckptloopcounter4,
+        ckptloopcounter8,
+        ckptloopcounter16,
+        ckptloopcounter20,
+        ckptloopcounter30,
+        ckptlooppgo,
+        aot,
+        pure,
+    ) in results:
         # Assuming 'pure' is always non-zero
         workload_normalized[workload].append(
             {
-            "ckptloopcounter1": ckptloopcounter1 / pure if pure else 0, 
-            "ckptloopcounter4": ckptloopcounter4 / pure if pure else 0, 
-            "ckptloopcounter8": ckptloopcounter8 / pure if pure else 0, 
-            "ckptloopcounter16": ckptloopcounter16 / pure if pure else 0, 
-            "ckptloopcounter20": ckptloopcounter20 / pure if pure else 0, 
-            "ckptloopcounter30": ckptloopcounter30 / pure if pure else 0, 
-            "ckptlooppgo": ckptlooppgo / pure if pure else 0, 
-            "aot": aot / pure if pure else 0, 
-            "pure": 1
+                "ckptloopcounter1": ckptloopcounter1 / pure if pure else 0,
+                "ckptloopcounter4": ckptloopcounter4 / pure if pure else 0,
+                "ckptloopcounter8": ckptloopcounter8 / pure if pure else 0,
+                "ckptloopcounter16": ckptloopcounter16 / pure if pure else 0,
+                "ckptloopcounter20": ckptloopcounter20 / pure if pure else 0,
+                "ckptloopcounter30": ckptloopcounter30 / pure if pure else 0,
+                "ckptlooppgo": ckptlooppgo / pure if pure else 0,
+                "aot": aot / pure if pure else 0,
+                "pure": 1,
             }
         )
 
@@ -218,21 +369,34 @@ def calculate_loop_counter_averages(results):
         total_averages[policy] /= num_workloads
 
     return dict(total_averages)
+
 
 def calculate_loop_counter_snapshot_averages(results):
     workload_normalized = defaultdict(list)
 
     # Step 1: Normalize values for each workload
-    for workload, ckptloopcounter1, ckptloopcounter4, ckptloopcounter8, ckptloopcounter16, ckptloopcounter20,ckptloopcounter30 in results:
+    for (
+        workload,
+        ckptloopcounter1,
+        ckptloopcounter4,
+        ckptloopcounter8,
+        ckptloopcounter16,
+        ckptloopcounter20,
+        ckptloopcounter30,
+        ckptloopcounterpgo,
+        funcs,
+    ) in results:
         # Assuming 'pure' is always non-zero
         workload_normalized[workload].append(
             {
-            "ckptloopcounter1": 1,
-            "ckptloopcounter4": ckptloopcounter4 / ckptloopcounter1 if ckptloopcounter1 else 0, 
-            "ckptloopcounter8": ckptloopcounter8 / ckptloopcounter1 if ckptloopcounter1 else 0, 
-            "ckptloopcounter16": ckptloopcounter16 / ckptloopcounter1 if ckptloopcounter1 else 0, 
-            "ckptloopcounter20": ckptloopcounter20 / ckptloopcounter1 if ckptloopcounter1 else 0, 
-            "ckptloopcounter30": ckptloopcounter30 / ckptloopcounter1 if ckptloopcounter1 else 0, 
+                "ckptloopcounter1": (ckptloopcounter1 / funcs if funcs else 0),
+                "ckptloopcounter4": (ckptloopcounter4 / funcs if funcs else 0),
+                "ckptloopcounter8": (ckptloopcounter8 / funcs if funcs else 0),
+                "ckptloopcounter16": (ckptloopcounter16 / funcs if funcs else 0),
+                "ckptloopcounter20": (ckptloopcounter20 / funcs if funcs else 0),
+                "ckptloopcounter30": (ckptloopcounter30 / funcs if funcs else 0),
+                "ckptloopcounterpgo": (ckptloopcounterpgo / funcs if funcs else 0),
+                "funcs": (funcs / funcs if funcs else 0),
             }
         )
 
@@ -248,6 +412,7 @@ def calculate_loop_counter_snapshot_averages(results):
         total_averages[policy] /= num_workloads
 
     return dict(total_averages)
+
 
 def calculate_averages_comparison(results):
     workload_normalized = defaultdict(list)
@@ -261,18 +426,89 @@ def calculate_averages_comparison(results):
         qemu_aarch64_values,
         native_values,
     ) in results:
-        if not workload.__contains__("sp") and not workload.__contains__("lu") and not workload.__contains__("tc"):
+        if (
+            not workload.__contains__("sp")
+            and not workload.__contains__("lu")
+            and not workload.__contains__("tc")
+        ):
             # Assuming 'pure' is always non-zero
             workload_normalized[workload].append(
                 {
                     "native": 1,  # Baseline
                     "mvvm": mvvm_values / native_values if native_values else 0,
-                    "hcontainer": hcontainer_values / native_values if native_values else 0,
-                    "qemu_x86_64": qemu_x86_64_values / native_values if native_values else 0,
-                    "qemu_aarch64": qemu_aarch64_values / native_values if native_values else 0,
+                    "hcontainer": (
+                        hcontainer_values / native_values if native_values else 0
+                    ),
+                    "qemu_x86_64": (
+                        qemu_x86_64_values / native_values if native_values else 0
+                    ),
+                    "qemu_aarch64": (
+                        qemu_aarch64_values / native_values if native_values else 0
+                    ),
                 }
             )
-            print(workload,workload_normalized[workload])
+            print(workload, workload_normalized[workload])
+
+    # Step 2 and 3: Calculate total average for each policy
+    total_averages = defaultdict(float)
+    for workload, policies in workload_normalized.items():
+        for policy, values in policies[0].items():
+            total_averages[policy] += values
+
+    # Divide by the number of workloads to get the average
+    num_workloads = len(workload_normalized)
+    for policy in total_averages:
+        total_averages[policy] /= num_workloads
+
+    return dict(total_averages)
+
+
+def calculate_averages_latency(mvvm_results, criu_results, qemu_results):
+    workload_normalized = defaultdict(list)
+
+    # Step 1: Normalize values for each workload
+    for idx, (workload, mvvm_values1, mvvm_values2) in enumerate(mvvm_results):
+        # Assuming 'pure' is always non-zero
+        mvvm_values = mvvm_values1 + mvvm_values2
+        criu_values = criu_results[idx][1] + criu_results[idx][2]
+        workload_normalized[workload].append(
+            {
+                "native": 1,  # Baseline
+                "mvvm": mvvm_values / mvvm_values if mvvm_values else 0,
+                "criu": (criu_values / mvvm_values if mvvm_values else 0),
+                "qemu": (float(qemu_results[idx][1] )/ mvvm_values if mvvm_values else 0),
+            }
+        )
+        # print(workload, workload_normalized[workload])
+
+    # Step 2 and 3: Calculate total average for each policy
+    total_averages = defaultdict(float)
+    for workload, policies in workload_normalized.items():
+        for policy, values in policies[0].items():
+            total_averages[policy] += values
+
+    # Divide by the number of workloads to get the average
+    num_workloads = len(workload_normalized)
+    for policy in total_averages:
+        total_averages[policy] /= num_workloads
+
+    return dict(total_averages)
+
+
+def calculate_averages_size(mvvm_results, criu_results):
+    workload_normalized = defaultdict(list)
+
+    # Step 1: Normalize values for each workload
+    for idx, (workload, mvvm_values) in enumerate(mvvm_results):
+        # Assuming 'pure' is always non-zero
+        workload_normalized[workload].append(
+            {
+                "native": 1,  # Baseline
+                "mvvm": mvvm_values / mvvm_values if mvvm_values else 0,
+                "criu": (criu_results[idx][1] / mvvm_values if mvvm_values else 0),
+            }
+        )
+        # print(workload, workload_normalized[workload])
 
     # Step 2 and 3: Calculate total average for each policy
     total_averages = defaultdict(float)
@@ -292,7 +528,7 @@ def calculate_averages(results):
     workload_normalized = defaultdict(list)
 
     # Step 1: Normalize values for each workload
-    for workload, aot,pure, stack, loop, loop_dirty in results:
+    for workload, aot, pure, stack, loop_every, loop, loop_dirty in results:
         # Assuming 'pure' is always non-zero
         workload_normalized[workload].append(
             {
@@ -324,7 +560,7 @@ def plot(results, file_name):
     workloads = defaultdict(list)
 
     # Simplifying and grouping your data
-    for workload, aot,pure, stack, loop, loop_dirty in results:
+    for workload, aot, pure, stack, loop, loop_dirty in results:
         workloads[workload.split(" ")[1].replace(".aot", "")].append(
             (pure, aot, stack, loop, loop_dirty)
         )
@@ -398,7 +634,7 @@ def plot_whole(results, file_name):
                 )
 
         workloads = defaultdict(list)
-        for workload, aot,pure, stack, loop, loop_dirty in results:
+        for workload, aot, pure, stack, loop, loop_dirty in results:
             workloads[workload.split(" ")[1].replace(".aot", "")].append(
                 (pure, aot, stack, loop, loop_dirty)
             )
@@ -449,7 +685,7 @@ def plot_whole(results, file_name):
     plt.savefig(file_name)
 
 
-def get_avg_99percent(data,group_size):
+def get_avg_99percent(data, group_size):
     num_groups = len(data) // group_size
     grouped_data = np.reshape(data[: num_groups * group_size], (num_groups, group_size))
     avg_values = np.mean(grouped_data, axis=1)
@@ -532,12 +768,8 @@ list_of_arg = [
 # aot_variant = ["-ckpt-every-dirty.aot"]
 aot_variant = [
     ".aot",
-    "-pure.aot",
-    "-stack.aot",
-    "-ckpt-loop.aot",
-    "-ckpt-loop-dirty.aot",
 ]
-trial = 10
+trial = 1
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -556,13 +788,39 @@ def run_checkpoint_restore(
         restore_result = run_restore(aot_file, arg, env)
         # print(checkpoint_result, restore_result)
         # Return a combined result or just the checkpoint result as needed
-
-        res.append(checkpoint_result[1] + restore_result[1])
+        file = aot_file.replace(".aot", ".bin")
+        file1 = aot_file.replace(".aot", ".tar")
+        os.system(f"tar -zcvf ./bench/{file1} ./bench/{file}")
+        cmd = f"ls -aluh ./bench/{file1}"
+        print(cmd)
+        cmd = cmd.split()
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        res.append(
+            checkpoint_result[1]
+            + restore_result[1]
+            + "\n"
+            + result.stdout.decode("utf-8")
+        )
     return (checkpoint_result[0], res)
 
 
 def run_checkpoint(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} -c 10000"
+    cmd = f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} -c 100000"
+    print(cmd)
+    cmd = cmd.split()
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # try:
+    output = result.stdout.decode("utf-8")
+    # except:
+    # output = result.stdout
+    exec = " ".join([env] + [aot_file] + arg)
+    # print(exec)
+    # print(output)
+    return (exec, output)
+
+
+def run_checkpoint_snapshot(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
+    cmd = f"perf stat -e instructions ./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} -c 10000"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -628,8 +886,18 @@ def run_criu_checkpoint_restore(
         restore_result = run_criu_restore(aot_file, arg, env)
         # print(checkpoint_result, restore_result)
         # Return a combined result or just the checkpoint result as needed
-
-        res.append(checkpoint_result[1] + restore_result[1])
+        file = aot_file.replace(".aot", "")
+        cmd = f"du -h -d 0 /tmp/{file}{env}"
+        print(cmd)
+        cmd = cmd.split()
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # try:
+        res.append(
+            checkpoint_result[1]
+            + restore_result[1]
+            + "\n"
+            + result.stdout.decode("utf-8")
+        )
     return (checkpoint_result[0], res)
 
 
@@ -653,7 +921,7 @@ def run_criu_checkpoint(
     pid = asyncio.run(run_subprocess(cmd, env_arg))
     time.sleep(1)
     os.system(f"mkdir -p /tmp/{file}{env}")
-    criu_cmd = f"/usr/sbin/criu dump -t {pid} -D /tmp/{file}{env} --shell-job -v"
+    criu_cmd = f"/usr/local/sbin/criu dump -t {pid} -D /tmp/{file}{env} --shell-job -v"
     criu_cmd = criu_cmd.split()
     proc = subprocess.Popen(
         criu_cmd, env=env_arg, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
@@ -692,7 +960,7 @@ def run_criu_checkpoint(
 def run_criu_restore(aot_file: str, arg: list[str], env: str) -> tuple[str, str]:
     file = aot_file.replace(".aot", "")
 
-    cmd = f"/usr/sbin/criu restore -D /tmp/{file}{env} --shell-job -v"
+    cmd = f"/usr/local/sbin/criu restore -D /tmp/{file}{env} --shell-job -v"
     print(cmd)
     cmd = cmd.split()
     env_arg = dict([env.split("=")])
@@ -833,7 +1101,6 @@ def run_checkpoint_restore_burst_overhead(
     return res
 
 
-
 def run_checkpoint_restore_slowtier_overhead(
     aot_file: str,
     arg: list[str],
@@ -903,26 +1170,28 @@ def run_checkpoint_restore_slowtier(
 
     # exec_with_log("sleep 15")
     # exec_with_log(
-    #     f"./MVVM_checkpoint1 -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} >> MVVM_checkpoint.out &"
+    #     f"./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} >> MVVM_checkpoint.out &"
     # )
-    # exec_with_log("sleep 20")
+    # exec_with_log("sleep 40")
     # # exec_with_log(
     # #     f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} >> MVVM_checkpoint.1.out &"
     # # )
 
-    # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint1")
-    # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint1")
-    # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint1")
-    # exec_with_log(
-    #     f"{env} /mnt/osdi23/MVVM/bench/gapbs/build/{aot_file} {' '.join(arg)} >> MVVM_checkpoint.1.out"
-    # )
+    # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
+    # # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
+    # # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
+    # # exec_with_log(
+    # #     f"{env} /mnt/osdi23/MVVM/bench/gapbs/build/{aot_file} {' '.join(arg)} >> MVVM_checkpoint.1.out"
+    # # )
+    # exec_with_log("sleep 40")
+    
     # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
-    # exec_with_log("sleep 1")
-    # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
-    # exec_with_log("sleep 1")
-    # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
-
-    cmd = f"cat ./MVVM_checkpoint.1.out ./MVVM_checkpoint.out ./MVVM_restore.1.out ./MVVM_restore.out"
+    # # exec_with_log("sleep 1")
+    # # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
+    # # exec_with_log("sleep 1")
+    # # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
+    # exec_with_log("scp epyc:/mnt/MVVM/bench/redis/build/redis.log ./MVVM_checkpoint.1.out")
+    cmd = f"cat ./MVVM_checkpoint.0.out ./MVVM_checkpoint.1.out ./MVVM_restore.0.out ./MVVM_restore.1.out ./MVVM_restore.2.out"
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
@@ -934,17 +1203,19 @@ def run_checkpoint_restore_slowtier(
     res.append((exec, output))
     return res
 
+
 def exec_with_log(cmd):
     print(cmd)
     os.system(cmd)
-    
+
+
 def run_checkpoint_restore_outrage(
     aot_file: str,
     arg: list[str],
     env: str,
-    time:int,
-    time1:int,
-    time2:int,
+    time: int,
+    time1: int,
+    time2: int,
     extra1: str = "",
     extra2: str = "",
     extra3: str = "",
@@ -966,10 +1237,10 @@ def run_checkpoint_restore_outrage(
         f"script -f -q /dev/null -c 'ssh -t {energy} \" cd /mnt/osdi23/MVVM/build && ./MVVM_restore -t ./bench/{aot_file} {extra2}\"' >> MVVM_restore.1.out &"
     )
     exec_with_log(
-       f"script -f -q /dev/null -c 'ssh -t {slowtier} \"cd /mnt/MVVM/build && ./MVVM_restore -t ./bench/{aot_file} {extra3}\"' >> MVVM_restore.2.out &"
+        f"script -f -q /dev/null -c 'ssh -t {slowtier} \"cd /mnt/MVVM/build && ./MVVM_restore -t ./bench/{aot_file} {extra3}\"' >> MVVM_restore.2.out &"
     )
     exec_with_log(
-       f"script -f -q /dev/null -c '\./MVVM_restore -t ./bench/{aot_file} {extra4}' >> MVVM_restore.3.out &"
+        f"script -f -q /dev/null -c '\./MVVM_restore -t ./bench/{aot_file} {extra4}' >> MVVM_restore.3.out &"
     )
     exec_with_log(f"sleep {time}")
     exec_with_log(
@@ -977,13 +1248,12 @@ def run_checkpoint_restore_outrage(
     )
     exec_with_log(f"sleep {time1}")
     exec_with_log(f"ssh -t {energy} pkill -SIGINT MVVM_restore")
-    
-    
+
     exec_with_log(f"sleep {time2}")
     exec_with_log(f"ssh -t {slowtier} pkill -SIGINT MVVM_restore")
-    
+
     exec_with_log(f"sleep 100")
-    
+
     exec_with_log(f"scp {burst}:{pwd}/build/*.*.out ./")
     cmd = f"cat ./MVVM_checkpoint.0.out ./MVVM_checkpoint.1.out ./MVVM_restore.0.out ./MVVM_restore.1.out ./MVVM_restore.2.out ./MVVM_restore.3.out ./MVVM_restore.4.out ./MVVM_restore.5.out ./MVVM_restore.6.out"
     cmd = cmd.split()
@@ -1010,6 +1280,7 @@ def run_checkpoint_restore_outrage(
     # Return the PID, stdout, and stderr
     return pid
 
+
 def run_checkpoint_restore_burst(
     aot_file: str,
     arg: list[str],
@@ -1026,7 +1297,6 @@ def run_checkpoint_restore_burst(
     extra8: str = "",
     extra9: str = "",
 ):
-    res = []
     res = []
     # exec_with_log("rm ./*.out")
     # exec_with_log("sudo pkill MVVM_checkpoint")
@@ -1050,7 +1320,7 @@ def run_checkpoint_restore_burst(
     # exec_with_log(
     #     f"./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} > MVVM_checkpoint.0.out &"
     # )
-    
+
     # exec_with_log("sleep 840")
 
     # exec_with_log(
@@ -1067,7 +1337,7 @@ def run_checkpoint_restore_burst(
 
     # exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_checkpoint")
     # exec_with_log("sleep 40")
-    
+
     # exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_restore")
     # exec_with_log("sleep 10")
     # exec_with_log(f"ssh -t {burst} pkill -SIGINT MVVM_restore")
@@ -1091,12 +1361,12 @@ def run_checkpoint_restore_burst(
     # exec_with_log(f"pkill -SIGINT MVVM_restore")
     # exec_with_log("sleep 10")
     # exec_with_log(f"pkill -SIGINT MVVM_restore")
-    
+
     # exec_with_log(
     #     f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file} {extra9}' >> MVVM_restore.6.out &"
     # )
     # exec_with_log(
-    # f"sudo ../artifact/run_with_energy_monitoring.sh MVVM_restore 6 {aot_file1} &"
+    #     f"sudo ../artifact/run_with_energy_monitoring.sh MVVM_restore 6 {aot_file1} &"
     # )
     # exec_with_log(
     #     f"script -f -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra5}' >> MVVM_restore.3.out &"
@@ -1122,6 +1392,7 @@ def run_checkpoint_restore_burst(
     exec = " ".join([env] + [aot_file] + arg)
     res.append((exec, output))
     return res
+
 
 def run_slowtier(
     aot_file: str, arg: list[str], env: str, extra: str = ""
@@ -1176,7 +1447,7 @@ def run_hcontainer(file: str, folder: str, arg: list[str], env: str) -> tuple[st
 
 
 def run_native(file: str, folder: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"/usr/bin/time {pwd}/bench/{folder}/build/{file} {' '.join(arg)}".strip()
+    cmd = f"{folder}/{file} {' '.join(arg)}".strip()
     print(cmd)
     cmd = cmd.split()
     env_arg = dict([env.split("=")])
@@ -1235,5 +1506,5 @@ if __name__ == "__main__":
     # print(get_func_index("atomic_wait", "./bench/hdastar.wasm"))
     plot_whole(["policy.csv", "policy_multithread.csv", "policy_mac.csv"], "policy.pdf")
     # read_csv_from_file("policy.csv")
-    
+
     calculate_averages_comparison()

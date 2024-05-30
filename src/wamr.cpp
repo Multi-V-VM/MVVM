@@ -511,9 +511,9 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     set_wasi_args(execEnv.front()->module_inst.wasi_ctx);
     instantiate();
     this->time = std::chrono::high_resolution_clock::now();
-    invoke_init_c();
-    std::string stdout = "/dev/stdout";
-    invoke_preopen(1, stdout);
+    // invoke_init_c();
+    // std::string stdout = "/dev/stdout";
+    // invoke_preopen(1, stdout);
 
     restore(execEnv.front(), cur_env);
     if (tid_start_arg_map.find(execEnv.back()->cur_count) != tid_start_arg_map.end()) {
@@ -1003,6 +1003,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     SPDLOG_INFO("Snapshot time: {} s", dur.count() / 1000000.0);
+    SPDLOG_INFO("Max Interval: {}", wamr->max_diff);
     SPDLOG_INFO("Memory usage: {} MB", get_rss() / 1024 / 1024);
     exit(EXIT_SUCCESS);
 }
