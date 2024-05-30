@@ -1447,7 +1447,8 @@ def run_hcontainer(file: str, folder: str, arg: list[str], env: str) -> tuple[st
 
 
 def run_native(file: str, folder: str, arg: list[str], env: str) -> tuple[str, str]:
-    cmd = f"{folder}/{file} {' '.join(arg)}".strip()
+    cmd = f"/usr/bin/time {pwd}/bench/{folder}/build/{file} {' '.join(arg)}".strip()
+    # cmd = f"{folder}/{file} {' '.join(arg)}".strip()
     print(cmd)
     cmd = cmd.split()
     env_arg = dict([env.split("=")])

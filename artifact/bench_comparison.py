@@ -410,8 +410,9 @@ def calculate_averages_comparison(result):
 
 
 if __name__ == "__main__":
-    mvvm_results = run_mvvm()
-    print(mvvm_results)
+    # mvvm_results = run_mvvm()
+    # print(mvvm_results)
+    mvvm_results  = [('a=b linpack.aot', '30.772065'), ('OMP_NUM_THREADS=4 llama.aot stories110M.bin -z tokenizer.bin -t 0.0', '10.28226'), ('a=b rgbd_tum.aot ./ORBvoc.txt, ./TUM3.yaml ./ ./associations/fr1_xyz.txt', '497.993924'), ('OMP_NUM_THREADS=4 bc.aot -g20 -n1', '12.271252'), ('OMP_NUM_THREADS=4 bfs.aot -g20 -n1', '12.755606'), ('OMP_NUM_THREADS=4 cc.aot -g20 -n1', '13.075651'), ('OMP_NUM_THREADS=4 cc_sv.aot -g20 -n1', '12.921706'), ('OMP_NUM_THREADS=4 pr.aot -g20 -n1', '11.773185'), ('OMP_NUM_THREADS=4 pr_spmv.aot -g20 -n1', '12.357876'), ('OMP_NUM_THREADS=4 sssp.aot -g20 -n1', '3.244041'), ('OMP_NUM_THREADS=4 bt.aot', '99.464271'), ('OMP_NUM_THREADS=4 cg.aot', '42.430665'), ('OMP_NUM_THREADS=4 ft.aot', '12.006954'), ('OMP_NUM_THREADS=4 lu.aot', '0.060153'), ('OMP_NUM_THREADS=4 mg.aot', '37.5819'), ('a=b redis.aot', '218.961516'), ('a=b hdastar.aot maze-6404.txt 8', '13.002049')]
     native_results = run_native()
     print(native_results)
     # qemu_x86_64_results = run_qemu_x86_64()
