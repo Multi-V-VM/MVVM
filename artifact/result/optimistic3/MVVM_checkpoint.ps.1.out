@@ -1,0 +1,19 @@
+Wed Mar 13 17:34:33 PDT 2024
+victory+ 296413 0.0 0.0 45692 6912 pts/11 R+ 17:34 0:00 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 98.2 0.3 3358084 907108 pts/11 R+ 17:34 0:00 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 100 0.7 3358084 1877860 pts/11 R+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 99.4 1.2 3358084 3213412 pts/11 R+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 77.7 1.2 3358688 3354724 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 62.0 1.2 3358984 3354724 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 51.7 1.2 3359576 3355492 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 44.5 1.2 3359576 3355492 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 38.8 1.2 3359576 3355492 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 34.6 1.2 3360760 3355492 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 31.1 1.2 3360760 3355492 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 28.3 1.2 3360760 3355492 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 26.0 1.2 3360760 3355492 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 24.0 1.2 3360760 3355492 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 22.3 1.2 3360760 3356260 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 22.9 1.2 3364952 3360100 pts/11 R+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 27.7 1.2 3364952 3360100 pts/11 R+ 17:34 0:02 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346
+victory+ 296413 31.9 1.2 3364952 3360100 pts/11 R+ 17:34 0:03 ./MVVM_checkpoint -t ./bench/bfs.aot -a -g10 -a -n1000000 -e OMP_NUM_THREADS=1 -o 128.114.59.234 -s 12346

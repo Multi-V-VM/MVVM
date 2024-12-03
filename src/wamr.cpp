@@ -107,7 +107,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit, std::string polic
         SPDLOG_ERROR("Init runtime environment failed.");
         throw;
     }
-    // initialiseWAMRNatives();
+    initialiseWAMRNatives();
     char *buffer{};
     if (!load_wasm_binary(wasm_path, &buffer)) {
         SPDLOG_ERROR("Load wasm binary failed.\n");

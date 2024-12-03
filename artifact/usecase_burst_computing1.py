@@ -12,20 +12,20 @@ port = 12346
 new_port = 12353
 
 cmd = [
-    "redis",  # high priority task
-    "redis",  # low priority task
+    "sssp",  # high priority task
+    "sssp",  # low priority task
 ]
 folder = [
-    "redis",
-    "redis",
+    "gapbs",
+    "gapbs",
 ]
 arg = [
-    [],
-    [],
+    ["-g20","-n1000"],
+    ["-g20","-n1000"],
 ]
 envs = [
-    "OMP_NUM_THREADS=1",
-    "OMP_NUM_THREADS=1",
+    "OMP_NUM_THREADS=4",
+    "OMP_NUM_THREADS=4",
 ]
 
 pool = Pool(processes=1)

@@ -1,0 +1,18 @@
+Wed Mar 13 17:34:24 PDT 2024
+victory+ 296645 0.0 0.0 45744 7680 pts/11 R+ 17:34 0:00 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 100 0.3 3358188 929488 pts/11 R+ 17:34 0:00 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 100 0.7 3358188 1894096 pts/11 R+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 99.4 1.2 3358188 3270352 pts/11 R+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 76.4 1.2 3358792 3355600 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 61.5 1.2 3359088 3355600 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 51.4 1.2 3359680 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 44.5 1.2 3359680 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 38.8 1.2 3359680 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 34.4 1.2 3359680 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 31.0 1.2 3360864 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 27.8 1.2 3360864 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 25.5 1.2 3360864 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 23.6 1.2 3360864 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 21.9 1.2 3360864 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+victory+ 296645 20.4 1.2 3360864 3356368 pts/11 S+ 17:34 0:01 ./MVVM_checkpoint -t ./bench/bc.aot -a -g10 -a -n100000 -e OMP_NUM_THREADS=1
+

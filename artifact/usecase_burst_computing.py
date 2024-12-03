@@ -250,8 +250,8 @@ def plot_time(reu, aot_energy, aot_ps, aot1_energy, aot1_ps):
     # ax.plot(time_spots1, percentile_99_exec_time1, color="pink", linestyle="-")
     # Add a legend to the plot
     ax.legend()
-    print(average(exec_time[1]+exec_time[3])/average(exec_time[0]+exec_time[2]+exec_time[4]))
-    print(average(sum_aot1)/average(sum_aot))
+    print(average(sum_aot1)/average(exec_time[0]+exec_time[2]+exec_time[4]))
+    print(average(exec_time[1]+exec_time[3])/average(sum_aot1))
     # ax.plot(time_spots,sum_aot, "blue")
     # ax.plot(time_spots1,sum_aot1, "r")
     ax.set_xlabel("Time (s)")

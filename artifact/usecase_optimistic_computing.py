@@ -389,7 +389,7 @@ def plot_time(reu, checkpoint, checkpoint1, restore, restore1):
     ax.legend()
     # ax.plot(time_spots2, percentile_99_exec_time1, color="pink", linestyle="--")
     ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Tirals / Time")
+    ax.set_ylabel("Tirals / Second")
     plt.savefig("optimistic.pdf")
 
 

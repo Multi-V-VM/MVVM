@@ -6,9 +6,9 @@ import numpy as np
 from collections import defaultdict
 
 cmd = [
-    "linpack",
-    "llama",
-    "rgbd_tum",
+    # "linpack",
+    # "llama",
+    # "rgbd_tum",
     "bc",
     "bfs",
     "cc",
@@ -21,13 +21,13 @@ cmd = [
     "ft",
     "lu",
     "mg",
-    "redis",
-    "hdastar",
+    # "redis",
+    # "hdastar",
 ]
 folder = [
-    "linpack",
-    "llama",
-    "ORB_SLAM2",
+    # "linpack",
+    # "llama",
+    # "ORB_SLAM2",
     "gapbs",
     "gapbs",
     "gapbs",
@@ -40,57 +40,64 @@ folder = [
     "nas",
     "nas",
     "nas",
-    "redis",
-    "hdastar",
+    # "redis",
+    # "hdastar",
 ]
 arg = [
-    [],
-    ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
-    ["-g20", "-n1"],
-    ["-g20", "-n1"],
-    ["-g20", "-n1"],
-    ["-g20", "-n1"],
-    ["-g20", "-n1"],
-    ["-g20", "-n1"],
-    ["-g20", "-n1"],
-    [],
-    [],
+    # [],
+    # ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
+    # ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
+    ["-g20", "-n1000"],
+    ["-g20", "-n1000"],
+    ["-g20", "-n1000"],
+    ["-g20", "-n1000"],
+    ["-g20", "-n1000"],
+    ["-g20", "-n1000"],
+    ["-g20", "-n1000"],
     [],
     [],
     [],
     [],
-    ["maze-6404.txt", "8"],
+    [],
+    # [],
+    # ["maze-6404.txt", "8"],
 ]
+# envs = [
+#     # "a=b",
+#     # "OMP_NUM_THREADS=64",
+#     # "a=b",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     "OMP_NUM_THREADS=96",
+#     # "a=b",
+#     # "a=b",
+# ]
 envs = [
-    "a=b",
     "OMP_NUM_THREADS=4",
-    "a=b",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "OMP_NUM_THREADS=4",
-    "a=b",
-    "a=b",
+    "OMP_NUM_THREADS=16",
+    "OMP_NUM_THREADS=64",
+    "OMP_NUM_THREADS=96",
 ]
-pool = Pool(processes=20)
+pool = Pool(processes=1)
 
 
 def run_mvvm():
     results = []
     results1 = []
     for _ in range(common_util.trial):
-        for i in range(len(cmd)):
-            aot = cmd[i] + ".aot"
-            results1.append(pool.apply_async(common_util.run, (aot, arg[i], envs[i])))
+        for env in envs:
+            for i in range(len(cmd)):
+                aot = cmd[i] + ".aot"
+                results1.append(pool.apply_async(common_util.run, (aot, arg[i], env)))
     # print the results
     results1 = [x.get() for x in results1]
     for exec, output in results1:
@@ -238,14 +245,15 @@ def run_native():
     results = []
     results1 = []
     for _ in range(common_util.trial):
-        for i in range(len(cmd)):
-            aot = cmd[i]
-            results1.append(
-                pool.apply_async(
-                    common_util.run_native,
-                    (aot, folder[i], arg[i], envs[i]),
+        for env in envs:
+            for i in range(len(cmd)):
+                aot = cmd[i]
+                results1.append(
+                    pool.apply_async(
+                        common_util.run_native,
+                        (aot, folder[i], arg[i], env),
+                    )
                 )
-            )
     results1 = [x.get() for x in results1]
     for exec, output in results1:
         print(exec, output)
@@ -283,17 +291,15 @@ def write_to_csv(filename):
     with open(filename, "a+", newline="") as csvfile:
         writer = csv.writer(csvfile)
         # Optionally write headers
-        writer.writerow(
-            ["name", "mvvm", "hcontainer", "qemu_x86_64", "qemu_aach64", "native"]
-        )
+        writer.writerow(["name", "native"])
 
         # Write the data
-        for idx, row in enumerate(mvvm_results):
+        for idx, row in enumerate(native_results):
             writer.writerow(
                 [
                     row[0],
                     row[1],
-                    native_results[idx][1],
+                    # native_results[idx][1],
                 ]
             )
 
@@ -308,7 +314,7 @@ def read_from_csv(filename):
                 (
                     row[0],
                     float(row[1]),
-                    float(row[2]),
+                    # float(row[2]),
                 )
             )
         return results
@@ -412,18 +418,18 @@ def calculate_averages_comparison(result):
 if __name__ == "__main__":
     # mvvm_results = run_mvvm()
     # print(mvvm_results)
-    mvvm_results  = [('a=b linpack.aot', '30.772065'), ('OMP_NUM_THREADS=4 llama.aot stories110M.bin -z tokenizer.bin -t 0.0', '10.28226'), ('a=b rgbd_tum.aot ./ORBvoc.txt, ./TUM3.yaml ./ ./associations/fr1_xyz.txt', '497.993924'), ('OMP_NUM_THREADS=4 bc.aot -g20 -n1', '12.271252'), ('OMP_NUM_THREADS=4 bfs.aot -g20 -n1', '12.755606'), ('OMP_NUM_THREADS=4 cc.aot -g20 -n1', '13.075651'), ('OMP_NUM_THREADS=4 cc_sv.aot -g20 -n1', '12.921706'), ('OMP_NUM_THREADS=4 pr.aot -g20 -n1', '11.773185'), ('OMP_NUM_THREADS=4 pr_spmv.aot -g20 -n1', '12.357876'), ('OMP_NUM_THREADS=4 sssp.aot -g20 -n1', '3.244041'), ('OMP_NUM_THREADS=4 bt.aot', '99.464271'), ('OMP_NUM_THREADS=4 cg.aot', '42.430665'), ('OMP_NUM_THREADS=4 ft.aot', '12.006954'), ('OMP_NUM_THREADS=4 lu.aot', '0.060153'), ('OMP_NUM_THREADS=4 mg.aot', '37.5819'), ('a=b redis.aot', '218.961516'), ('a=b hdastar.aot maze-6404.txt 8', '13.002049')]
+    # mvvm_results  = [('a=b linpack.aot', '30.772065'), ('OMP_NUM_THREADS=4 llama.aot stories110M.bin -z tokenizer.bin -t 0.0', '10.28226'), ('a=b rgbd_tum.aot ./ORBvoc.txt, ./TUM3.yaml ./ ./associations/fr1_xyz.txt', '497.993924'), ('OMP_NUM_THREADS=4 bc.aot -g20 -n1', '12.271252'), ('OMP_NUM_THREADS=4 bfs.aot -g20 -n1', '12.755606'), ('OMP_NUM_THREADS=4 cc.aot -g20 -n1', '13.075651'), ('OMP_NUM_THREADS=4 cc_sv.aot -g20 -n1', '12.921706'), ('OMP_NUM_THREADS=4 pr.aot -g20 -n1', '11.773185'), ('OMP_NUM_THREADS=4 pr_spmv.aot -g20 -n1', '12.357876'), ('OMP_NUM_THREADS=4 sssp.aot -g20 -n1', '3.244041'), ('OMP_NUM_THREADS=4 bt.aot', '99.464271'), ('OMP_NUM_THREADS=4 cg.aot', '42.430665'), ('OMP_NUM_THREADS=4 ft.aot', '12.006954'), ('OMP_NUM_THREADS=4 lu.aot', '0.060153'), ('OMP_NUM_THREADS=4 mg.aot', '37.5819'), ('a=b redis.aot', '218.961516'), ('a=b hdastar.aot maze-6404.txt 8', '13.002049')]
     native_results = run_native()
     print(native_results)
-    # qemu_x86_64_results = run_qemu_x86_64()
-    # print(qemu_x86_64_results)
-    # # print the results
-    # qemu_aarch64_results = run_qemu_aarch64()
-    # print(qemu_aarch64_results)
-    # hcontainer_results = run_hcontainer()
-    # print(hcontainer_results)
+    # # qemu_x86_64_results = run_qemu_x86_64()
+    # # print(qemu_x86_64_results)
+    # # # print the results
+    # # qemu_aarch64_results = run_qemu_aarch64()
+    # # print(qemu_aarch64_results)
+    # # hcontainer_results = run_hcontainer()
+    # # print(hcontainer_results)
     write_to_csv("comparison.csv")
 
-    results = read_from_csv("comparison.csv")
-    plot(results)
-    print(calculate_averages_comparison(results))
+    # results = read_from_csv("comparison.csv")
+    # plot(results)
+    # print(calculate_averages_comparison(results))

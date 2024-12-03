@@ -110,9 +110,6 @@ static bool check_buf(const uint8 *buf, const uint8 *buf_end, uint32 length, cha
 
 #define CHECK_BUF1(buf, buf_end, length)                                                                               \
     do {                                                                                                               \
-        if (!check_buf1(buf, buf_end, length, error_buf, error_buf_size)) {                                            \
-            goto fail;                                                                                                 \
-        }                                                                                                              \
     } while (0)
 
 #define TEMPLATE_READ_VALUE(Type, p) ((p) += sizeof(Type), *(Type *)((p) - sizeof(Type)))
@@ -785,12 +782,12 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
                 break;
 #if WASM_ENABLE_BULK_MEMORY != 0
             case WASM_OP_MEMORY_INIT:
-                skip_leb_uint32(frame_ip, p_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 /* skip memory idx */
                 frame_ip++;
                 break;
             case WASM_OP_DATA_DROP:
-                skip_leb_uint32(frame_ip, p_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 break;
             case WASM_OP_MEMORY_COPY:
                 /* skip two memory idx */
@@ -805,18 +802,18 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             case WASM_OP_TABLE_INIT:
             case WASM_OP_TABLE_COPY:
                 /* tableidx */
-                skip_leb_uint32(p, p_end);
+                skip_leb_uint32(p, frame_ip_end);
                 /* elemidx */
-                skip_leb_uint32(p, p_end);
+                skip_leb_uint32(p, frame_ip_end);
                 break;
             case WASM_OP_ELEM_DROP:
                 /* elemidx */
-                skip_leb_uint32(p, p_end);
+                skip_leb_uint32(p, frame_ip_end);
                 break;
             case WASM_OP_TABLE_SIZE:
             case WASM_OP_TABLE_GROW:
             case WASM_OP_TABLE_FILL:
-                skip_leb_uint32(p, p_end); /* table idx */
+                skip_leb_uint32(p, frame_ip_end); /* table idx */
                 break;
 #endif /* WASM_ENABLE_REF_TYPES */
             default:
@@ -833,7 +830,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             exit(-1);
             /* TODO: shall we ceate a table to be friendly to branch
              * prediction */
-            opcode = read_uint8(p);
+            opcode = read_uint8(frame_ip);
             /* follow the order of enum WASMSimdEXTOpcode in wasm_opcode.h
              */
             switch (opcode) {
@@ -850,16 +847,16 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             case SIMD_v128_load64_splat:
             case SIMD_v128_store:
                 /* memarg align */
-                skip_leb_uint32(p, p_end);
+                skip_leb_uint32(frame_ip,frame_ip_end);
                 /* memarg offset*/
-                skip_leb_uint32(p, p_end);
+                skip_leb_uint32(frame_ip,frame_ip_end);
                 break;
 
             case SIMD_v128_const:
             case SIMD_v8x16_shuffle:
                 /* immByte[16] immLaneId[16] */
-                CHECK_BUF1(p, p_end, 16);
-                p += 16;
+                CHECK_BUF1(frame_ip,frame_ip_end, 16);
+                frame_ip += 16;
                 break;
 
             case SIMD_i8x16_extract_lane_s:
@@ -877,8 +874,8 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             case SIMD_f64x2_extract_lane:
             case SIMD_f64x2_replace_lane:
                 /* ImmLaneId */
-                CHECK_BUF(p, p_end, 1);
-                p++;
+                CHECK_BUF(frame_ip, frame_ip_end, 1);
+                frame_ip++;
                 break;
 
             case SIMD_v128_load8_lane:
@@ -890,20 +887,20 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             case SIMD_v128_store32_lane:
             case SIMD_v128_store64_lane:
                 /* memarg align */
-                skip_leb_uint32(p, p_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 /* memarg offset*/
-                skip_leb_uint32(p, p_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 /* ImmLaneId */
-                CHECK_BUF(p, p_end, 1);
-                p++;
+                CHECK_BUF(frame_ip, frame_ip_end, 1);
+                frame_ip++;
                 break;
 
             case SIMD_v128_load32_zero:
             case SIMD_v128_load64_zero:
                 /* memarg align */
-                skip_leb_uint32(p, p_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 /* memarg offset*/
-                skip_leb_uint32(p, p_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 break;
 
             default:

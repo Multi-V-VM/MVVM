@@ -1,0 +1,206 @@
+code 0x40000004 code_size 164480
+restore function_index 50
+restore function_index 68
+restore function_index 52
+main_env created 0x5555557b2a40 0x5555557a5e00
+
+invoke_init_c
+wakeup.release
+invoke main 0x5555557b2a40 0x5555557a5e00
+[2024-09-18 01:35:11.813] [error] [wamr_export.cpp:364] wamr_handle_map old:< 8663361856 > new:< 8663361856 >
+[2024-09-18 01:35:11.813] [info] [wamr.cpp:568] Recover time: 0.803083
+
+Trial 102 took 3886.893603 seconds.
+Trial 103 took 1.173297 seconds.
+Trial 104 took 0.239980 seconds.
+Trial 105 took 0.229384 seconds.
+Trial 106 took 0.224927 seconds.
+Trial 107 took 0.232135 seconds.
+Trial 108 took 0.229125 seconds.
+Trial 109 took 0.227386 seconds.
+Trial 110 took 0.228431 seconds.
+Trial 111 took 0.240454 seconds.
+Trial 112 took 0.238179 seconds.
+Trial 113 took 0.265176 seconds.
+Trial 114 took 0.244890 seconds.
+Trial 115 took 0.243123 seconds.
+Trial 116 took 0.250714 seconds.
+Trial 117 took 0.260302 seconds.
+Trial 118 took 0.256028 seconds.
+Trial 119 took 0.261128 seconds.
+Trial 120 took 0.260558 seconds.
+Trial 121 took 0.250986 seconds.
+Trial 122 took 0.251943 seconds.
+Trial 123 took 0.251812 seconds.
+Trial 124 took 0.248912 seconds.
+Trial 125 took 0.248032 seconds.
+Trial 126 took 0.248998 seconds.
+Trial 127 took 0.246832 seconds.
+Trial 128 took 0.240487 seconds.
+Trial 129 took 0.231685 seconds.
+Trial 130 took 0.259835 seconds.
+Trial 131 took 0.235572 seconds.
+Trial 132 took 0.221396 seconds.
+Trial 133 took 0.223193 seconds.
+Trial 134 took 0.248469 seconds.
+Trial 135 took 0.250090 seconds.
+Trial 136 took 0.245396 seconds.
+Trial 137 took 0.244668 seconds.
+Trial 138 took 0.257874 seconds.
+Trial 139 took 0.242769 seconds.
+Trial 140 took 0.234955 seconds.
+Trial 141 took 0.231756 seconds.
+Trial 142 took 0.233018 seconds.
+Trial 143 took 0.226120 seconds.
+Trial 144 took 0.236316 seconds.
+Trial 145 took 0.230331 seconds.
+Trial 146 took 0.229993 seconds.
+Trial 147 took 0.221625 seconds.
+Trial 148 took 0.223426 seconds.
+Trial 149 took 0.223075 seconds.
+Trial 150 took 0.240275 seconds.
+Trial 151 took 0.225514 seconds.
+Trial 152 took 0.237179 seconds.
+Trial 153 took 0.230952 seconds.
+Trial 154 took 0.233052 seconds.
+Trial 155 took 0.238617 seconds.
+Trial 156 took 0.229531 seconds.
+Trial 157 took 0.224562 seconds.
+Trial 158 took 0.224296 seconds.
+Trial 159 took 0.230816 seconds.
+Trial 160 took 0.220611 seconds.
+Trial 161 took 0.231714 seconds.
+Trial 162 took 0.231106 seconds.
+Trial 163 took 0.225477 seconds.
+Trial 164 took 0.226042 seconds.
+Trial 165 took 0.223975 seconds.
+Trial 166 took 0.226158 seconds.
+Trial 167 took 0.239657 seconds.
+Trial 168 took 0.228077 seconds.
+Trial 169 took 0.227715 seconds.
+Trial 170 took 0.227825 seconds.
+Trial 171 took 0.232776 seconds.
+Trial 172 took 0.243131 seconds.
+Trial 173 took 0.246981 seconds.
+Trial 174 took 0.259877 seconds.
+Trial 175 took 0.253586 seconds.
+Trial 176 took 0.253882 seconds.
+Trial 177 took 0.229802 seconds.
+Trial 178 took 0.239587 seconds.
+Trial 179 took 0.222994 seconds.
+Trial 180 took 0.241236 seconds.
+Trial 181 took 0.226256 seconds.
+Trial 182 took 0.236147 seconds.
+Trial 183 took 1.012559 seconds.
+Trial 184 took 0.267158 seconds.
+Trial 185 took 0.236534 seconds.
+Trial 186 took 0.247744 seconds.
+Trial 187 took 0.254120 seconds.
+Trial 188 took 0.248685 seconds.
+Trial 189 took 0.259967 seconds.
+Trial 190 took 0.239261 seconds.
+Trial 191 took 0.243938 seconds.
+Trial 192 took 0.240258 seconds.
+Trial 193 took 0.253341 seconds.
+Trial 194 took 0.240228 seconds.
+Trial 195 took 0.239112 seconds.
+Trial 196 took 0.235127 seconds.
+Trial 197 took 0.236324 seconds.
+Trial 198 took 0.232436 seconds.
+Trial 199 took 0.224506 seconds.
+Trial 200 took 0.240830 seconds.
+Trial 201 took 0.241754 seconds.
+Trial 202 took 0.246380 seconds.
+Trial 203 took 0.220563 seconds.
+Trial 204 took 0.230494 seconds.
+Trial 205 took 1.533686 seconds.
+Trial 206 took 0.245796 seconds.
+Trial 207 took 0.234404 seconds.
+Trial 208 took 0.253948 seconds.
+Trial 209 took 0.235592 seconds.
+Trial 210 took 0.235818 seconds.
+Trial 211 took 0.227952 seconds.
+Trial 212 took 0.304880 seconds.
+Trial 213 took 0.241622 seconds.
+Trial 214 took 0.229068 seconds.
+Trial 215 took 0.235610 seconds.
+Trial 216 took 0.230007 seconds.
+Trial 217 took 0.225526 seconds.
+Trial 218 took 0.226380 seconds.
+Trial 219 took 0.222009 seconds.
+Trial 220 took 0.231861 seconds.
+Trial 221 took 0.234367 seconds.
+Trial 222 took 0.227755 seconds.
+Trial 223 took 0.231644 seconds.
+Trial 224 took 0.246134 seconds.
+Trial 225 took 0.239346 seconds.
+Trial 226 took 0.240447 seconds.
+Trial 227 took 0.219664 seconds.
+Trial 228 took 0.217003 seconds.
+Trial 229 took 0.236810 seconds.
+Trial 230 took 0.234057 seconds.
+Trial 231 took 0.225507 seconds.
+Trial 232 took 0.774747 seconds.
+Trial 233 took 0.219017 seconds.
+Trial 234 took 0.228029 seconds.
+Trial 235 took 0.220442 seconds.
+Trial 236 took 0.230256 seconds.
+Trial 237 took 0.242431 seconds.
+Trial 238 took 0.230702 seconds.
+Trial 239 took 0.231448 seconds.
+Trial 240 took 0.228774 seconds.
+Trial 241 took 0.230515 seconds.
+Trial 242 took 0.234740 seconds.
+Trial 243 took 0.240382 seconds.
+Trial 244 took 0.237549 seconds.
+Trial 245 took 0.243541 seconds.
+Trial 246 took 0.236043 seconds.
+Trial 247 took 0.253611 seconds.
+Trial 248 took 0.233023 seconds.
+Trial 249 took 0.237057 seconds.
+Trial 250 took 0.251347 seconds.
+Trial 251 took 0.231844 seconds.
+Trial 252 took 0.247716 seconds.
+Trial 253 took 0.225497 seconds.
+Trial 254 took 0.229085 seconds.
+Trial 255 took 0.257800 seconds.
+Trial 256 took 0.235169 seconds.
+Trial 257 took 0.222454 seconds.
+Trial 258 took 0.244054 seconds.
+Trial 259 took 0.242187 seconds.
+Trial 260 took 0.249130 seconds.
+Trial 261 took 0.246272 seconds.
+Trial 262 took 0.234937 seconds.
+Trial 263 took 0.255815 seconds.
+Trial 264 took 0.227321 seconds.
+Trial 265 took 0.260700 seconds.
+Trial 266 took 0.232719 seconds.
+Trial 267 took 0.221860 seconds.
+Trial 268 took 0.241453 seconds.
+Trial 269 took 0.230140 seconds.
+Trial 270 took 0.248834 seconds.
+Trial 271 took 0.240045 seconds.
+Trial 272 took 0.263960 seconds.
+Trial 273 took 0.232213 seconds.
+Trial 274 took 0.243057 seconds.
+Trial 275 took 0.387185 seconds.
+Trial 276 took 0.280073 seconds.
+Trial 277 took 0.240440 seconds.
+Trial 278 took 0.246677 seconds.
+Trial 279 took 0.233663 seconds.
+Trial 280 took 0.248154 seconds.
+Trial 281 took 0.240796 seconds.
+Trial 282 took 0.237644 seconds.
+Trial 283 took 0.340431 seconds.
+Trial 284 took 0.225447 seconds.
+Trial 285 took 0.241763 seconds.
+^CCaught signal 2, performing custom logic...
+^C[2024-09-18 01:36:04.989] [info] [wamr_interp_frame.cpp:82] function_index 52 ip_offset 526 lp 0x5555557b3820 sp 0x5555557b39a4 sp_offset 97
+1 71056 70992 112 70880 0 1000 100000 1000 1000 1000 1000000 3 8000000 71072 1000 100000 100000000 3 800000000 8071088 1000 100000 100000000 3 800000000 808071104 71072 1000 1000 8071088 1000 100000 0 286 1000 286 1000 1 1 1 48 70928 70928 0 1000 1000 100000 71072 1000 8071088 1000 808071104 1000 0 1072693248 0 0 0 32 70912 70912 0 1726648559 0 1726648558 0 1 0 0 1072693248 221538 0 979775 0 4294209059 4294967295 0 3240567738 0 1093567616 1035190198 3219669882 154206504 1070526999 285 154206504 1070526999 1190 285 1 286 0 0 0 70912 0 
+[2024-09-18 01:36:04.989] [info] [wamr_interp_frame.cpp:82] function_index 68 ip_offset 109 lp 0x5555557b37d0 sp 0x5555557b37e4 sp_offset 5
+70992 71056 71024 1 71056 
+[2024-09-18 01:36:04.989] [info] [wamr_interp_frame.cpp:82] function_index 50 ip_offset 40 lp 0x5555557b3788 sp 0x5555557b378c sp_offset 1
+0 
+[2024-09-18 01:36:06.944] [info] [wamr.cpp:1005] Snapshot time: 2.295214 s
+[2024-09-18 01:36:06.944] [info] [wamr.cpp:1006] Max Interval: 0
+[2024-09-18 01:36:06.944] [info] [wamr.cpp:1007] Memory usage: 11012 MB

@@ -1,3 +1,4 @@
+import math
 import subprocess
 import os
 import asyncio
@@ -8,7 +9,7 @@ from collections import defaultdict
 import csv
 
 pwd_mac = "/Users/victoryang00/Documents/project/MVVM-bench/build"
-pwd = "/mnt/MVVM"
+pwd = "/mnt/osdi23/MVVM"
 slowtier = "epyc"
 burst = "mac"
 energy = "bana"
@@ -463,39 +464,35 @@ def calculate_averages_comparison(results):
     return dict(total_averages)
 
 
-def calculate_averages_latency(mvvm_results, criu_results, qemu_results):
+def calculate_geometric_mean_latency(mvvm_results, criu_results, qemu_results):
     workload_normalized = defaultdict(list)
 
     # Step 1: Normalize values for each workload
     for idx, (workload, mvvm_values1, mvvm_values2) in enumerate(mvvm_results):
-        # Assuming 'pure' is always non-zero
         mvvm_values = mvvm_values1 + mvvm_values2
         criu_values = criu_results[idx][1] + criu_results[idx][2]
         workload_normalized[workload].append(
             {
                 "native": 1,  # Baseline
-                "mvvm": mvvm_values / mvvm_values if mvvm_values else 0,
-                "criu": (criu_values / mvvm_values if mvvm_values else 0),
-                "qemu": (float(qemu_results[idx][1] )/ mvvm_values if mvvm_values else 0),
+                "mvvm": mvvm_values / mvvm_values if mvvm_values else 1,  # Changed to 1 instead of 0
+                "criu": (criu_values / mvvm_values if mvvm_values else 1),  # Changed to 1 instead of 0
+                "qemu": (float(qemu_results[idx][1]) / mvvm_values if mvvm_values else 1),  # Changed to 1 instead of 0
             }
         )
-        # print(workload, workload_normalized[workload])
 
-    # Step 2 and 3: Calculate total average for each policy
-    total_averages = defaultdict(float)
+    # Step 2 and 3: Calculate total product for each policy
+    total_products = defaultdict(lambda: 1.0)
     for workload, policies in workload_normalized.items():
         for policy, values in policies[0].items():
-            total_averages[policy] += values
+            total_products[policy] *= values
 
-    # Divide by the number of workloads to get the average
+    # Calculate the geometric mean by taking the nth root
     num_workloads = len(workload_normalized)
-    for policy in total_averages:
-        total_averages[policy] /= num_workloads
+    geometric_means = {policy: math.pow(product, 1/num_workloads) for policy, product in total_products.items()}
 
-    return dict(total_averages)
+    return geometric_means
 
-
-def calculate_averages_size(mvvm_results, criu_results):
+def calculate_geometric_mean_size(mvvm_results, criu_results):
     workload_normalized = defaultdict(list)
 
     # Step 1: Normalize values for each workload
@@ -504,24 +501,23 @@ def calculate_averages_size(mvvm_results, criu_results):
         workload_normalized[workload].append(
             {
                 "native": 1,  # Baseline
-                "mvvm": mvvm_values / mvvm_values if mvvm_values else 0,
-                "criu": (criu_results[idx][1] / mvvm_values if mvvm_values else 0),
+                "mvvm": mvvm_values / mvvm_values if mvvm_values else 1,  # Changed to 1 instead of 0
+                "criu": (criu_results[idx][1] / mvvm_values if mvvm_values else 1),  # Changed to 1 instead of 0
             }
         )
-        # print(workload, workload_normalized[workload])
 
-    # Step 2 and 3: Calculate total average for each policy
-    total_averages = defaultdict(float)
+    # Step 2 and 3: Calculate total product for each policy
+    total_products = defaultdict(lambda: 1.0)
     for workload, policies in workload_normalized.items():
         for policy, values in policies[0].items():
-            total_averages[policy] += values
+            total_products[policy] *= values
 
-    # Divide by the number of workloads to get the average
+    # Calculate the geometric mean by taking the nth root
     num_workloads = len(workload_normalized)
-    for policy in total_averages:
-        total_averages[policy] /= num_workloads
+    geometric_means = {policy: math.pow(product, 1/num_workloads) for policy, product in total_products.items()}
 
-    return dict(total_averages)
+    return geometric_means
+
 
 
 def calculate_averages(results):
@@ -769,7 +765,7 @@ list_of_arg = [
 aot_variant = [
     ".aot",
 ]
-trial = 1
+trial = 9
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -1158,39 +1154,41 @@ def run_checkpoint_restore_slowtier(
 ):
     # Execute run_checkpoint and capture its result
     res = []
-    # exec_with_log("rm ./*.out")
-    # # Execute run_restore with the same arguments (or modify as needed)
+    exec_with_log("rm ./*.out")
+    # Execute run_restore with the same arguments (or modify as needed)
+    exec_with_log(
+        f"script -q /dev/null -c 'ssh -t {slowtier} {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file1} {extra2}' >> MVVM_restore.1.out &"
+    )
+    # print(f"ssh -t {slowtier} bash -c 'cd {pwd}/build && {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore' &")
+    exec_with_log(
+        f"script -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.out &"
+    )
+
+    exec_with_log("sleep 15")
+    exec_with_log(
+        f"./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} >> MVVM_checkpoint.out &"
+    )
+    exec_with_log("sleep 40")
     # exec_with_log(
-    #     f"script -q /dev/null -c 'ssh -t {slowtier} {pwd}/build/MVVM_restore -t {pwd}/build/bench/{aot_file1} {extra2}' >> MVVM_restore.1.out &"
-    # )
-    # # print(f"ssh -t {slowtier} bash -c 'cd {pwd}/build && {pwd}/artifact/run_with_cpu_monitoring_nocommand.sh MVVM_restore' &")
-    # exec_with_log(
-    #     f"script -q /dev/null -c './MVVM_restore -t ./bench/{aot_file1} {extra3}' >> MVVM_restore.out &"
+    #     f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} >> MVVM_checkpoint.1.out &"
     # )
 
-    # exec_with_log("sleep 15")
+    exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
+    exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
+    exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
+    exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
+    exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
     # exec_with_log(
-    #     f"./MVVM_checkpoint -t ./bench/{aot_file1} {' '.join(['-a ' + str(x) for x in arg1])} -e {env} {extra1} >> MVVM_checkpoint.out &"
+    #     f"{env} /mnt/osdi23/MVVM/bench/gapbs/build/{aot_file} {' '.join(arg)} >> MVVM_checkpoint.1.out"
     # )
-    # exec_with_log("sleep 40")
-    # # exec_with_log(
-    # #     f"./MVVM_checkpoint -t ./bench/{aot_file} {' '.join(['-a ' + str(x) for x in arg])} -e {env} >> MVVM_checkpoint.1.out &"
-    # # )
-
-    # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
-    # # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
-    # # exec_with_log(f"pkill -SIGINT -f MVVM_checkpoint")
-    # # exec_with_log(
-    # #     f"{env} /mnt/osdi23/MVVM/bench/gapbs/build/{aot_file} {' '.join(arg)} >> MVVM_checkpoint.1.out"
-    # # )
-    # exec_with_log("sleep 40")
+    exec_with_log("sleep 40")
     
-    # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
-    # # exec_with_log("sleep 1")
-    # # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
-    # # exec_with_log("sleep 1")
-    # # exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
-    # exec_with_log("scp epyc:/mnt/MVVM/bench/redis/build/redis.log ./MVVM_checkpoint.1.out")
+    exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
+    exec_with_log("sleep 1")
+    exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
+    exec_with_log("sleep 1")
+    exec_with_log(f"ssh -t {slowtier} pkill -SIGINT -f MVVM_restore")
+    exec_with_log("scp epyc:/mnt/MVVM/build/sssp.log ./MVVM_checkpoint.1.out")
     cmd = f"cat ./MVVM_checkpoint.0.out ./MVVM_checkpoint.1.out ./MVVM_restore.0.out ./MVVM_restore.1.out ./MVVM_restore.2.out"
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

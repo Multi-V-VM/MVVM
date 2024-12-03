@@ -1,7 +1,7 @@
 # for thread cound to 1, 2, 4, 8, 16
 import csv
 import common_util
-from common_util import calculate_averages_latency, calculate_averages_size
+from common_util import calculate_geometric_mean_latency, calculate_geometric_mean_size
 from collections import defaultdict
 import numpy as np
 from matplotlib import pyplot as plt
@@ -604,12 +604,12 @@ if __name__ == "__main__":
     # write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
     # plot_qemu(results, "ckpt_restore_latency_qemu.pdf")
 
-    mvvm_result = read_from_csv("ckpt_restore_latency_profile.csv")
-    criu_result = read_from_csv("ckpt_restore_latency_criu.csv")
-    qemu_result = read_from_csv("ckpt_restore_latency_qemu.csv")
-    plot_whole(mvvm_result, criu_result, qemu_result)
-    print(calculate_averages_latency(mvvm_result,criu_result,qemu_result))
+    # mvvm_result = read_from_csv("ckpt_restore_latency_profile.csv")
+    # criu_result = read_from_csv("ckpt_restore_latency_criu.csv")
+    # qemu_result = read_from_csv("ckpt_restore_latency_qemu.csv")
+    # plot_whole(mvvm_result, criu_result, qemu_result)
+    # print(calculate_geometric_mean_latency(mvvm_result,criu_result,qemu_result))
     mvvm_size_result = read_size_from_csv("ckpt_restore_latency_profile.csv")
     criu_size_result = read_size_from_csv("ckpt_restore_latency_criu.csv")
     plot_size(mvvm_size_result, criu_size_result)
-    print(calculate_averages_size(mvvm_size_result,criu_size_result))
+    print(calculate_geometric_mean_size(mvvm_size_result,criu_size_result))
