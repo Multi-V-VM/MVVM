@@ -55,7 +55,7 @@ jobs:
     - name: Install LLVM SDK
       run: |
         cd "C:/Program Files/"
-        wget http://108.181.27.85/LLVM.zip -O LLVM.zip
+        wget http://108.181.27.85/about/LLVM.zip -O LLVM.zip
         unzip LLVM.zip
         cp "C:/Program Files/LLVM/tools/llvm/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
         

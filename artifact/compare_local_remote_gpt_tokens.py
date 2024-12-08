@@ -139,12 +139,12 @@ if __name__ == "__main__":
     #     wasm_bin="./llama32_1b.bin",
     #     wasi_path="./iwasm"
     # )
-    openai_result = get_openai_latency(
-        api_key=os.environ["OPENAI_API_KEY"],
-        model="gpt-3.5-turbo",
-        prompt=test_prompt
-    )
-    print(openai_result)
+    # openai_result = get_openai_latency(
+    #     api_key=os.environ["OPENAI_API_KEY"],
+    #     model="gpt-3.5-turbo",
+    #     prompt=test_prompt
+    # )
+    # print(openai_result)
     
 
     def plot_graph(results, labels):
@@ -160,13 +160,13 @@ if __name__ == "__main__":
         }
         
         # Create figure and axis
-        fig, ax = plt.subplots(figsize=(20, 10))
+        fig, ax = plt.subplots(figsize=(10, 10))
         
         # Create bar positions
         x = np.arange(len(results))
         
         # Create bars with specified colors
-        bars = ax.bar(x, results, width=0.6)
+        bars = ax.bar(x, results, width=0.3)
         
         # Color each bar according to the platform
         for bar, label in zip(bars, labels):
@@ -175,7 +175,7 @@ if __name__ == "__main__":
         # Customize the plot
         ax.set_ylabel('Performance Score')
         ax.set_xticks(x)
-        ax.set_xticklabels(labels, fontsize=30)
+        ax.set_xticklabels(labels, rotation=45, fontsize=30)
         
         # Add value labels on top of each bar
         for bar in bars:
@@ -193,7 +193,7 @@ if __name__ == "__main__":
         return plt
 
     # Example usage:
-    results = [2.78, 3.15, 0.75, 0.84, 79.13263037306803]  # Example values
+    results = [2.78, 3.15, 0.75, 54.91, 79.13263037306803]  # Example values
     platforms = ['Wasm', 'Wasm-SIMD', 'WASI-NN-CPU', 'WASI-NN-GPU', 'OpenAI']
 
     # Create and save the plot
