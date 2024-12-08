@@ -14,6 +14,11 @@
 #include "wamr_wasi_nn_context.h"
 #include "wamr.h"
 extern WAMRInstance *wamr;
-void WAMRWASINNContext::dump_impl(WASINNContext *env) {}
-void WAMRWASINNContext::restore_impl(WASINNContext *env) {}
+void WAMRWASINNContext::dump_impl(WASINNContext *env) {
+    fprintf(stderr, "dump_impl\n");
+}
+void WAMRWASINNContext::restore_impl(WASINNContext *env) {
+    fprintf(stderr, "restore_impl\n");
+    // replay the graph initialization  
+}
 #endif

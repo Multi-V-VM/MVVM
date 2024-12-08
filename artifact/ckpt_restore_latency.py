@@ -315,7 +315,7 @@ def plot_qemu(result, file_name="ckpt_restore_latency_qemu.pdf"):
         }
 
     # Plotting
-    fig, ax = plt.subplots(figsize=(15, 7))
+    fig, ax = plt.subplots(figsize=(20, 10))
     # Define the bar width and positions
     bar_width = 0.35
     index = np.arange(len(statistics))
@@ -359,84 +359,10 @@ def plot_qemu(result, file_name="ckpt_restore_latency_qemu.pdf"):
     plt.savefig(file_name)
 
 
-# print the results
-def plot(result, file_name="ckpt_restore_latency.pdf"):
-    workloads = defaultdict(list)
-    for workload, snapshot, recovery in result:
-        workloads[
-            workload.replace("OMP_NUM_THREADS=", "")
-            .replace("-g15", "")
-            .replace("-n300", "")
-            .replace(" -f ", "")
-            .replace("-vn300", "")
-            .replace("maze-6404.txt", "")
-            .replace("stories110M.bin", "")
-            .replace("-z tokenizer.bin -t 0.0", "")
-            .strip()
-        ].append((snapshot, recovery))
-
-    # Calculate the medians and standard deviations for each workload
-    statistics = {}
-    for workload, times in workloads.items():
-        snapshots, recoveries = zip(*times)
-        statistics[workload] = {
-            "snapshot_median": np.median(snapshots),
-            "recovery_median": np.median(recoveries),
-            "snapshot_std": np.std(snapshots),
-            "recovery_std": np.std(recoveries),
-        }
-
-    # Plotting
-    fig, ax = plt.subplots(figsize=(20, 10))
-    # Define the bar width and positions
-    bar_width = 0.35
-    index = np.arange(len(statistics))
-
-    # Plot the bars for each workload
-    # for i, (workload, stats) in enumerate(statistics.items()):
-    #     ax.bar(index[i], stats['snapshot_median'], bar_width, yerr=stats['snapshot_std'], capsize=5, label=f'Snapshot')
-    #     ax.bar(index[i] + bar_width, stats['recovery_median'], bar_width, yerr=stats['recovery_std'], capsize=5, label=f'Recovery')
-    for i, (workload, stats) in enumerate(statistics.items()):
-        ax.bar(
-            index[i],
-            stats["snapshot_median"],
-            bar_width,
-            yerr=stats["snapshot_std"],
-            capsize=5,
-            color="blue",
-            label="Snapshot" if i == 0 else "",
-        )
-        ax.bar(
-            index[i] + bar_width,
-            stats["recovery_median"],
-            bar_width,
-            yerr=stats["recovery_std"],
-            capsize=5,
-            color="red",
-            label="Recovery" if i == 0 else "",
-        )
-
-    # Labeling and formatting
-    ax.set_xlabel("Workload")
-    ax.set_ylabel("Time")
-    ax.set_title("Median and Variation of Snapshot and Recovery Times by Workload")
-    ax.set_xticks(index + bar_width / 2)
-    ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
-    ax.set_xticklabels(ticklabel, rotation=45)
-    ax.legend()
-
-    # Show the plot
-    plt.tight_layout()
-    plt.show()
-    plt.savefig(file_name)
-    # %%
-
-
-# print the results
 def plot_whole(
     result_mvvm, result_criu, result_qemu, file_name="ckpt_restore_latency_whole.pdf"
 ):
-    font = {"size": 25}
+    font = {"size": 40}
 
     plt.rc("font", **font)
     workloads = defaultdict(list)
@@ -460,74 +386,103 @@ def plot_whole(
     statistics = {}
     for workload, times in workloads.items():
         snapshots, recoveries = zip(*times)
-        print(workload, workloads_criu[workload])
+        mvvm_total = np.median(snapshots) + np.median(recoveries)  # MVVM baseline
+        
         snapshots_criu, recoveries_criu = zip(*workloads_criu[workload])
         snapshots_qemu, recoveries_qemu = zip(*workloads_qemu[workload])
+        
+        # Normalize everything to MVVM
         statistics[workload] = {
-            "snapshot_median": np.median(snapshots),
-            "recovery_median": np.median(recoveries),
-            "snapshot_std": np.std(snapshots),
-            "recovery_std": np.std(recoveries),
-            "criu_snapshot_median": np.median(snapshots_criu),
-            "criu_recovery_median": np.median(recoveries_criu),
-            "criu_snapshot_std": np.std(snapshots_criu),
-            "criu_recovery_std": np.std(recoveries_criu),
-            "qemu_snapshot_median": np.median(snapshots_qemu),
-            "qemu_snapshot_std": np.std(snapshots_qemu),
+            "mvvm_median": 1.0,  # MVVM is baseline
+            "mvvm_std": (np.std(snapshots) + np.std(recoveries)) / mvvm_total,
+            "criu_median": (np.median(snapshots_criu) + np.median(recoveries_criu)) / mvvm_total,
+            "criu_std": (np.std(snapshots_criu) + np.std(recoveries_criu)) / mvvm_total,
+            "qemu_median": np.median(snapshots_qemu) / mvvm_total,
+            "qemu_std": np.std(snapshots_qemu) / mvvm_total,
         }
 
     # Plotting
     fig, ax = plt.subplots(figsize=(20, 10))
-    # Define the bar width and positions
-    bar_width = 0.7 / 3
+    bar_width = 0.2  # Increased for better visibility
     index = np.arange(len(statistics))
 
+    def add_value_label(x, y, value, std):
+        # Format the number with one decimal place
+        formatted_value = f'{value:.1f}'
+        if formatted_value != "1.0":
+            ax.text(x, min(y + std + 0.5, 29), f'{formatted_value}x', 
+                    ha='center', va='bottom', fontsize=20)
+        elif value > 30:
+            ax.text(x, min(y + std + 0.5, 29), 'x', 
+                    ha='center', va='bottom', rotation=45, fontsize=20)
+
+    # Plot bars and add value labels
     for i, (workload, stats) in enumerate(statistics.items()):
-        ax.bar(
+        # MVVM bar
+        bar1 = ax.bar(
             index[i],
-            stats["snapshot_median"] + stats["recovery_median"],
+            min(stats["mvvm_median"], 30),
             bar_width,
-            # yerr=stats["snapshot_std"],
+            yerr=stats["mvvm_std"],
             capsize=5,
             color="blue",
             label="MVVM" if i == 0 else "",
         )
-        ax.bar(
+        add_value_label(index[i], stats["mvvm_median"], stats["mvvm_median"], stats["mvvm_std"])
+
+        # CRIU bar
+        bar2 = ax.bar(
             index[i] + bar_width,
-            stats["criu_snapshot_median"] + stats["criu_recovery_median"],
+            min(stats["criu_median"], 30),
             bar_width,
-            # yerr=stats["criu_snapshot_std"],
+            yerr=stats["criu_std"],
             capsize=5,
             color="cyan",
             label="CRIU" if i == 0 else "",
         )
-        ax.bar(
+        add_value_label(index[i] + bar_width, stats["criu_median"], stats["criu_median"], stats["criu_std"])
+
+        # QEMU bar
+        bar3 = ax.bar(
             index[i] + 2 * bar_width,
-            stats["qemu_snapshot_median"],
+            min(stats["qemu_median"], 30),
             bar_width,
-            # yerr=stats["qemu_snapshot_std"],
+            yerr=stats["qemu_std"],
             capsize=5,
             color="green",
-            label="QEMU Total" if i == 0 else "",
+            label="QEMU" if i == 0 else "",
         )
+        add_value_label(index[i] + 2 * bar_width, stats["qemu_median"], stats["qemu_median"], stats["qemu_std"])
 
+        # Add arrow for bars that exceed the limit
+        for bar, value in [(bar1, stats["mvvm_median"]), 
+                          (bar2, stats["criu_median"]), 
+                          (bar3, stats["qemu_median"])]:
+            if value > 30:
+                ax.text(bar[0].get_x() + bar_width/3, 29, '↑', 
+                       ha='center', va='bottom', color='black', fontsize=30)
+
+    # Set y-axis limit to 30x
+    ax.set_ylim(0, 30)
+    
     # Labeling and formatting
-    ax.set_ylabel("Checkpoint Restore Time (s)")
-    ax.set_xticks(index + bar_width / 2)
+    ax.set_ylabel("Normalized ckpt-restore Time")
+    ax.set_xticks(index + bar_width)
     ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
-    ax.set_xticklabels(ticklabel,fontsize=18)
-    ax.legend()
+    ax.set_xticklabels(ticklabel, rotation=45, ha='right', fontsize=30)
+    ax.legend(loc="upper right", fontsize=30)
+
+    # Add grid for better readability
+    ax.grid(True, axis='y', linestyle='--', alpha=0.3)
 
     # Show the plot
     plt.tight_layout()
-    plt.show()
-    plt.savefig(file_name)
-
+    plt.savefig(file_name, bbox_inches='tight', dpi=300)
 
 def plot_size(
     result_mvvm, result_criu, file_name="ckpt_restore_latency_size.pdf"
 ):
-    font = {"size": 25}
+    font = {"size": 40}
 
     plt.rc("font", **font)
     workloads = defaultdict(list)
@@ -537,61 +492,83 @@ def plot_size(
     for workload, size in result_criu:
         workloads_criu[workload.split(" ")[1].replace(".aot", "")].append((size))
 
-
     # Calculate the medians and standard deviations for each workload
     statistics = {}
-    # print(workloads)
-    for workload, times in workloads.items():
-        size = times
-        # print(workload, workloads_criu[workload])
+    for workload, sizes in workloads.items():
+        mvvm_median = np.median(sizes)  # MVVM baseline
         size_criu = workloads_criu[workload]
+        
+        # Normalize everything to MVVM
         statistics[workload] = {
-            "snapshot_median": np.median(size),
-            "snapshot_std": np.std(size),
-            "criu_snapshot_median": np.median(size_criu),
-            "criu_snapshot_std": np.std(size_criu),
+            "mvvm_median": 1.0,  # MVVM is baseline
+            "mvvm_std": np.std(sizes) / mvvm_median,
+            "criu_median": np.median(size_criu) / mvvm_median,
+            "criu_std": np.std(size_criu) / mvvm_median,
         }
 
     # Plotting
     fig, ax = plt.subplots(figsize=(20, 10))
-    # Define the bar width and positions
-    bar_width = 0.7 / 3
+    bar_width = 0.3  # Increased for better visibility
     index = np.arange(len(statistics))
 
+    def add_value_label(x, y, value, std):
+        # Format the number with one decimal place
+        formatted_value = f'{value:.1f}'
+        if formatted_value != "1.0":    
+            ax.text(x, min(y + std + 0.5, 29), f'{formatted_value}x', 
+                    ha='center', va='bottom', fontsize=20)
+        
+
+    # Plot bars and add value labels
     for i, (workload, stats) in enumerate(statistics.items()):
-        ax.bar(
+        # MVVM bar
+        bar1 = ax.bar(
             index[i],
-            stats["snapshot_median"],
+            min(stats["mvvm_median"], 30),
             bar_width,
-            # yerr=stats["snapshot_std"],
+            yerr=stats["mvvm_std"],
             capsize=5,
             color="blue",
             label="MVVM" if i == 0 else "",
         )
-        ax.bar(
+        add_value_label(index[i], stats["mvvm_median"], stats["mvvm_median"], stats["mvvm_std"])
+
+        # CRIU bar
+        bar2 = ax.bar(
             index[i] + bar_width,
-            stats["criu_snapshot_median"],
+            min(stats["criu_median"], 30),
             bar_width,
-            # yerr=stats["criu_snapshot_std"],
+            yerr=stats["criu_std"],
             capsize=5,
             color="cyan",
             label="CRIU" if i == 0 else "",
         )
+        add_value_label(index[i] + bar_width, stats["criu_median"], stats["criu_median"], stats["criu_std"])
 
+        # Add arrow for bars that exceed the limit
+        for bar, value in [(bar1, stats["mvvm_median"]), 
+                          (bar2, stats["criu_median"])]:
+            if value > 30:
+                ax.text(bar[0].get_x() + bar_width/2, 29, '↑', 
+                       ha='center', va='bottom', color='black', fontsize=30)
+
+    # Set y-axis limit to 30x
+    ax.set_ylim(0, 30)
+    
     # Labeling and formatting
-    ax.set_ylabel("Checkpoint file size (B)")
-    ax.set_xticks(index + bar_width / 2)
+    ax.set_ylabel("Normalized Checkpoint Size")
+    ax.set_xticks(index + bar_width/2)
     ticklabel = (x.replace("a=b", "") for x in list(statistics.keys()))
-    ax.set_xticklabels(ticklabel,fontsize=18)
-    ax.legend()
+    ax.set_xticklabels(ticklabel, fontsize=30, rotation=45, ha='right')
+    ax.legend(loc="upper right", fontsize=30)
+
+    # Add grid for better readability
+    ax.grid(True, axis='y', linestyle='--', alpha=0.3)
 
     # Show the plot
     plt.tight_layout()
-    plt.show()
-    plt.savefig(file_name)
-    # %%
-
-
+    plt.savefig(file_name, bbox_inches='tight', dpi=300)
+    
 if __name__ == "__main__":
     # mvvm_result = run_mvvm()
     # write_to_csv(mvvm_result, "ckpt_restore_latency_profile.csv")
@@ -604,12 +581,12 @@ if __name__ == "__main__":
     # write_to_csv(qemu_result, "ckpt_restore_latency_qemu.csv")
     # plot_qemu(results, "ckpt_restore_latency_qemu.pdf")
 
-    # mvvm_result = read_from_csv("ckpt_restore_latency_profile.csv")
-    # criu_result = read_from_csv("ckpt_restore_latency_criu.csv")
-    # qemu_result = read_from_csv("ckpt_restore_latency_qemu.csv")
+    mvvm_result = read_from_csv("ckpt_restore_latency_profile.csv")
+    criu_result = read_from_csv("ckpt_restore_latency_criu.csv")
+    qemu_result = read_from_csv("ckpt_restore_latency_qemu.csv")
     # plot_whole(mvvm_result, criu_result, qemu_result)
-    # print(calculate_geometric_mean_latency(mvvm_result,criu_result,qemu_result))
+    print(calculate_geometric_mean_latency(mvvm_result,criu_result,qemu_result))
     mvvm_size_result = read_size_from_csv("ckpt_restore_latency_profile.csv")
     criu_size_result = read_size_from_csv("ckpt_restore_latency_criu.csv")
-    plot_size(mvvm_size_result, criu_size_result)
+    # plot_size(mvvm_size_result, criu_size_result)
     print(calculate_geometric_mean_size(mvvm_size_result,criu_size_result))

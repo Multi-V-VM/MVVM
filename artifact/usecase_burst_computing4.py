@@ -268,13 +268,13 @@ if __name__ == "__main__":
 
     # results = read_from_csv("burst_computing.csv")
     # plot(results)
-    reu = str(get_burst_compute())
+    # reu = str(get_burst_compute())
     # reu=""
-    with open("burst.txt", "w") as f:
-        f.write(str(reu))
+    # with open("burst.txt", "w") as f:
+    #     f.write(str(reu))
     # reu = ""
-    # with open("burst.txt", "r") as f:
-    #     reu = f.read()
+    with open("burst.txt", "r") as f:
+        reu = f.read()
     # with open("MVVM_checkpoint.ps.1.out") as f:
     #     checkpoint1 = f.read()
     # with open("MVVM_checkpoint.ps.out") as f:

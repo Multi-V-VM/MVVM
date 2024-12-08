@@ -765,7 +765,7 @@ list_of_arg = [
 aot_variant = [
     ".aot",
 ]
-trial = 9
+trial = 10
 
 
 def contains_result(output: str, result: str) -> bool:
@@ -1484,7 +1484,7 @@ def run_qemu_x86_64(
 def run_qemu_aarch64(
     file: str, folder: str, arg: list[str], env: str
 ) -> tuple[str, str]:
-    cmd = f"/usr/bin/time /usr/bin/qemu-aarch64 -E {env} {pwd}/bench/{folder}/build_aarch64_native/{file} {' '.join(arg)}"
+    cmd = f"/usr/bin/time /usr/bin/qemu-aarch64 -E {env} -E LD_LIBRARY_PATH=/usr/aarch64-linux-gnu/lib/ {pwd}/bench/{folder}/build_aarch64_native/{file} {' '.join(arg)}"
     print(cmd)
     cmd = cmd.split()
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

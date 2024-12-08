@@ -31,11 +31,13 @@ struct WAMRWASINNGraph {
 
 struct WAMRWASINNInterpreter {
     //    std::unique_ptr<tflite::Interpreter> interpreter;
+    std::vector<uint8_t> interpreter;
     uint32_t a; // placeholder
 };
 
 struct WAMRWASINNModel {
     //    std::unique_ptr<tflite::FlatBufferModel> model;
+    std::vector<uint8_t> model;
     execution_target target;
 };
 
