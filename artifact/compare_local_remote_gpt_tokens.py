@@ -140,7 +140,7 @@ if __name__ == "__main__":
     #     wasi_path="./iwasm"
     # )
     openai_result = get_openai_latency(
-        api_key=os,
+        api_key=os.environ["OPENAI_API_KEY"],
         model="gpt-3.5-turbo",
         prompt=test_prompt
     )
