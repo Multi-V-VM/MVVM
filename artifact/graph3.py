@@ -7,9 +7,9 @@ def plot_graph(results, labels):
     plt.rc('font', **font)
     # Define colors for each platform
     colors = {
-        'MVVM-Vanilla': 'cyan',
-        'MVVM-GPU': 'red',
-        'SGLang-GPU': 'blue',
+        'FIFO': 'cyan',
+        'Latency Sensitive': 'red',
+        'MVVM': 'blue',
     }
     
     # Create figure and axis
@@ -46,10 +46,10 @@ def plot_graph(results, labels):
     return plt
 
 # Example usage:
-results = [0.31, 0.000164, 0.01103125]  # Example values
-platforms = ['MVVM-Vanilla', 'MVVM-GPU', 'SGLang-GPU']
+results = [898.078, 745.393, 482.713]  # Example values
+platforms = ['FIFO', 'Latency Sensitive', 'MVVM']
 
 # Create and save the plot
 plot = plot_graph(results, platforms)
-plot.savefig('sglang_vs_mvvm.pdf')
+plot.savefig('fifo_latency_vs_mvvm.pdf')
 plot.close()

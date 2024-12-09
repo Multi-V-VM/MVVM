@@ -173,7 +173,7 @@ if __name__ == "__main__":
             bar.set_color(colors.get(label, 'gray'))  # Default to gray if color not found
         
         # Customize the plot
-        ax.set_ylabel('Performance Score')
+        ax.set_ylabel('Tokens/s')
         ax.set_xticks(x)
         ax.set_xticklabels(labels, rotation=45, fontsize=30)
         

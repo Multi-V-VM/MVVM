@@ -41,3 +41,12 @@
 [submodule "bench/ORB_SLAM2"]
 	path = bench/ORB_SLAM2
 	url = https://github.com/Multi-V-VM/ORB_SLAM2
+[submodule "bench/crewai"]
+	path = bench/crewai
+	url = https://github.com/Multi-V-VM/crewAI-examples/
+[submodule "bench/llama-wamr"]
+	path = bench/llama-wamr
+	url = https://github.com/Multi-V-VM/llama-wamr
+[submodule "lib/s2n-tls"]
+	path = lib/s2n-tls
+	url = https://github.com/Multi-V-VM/s2n-tls
