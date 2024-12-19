@@ -561,10 +561,6 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
 
         case WASM_OP_MEMORY_SIZE:
         case WASM_OP_MEMORY_GROW:
-            skip_leb_uint32(frame_ip, p_end); /* 0x00 */
-            PUSH_I32();
-            break;
-
         case WASM_OP_I32_CONST:
             skip_leb_int32(frame_ip, p_end);
             PUSH_I32();
@@ -802,18 +798,15 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             case WASM_OP_TABLE_INIT:
             case WASM_OP_TABLE_COPY:
                 /* tableidx */
-                skip_leb_uint32(p, frame_ip_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 /* elemidx */
-                skip_leb_uint32(p, frame_ip_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 break;
             case WASM_OP_ELEM_DROP:
-                /* elemidx */
-                skip_leb_uint32(p, frame_ip_end);
-                break;
             case WASM_OP_TABLE_SIZE:
             case WASM_OP_TABLE_GROW:
             case WASM_OP_TABLE_FILL:
-                skip_leb_uint32(p, frame_ip_end); /* table idx */
+                skip_leb_uint32(frame_ip, frame_ip_end); /* table idx */
                 break;
 #endif /* WASM_ENABLE_REF_TYPES */
             default:

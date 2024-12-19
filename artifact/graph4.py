@@ -6,15 +6,6 @@ def plot_graph(results1, results2, labels):
     font = {'size': 40}
     plt.rc('font', **font)
     # Define colors for each platform
-    colors = {
-        'langgraph': 'cyan',
-        'azure_model': 'cyan',
-        'email_auto_responder_flow': 'cyan',
-        'game-builder-crew': 'cyan',
-        'instagram_post': 'cyan',
-        'job-posting': 'cyan',
-    }
-    
     # Create figure and axis
     fig, ax = plt.subplots(figsize=(10, 10))
     
@@ -27,9 +18,11 @@ def plot_graph(results1, results2, labels):
     
     # Color each bar according to the platform
     for bar, label in zip(bars1, labels):
-        bar.set_color( 'cyan')  # Default to gray if color not found
+        bar.set_color( 'cyan') 
+        bar.set_label('MVVM') # Default to gray if color not found
     for bar, label in zip(bars2, labels):
         bar.set_color( 'purple')  # Default to gray if color not found
+        bar.set_label('CrewAI')
     # Customize the plot
     ax.set_ylabel('Latency (s)')
     ax.set_xticks(x)
@@ -40,13 +33,13 @@ def plot_graph(results1, results2, labels):
         height = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2., height,
                 f'{height:.2f}',
-                ha='center', va='bottom')
+                ha='center', rotation=45, va='bottom',fontsize=20)
     
     for bar in bars2:
         height = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2., height,
                 f'{height:.2f}',
-                ha='center', va='bottom')
+                ha='center', rotation=45, va='bottom',fontsize=20)
     
     # Add grid for better readability
     ax.grid(True, axis='y', linestyle='--', alpha=0.7)
@@ -57,8 +50,8 @@ def plot_graph(results1, results2, labels):
     return plt
 
 # Example usage:
-results1 = [1.0, 1.0, 1.0]  # Example values
-results2 = [8.823, 1.0, 1.0]  # Example values
+results1 = [7.414, 142.142, 60.214]  # Example values
+results2 = [8.823, 178.635, 78.644]  # Example values
 platforms = ["job-post","long_file_translate","write_seo_blog_humanize"]
 
 # Create and save the plot
