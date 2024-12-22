@@ -18,41 +18,69 @@
 #include <memory>
 extern WAMRInstance *wamr;
 void WAMRInterpFrame::dump_impl(WASMInterpFrame *env) {
-    SPDLOG_ERROR("not impl");
-    exit(-1);
+    if (env->function) {
+        wamr->set_func(env->function->u.func);
+
+        if (env->ip)
+            ip = env->ip - env->function->u.func->code; // here we need to get the
+                                                        // offset from the code start.
+#if WASM_ENABLE_FAST_INTERP == 0
+        if (env->sp) {
+            sp = reinterpret_cast<uint8 *>(env->sp) -
+                 ((uint8 *)wamr->get_exec_env()->wasm_stack.s.bottom); // offset to the wasm_stack_top
+        }
+#endif
+        if (env->function->u.func->field_name)
+            function_name = env->function->u.func->field_name;
+        else
+            function_name = env->function->u.func_import->field_name;
+    }
 }
 std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecEnv *exec_env, WASMInterpFrame *frame,
                                                                        const uint8 *target_addr);
 void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     auto module_inst = (WASMModuleInstance *)wamr->get_exec_env()->module_inst;
-    if (0 <= function_index && function_index < module_inst->e->function_count) {
-        // LOGV(INFO) << fmt::format("function_index {} restored", function_index);
+    if (0 < function_index && function_index < module_inst->e->function_count) {
+        // LOGV(INFO) << fmt::format("function_index {} restored",
+        // function_index);
         env->function = &module_inst->e->functions[function_index];
+        if (env->function->is_import_func) {
+            LOG_DEBUG("is_import_func");
+            exit(-1);
+        }
     } else {
-        // LOGV(ERROR) << fmt::format("function_index {} invalid", function_index);
-        exit(-1);
+        auto target_module = wamr->get_module_instance()->e;
+        for (uint32 i = 0; i < target_module->function_count; i++) {
+            auto cur_func = &target_module->functions[i];
+            if (!cur_func->is_import_func) {
+                if (!strcmp(cur_func->u.func->field_name, function_name.c_str())) {
+                    function_index = i;
+                    env->function = cur_func;
+                    break;
+                }
+            } else {
+                if (!strcmp(cur_func->u.func_import->field_name, function_name.c_str())) {
+                    function_index = i;
+                    env->function = cur_func;
+                    break;
+                }
+            }
+        }
     }
-
-    if (env->function->is_import_func) {
-        SPDLOG_ERROR("is_import_func");
-        exit(-1);
-    }
-
     wamr->set_func(env->function->u.func);
     auto cur_func = env->function;
     WASMFunction *cur_wasm_func = cur_func->u.func;
 
-    SPDLOG_INFO("ip_offset {} sp_offset {}, code start {}", ip, sp, (void *)wasm_get_func_code(env->function));
+    LOG_DEBUG("ip_offset %d sp_offset %d, code start %p", ip, sp, (void *)wasm_get_func_code(env->function));
     env->ip = wasm_get_func_code(env->function) + ip;
-
+    memcpy(env->lp, stack_frame.data(), stack_frame.size() * sizeof(uint32));
+#if WASM_ENABLE_FAST_INTERP == 0
     env->sp_bottom = env->lp + cur_func->param_cell_num + cur_func->local_cell_num;
     env->sp = env->lp + sp;
     env->sp_boundary = env->sp_bottom + cur_wasm_func->max_stack_cell_num;
 
-    memcpy(env->lp, stack_frame.data(), stack_frame.size() * sizeof(uint32));
-
     // print_csps(csp);
-    SPDLOG_DEBUG("wasm_replay_csp_bytecode {} {} {}", (void *)wamr->get_exec_env(), (void *)env, (void *)env->ip);
+    LOG_DEBUG("wasm_replay_csp_bytecode %d %d %d", (void *)wamr->get_exec_env(), (void *)env, (void *)env->ip);
     env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
 
     if (env->function->u.func && !env->function->is_import_func && env->sp_bottom) {
@@ -62,15 +90,16 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         int i = 0;
         for (auto &&csp_item : csp) {
             restore(csp_item.get(), env->csp_bottom + i);
-            SPDLOG_ERROR("csp_bottom {}", ((uint8 *)env->csp_bottom + i) - wamr->get_exec_env()->wasm_stack.s.bottom);
+            LOG_DEBUG("csp_bottom %d", ((uint8 *)env->csp_bottom + i) - wamr->get_exec_env()->wasm_stack.s.bottom);
             i++;
         }
 
         env->csp = env->csp_bottom + csp.size();
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
     }
-    SPDLOG_INFO("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip, (void *)env->sp,
-                (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
+#endif
+    LOG_DEBUG("func_idx %d ip %p sp %p stack bottom %p", function_index, (void *)env->ip, (void *)env->sp,
+              (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
 }
 
 #if WASM_ENABLE_AOT != 0
@@ -79,8 +108,8 @@ void WAMRInterpFrame::dump_impl(AOTFrame *env) {
     ip = env->ip_offset;
     sp = env->sp - env->lp; // offset to the wasm_stack_top
 
-    SPDLOG_INFO("function_index {} ip_offset {} lp {} sp {} sp_offset {}", env->func_index, ip, (void *)env->lp,
-                (void *)env->sp, sp);
+    LOG_DEBUG("function_index %d ip_offset %d lp %p sp %p sp_offset %lu", env->func_index, ip, (void *)env->lp,
+              (void *)env->sp, sp);
 
     stack_frame = std::vector(env->lp, env->sp);
 
@@ -90,7 +119,7 @@ void WAMRInterpFrame::dump_impl(AOTFrame *env) {
     std::cout << std::endl;
 }
 void WAMRInterpFrame::restore_impl(AOTFrame *env) {
-    SPDLOG_ERROR("not impl");
+    LOG_DEBUG("not impl");
     exit(-1);
 }
 
@@ -239,7 +268,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         auto e = std::make_unique<WAMRBranchBlock>();                                                                  \
         e->cell_num = cell_num;                                                                                        \
         e->begin_addr = frame_ip - cur_func->u.func->code;                                                             \
-        e->target_addr = (_target_addr)-cur_func->u.func->code;                                                        \
+        e->target_addr = (_target_addr) - cur_func->u.func->code;                                                      \
         e->frame_sp = reinterpret_cast<uint8 *>(frame_sp - (param_cell_num)) - exec_env->wasm_stack.s.bottom;          \
         csp.emplace_back(std::move(e));                                                                                \
     }
@@ -840,15 +869,15 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             case SIMD_v128_load64_splat:
             case SIMD_v128_store:
                 /* memarg align */
-                skip_leb_uint32(frame_ip,frame_ip_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 /* memarg offset*/
-                skip_leb_uint32(frame_ip,frame_ip_end);
+                skip_leb_uint32(frame_ip, frame_ip_end);
                 break;
 
             case SIMD_v128_const:
             case SIMD_v8x16_shuffle:
                 /* immByte[16] immLaneId[16] */
-                CHECK_BUF1(frame_ip,frame_ip_end, 16);
+                CHECK_BUF1(frame_ip, frame_ip_end, 16);
                 frame_ip += 16;
                 break;
 
