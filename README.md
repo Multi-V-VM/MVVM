@@ -1,8 +1,9 @@
-    
 # Migratable Velocity Virtual Machine
 [![MacOS](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-windows.yml/badge.svg)](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-windows.yml)[![MacOS](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-macos.yml/badge.svg)](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-macos.yml)[![Ubuntu](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-ubuntu.yml)[![Generate page](https://github.com/Multi-V-VM/Multi-V-VM.github.io/actions/workflows/mkdocs.yml/badge.svg)](https://github.com/Multi-V-VM/Multi-V-VM.github.io/actions/workflows/mkdocs.yml)
 
 <img width="526" alt="arch" src="https://github.com/Multi-V-VM/MVVM/assets/40686366/0e600853-c2d2-44dc-83cb-4a6904f63019">
+
+Heterogeneous Containerization of Large Language Model Apps
 
 ## Just run
 ```bash
@@ -48,8 +49,12 @@ SPDLOG_LEVEL=debug ./MVVM_restore -t test/tcp_client.aot # All the wasi env will
 <img width="506" alt="image" src="https://github.com/Multi-V-VM/MVVM/assets/40686366/ab5fb538-82e7-4a62-9516-d29052670c38">
 <img width="506" alt="image" src="https://github.com/Multi-V-VM/MVVM/assets/40686366/1f3dc51d-75ee-44cb-ae89-288157d8f498">
 
-## Usecase
-1. Cloud Edge integration
-2. Optimistic Computing
-3. [FAASM](https://github.com/faasm/examples) Warm start
-<img width="407" alt="image" src="https://github.com/Multi-V-VM/MVVM/assets/40686366/aa9a9291-cf2c-4703-ab73-be2934a613fd">
+## Cite
+```
+@article{yang2024transparent,
+  title={Transparent and Efficient Live Migration across Heterogeneous Hosts with Wharf},
+  author={Yang, Yiwei and Hu, Aibo and Zheng, Yusheng and Zhao, Brian and Zhang, Xinqi and Quinn, Andrew},
+  journal={arXiv preprint arXiv:2410.15894},
+  year={2024}
+}
+```
