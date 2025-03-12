@@ -241,7 +241,7 @@ fail:
 std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecEnv *exec_env, WASMInterpFrame *frame,
                                                                        const uint8 *target_addr) {
     WASMFunctionInstance *cur_func = frame->function;
-    const uint8 *frame_ip = wasm_get_func_code(cur_func), *frame_ip_end = wasm_get_func_code_end(cur_func);
+    const uint8 *p = wasm_get_func_code(cur_func), *p_end = wasm_get_func_code_end(cur_func);
 
     if (!(frame_ip <= target_addr && target_addr <= frame_ip_end)) {
         SPDLOG_ERROR("target_addr invalid");
@@ -266,7 +266,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
     {                                                                                                                  \
         auto e = std::make_unique<WAMRBranchBlock>();                                                                  \
         e->cell_num = cell_num;                                                                                        \
-        e->begin_addr = frame_ip - cur_func->u.func->code;                                                             \
+        e->begin_addr = p - cur_func->u.func->code;                                                             \
         e->target_addr = (_target_addr)-cur_func->u.func->code;                                                        \
         e->frame_sp = reinterpret_cast<uint8 *>(frame_sp - (param_cell_num)) - exec_env->wasm_stack.s.bottom;          \
         csp.emplace_back(std::move(e));                                                                                \
@@ -289,7 +289,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         uint32 cell_num_to_copy;                                                                                       \
         POP_CSP_CHECK_OVERFLOW((n) + 1);                                                                               \
         csp.resize(csp.size() - (n));                                                                                  \
-        frame_ip = cur_func->u.func->code + csp.back()->target_addr;                                                   \
+        p = cur_func->u.func->code + csp.back()->target_addr;                                                   \
         /* copy arity values of block */                                                                               \
         frame_sp = reinterpret_cast<uint32 *>(exec_env->wasm_stack.bottom + csp.back()->frame_sp);                   \
         cell_num_to_copy = csp.back()->cell_num;                                                                       \
@@ -299,7 +299,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
 #define GET_LOCAL_INDEX_TYPE_AND_OFFSET()                                                                              \
     do {                                                                                                               \
         uint32 param_count = cur_func->param_count;                                                                    \
-        read_leb_uint32(frame_ip, frame_ip_end, local_idx);                                                            \
+        read_leb_uint32(p, p_end, local_idx);                                                            \
         local_offset = cur_func->local_offsets[local_idx];                                                             \
         if (local_idx < param_count)                                                                                   \
             local_type = cur_func->param_types[local_idx];                                                             \
@@ -316,10 +316,10 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
     WASMType *func_type;
     func_type = cur_wasm_func->func_type;
     cell_num = func_type->ret_cell_num;
-    PUSH_CSP(LABEL_TYPE_FUNCTION, 0, cell_num, frame_ip_end - 1);
+    PUSH_CSP(LABEL_TYPE_FUNCTION, 0, cell_num, p_end - 1);
 
-    while (frame_ip < target_addr) {
-        opcode = *frame_ip++;
+    while (p < target_addr) {
+        opcode = *p++;
 #if WASM_ENABLE_DEBUG_INTERP != 0
     op_break_retry:
 #endif
@@ -329,10 +329,10 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             break;
 
         case WASM_OP_BLOCK:
-            value_type = *frame_ip++;
+            value_type = *p++;
             param_cell_num = 0;
             cell_num = wasm_value_type_cell_num(value_type);
-            if (!wasm_loader_find_block_addr(exec_env, (BlockAddr *)exec_env->block_addr_cache, frame_ip, (uint8 *)-1,
+            if (!wasm_loader_find_block_addr(exec_env, (BlockAddr *)exec_env->block_addr_cache, p, (uint8 *)-1,
                                              LABEL_TYPE_BLOCK, &else_addr, &end_addr)) {
                 SPDLOG_ERROR("wasm_loader_find_block_addr");
                 exit(-1);
@@ -340,17 +340,17 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             PUSH_CSP(LABEL_TYPE_BLOCK, param_cell_num, cell_num, end_addr);
             break;
         case WASM_OP_LOOP:
-            value_type = *frame_ip++;
+            value_type = *p++;
             param_cell_num = 0;
             cell_num = 0;
-            PUSH_CSP(LABEL_TYPE_LOOP, param_cell_num, cell_num, frame_ip);
+            PUSH_CSP(LABEL_TYPE_LOOP, param_cell_num, cell_num, p);
             break;
         case WASM_OP_IF:
             /* block result type: 0x40/0x7F/0x7E/0x7D/0x7C */
-            value_type = *frame_ip++;
+            value_type = *p++;
             param_cell_num = 0;
             cell_num = wasm_value_type_cell_num(value_type);
-            if (!wasm_loader_find_block_addr(exec_env, (BlockAddr *)exec_env->block_addr_cache, frame_ip, (uint8 *)-1,
+            if (!wasm_loader_find_block_addr(exec_env, (BlockAddr *)exec_env->block_addr_cache, p, (uint8 *)-1,
                                              LABEL_TYPE_IF, &else_addr, &end_addr)) {
                 SPDLOG_DEBUG("FAULT");
                 exit(-1);
@@ -361,12 +361,12 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
                 PUSH_CSP(LABEL_TYPE_IF, param_cell_num, cell_num, end_addr);
             } else {
                 if (else_addr == nullptr) {
-                    frame_ip = end_addr + 1;
+                    p = end_addr + 1;
                 }
                 /* if there is an else branch, go to the else addr */
                 else {
                     PUSH_CSP(LABEL_TYPE_IF, param_cell_num, cell_num, end_addr);
-                    frame_ip = else_addr + 1;
+                    p = else_addr + 1;
                 }
             }
             break;
@@ -380,7 +380,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             break;
 
         case WASM_OP_ELSE:
-            frame_ip = cur_func->u.func->code + csp.back()->target_addr;
+            p = cur_func->u.func->code + csp.back()->target_addr;
             break;
 
         case WASM_OP_END:
@@ -393,16 +393,16 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             break;
 
         case WASM_OP_BR:
-            skip_leb_uint32(frame_ip, p_end); /* labelidx */
+            skip_leb_uint32(p, p_end); /* labelidx */
             break;
 
         case WASM_OP_BR_IF:
-            skip_leb_uint32(frame_ip, p_end); /* labelidx */
+            skip_leb_uint32(p, p_end); /* labelidx */
             POP_I32();
             break;
 
         case WASM_OP_BR_TABLE:
-            read_leb_uint32(frame_ip, frame_ip_end, count); /* lable num */
+            read_leb_uint32(p, p_end, count); /* lable num */
             POP_I32();
             break;
 
@@ -422,16 +422,16 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
 #if WASM_ENABLE_TAIL_CALL != 0
         case WASM_OP_RETURN_CALL:
 #endif
-            skip_leb_uint32(frame_ip, p_end); /* funcidx */
+            skip_leb_uint32(p, p_end); /* funcidx */
             break;
 
         case WASM_OP_CALL_INDIRECT:
 #if WASM_ENABLE_TAIL_CALL != 0
         case WASM_OP_RETURN_CALL_INDIRECT:
 #endif
-            skip_leb_uint32(frame_ip, p_end); /* typeidx */
-            CHECK_BUF(frame_ip, frame_ip_end, 1);
-            u8 = read_uint8(frame_ip); /* 0x00 */
+            skip_leb_uint32(p, p_end); /* typeidx */
+            CHECK_BUF(p, p_end, 1);
+            u8 = read_uint8(p); /* 0x00 */
             POP_I32();
             break;
 
@@ -500,31 +500,31 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             }
             break;
         case WASM_OP_TEE_LOCAL:
-            skip_leb_uint32(frame_ip, frame_ip_end);
+            skip_leb_uint32(p, p_end);
             break;
         case WASM_OP_GET_GLOBAL:
-            skip_leb_uint32(frame_ip, frame_ip_end);
+            skip_leb_uint32(p, p_end);
             PUSH_I32();
             break;
         case WASM_OP_SET_GLOBAL:
-            skip_leb_uint32(frame_ip, frame_ip_end);
+            skip_leb_uint32(p, p_end);
             POP_I32();
             break;
         case WASM_OP_GET_GLOBAL_64:
-            skip_leb_uint32(frame_ip, frame_ip_end);
+            skip_leb_uint32(p, p_end);
             PUSH_I64();
             break;
         case WASM_OP_SET_GLOBAL_64:
-            skip_leb_uint32(frame_ip, frame_ip_end);
+            skip_leb_uint32(p, p_end);
             POP_I64();
             break;
         case WASM_OP_SET_GLOBAL_AUX_STACK:
-            skip_leb_uint32(frame_ip, p_end); /* local index */
+            skip_leb_uint32(p, p_end); /* local index */
             frame_sp--;
             break;
 
         case EXT_OP_GET_LOCAL_FAST:
-            local_offset = *frame_ip++;
+            local_offset = *p++;
             if (local_offset & 0x80) {
                 PUSH_I64();
             } else {
@@ -532,7 +532,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             }
             break;
         case EXT_OP_SET_LOCAL_FAST:
-            local_offset = *frame_ip++;
+            local_offset = *p++;
             if (local_offset & 0x80) {
                 POP_I64();
             } else {
@@ -540,7 +540,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             }
             break;
         case EXT_OP_TEE_LOCAL_FAST:
-            local_offset = *frame_ip++;
+            local_offset = *p++;
             break;
 
         case WASM_OP_I32_LOAD:
@@ -551,8 +551,8 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         case WASM_OP_I32_LOAD16_U:
             POP_I32();
             PUSH_I32();
-            skip_leb_uint32(frame_ip, p_end); /* align */
-            skip_leb_uint32(frame_ip, p_end); /* offset */
+            skip_leb_uint32(p, p_end); /* align */
+            skip_leb_uint32(p, p_end); /* offset */
             break;
         case WASM_OP_I64_LOAD:
         case WASM_OP_F64_LOAD:
@@ -564,8 +564,8 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         case WASM_OP_I64_LOAD32_U:
             POP_I32();
             PUSH_I64();
-            skip_leb_uint32(frame_ip, p_end); /* align */
-            skip_leb_uint32(frame_ip, p_end); /* offset */
+            skip_leb_uint32(p, p_end); /* align */
+            skip_leb_uint32(p, p_end); /* offset */
             break;
         case WASM_OP_I32_STORE:
         case WASM_OP_F32_STORE:
@@ -573,8 +573,8 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         case WASM_OP_I32_STORE16:
             POP_I32();
             POP_I32();
-            skip_leb_uint32(frame_ip, p_end); /* align */
-            skip_leb_uint32(frame_ip, p_end); /* offset */
+            skip_leb_uint32(p, p_end); /* align */
+            skip_leb_uint32(p, p_end); /* offset */
             break;
         case WASM_OP_I64_STORE:
         case WASM_OP_F64_STORE:
@@ -583,29 +583,29 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         case WASM_OP_I64_STORE32:
             POP_I32();
             frame_sp -= 2;
-            skip_leb_uint32(frame_ip, p_end); /* align */
-            skip_leb_uint32(frame_ip, p_end); /* offset */
+            skip_leb_uint32(p, p_end); /* align */
+            skip_leb_uint32(p, p_end); /* offset */
             break;
 
         case WASM_OP_MEMORY_SIZE:
         case WASM_OP_MEMORY_GROW:
         case WASM_OP_I32_CONST:
-            skip_leb_int32(frame_ip, p_end);
+            skip_leb_int32(p, p_end);
             PUSH_I32();
             break;
         case WASM_OP_I64_CONST:
             PUSH_I32();
             PUSH_I32();
-            skip_leb_int64(frame_ip, p_end);
+            skip_leb_int64(p, p_end);
             break;
         case WASM_OP_F32_CONST:
-            frame_ip += sizeof(float32);
+            p += sizeof(float32);
             PUSH_I32();
             break;
         case WASM_OP_F64_CONST:
             PUSH_I32();
             PUSH_I32();
-            frame_ip += sizeof(float64);
+            p += sizeof(float64);
             break;
 
         case WASM_OP_I32_EQZ:
@@ -792,7 +792,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         case WASM_OP_MISC_PREFIX: {
             uint32 opcode1;
 
-            read_leb_uint32(frame_ip, frame_ip_end, opcode1);
+            read_leb_uint32(p, p_end, opcode1);
 
             switch (opcode1) {
             case WASM_OP_I32_TRUNC_SAT_S_F32:
@@ -808,18 +808,18 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             case WASM_OP_MEMORY_INIT:
                 skip_leb_uint32(frame_ip, frame_ip_end);
                 /* skip memory idx */
-                frame_ip++;
+                p++;
                 break;
             case WASM_OP_DATA_DROP:
                 skip_leb_uint32(frame_ip, frame_ip_end);
                 break;
             case WASM_OP_MEMORY_COPY:
                 /* skip two memory idx */
-                frame_ip += 2;
+                p += 2;
                 break;
             case WASM_OP_MEMORY_FILL:
                 /* skip memory idx */
-                frame_ip++;
+                p++;
                 break;
 #endif /* WASM_ENABLE_BULK_MEMORY */
 #if WASM_ENABLE_REF_TYPES != 0
@@ -943,13 +943,13 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
             SPDLOG_DEBUG("FAULT");
             exit(-1);
             /* atomic_op (1 u8) + memarg (2 u32_leb) */
-            opcode = read_uint8(frame_ip);
+            opcode = read_uint8(p);
             if (opcode != WASM_OP_ATOMIC_FENCE) {
-                skip_leb_uint32(frame_ip, p_end); /* align */
-                skip_leb_uint32(frame_ip, p_end); /* offset */
+                skip_leb_uint32(p, p_end); /* align */
+                skip_leb_uint32(p, p_end); /* offset */
             } else {
                 /* atomic.fence doesn't have memarg */
-                frame_ip++;
+                p++;
             }
             break;
         }

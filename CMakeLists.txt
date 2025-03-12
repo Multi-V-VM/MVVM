@@ -19,16 +19,6 @@ if (APPLE)
     set(WAMR_BUILD_LIB_WASI_THREADS 1)
     set(WAMR_BUILD_THREAD_MGR 1)
     set(WAMR_BUILD_PLATFORM "darwin")
-    if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)")
-        set(BLAS_LIBRARIES /opt/homebrew/opt/openblas/lib/libopenblas.0.dylib)
-    else ()
-        set(BLAS_LIBRARIES /usr/local/opt/openblas/lib/libopenblas.0.dylib)
-    endif ()
-    find_path(BLAS_INCLUDE_DIRS cblas.h
-            /opt/homebrew/opt/openblas/include
-            /usr/local/opt/openblas/include
-            $ENV{BLAS_HOME}/include)
-    message(${BLAS_INCLUDE_DIRS})
 elseif (LINUX)
     set(WAMR_BUILD_PLATFORM "linux")
     set(WAMR_BUILD_LIB_PTHREAD 1)
@@ -95,7 +85,7 @@ endif()
 
 set(WAMR_BUILD_INTERP 1)
 set(WAMR_BUILD_AOT 1)
-set(WAMR_BUILD_JIT 0)
+set(WAMR_BUILD_JIT 1)
 set(WAMR_BUILD_DEBUG_INTERP 0)
 set(WAMR_BUILD_DEBUG_AOT 0)
 set(WAMR_BUILD_FAST_JIT 0)
@@ -112,6 +102,7 @@ set(WAMR_BUILD_SIMD 1)
 set(WAMR_BUILD_CUSTOM_NAME_SECTION 1)
 set(WAMR_BUILD_CHECKPOINT_RESTORE 1)
 set(WAMR_DISABLE_HW_BOUND_CHECK 1)
+add_definitions(-DWASM_ENABLE_WAMR_COMPILER=1)
 
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-U,_get_ext_lib_export_apis")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
@@ -121,8 +112,11 @@ set(CMAKE_MACOSX_RPATH True)
 set(WAMR_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/wasm-micro-runtime)
 
 include(${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
-add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
-
+faasm_private_lib(wamrlib "${WAMR_RUNTIME_LIB_SOURCE}")
+target_include_directories(wamrlib PUBLIC
+    ${PLATFORM_SHARED_DIR}
+    ${WAMR_ROOT_DIR}/../../include
+)
 include(${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/wasm-micro-runtime/core/iwasm/aot ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include ${BLAS_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrafter/libcrafter/)
 

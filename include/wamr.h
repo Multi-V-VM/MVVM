@@ -19,7 +19,6 @@
 #include "bh_read_file.h"
 #include "wamr_exec_env.h"
 #include "wamr_export.h"
-#include "wamr_read_write.h"
 #include "wamr_wasi_context.h"
 #include "wasm_runtime.h"
 #include <algorithm>
