@@ -1,5 +1,6 @@
 import csv
 import common_util
+from common_util import plot, calculate_averages_comparison
 from multiprocessing import Pool
 from matplotlib import pyplot as plt
 import numpy as np
@@ -88,6 +89,7 @@ envs = [
     "OMP_NUM_THREADS=96",
 ]
 pool = Pool(processes=1)
+
 
 
 def run_mvvm():
@@ -337,6 +339,30 @@ def plot(results):
             )
         )
 
+def plot(results, results1):
+    font = {"size": 20}
+    plt.tight_layout()
+    plt.rc("font", **font)
+    workloads = defaultdict(list)
+    workloads1 = defaultdict(list)
+    for (
+        workload,
+        mvvm_values,
+        hcontainer_values,
+        qemu_x86_64_values,
+        qemu_aarch64_values,
+        native_values,
+    ) in results:
+        if not workload.__contains__("sp") and not workload.__contains__("lu") and not workload.__contains__("tc"):
+            workloads[workload.split(" ")[1].replace(".aot", "")].append(
+                (
+                    hcontainer_values,
+                    mvvm_values,
+                    qemu_x86_64_values,
+                    qemu_aarch64_values,
+                    native_values,
+                )
+            )
     statistics = {}
     print(workloads)
     for workload, i in workloads.items():
@@ -372,13 +398,13 @@ def plot(results):
             bar_width,
             # yerr=stats["native_std"],
             capsize=5,
-            color="cyan",
-            label="native" if i == 0 else "",
+            color="purple",
         )
+
         # ax.set_xlabel(workload)
     ticklabel = (x for x in list(statistics.keys()))
     print(statistics.keys())
-    ax.set_xticks(index)
+    ax.set_xticks(index + bar_width * 4)
 
     ax.set_xticklabels(ticklabel)
     ax.set_ylabel("Execution time (s)")

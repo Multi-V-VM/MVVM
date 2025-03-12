@@ -184,7 +184,7 @@ public:
     void set_wasi_args(const std::vector<std::string> &dir_list, const std::vector<std::string> &map_dir_list,
                        const std::vector<std::string> &env_list, const std::vector<std::string> &arg_list,
                        const std::vector<std::string> &addr_list, const std::vector<std::string> &ns_lookup_pool);
-    void spawn_child(WASMExecEnv *main_env, bool);
+    void spawn_child(WASMExecEnv *cur_env, bool main);
     void find_func(const char *name);
     int invoke_main();
     void invoke_init_c();

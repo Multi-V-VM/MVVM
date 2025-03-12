@@ -56,7 +56,7 @@ folder = [
 arg = [
     [],
     ["stories110M.bin", "-z", "tokenizer.bin", "-t", "0.0"],
-    ["./ORBvoc.txt,", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
+    ["./ORBvoc.txt", "./TUM3.yaml", "./", "./associations/fr1_xyz.txt"],
     ["-f", "./road.sg", "-n300"],
     ["-g20", "-vn300"],
     ["-g20", "-vn300"],
@@ -104,9 +104,9 @@ envs = [
 pool = Pool(processes=10)
 
 
-def run_mvvm():
-    results = []
-    results1 = []
+# def run_mvvm():
+#     results = []
+#     results1 = []
 
     for i, c in enumerate(cmd):
         aot = cmd[i] + common_util.aot_variant[0]
@@ -189,9 +189,9 @@ def run_criu():
     return results
 
 
-def run_qemu():
-    results = []
-    results1 = []
+# def run_qemu():
+#     results = []
+#     results1 = []
 
     # for i in range(len(cmd)):
     #     aot = cmd[i]

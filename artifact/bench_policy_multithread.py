@@ -1,9 +1,7 @@
 import csv
 import common_util
+from common_util import plot, calculate_averages
 from multiprocessing import Pool
-import matplotlib.pyplot as plt
-import numpy as np
-from collections import defaultdict
 
 cmd = [
     "llama",
@@ -123,7 +121,7 @@ def run_mvvm():
                     results_1.append(exec_time)
                 elif a == "-stack.aot":
                     results_2.append(exec_time)
-                elif a == "-ckpt-every-dirty.aot":
+                elif a == "-ckpt-loop-counter.aot":
                     results_3.append(exec_time)
                 elif a == "-ckpt-loop.aot":
                     results_4.append(exec_time)
@@ -133,7 +131,7 @@ def run_mvvm():
                     a == ".aot"
                     and not exec.__contains__("-pure.aot")
                     and not exec.__contains__("-stack.aot")
-                    and not exec.__contains__("-ckpt-every-dirty.aot")
+                    and not exec.__contains__("-ckpt-loop-counter.aot")
                     and not exec.__contains__("-ckpt-loop.aot")
                     and not exec.__contains__("-ckpt-loop-dirty.aot")
                 ):
@@ -167,7 +165,6 @@ def write_to_csv(filename):
                 "aot",
                 "pure.aot",
                 "stack.aot",
-                "ckpt-every-dirty.aot",
                 "ckpt-loop.aot",
                 "ckpt-loop-dirty.aot",
             ]
@@ -175,7 +172,7 @@ def write_to_csv(filename):
 
         # Write the data
         for idx, row in enumerate(mvvm_results):
-            writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6]])
+            writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5]])
 
 
 def read_from_csv(filename):
@@ -190,7 +187,6 @@ def read_from_csv(filename):
                     float(row[1]),
                     float(row[2]),
                     float(row[3]),
-                    float(row[4]),
                     float(row[5]),
                     float(row[6]),
                 )

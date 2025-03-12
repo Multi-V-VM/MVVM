@@ -311,13 +311,14 @@ def plot(results):
 
 
 if __name__ == "__main__":
-    mvvm_results = run_mvvm()
-    native_results = run_native()
-    qemu_x86_64_results = run_qemu_x86_64()
-    # # print the results
-    qemu_aarch64_results = run_qemu_aarch64()
+    # mvvm_results = run_mvvm()
+    # native_results = run_native()
+    # qemu_x86_64_results = run_qemu_x86_64()
+    # # # print the results
+    # qemu_aarch64_results = run_qemu_aarch64()
 
-    write_to_csv("comparison_gapbs.csv")
+    # write_to_csv("comparison_gapbs.csv")
     
     results = read_from_csv("comparison_gapbs.csv")
     plot(results)
+    

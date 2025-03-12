@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "$@"
 pid1=`ps aux | grep $1 | grep -v grep |grep -v mitoring |grep -v $3 | awk '{print $2}'|head -n 1`
-sudo asitop --show_cores 1 &> $1.energy.$2.out &
+sudo /opt/homebrew/bin/asitop --show_cores 1 &> /Users/victoryang00/Documents/project/MVVM-bench/build/$1.energy.$2.out &
 pid2=$!
 date >> /Users/victoryang00/Documents/project/MVVM-bench/$1.ps.$2.out
 while true; do
@@ -9,7 +9,7 @@ while true; do
     if [ "$line" == "" ]; then
         break
     fi
-    echo $line >> $1.ps.$2.out
+    echo $line >> /Users/victoryang00/Documents/project/MVVM-bench/build/$1.ps.$2.out
     sleep 0.5
     if ! ps -p $pid1 >/dev/null; then
         sleep 0.5

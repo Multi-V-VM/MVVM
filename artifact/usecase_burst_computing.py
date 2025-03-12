@@ -28,7 +28,7 @@ arg = [
     [
         "./ORBvoc.txt",
         "./TUM3.yaml",
-        "./rgbd_dataset_freiburg3_long_office_household_validation",
+        "./",
         "./associations/fr3_office_val.txt",
     ],
 ]
@@ -297,45 +297,45 @@ if __name__ == "__main__":
     # with open("MVVM_restore.ps.out") as f:
     #     restore = f.read()
 
-    # with open("MVVM_checkpoint.energy.1.out") as f:
-    #     checkpoint_energy1 = f.read()
-    # with open("MVVM_checkpoint.energy.out") as f:
-    #     checkpoint_energy = f.read()
-    # with open("MVVM_restore.energy.6.out") as f:
-    #     restore_energy6 = f.read()
-    # with open("MVVM_restore.energy.5.out") as f:
-    #     restore_energy5 = f.read()
-    # with open("MVVM_restore.energy.4.out") as f:
-    #     restore_energy4 = f.read()
-    # with open("MVVM_restore.energy.3.out") as f:
-    #     restore_energy3 = f.read()
-    # with open("MVVM_restore.energy.2.out") as f:
-    #     restore_energy2 = f.read()
-    # with open("MVVM_restore.energy.1.out") as f:
-    #     restore_energy1 = f.read()
-    # with open("MVVM_restore.energy.out") as f:
-    #     restore_energy = f.read()
+    with open("MVVM_checkpoint.energy.1.out") as f:
+        checkpoint_energy1 = f.read()
+    with open("MVVM_checkpoint.energy.out") as f:
+        checkpoint_energy = f.read()
+    with open("MVVM_restore.energy.6.out") as f:
+        restore_energy6 = f.read()
+    with open("MVVM_restore.energy.5.out") as f:
+        restore_energy5 = f.read()
+    with open("MVVM_restore.energy.4.out") as f:
+        restore_energy4 = f.read()
+    with open("MVVM_restore.energy.3.out") as f:
+        restore_energy3 = f.read()
+    with open("MVVM_restore.energy.2.out") as f:
+        restore_energy2 = f.read()
+    with open("MVVM_restore.energy.1.out") as f:
+        restore_energy1 = f.read()
+    with open("MVVM_restore.energy.out") as f:
+        restore_energy = f.read()
 
     plot_time(
         reu,
-        None,
-        None,
-        None,
-        None,
-        # [
-        #     checkpoint_energy,
-        #     restore_energy,
-        #     restore_energy1,
-        #     restore_energy3,
-        #     restore_energy2,
-        # ],
-        # [checkpoint1, restore3, restore4, restore5, restore6],
-        # [
-        #     checkpoint_energy1,
-        #     restore_energy3,
-        #     restore_energy4,
-        #     restore_energy5,
-        #     restore_energy6,
-        # ],
-        # [checkpoint1, restore3, restore4, restore5, restore6],
+        # None,
+        # None,
+        # None,
+        # None,
+        [
+            checkpoint_energy,
+            restore_energy,
+            restore_energy1,
+            restore_energy3,
+            restore_energy2,
+        ],
+        [checkpoint1, restore3, restore4, restore5, restore6],
+        [
+            checkpoint_energy1,
+            restore_energy3,
+            restore_energy4,
+            restore_energy5,
+            restore_energy6,
+        ],
+        [checkpoint1, restore3, restore4, restore5, restore6],
     )

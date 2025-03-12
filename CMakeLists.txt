@@ -138,6 +138,8 @@ endif()
 if (LINUX)
     add_subdirectory(lib/libcrafter/libcrafter)
     add_subdirectory(gateway)
+    add_executable(MVVM_profile src/profile.cpp ${UNCOMMON_SHARED_SOURCE})
+    target_link_libraries(MVVM_profile fmt::fmt spdlog::spdlog cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib ${WIN_EXTRA_LIBS})
 endif ()
 
 file(GLOB_RECURSE SOURCE_FILES src/wamr*.cpp)
