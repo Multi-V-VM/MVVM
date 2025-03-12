@@ -42,7 +42,7 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
     if (wamr->is_aot) {
         std::reverse(frames.begin(), frames.end());
 
-        auto save_top = env->wasm_stack.top;
+        auto save_top = env->wasm_stack.s.top;
         env->call_chain_size = 0;
         for (const auto &dump_frame : frames) {
             if (!aot_alloc_frame(env, dump_frame->function_index)) {
@@ -57,7 +57,7 @@ void WAMRExecEnv::restore_impl(WASMExecEnv *env) {
             memcpy(cur_frame->lp, dump_frame->stack_frame.data(), dump_frame->stack_frame.size() * sizeof(uint32));
         }
         env->cur_frame = nullptr;
-        env->wasm_stack.top = save_top;
+        env->wasm_stack.s.top = save_top;
         env->call_chain_size = frames.size();
     } else {
         auto module_inst = (WASMModuleInstance *)env->module_inst;

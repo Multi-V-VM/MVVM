@@ -78,7 +78,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     env->sp_bottom = env->lp + cur_func->param_cell_num + cur_func->local_cell_num;
     env->sp = env->lp + sp;
     env->sp_boundary = env->sp_bottom + cur_wasm_func->max_stack_cell_num;
-
+#endif
     // print_csps(csp);
     LOG_DEBUG("wasm_replay_csp_bytecode %d %d %d", (void *)wamr->get_exec_env(), (void *)env, (void *)env->ip);
     env->csp_bottom = (WASMBranchBlock *)env->sp_boundary;
@@ -90,7 +90,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         int i = 0;
         for (auto &&csp_item : csp) {
             restore(csp_item.get(), env->csp_bottom + i);
-            SPDLOG_ERROR("csp_bottom {}", ((uint8 *)env->csp_bottom + i) - wamr->get_exec_env()->wasm_stack.bottom);
+            SPDLOG_ERROR("csp_bottom {}", ((uint8 *)env->csp_bottom + i) - wamr->get_exec_env()->wasm_stack.s.bottom);
             i++;
         }
 
@@ -98,7 +98,7 @@ void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
         env->csp_boundary = env->csp_bottom + env->function->u.func->max_block_num;
     }
     SPDLOG_INFO("func_idx {} ip {} sp {} stack bottom {}", function_index, (void *)env->ip, (void *)env->sp,
-                (void *)wamr->get_exec_env()->wasm_stack.bottom);
+                (void *)wamr->get_exec_env()->wasm_stack.s.bottom);
 }
 
 #if WASM_ENABLE_AOT != 0
@@ -268,7 +268,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         e->cell_num = cell_num;                                                                                        \
         e->begin_addr = frame_ip - cur_func->u.func->code;                                                             \
         e->target_addr = (_target_addr)-cur_func->u.func->code;                                                        \
-        e->frame_sp = reinterpret_cast<uint8 *>(frame_sp - (param_cell_num)) - exec_env->wasm_stack.bottom;          \
+        e->frame_sp = reinterpret_cast<uint8 *>(frame_sp - (param_cell_num)) - exec_env->wasm_stack.s.bottom;          \
         csp.emplace_back(std::move(e));                                                                                \
     }
 

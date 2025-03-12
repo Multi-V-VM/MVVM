@@ -18,8 +18,7 @@ jobs:
 
     name: "${{matrix.standard}}-${{matrix.build}}"
     steps:
-    - uses: actions/checkout@v2
-
+    - uses: actions/checkout@v4
     - name: Checkout
       run: |
         git submodule update --init --recursive
@@ -28,6 +27,10 @@ jobs:
       uses: crazy-max/ghaction-chocolatey@v2
       with:
         args: install wget msys2 ninja
+
+    - name: Install Tensorflow
+      run: |
+        cd lib/wasm-micro-runtime/core/deps && bash ./install_tensorflow.sh
 
     - name: Install Dependency
       run: |

@@ -18,8 +18,7 @@ jobs:
 
     name: "${{matrix.standard}}-${{matrix.build}}"
     steps:
-    - uses: actions/checkout@v2
-
+    - uses: actions/checkout@v4
     - name: List Xcode installations
       run: sudo ls -1 /Applications | grep "Xcode"
       
@@ -32,6 +31,10 @@ jobs:
     - name: Checkout
       run: |
         git submodule update --init --recursive
+
+    - name: Install Tensorflow
+      run: |
+        cd lib/wasm-micro-runtime/core/deps && bash ./install_tensorflow.sh
 
     - name: Install WASI SDK
       run: |

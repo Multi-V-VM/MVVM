@@ -525,7 +525,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     auto main_env = cur_env;
     cur_thread = ((uint64_t)main_env->handle);
 
-    fprintf(stderr, "main_env created %p %p\n\n", main_env, main_saved_call_chain);
+    // fprintf(stderr, "main_env created %p %p\n\n", main_env, main_saved_call_chain);
 
     main_env->is_restore = true;
 
@@ -618,14 +618,14 @@ void WAMRInstance::spawn_child(WASMExecEnv *cur_env, bool main) {
             exit(-1);
             // find the parent env
             auto saved_call_chain_size = cur_env->call_chain_size;
-            auto saved_stack_size = cur_env->wasm_stack.top_boundary - cur_env->wasm_stack.bottom;
+            auto saved_stack_size = cur_env->wasm_stack.s.top_boundary - cur_env->wasm_stack.s.bottom;
             auto saved_stack = (char *)malloc(saved_stack_size);
-            memcpy(saved_stack, cur_env->wasm_stack.bottom, saved_stack_size);
+            memcpy(saved_stack, cur_env->wasm_stack.s.bottom, saved_stack_size);
             exec_env->is_restore = true;
             // main thread
             thread_spawn_wrapper(cur_env, tid_start_arg_map[child_env->cur_count].first);
             cur_env->call_chain_size = saved_call_chain_size;
-            memcpy(cur_env->wasm_stack.bottom, saved_stack, saved_stack_size);
+            memcpy(cur_env->wasm_stack.s.bottom, saved_stack, saved_stack_size);
             free(saved_stack);
         } else {
             exec_env->is_restore = true;
