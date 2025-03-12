@@ -12,8 +12,8 @@
 
 #include "wamr.h"
 #if defined(_WIN32)
-#include <windows.h>
 #include <detours/detours.h>
+#include <windows.h>
 #endif
 
 bool WAMRInstance::get_int3_addr() {
@@ -221,6 +221,41 @@ bool WAMRInstance::replace_mfence_with_nop() {
         os_mprotect(mmap_addr, total_size, map_prot);
     }
     return true;
+}
+extern inline __attribute__((always_inline)) unsigned long rdpmc_instructions()
+{
+   unsigned long a, d, c;
+
+   c = (1UL<<30);
+   __asm__ volatile("rdpmc" : "=a" (a), "=d" (d) : "c" (c));
+
+   return (a | (d << 32));
+}
+
+long WAMRInstance::get_inst_diff() {
+    int tile = 0;
+    int counter = 0;
+
+    // for (int counter = 0; counter < NUM_CHA_COUNTERS; counter++) {
+    // auto msr_num = 0x2000 + 0x10 * tile + 0x8 + counter;
+    // pread(fd, &msr_val, sizeof(msr_val), msr_num);
+    msr_val = rdpmc_instructions();
+    cha_counts[tile][counter][1] = msr_val;
+    // printf("tile %llx counter %d: %ld\n", msr_num, counter, msr_val);
+    // }
+    // for (int tile = 0; tile < NUM_TILE_ENABLED; tile++)
+    //     counters_changes[tile] += (cha_counts[tile][0][1] - cha_counts[tile][0][0]);
+    auto res = cha_counts[0][0][1] - cha_counts[0][0][0];
+    if (cha_counts[0][0][0] != 0)
+        max_diff = std::max(max_diff, res);
+    // for (int counter = 0; counter < NUM_CHA_COUNTERS; counter++) {
+    // msr_num = 0x2000 + 0x10 * tile + 0x8 + counter;
+    // pread(fd, &msr_val, sizeof(msr_val), msr_num);
+    cha_counts[tile][counter][0] = rdpmc_instructions();
+    // printf("tile %llx counter %d: %ld\n", msr_num, counter, msr_val);
+    // }
+
+    return res;
 }
 
 bool WAMRInstance::replace_nop_with_int3() {

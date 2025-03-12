@@ -29,6 +29,9 @@ std::ostringstream re{};
 WriteStream *writer;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::mutex as_mtx;
+std::string offload_addr;
+int offload_port;
+std::string target;
 
 int main(int argc, char *argv[]) {
     spdlog::cfg::load_env_levels();
@@ -91,8 +94,11 @@ int main(int argc, char *argv[]) {
     }
     register_sigtrap();
     register_sigint();
+    for (int i =0; i<10;i++)
+        fopen("checkpoint.log", "w"); // open naive file for bubble
     if (offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+
 #ifndef _WIN32
 #if __linux__
     else if (rdma)

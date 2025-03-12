@@ -28,6 +28,9 @@ ReadStream *reader;
 WriteStream *writer;
 WAMRInstance *wamr = nullptr;
 std::vector<std::unique_ptr<WAMRExecEnv>> as;
+std::string offload_addr;
+int offload_port;
+std::string target;
 
 int main(int argc, char **argv) {
     spdlog::cfg::load_env_levels();
@@ -49,11 +52,11 @@ int main(int argc, char **argv) {
         std::cout << options.help() << std::endl;
         exit(0);
     }
-    auto target = result["target"].as<std::string>();
+    target = result["target"].as<std::string>();
     auto source_addr = result["source_addr"].as<std::string>();
     auto source_port = result["source_port"].as<int>();
-    auto offload_addr = result["offload_addr"].as<std::string>();
-    auto offload_port = result["offload_port"].as<int>();
+    offload_addr = result["offload_addr"].as<std::string>();
+    offload_port = result["offload_port"].as<int>();
     auto count = result["count"].as<size_t>();
     auto rdma = result["rdma"].as<bool>();
 
@@ -76,15 +79,8 @@ int main(int argc, char **argv) {
         reader = new SocketReadStream(source_addr.c_str(), source_port);
 #endif
     auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
-    if (offload_addr.empty())
-        writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+
 #if !defined(_WIN32)
-#if __linux__
-    else if(rdma)
-        writer = new RDMAWriteStream(offload_addr.c_str(), offload_port);
-#endif
-    else
-        writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
     // is server for all and the is server?
     if (!a[a.size() - 1]
              ->module_inst.wasi_ctx.socket_fd_map.empty()) { // new ip, old ip // only if tcp requires keepalive

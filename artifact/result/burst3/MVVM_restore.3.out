@@ -1,0 +1,115 @@
+code 0x1052a8004 code_size 137216
+restore function_index 50
+restore function_index 68
+restore function_index 52
+main_env created 0x128008000 0x6000008cc020
+
+invoke_init_c
+wakeup.release
+invoke main 0x128008000 0x6000008cc020
+[2024-09-18 19:00:49.203] [error] [wamr_export.cpp:364] wamr_handle_map old:< 140737314920320 > new:< 140737314920320 >
+[2024-09-18 19:00:49.204] [info] [wamr.cpp:568] Recover time: 0.263317
+
+Trial 898 took 798.051753 seconds.
+Trial 899 took 0.857405 seconds.
+Trial 900 took 0.914500 seconds.
+Trial 901 took 0.884555 seconds.
+Trial 902 took 0.873968 seconds.
+Trial 903 took 0.890056 seconds.
+Trial 904 took 0.858244 seconds.
+Trial 905 took 0.876521 seconds.
+Trial 906 took 0.843569 seconds.
+Trial 907 took 0.854366 seconds.
+Trial 908 took 0.896671 seconds.
+Trial 909 took 0.870075 seconds.
+Trial 910 took 0.889038 seconds.
+Trial 911 took 0.885716 seconds.
+Trial 912 took 0.896193 seconds.
+Trial 913 took 0.925490 seconds.
+Trial 914 took 0.839220 seconds.
+Trial 915 took 0.925171 seconds.
+Trial 916 took 0.863700 seconds.
+Trial 917 took 0.875083 seconds.
+Trial 918 took 0.888570 seconds.
+Trial 919 took 0.915486 seconds.
+Trial 920 took 0.890150 seconds.
+Trial 921 took 0.838769 seconds.
+Trial 922 took 0.895281 seconds.
+Trial 923 took 0.895511 seconds.
+Trial 924 took 0.869189 seconds.
+Trial 925 took 0.873342 seconds.
+Trial 926 took 0.947224 seconds.
+Trial 927 took 0.881185 seconds.
+Trial 928 took 0.836341 seconds.
+Trial 929 took 0.901252 seconds.
+Trial 930 took 0.849817 seconds.
+Trial 931 took 0.889243 seconds.
+Trial 932 took 0.905632 seconds.
+Trial 933 took 0.850888 seconds.
+Trial 934 took 0.912411 seconds.
+Trial 935 took 0.901201 seconds.
+Trial 936 took 0.936821 seconds.
+Trial 937 took 0.877912 seconds.
+Trial 938 took 0.961680 seconds.
+Trial 939 took 0.871714 seconds.
+Trial 940 took 0.916280 seconds.
+Trial 941 took 0.899114 seconds.
+Trial 942 took 0.919020 seconds.
+Trial 943 took 0.910242 seconds.
+Trial 944 took 0.887411 seconds.
+Trial 945 took 0.833441 seconds.
+Trial 946 took 0.872059 seconds.
+Trial 947 took 0.843829 seconds.
+Trial 948 took 0.870965 seconds.
+Trial 949 took 0.877225 seconds.
+Trial 950 took 0.922320 seconds.
+Trial 951 took 0.866398 seconds.
+Trial 952 took 0.874887 seconds.
+Trial 953 took 0.874377 seconds.
+Trial 954 took 0.876481 seconds.
+Trial 955 took 0.916270 seconds.
+Trial 956 took 0.873861 seconds.
+Trial 957 took 0.920121 seconds.
+Trial 958 took 0.889008 seconds.
+Trial 959 took 0.897092 seconds.
+Trial 960 took 0.875448 seconds.
+Trial 961 took 0.892544 seconds.
+Trial 962 took 0.877550 seconds.
+Trial 963 took 0.949381 seconds.
+Trial 964 took 0.955877 seconds.
+Trial 965 took 0.883445 seconds.
+Trial 966 took 0.934924 seconds.
+Trial 967 took 0.994781 seconds.
+Trial 968 took 0.936521 seconds.
+Trial 969 took 0.880190 seconds.
+Trial 970 took 0.880878 seconds.
+Trial 971 took 0.908982 seconds.
+Trial 972 took 0.865583 seconds.
+Trial 973 took 0.995635 seconds.
+Trial 974 took 0.864047 seconds.
+Trial 975 took 0.894852 seconds.
+Trial 976 took 1.072150 seconds.
+Trial 977 took 0.901680 seconds.
+Trial 978 took 0.946745 seconds.
+Trial 979 took 0.911290 seconds.
+Trial 980 took 0.894305 seconds.
+Trial 981 took 0.906198 seconds.
+Trial 982 took 0.884947 seconds.
+Trial 983 took 0.884274 seconds.
+Trial 984 took 0.873784 seconds.
+Trial 985 took 1.003541 seconds.
+Trial 986 took 0.840739 seconds.
+Trial 987 took 0.919728 seconds.
+Trial 988 took 0.882422 seconds.
+Trial 989 took 0.967050 seconds.
+Trial 990 took 0.920416 seconds.
+Trial 991 took 0.925799 seconds.
+Trial 992 took 0.893927 seconds.
+Trial 993 took 0.906560 seconds.
+Trial 994 took 0.883561 seconds.
+Trial 995 took 0.840389 seconds.
+Trial 996 took 0.868321 seconds.
+Trial 997 took 0.927182 seconds.
+Trial 998 took 0.870580 seconds.
+Trial 999 took 0.831160 seconds.
+[2024-09-18 19:02:19.604] [info] [restore.cpp:141] Execution time: 91.218568 s

@@ -1,0 +1,8 @@
+code 0x40000004 code_size 8143456
+[2024-05-19 23:17:39.498] [[32minfo[m] [wamr_read_write.h:134] [Server] Bind socket 128.114.53.32 12353
+[2024-05-19 23:17:39.498] [[32minfo[m] [wamr_read_write.h:139] [Server] Listening on socket
+^CCaught signal 2, performing custom logic...
+ccccccccccccc^C[2024-05-19 23:20:51.748] [[32minfo[m] [wamr.cpp:1007] Snapshot time: 0.002327 s
+[2024-05-19 23:20:51.748] [[32minfo[m] [wamr.cpp:1008] Max Interval: 0
+[2024-05-19 23:20:51.748] [[32minfo[m] [wamr.cpp:1009] Memory usage: 3232 MB
+^C

@@ -1,0 +1,433 @@
+code 0x40000004 code_size 63588728
+[2024-05-05 17:16:10.506] [[32minfo[m] [wamr_read_write.h:134] [Server] Bind socket 128.114.53.32 1235
+[2024-05-05 17:16:10.506] [[32minfo[m] [wamr_read_write.h:139] [Server] Listening on socket
+[2024-05-05 17:18:38.811] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 6097727488, 1
+[2024-05-05 17:18:38.811] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 6097842176, 2
+[2024-05-05 17:18:38.811] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 1, 0
+[2024-05-05 17:18:38.811] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 2, 0
+[2024-05-05 17:18:38.811] [[32minfo[m] [wamr_wasi_context.cpp:153] fd: 15 path: ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png
+ret 6 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 12 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 14 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 4 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 5 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 13 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 17 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 11 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 28 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 29 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 8 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 22 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 41 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.png 59
+ret 21 ./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848152.891028.pngrestore function_index 90
+restore function_index 13821
+restore function_index 92
+restore function_index 3680
+restore function_index 3681
+restore function_index 3836
+restore function_index 7506
+restore function_index 7504
+restore function_index 9733
+main_env created 0x555555d17760 0x555555cd2320
+
+[2024-05-05 17:18:38.812] [[31m[1merror[m] [wamr.cpp:604] 0 6097727488
+[2024-05-05 17:18:38.813] [[31m[1merror[m] [wamr_export.cpp:380] insert_parent_child 0 1
+restore function_index 14312
+restore function_index 14274
+restore function_index 128
+restore function_index 289
+restore_env: 0x55555628d920 0x555555cd1b20
+restored child env
+thread mgr: save_restore_call_chain 0x555555cd1b20
+[2024-05-05 17:18:38.813] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 6097727488 > new:< 140737353897664 >
+child spawned 0x555555d17760 0x5555557e55c0
+
+[2024-05-05 17:18:38.813] [[31m[1merror[m] [wamr.cpp:604] 0 6097842176
+[2024-05-05 17:18:38.814] [[31m[1merror[m] [wamr_export.cpp:380] insert_parent_child 0 2
+restore function_index 14312
+restore function_index 14274
+restore function_index 129
+restore function_index 320
+restore_env: 0x55555632c890 0x555555d28600
+restored child env
+thread mgr: save_restore_call_chain 0x555555d28600
+[2024-05-05 17:18:38.814] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 6097842176 > new:< 140737352554176 >
+child spawned 0x555555d17760 0x5555557e5350
+
+invoke_init_c
+wakeup.release
+invoke main 0x555555d17760 0x555555cd2320
+[2024-05-05 17:18:38.814] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 8427850304 > new:< 140737352567808 >
+invoke side0x555556bdb308
+[2024-05-05 17:18:38.814] [[32minfo[m] [wamr.cpp:568] Recover time: 0.120119
+0.001381
+
+ttrack: 0.001161
+ttrack: 0.001053
+ttrack: 0.001449
+ttrack: 0.001086
+ttrack: 0.001747
+ttrack: 0.001192
+ttrack: 0.001206
+ttrack: 0.001105
+ttrack: 0.001562
+ttrack: 0.001136
+ttrack: 0.001116
+ttrack: 0.001337
+ttrack: 0.001108
+ttrack: 0.001996
+ttrack: 0.001147
+ttrack: 0.000903
+ttrack: 0.001079
+ttrack: 0.000947
+ttrack: 0.001038
+ttrack: 0.001412
+ttrack: 0.001042
+ttrack: 0.001071
+ttrack: 0.001210
+ttrack: 0.000967
+ttrack: 0.001580
+ttrack: 0.001181
+ttrack: 0.001177
+ttrack: 0.001123
+ttrack: 0.001167
+ttrack: 0.001484
+ttrack: 0.001035
+ttrack: 0.001096
+ttrack: 0.001289
+ttrack: 0.001273
+ttrack: 0.001258
+ttrack: 0.001131
+ttrack: 0.001118
+ttrack: 0.001051
+ttrack: 0.000944
+ttrack: 0.001302
+ttrack: 0.001141
+ttrack: 0.001210
+ttrack: 0.001134
+ttrack: 0.001171
+ttrack: 0.000902
+ttrack: 0.001104
+ttrack: 0.001149
+ttrack: 0.001125
+ttrack: 0.000933
+ttrack: 0.000982
+ttrack: 0.000917
+ttrack: 0.000994
+ttrack: 0.000893
+ttrack: 0.001225
+ttrack: 0.000996
+ttrack: 0.001056
+ttrack: 0.000969
+ttrack: 0.000846
+ttrack: 0.000986
+ttrack: 0.000880
+ttrack: 0.000984
+ttrack: 0.000860
+ttrack: 0.000981
+ttrack: 0.000876
+ttrack: 0.000974
+ttrack: 0.000922
+ttrack: 0.000889
+ttrack: 0.000955
+ttrack: 0.000908
+ttrack: 0.001001
+ttrack: 0.000882
+ttrack: 0.000962
+ttrack: 0.000861
+ttrack: 0.000982
+ttrack: 0.000844
+ttrack: 0.000893
+ttrack: 0.000987
+ttrack: 0.000897
+ttrack: 0.000989
+ttrack: 0.000935
+ttrack: 0.001000
+ttrack: 0.000888
+ttrack: 0.000962
+ttrack: 0.000866
+ttrack: 0.000983
+ttrack: 0.000849
+ttrack: 0.000985
+ttrack: 0.000892
+ttrack: 0.000994
+ttrack: 0.000893
+ttrack: 0.000879
+ttrack: 0.000878
+ttrack: 0.000958
+ttrack: 0.000863
+ttrack: 0.001158
+ttrack: 0.000886
+ttrack: 0.000927
+ttrack: 0.000870
+ttrack: 0.000888
+ttrack: 0.000960
+ttrack: 0.000941
+ttrack: 0.000583
+ttrack: 0.000859
+ttrack: 0.001017
+ttrack: 0.000925
+ttrack: 0.000994
+ttrack: 0.000928
+ttrack: 0.001025
+ttrack: 0.000959
+ttrack: 0.001010
+ttrack: 0.000919
+ttrack: 0.000939
+ttrack: 0.000885
+ttrack: 0.000971
+ttrack: 0.000876
+ttrack: 0.000997
+ttrack: 0.000859
+ttrack: 0.000985
+ttrack: 0.000918
+ttrack: 0.000891
+ttrack: 0.000947
+ttrack: 0.000883
+ttrack: 0.000982
+ttrack: 0.000856
+ttrack: 0.000941
+ttrack: 0.000882
+ttrack: 0.000984
+ttrack: 0.000858
+ttrack: 0.000950
+ttrack: 0.000951
+ttrack: 0.000996
+ttrack: 0.000890
+ttrack: 0.001176
+ttrack: 0.000962
+ttrack: 0.000886
+ttrack: 0.000886
+ttrack: 0.000983
+ttrack: 0.000967
+ttrack: 0.000883
+ttrack: 0.000965
+ttrack: 0.001017
+ttrack: 0.000860
+ttrack: 0.000987
+ttrack: 0.000980
+ttrack: 0.000859
+ttrack: 0.000882
+ttrack: 0.001007
+ttrack: 0.000914
+ttrack: 0.000900
+ttrack: 0.000985
+ttrack: 0.000890
+ttrack: 0.000865
+ttrack: 0.000976
+ttrack: 0.000946
+ttrack: 0.000870
+ttrack: 0.000956
+ttrack: 0.000970
+ttrack: 0.000914
+ttrack: 0.000858
+ttrack: 0.000974
+ttrack: 0.001219
+ttrack: 0.000997
+ttrack: 0.000849
+ttrack: 0.000966
+ttrack: 0.000865
+ttrack: 0.000931
+ttrack: 0.000974
+ttrack: 0.000871
+ttrack: 0.001054
+ttrack: 0.000981
+ttrack: 0.000983
+ttrack: 0.001001
+ttrack: 0.001031
+ttrack: 0.000870
+ttrack: 0.001001
+ttrack: 0.000889
+ttrack: 0.000852
+ttrack: 0.000972
+ttrack: 0.000865
+ttrack: 0.000900
+ttrack: 0.001009
+ttrack: 0.000853
+ttrack: 0.000983
+ttrack: 0.000963
+ttrack: 0.000909
+ttrack: 0.000961
+ttrack: 0.000923
+ttrack: 0.000870
+ttrack: 0.000709
+ttrack: 0.000599
+ttrack: 0.000622
+ttrack: 0.000985
+ttrack: 0.000954
+ttrack: 0.000864
+ttrack: 0.001213
+ttrack: 0.001015
+ttrack: 0.000878
+ttrack: 0.000986
+ttrack: 0.000926
+ttrack: 0.000887
+ttrack: 0.000923
+ttrack: 0.000983
+ttrack: 0.000927
+ttrack: 0.000967
+ttrack: 0.000917
+ttrack: 0.000932
+ttrack: 0.000961
+ttrack: 0.000966
+ttrack: 0.000909
+ttrack: 0.001009
+ttrack: 0.000985
+ttrack: 0.001368
+ttrack: 0.000911
+ttrack: 0.000905
+ttrack: 0.000963
+ttrack: 0.000867
+ttrack: 0.000985
+ttrack: 0.002445
+ttrack: 0.000861
+ttrack: 0.000997
+ttrack: 0.000914
+ttrack: 0.000985
+ttrack: 0.000812
+ttrack: 0.000820
+ttrack: 0.000874
+ttrack: 0.000803
+ttrack: 0.000835
+ttrack: 0.000828
+ttrack: 0.000814
+ttrack: 0.000811
+ttrack: 0.000829
+ttrack: 0.000825
+ttrack: 0.000813
+ttrack: 0.000829
+ttrack: 0.000812
+ttrack: 0.000812
+ttrack: 0.000806
+ttrack: 0.000811
+ttrack: 0.000975
+ttrack: 0.000893
+ttrack: 0.000965
+ttrack: 0.000875
+ttrack: 0.000936
+ttrack: 0.000904
+ttrack: 0.000890
+ttrack: 0.000974
+ttrack: 0.000861
+ttrack: 0.000988
+ttrack: 0.000992
+ttrack: 0.001102
+ttrack: 0.001000
+ttrack: 0.000943
+ttrack: 0.000872
+ttrack: 0.000857
+ttrack: 0.000890
+ttrack: 0.001006
+ttrack: 0.000920
+ttrack: 0.000982
+ttrack: 0.001013
+ttrack: 0.000871
+ttrack: 0.000992
+ttrack: 0.000886
+ttrack: 0.000973
+ttrack: 0.001014
+ttrack: 0.000946
+ttrack: 0.000879
+ttrack: 0.000901
+ttrack: 0.000886
+ttrack: 0.000987
+ttrack: 0.000577
+ttrack: 0.001018
+ttrack: 0.000882
+ttrack: 0.001023
+ttrack: 0.000917
+ttrack: 0.000872
+ttrack: 0.001022
+ttrack: 0.000860
+ttrack: 0.001025
+ttrack: 0.000870
+ttrack: 0.000892
+ttrack: 0.001921
+ttrack: 0.000926
+ttrack: 0.001039
+ttrack: 0.000902
+ttrack: 0.000895
+ttrack: 0.001049
+ttrack: 0.000878
+ttrack: 0.000980
+ttrack: 0.000940
+ttrack: 0.000980
+ttrack: 0.000854
+ttrack: 0.000896
+ttrack: 0.001019
+ttrack: 0.001006
+ttrack: 0.000865
+ttrack: 0.000967
+ttrack: 0.000895
+ttrack: 0.000983
+ttrack: 0.000887
+ttrack: 0.000864
+ttrack: 0.000871
+ttrack: 0.000985
+ttrack: 0.000990
+ttrack: 0.000918
+ttrack: 0.001005
+ttrack: 0.000867
+ttrack: 0.000965
+ttrack: 0.001084
+ttrack: 0.001040
+ttrack: 0.000868
+ttrack: 0.001007
+ttrack: 0.000881
+ttrack: 0.001003
+ttrack: 0.000892
+ttrack: 0.000915
+ttrack: 0.000997
+ttrack: 0.000946
+ttrack: 0.000955
+ttrack: 0.000881
+ttrack: 0.001114
+ttrack: 0.000879
+ttrack: 0.000997
+ttrack: 0.000889
+ttrack: 0.001007
+ttrack: 0.000862
+ttrack: 0.000990
+ttrack: 0.000966
+ttrack: 0.000890
+ttrack: 0.001006
+ttrack: 0.000937
+ttrack: 0.001004
+ttrack: 0.000858
+ttrack: 0.000993
+ttrack: 0.000876
+ttrack: 0.000979
+ttrack: 0.000885
+ttrack: 0.000923
+ttrack: 0.001024
+ttrack: 0.000598
+ttrack: 0.000848
+ttrack: 0.001045
+ttrack: 0.000894
+ttrack: 0.000879
+ttrack: 0.000874
+ttrack: 0.000869
+ttrack: 0.001037
+ttrack: 0.000938
+ttrack: 0.000993
+ttrack: 0.000994
+ttrack: 0.000613
+ttrack: 0.000985
+ttrack: 0.000953
+ttrack: 0.000953
+
+Caught signal 2, performing custom logic...
+[2024-05-05 17:19:39.547] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 3836 ip_offset 615 lp 0x555555d186d8 sp 0x555555d18724 sp_offset 19
+2350096 155021984 1870976 1870996 1870996 1872916 1 1888272 0 2357696 1920 154100384 480 3840 7680 5760 480 1888272 1870996 
+[2024-05-05 17:19:39.547] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 3681 ip_offset 998 lp 0x555555d1865c sp 0x555555d18690 sp_offset 13
+1875452 16 2 1875452 1875152 640 1875296 2350096 0 0 2350096 1875452 1226 
+[2024-05-05 17:19:39.547] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 3680 ip_offset 96 lp 0x555555d18604 sp 0x555555d18624 sp_offset 8
+1875452 1875440 4294967295 1875500 1875440 4294967295 2 1875452 
+[2024-05-05 17:19:39.547] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 92 ip_offset 2164 lp 0x555555d18540 sp 0x555555d185c0 sp_offset 32
+1875424 1884880 1875312 1875432 1 1875432 31008 2584 1875448 109 1875632 1875612 1875556 0 2584 2583 1875404 1875500 1308 64 162420751 399294 162424876 399294 3770679295 1088369985 0 1067612504 0 1875452 1875440 4294967295 
+[2024-05-05 17:19:39.547] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 13821 ip_offset 109 lp 0x555555d184f0 sp 0x555555d18504 sp_offset 5
+1875840 1884880 1884736 5 1884880 
+[2024-05-05 17:19:39.547] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 90 ip_offset 40 lp 0x555555d184a8 sp 0x555555d184ac sp_offset 1
+0 
+[2024-05-05 17:19:44.811] [[32minfo[m] [wamr.cpp:1005] Snapshot time: 5.360078 s
+[2024-05-05 17:19:44.811] [[32minfo[m] [wamr.cpp:1006] Memory usage: 7015 MB

@@ -79,7 +79,7 @@ void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {
         }
         env->table_count = tables.size();
     }
-    env->global_table_data.memory_instances[0] = **env->memories;
+    //env->global_table_data.memory_instances[0] = **env->memories;
     if (wamr->is_aot) {
         auto module = (AOTModule *)env->module;
         module->aux_data_end_global_index = aux_data_end_global_index;

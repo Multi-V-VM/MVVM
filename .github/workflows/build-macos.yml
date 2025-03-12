@@ -4,7 +4,7 @@ on: push
 
 jobs:
   test:
-    runs-on: macos-13
+    runs-on: macos-15
 
     strategy:
       fail-fast: false
@@ -23,8 +23,8 @@ jobs:
     - name: List Xcode installations
       run: sudo ls -1 /Applications | grep "Xcode"
       
-    - name: Select Xcode 15.1
-      run: sudo xcode-select -s /Applications/Xcode_15.1.app/Contents/Developer
+    - name: Select Xcode 16.2
+      run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
 
     - name: Install Dependency
       run: brew install cxxopts fmt llvm@14 ninja spdlog openblas
@@ -54,30 +54,8 @@ jobs:
         make -j
 
     - name: configure cmake
-      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/local/opt/llvm@14/lib/cmake/llvm/
+      run: cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ && cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/local/opt/llvm@14/lib/cmake/llvm/
 
     - name: build
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config ${{matrix.build}} && cp MVVM_checkpoint MVVM_checkpoint-macos && cp MVVM_restore MVVM_restore-macos
-
-    - uses: actions/upload-artifact@v2
-      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
-      with:
-        name: MVVM_checkpoint-macos
-        path: ${{runner.workspace}}/build/MVVM_checkpoint-macos
-
-    - uses: actions/upload-artifact@v2
-      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
-      with:
-        name: MVVM_restore-macos
-        path: ${{runner.workspace}}/build/MVVM_restore-macos
-
-    - name: Publish
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
-      with:
-        files: |
-          ${{runner.workspace}}/build/MVVM_checkpoint-macos
-          ${{runner.workspace}}/build/MVVM_restore-macos
-        generate_release_notes: true
-        draft: true
+      run: cmake --build . --config ${{matrix.build}}

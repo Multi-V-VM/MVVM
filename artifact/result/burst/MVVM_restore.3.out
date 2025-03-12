@@ -1,0 +1,304 @@
+code 0x40000004 code_size 63588728
+[2024-05-05 17:20:01.094] [[32minfo[m] [wamr_read_write.h:134] [Server] Bind socket 128.114.53.32 12347
+[2024-05-05 17:20:01.094] [[32minfo[m] [wamr_read_write.h:139] [Server] Listening on socket
+[2024-05-05 17:22:15.710] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 6097727488, 1
+[2024-05-05 17:22:15.710] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 6097842176, 2
+[2024-05-05 17:22:15.710] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 140737352554176, 2
+[2024-05-05 17:22:15.710] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 140737353897664, 1
+[2024-05-05 17:22:15.711] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 1, 0
+[2024-05-05 17:22:15.711] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 2, 0
+restore function_index 91
+restore function_index 13907
+restore function_index 13874
+restore function_index 13857
+main_env created 0x555555d09700 0x5555557e5e10
+
+invoke_init_c
+wakeup.release
+invoke main 0x555555d09700 0x5555557e5e10
+[2024-05-05 17:22:15.711] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 8427850304 > new:< 8427850304 >
+[2024-05-05 17:22:15.711] [[32minfo[m] [wamr.cpp:568] Recover time: 0.117618
+
+ttrack: 0.000965
+ttrack: 0.000866
+ttrack: 0.000610
+ttrack: 0.000940
+ttrack: 0.000893
+ttrack: 0.000986
+ttrack: 0.000937
+ttrack: 0.000875
+ttrack: 0.000961
+ttrack: 0.000862
+ttrack: 0.001081
+ttrack: 0.001012
+ttrack: 0.000907
+ttrack: 0.000895
+ttrack: 0.000960
+ttrack: 0.000888
+ttrack: 0.000863
+ttrack: 0.001293
+ttrack: 0.000916
+ttrack: 0.000993
+ttrack: 0.000851
+ttrack: 0.000999
+ttrack: 0.000871
+ttrack: 0.001007
+ttrack: 0.000857
+ttrack: 0.000905
+ttrack: 0.000877
+ttrack: 0.001037
+ttrack: 0.000873
+ttrack: 0.000944
+ttrack: 0.000924
+ttrack: 0.000621
+ttrack: 0.000909
+ttrack: 0.000989
+ttrack: 0.000956
+ttrack: 0.000881
+ttrack: 0.001027
+ttrack: 0.001026
+ttrack: 0.000941
+ttrack: 0.000854
+ttrack: 0.000966
+ttrack: 0.000924
+ttrack: 0.000852
+ttrack: 0.000969
+ttrack: 0.000926
+ttrack: 0.001092
+ttrack: 0.000970
+ttrack: 0.000902
+ttrack: 0.000883
+ttrack: 0.000973
+ttrack: 0.000984
+ttrack: 0.000862
+ttrack: 0.000871
+ttrack: 0.000956
+ttrack: 0.000922
+ttrack: 0.000851
+ttrack: 0.001050
+ttrack: 0.001022
+ttrack: 0.000999
+ttrack: 0.000936
+ttrack: 0.000864
+ttrack: 0.001010
+ttrack: 0.000924
+ttrack: 0.000889
+ttrack: 0.000945
+ttrack: 0.000857
+ttrack: 0.000962
+ttrack: 0.000872
+ttrack: 0.000874
+ttrack: 0.000954
+ttrack: 0.000906
+ttrack: 0.000999
+ttrack: 0.000851
+ttrack: 0.000759
+ttrack: 0.000968
+ttrack: 0.001050
+ttrack: 0.000889
+ttrack: 0.001036
+ttrack: 0.000899
+ttrack: 0.000621
+ttrack: 0.000596
+ttrack: 0.000880
+ttrack: 0.001001
+ttrack: 0.000856
+ttrack: 0.000880
+ttrack: 0.000987
+ttrack: 0.000904
+ttrack: 0.000986
+ttrack: 0.000983
+ttrack: 0.000957
+ttrack: 0.000880
+ttrack: 0.000951
+ttrack: 0.000972
+ttrack: 0.000982
+ttrack: 0.000992
+ttrack: 0.000852
+ttrack: 0.000981
+ttrack: 0.000884
+ttrack: 0.000996
+ttrack: 0.000859
+ttrack: 0.000967
+ttrack: 0.000848
+ttrack: 0.000949
+ttrack: 0.000924
+ttrack: 0.000967
+ttrack: 0.000881
+ttrack: 0.000971
+ttrack: 0.000975
+ttrack: 0.000899
+ttrack: 0.000993
+ttrack: 0.000855
+ttrack: 0.000947
+ttrack: 0.001004
+ttrack: 0.000865
+ttrack: 0.000991
+ttrack: 0.001063
+ttrack: 0.000869
+ttrack: 0.001194
+ttrack: 0.000878
+ttrack: 0.000912
+ttrack: 0.000982
+ttrack: 0.000865
+ttrack: 0.000855
+ttrack: 0.000978
+ttrack: 0.000890
+ttrack: 0.000922
+ttrack: 0.000970
+ttrack: 0.000883
+ttrack: 0.000986
+ttrack: 0.000984
+ttrack: 0.000948
+ttrack: 0.000932
+ttrack: 0.000859
+ttrack: 0.000990
+ttrack: 0.000901
+ttrack: 0.000889
+ttrack: 0.001007
+ttrack: 0.000850
+ttrack: 0.000926
+ttrack: 0.000994
+ttrack: 0.000928
+ttrack: 0.001032
+ttrack: 0.001273
+ttrack: 0.000567
+ttrack: 0.000603
+ttrack: 0.000996
+ttrack: 0.000870
+ttrack: 0.000956
+ttrack: 0.000962
+ttrack: 0.000884
+ttrack: 0.000969
+ttrack: 0.000872
+ttrack: 0.000870
+ttrack: 0.000994
+ttrack: 0.000864
+ttrack: 0.000980
+ttrack: 0.000963
+ttrack: 0.000897
+ttrack: 0.000876
+ttrack: 0.000956
+ttrack: 0.000915
+ttrack: 0.000887
+ttrack: 0.000978
+ttrack: 0.000898
+ttrack: 0.000775
+ttrack: 0.000819
+ttrack: 0.000865
+ttrack: 0.001068
+ttrack: 0.000898
+ttrack: 0.000890
+ttrack: 0.000872
+ttrack: 0.000866
+ttrack: 0.000985
+ttrack: 0.000909
+ttrack: 0.000859
+ttrack: 0.000973
+ttrack: 0.000897
+ttrack: 0.000885
+ttrack: 0.001402
+ttrack: 0.001062
+ttrack: 0.000859
+ttrack: 0.000866
+ttrack: 0.000591
+ttrack: 0.000897
+ttrack: 0.000876
+ttrack: 0.001008
+ttrack: 0.000888
+ttrack: 0.000899
+ttrack: 0.000889
+ttrack: 0.000893
+ttrack: 0.001084
+ttrack: 0.001032
+ttrack: 0.001292
+ttrack: 0.001011
+ttrack: 0.000918
+ttrack: 0.000876
+ttrack: 0.000995
+ttrack: 0.000999
+ttrack: 0.000879
+ttrack: 0.000996
+ttrack: 0.001021
+ttrack: 0.000879
+ttrack: 0.000932
+ttrack: 0.000992
+ttrack: 0.000958
+ttrack: 0.000896
+ttrack: 0.000958
+ttrack: 0.000902
+ttrack: 0.000871
+ttrack: 0.000973
+ttrack: 0.000861
+ttrack: 0.000960
+ttrack: 0.000960
+ttrack: 0.000985
+ttrack: 0.000983
+ttrack: 0.001073
+ttrack: 0.000979
+ttrack: 0.000912
+ttrack: 0.000931
+ttrack: 0.000896
+ttrack: 0.001000
+ttrack: 0.001100
+ttrack: 0.000923
+ttrack: 0.000974
+ttrack: 0.000919
+ttrack: 0.000862
+ttrack: 0.000987
+ttrack: 0.000896
+ttrack: 0.000962
+ttrack: 0.000925
+ttrack: 0.000968
+ttrack: 0.000930
+ttrack: 0.000900
+ttrack: 0.000955
+ttrack: 0.000941
+ttrack: 0.000987
+ttrack: 0.000865
+ttrack: 0.000885
+ttrack: 0.000968
+ttrack: 0.000903
+ttrack: 0.000996
+ttrack: 0.000866
+ttrack: 0.000966
+ttrack: 0.000974
+ttrack: 0.001377
+ttrack: 0.001048
+ttrack: 0.000893
+ttrack: 0.000952
+ttrack: 0.000850
+ttrack: 0.000885
+ttrack: 0.000976
+ttrack: 0.000909
+ttrack: 0.000981
+ttrack: 0.000894
+ttrack: 0.000863
+ttrack: 0.000969
+ttrack: 0.000890
+ttrack: 0.000973
+ttrack: 0.000872
+ttrack: 0.001044
+
+Loop detected!
+Local Mapping STOP
+Local Mapping RELEASE
+Starting Global Bundle Adjustment
+Global Bundle Adjustment finished
+Updating map ...
+Local Mapping STOP
+Local Mapping RELEASE
+Map updated!
+-------
+
+median tracking time: 0.001219
+mean tracking time: 0.001342
+
+Saving camera trajectory to CameraTrajectory.txt ...
+
+trajectory saved!
+
+Saving keyframe trajectory to KeyFrameTrajectory.txt ...
+
+trajectory saved!
+[2024-05-05 17:23:10.861] [[32minfo[m] [restore.cpp:135] Execution time: 1214.5153413 s

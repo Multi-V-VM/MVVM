@@ -23,6 +23,7 @@ struct WAMRInterpFrame {
     /* Instruction pointer of the bytecode array.  */
     uint32 ip{};
     int32 function_index{};
+    std::string function_name{};
     /* Operand stack top pointer of the current frame. The bottom of
        the stack is the next cell after the last local variable. */
     uint32 sp{};

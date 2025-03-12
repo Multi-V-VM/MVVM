@@ -223,21 +223,13 @@ def read_from_csv(filename):
         return results
 
 def plot(results):
-    font = {'size': 18}
+    font = {'size': 25}
  
     plt.rc('font', **font)
     workloads = defaultdict(list)
     for workload, mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values in results:
             workloads[
-                workload.replace("OMP_NUM_THREADS=", "")
-                .replace("-g20", "")
-                .replace("-n300", "")
-                .replace(" -f ", "")
-                .replace("-vn300", "")
-                .replace("maze-6404.txt", "")
-                .replace("stories110M.bin", "")
-                .replace("-z tokenizer.bin -t 0.0", "")
-                .strip()
+                workload.split(" ")[1].replace(".aot", "")
             ].append((  mvvm_values, qemu_x86_64_values,qemu_aarch64_values,native_values))
 
     statistics = {}
@@ -265,7 +257,7 @@ def plot(results):
             bar_width,
             yerr=stats["mvvm_std"],
             capsize=5,
-            color="red",
+            color="purple",
             label="mvvm" if i == 0 else "",
         )
         ax.bar(
@@ -283,7 +275,7 @@ def plot(results):
             bar_width,
             yerr=stats["qemu_aarch64_std"],
             capsize=5,
-            color="purple",
+            color="red",
             label="qemu_aarch64" if i == 0 else "",
         )
         ax.bar(

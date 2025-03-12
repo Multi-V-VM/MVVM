@@ -63,11 +63,11 @@ static void dgemm_wrapper(wasm_exec_env_t exec_env, int32_t m, int32_t n, int32_
 //
 //    fprintf(stderr, "CUBLAS matrix mul took: %f [s]\n", miliseconds / 1000);
 #else
-    auto begin = clock();
+    // auto begin = clock();
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a, m, b, k, beta, c, m);
-    auto end = clock();
-    auto time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    fprintf(stderr, "CPU matrix mul took: %f [s]\n", time_spent);
+    // auto end = clock();
+    // auto time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    // fprintf(stderr, "CPU matrix mul took: %f [s]\n", time_spent);
 #endif
 #endif
 }

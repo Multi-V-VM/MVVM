@@ -19,6 +19,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <s2n.h>
 #endif
 
 struct WriteStream {
@@ -162,6 +163,332 @@ struct SocketReadStream : public ReadStream {
 };
 static_assert(ReaderStreamTrait<SocketReadStream, char>, "Reader must conform to ReaderStreamTrait");
 static_assert(WriterStreamTrait<SocketWriteStream, char>, "Writer must conform to WriterStreamTrait");
+
+// -----------------------------------------------------------------------------
+// 1) Global s2n initialization & config setup
+//    In a real program, do this in main() or a dedicated init function.
+// -----------------------------------------------------------------------------
+
+static s2n_config* g_server_config = nullptr;
+static s2n_config* g_client_config = nullptr;
+
+// Example cert/key strings for server (self-signed). You’d likely load from files:
+static const char SERVER_CERT_PEM[] = R"PEM(
+-----BEGIN CERTIFICATE-----
+... Your Server Certificate ...
+-----END CERTIFICATE-----
+)PEM";
+
+static const char SERVER_KEY_PEM[] = R"PEM(
+-----BEGIN PRIVATE KEY-----
+... Your Server Private Key ...
+-----END PRIVATE KEY-----
+)PEM";
+
+// -----------------------------------------------------------------------------
+// 2) TLS-Enabled SecureSocketWriteStream (Client-Side)
+// -----------------------------------------------------------------------------
+struct SecureSocketWriteStream : public WriteStream
+{
+    int             sock_fd;
+    s2n_connection* conn;  // s2n connection handle
+
+    bool write(const char* data, std::size_t sz) const override
+    {
+        std::size_t totalSent = 0;
+        while (totalSent < sz) {
+            s2n_blocked_status blocked;
+            ssize_t sent = s2n_send(conn, data + totalSent, sz - totalSent, &blocked);
+            if (sent <= 0) {
+                SPDLOG_ERROR("s2n_send failed");
+                return false;
+            }
+            totalSent += sent;
+        }
+        return true;
+    }
+
+    explicit SecureSocketWriteStream(const char* address, int port)
+    {
+
+        if (s2n_init() < 0) {
+            SPDLOG_ERROR("s2n_init() failed");
+            throw;
+        }
+
+        // ----------------- Create SERVER config -----------------
+        g_server_config = s2n_config_new();
+        if (!g_server_config) {
+            SPDLOG_ERROR("s2n_config_new() for server failed");
+            throw;
+        }
+        // Sets recommended TLS 1.2/1.3 cipher suites. Adjust as needed:
+        if (s2n_config_set_cipher_preferences(g_server_config, "default_tls13") < 0) {
+            SPDLOG_ERROR("Server: s2n_config_set_cipher_preferences() failed");
+            throw;
+        }
+        // Provide cert & key (PEM strings). For multi-cert, call multiple times:
+        if (s2n_config_add_cert_chain_and_key(g_server_config, SERVER_CERT_PEM, SERVER_KEY_PEM) < 0) {
+            SPDLOG_ERROR("Server: s2n_config_add_cert_chain_and_key() failed");
+            throw;
+        }
+
+        // ----------------- Create CLIENT config -----------------
+        g_client_config = s2n_config_new();
+        if (!g_client_config) {
+            SPDLOG_ERROR("s2n_config_new() for client failed");
+            throw;
+        }
+        if (s2n_config_set_cipher_preferences(g_client_config, "default_tls13") < 0) {
+            SPDLOG_ERROR("Client: s2n_config_set_cipher_preferences() failed");
+            throw;
+        }
+
+        // In a real client, you might want to set trust stores, verify peer cert, etc.
+        // For example:
+        // s2n_config_set_verify_host_callback(g_client_config, ...);
+
+        sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock_fd == -1) {
+            SPDLOG_ERROR("Client socket creation failed");
+            return;
+        }
+        sockaddr_in server_addr{};
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port   = htons(port);
+        inet_pton(AF_INET, address, &server_addr.sin_addr);
+
+        if (connect(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+            SPDLOG_ERROR("Client: connect() failed");
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        // Create a new s2n connection in CLIENT mode
+        conn = s2n_connection_new(S2N_CLIENT);
+        if (!conn) {
+            SPDLOG_ERROR("s2n_connection_new(S2N_CLIENT) failed");
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        // Attach the client config (global)
+        if (s2n_connection_set_config(conn, g_client_config) < 0) {
+            SPDLOG_ERROR("Client: s2n_connection_set_config() failed");
+            s2n_connection_free(conn);
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        // Associate the socket with s2n
+        if (s2n_connection_set_fd(conn, sock_fd) < 0) {
+            SPDLOG_ERROR("Client: s2n_connection_set_fd() failed");
+            s2n_connection_free(conn);
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        // Perform the TLS handshake
+        s2n_blocked_status blocked;
+        int rc;
+        do {
+            rc = s2n_negotiate(conn, &blocked);
+        } while ((rc != 0) && (blocked == S2N_BLOCKED_ON_READ || blocked == S2N_BLOCKED_ON_WRITE));
+
+        if (rc < 0) {
+            SPDLOG_ERROR("Client: TLS handshake failed");
+            s2n_connection_free(conn);
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+        SPDLOG_INFO("Client: TLS handshake complete");
+    }
+
+    ~SecureSocketWriteStream() override
+    {
+        if (sock_fd != -1 && conn) {
+            // Graceful TLS shutdown
+            s2n_blocked_status blocked;
+            s2n_shutdown(conn, &blocked);
+            s2n_connection_free(conn);
+            close(sock_fd);
+        }
+    }
+};
+
+// -----------------------------------------------------------------------------
+// 3) TLS-Enabled SecureSocketReadStream (Server-Side)
+// -----------------------------------------------------------------------------
+struct SecureSocketReadStream : public ReadStream
+{
+    int             sock_fd;
+    int             client_fd;
+    mutable size_t  position = 0;
+    s2n_connection* conn; // s2n connection handle
+
+    bool read(char* data, std::size_t sz) const override
+    {
+        std::size_t totalReceived = 0;
+        while (totalReceived < sz) {
+            s2n_blocked_status blocked;
+            ssize_t received = s2n_recv(conn, data + totalReceived, sz - totalReceived, &blocked);
+            if (received <= 0) {
+                SPDLOG_ERROR("Server: s2n_recv() error or connection closed");
+                return false;
+            }
+            totalReceived += received;
+        }
+        position += totalReceived;
+        return true;
+    }
+
+    const char* read_view(size_t len) override
+    {
+        char* buffer = new char[len];
+        std::size_t totalReceived = 0;
+        while (totalReceived < len) {
+            s2n_blocked_status blocked;
+            ssize_t received = s2n_recv(conn, buffer + totalReceived, len - totalReceived, &blocked);
+            if (received <= 0) {
+                SPDLOG_ERROR("Server: s2n_recv() error or connection closed");
+                delete[] buffer;  // prevent leak
+                return nullptr;
+            }
+            totalReceived += received;
+        }
+        position += totalReceived;
+        return buffer; // Caller must free/handle this pointer
+    }
+
+    explicit SecureSocketReadStream(const char* address, int port)
+    {
+        sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock_fd == -1) {
+            SPDLOG_ERROR("Server socket creation failed");
+            return;
+        }
+
+        sockaddr_in server_addr{};
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port   = htons(port);
+        inet_pton(AF_INET, address, &server_addr.sin_addr);
+
+        auto addr_len = static_cast<socklen_t>(sizeof(server_addr));
+        SPDLOG_INFO("Server: Binding to %s:%d", address, port);
+        if (bind(sock_fd, (struct sockaddr*)&server_addr, addr_len) < 0) {
+            SPDLOG_ERROR("Server: bind() failed");
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        SPDLOG_INFO("Server: Listening...");
+        if (listen(sock_fd, 3) < 0) {
+            SPDLOG_ERROR("Server: listen() failed");
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        client_fd = accept(sock_fd, (struct sockaddr*)&server_addr, &addr_len);
+        if (client_fd == -1) {
+            SPDLOG_ERROR("Server: accept() failed");
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        // Create a new s2n connection in SERVER mode
+        conn = s2n_connection_new(S2N_SERVER);
+        if (!conn) {
+            SPDLOG_ERROR("Server: s2n_connection_new(S2N_SERVER) failed");
+            close(client_fd);
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        // Attach the server config (global)
+        if (s2n_connection_set_config(conn, g_server_config) < 0) {
+            SPDLOG_ERROR("Server: s2n_connection_set_config() failed");
+            s2n_connection_free(conn);
+            close(client_fd);
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        // Associate the newly accepted client socket
+        if (s2n_connection_set_fd(conn, client_fd) < 0) {
+            SPDLOG_ERROR("Server: s2n_connection_set_fd() failed");
+            s2n_connection_free(conn);
+            close(client_fd);
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+
+        // Perform the TLS handshake
+        s2n_blocked_status blocked;
+        int rc;
+        do {
+            rc = s2n_negotiate(conn, &blocked);
+        } while ((rc != 0) && (blocked == S2N_BLOCKED_ON_READ || blocked == S2N_BLOCKED_ON_WRITE));
+
+        if (rc < 0) {
+            SPDLOG_ERROR("Server: TLS handshake failed");
+            s2n_connection_free(conn);
+            close(client_fd);
+            close(sock_fd);
+            sock_fd = -1;
+            return;
+        }
+        SPDLOG_INFO("Server: TLS handshake complete");
+    }
+
+    bool ignore(std::size_t sz) const override
+    {
+        char buffer[1024];
+        std::size_t total_ignored = 0;
+        while (total_ignored < sz) {
+            std::size_t to_ignore = std::min(sz - total_ignored, sizeof(buffer));
+            s2n_blocked_status blocked;
+            ssize_t ignored = s2n_recv(conn, buffer, to_ignore, &blocked);
+            if (ignored <= 0) {
+                SPDLOG_ERROR("Server: ignore() -> s2n_recv() error");
+                return false;
+            }
+            total_ignored += ignored;
+            position += ignored;
+        }
+        return true;
+    }
+
+    std::size_t tellg() const override { return position; }
+
+    ~SecureSocketReadStream() override
+    {
+        // Graceful TLS shutdown
+        if (sock_fd != -1 && conn) {
+            s2n_blocked_status blocked;
+            s2n_shutdown(conn, &blocked);
+            s2n_connection_free(conn);
+            close(client_fd);
+            close(sock_fd);
+        }
+    }
+};
+
+// -----------------------------------------------------------------------------
+// 4) Ensure the classes fulfill the stream trait requirements
+// -----------------------------------------------------------------------------
+static_assert(ReaderStreamTrait<SecureSocketReadStream, char>, "Reader must conform to ReaderStreamTrait");
+static_assert(WriterStreamTrait<SecureSocketWriteStream, char>, "Writer must conform to WriterStreamTrait");
 #endif
 
 #if __linux__

@@ -1,0 +1,4 @@
+code 0x41800004 code_size 8143456
+[2024-05-19 23:18:01.716] [[32minfo[m] [wamr_read_write.h:134] [Server] Bind socket 128.114.59.200 12346
+[2024-05-19 23:18:01.716] [[32minfo[m] [wamr_read_write.h:139] [Server] Listening on socket
+Connection to 128.114.59.200 closed.

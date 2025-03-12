@@ -21,7 +21,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install Dependency
-      run: sudo apt install libssl-dev gcc-13 g++-13 libspdlog-dev libfmt-dev llvm-14-dev libedit-dev libcxxopts-dev libpfm4-dev ninja-build libpcap-dev libopenblas-pthread-dev libibverbs-dev librdmacm-dev
+      run: sudo apt install libssl-dev gcc g++ libspdlog-dev libfmt-dev llvm-14-dev libedit-dev libcxxopts-dev libpfm4-dev ninja-build libpcap-dev libopenblas-pthread-dev libibverbs-dev librdmacm-dev
       
     - name: Checkout
       run: |
@@ -49,7 +49,7 @@ jobs:
         make -j
 
     - name: configure cmake
-      run: sudo touch /usr/lib/llvm-14/lib/libMLIRSupportIndentedOstream.a && CC=gcc-13 CXX=g++-13 cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm/
+      run: sudo touch /usr/lib/llvm-14/lib/libMLIRSupportIndentedOstream.a && cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ &&  cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm/
 
     - name: build
       working-directory: ${{runner.workspace}}/build

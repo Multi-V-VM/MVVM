@@ -1,0 +1,113 @@
+code 0x104e94004 code_size 137216
+Trial 0 took 0.777504 seconds.
+Trial 1 took 0.743911 seconds.
+Trial 2 took 0.784272 seconds.
+Trial 3 took 0.784927 seconds.
+Trial 4 took 0.758834 seconds.
+Trial 5 took 0.730044 seconds.
+Trial 6 took 0.776485 seconds.
+Trial 7 took 0.761562 seconds.
+Trial 8 took 0.732990 seconds.
+Trial 9 took 0.753598 seconds.
+Trial 10 took 0.759756 seconds.
+Trial 11 took 0.748180 seconds.
+Trial 12 took 0.733388 seconds.
+Trial 13 took 0.764706 seconds.
+Trial 14 took 0.759132 seconds.
+Trial 15 took 0.728976 seconds.
+Trial 16 took 0.747182 seconds.
+Trial 17 took 0.763668 seconds.
+Trial 18 took 0.749834 seconds.
+Trial 19 took 0.736328 seconds.
+Trial 20 took 0.719454 seconds.
+Trial 21 took 0.756473 seconds.
+Trial 22 took 0.738721 seconds.
+Trial 23 took 0.712548 seconds.
+Trial 24 took 0.712402 seconds.
+Trial 25 took 0.752947 seconds.
+Trial 26 took 0.796027 seconds.
+Trial 27 took 0.765493 seconds.
+Trial 28 took 0.767054 seconds.
+Trial 29 took 0.735850 seconds.
+Trial 30 took 0.719923 seconds.
+Trial 31 took 0.737809 seconds.
+Trial 32 took 0.707110 seconds.
+Trial 33 took 0.778097 seconds.
+Trial 34 took 0.701239 seconds.
+Trial 35 took 0.744595 seconds.
+Trial 36 took 0.748468 seconds.
+Trial 37 took 0.736524 seconds.
+Trial 38 took 0.725830 seconds.
+Trial 39 took 0.781831 seconds.
+Trial 40 took 0.843775 seconds.
+Trial 41 took 0.818766 seconds.
+Trial 42 took 0.868055 seconds.
+Trial 43 took 0.831846 seconds.
+Trial 44 took 0.865408 seconds.
+Trial 45 took 0.906600 seconds.
+Trial 46 took 0.831495 seconds.
+Trial 47 took 0.812286 seconds.
+Trial 48 took 0.748699 seconds.
+Trial 49 took 0.778048 seconds.
+Trial 50 took 0.796114 seconds.
+Trial 51 took 0.788710 seconds.
+Trial 52 took 0.815234 seconds.
+Trial 53 took 0.835669 seconds.
+Trial 54 took 0.763782 seconds.
+Trial 55 took 0.801998 seconds.
+Trial 56 took 0.811224 seconds.
+Trial 57 took 0.762592 seconds.
+Trial 58 took 0.819821 seconds.
+Trial 59 took 0.787452 seconds.
+Trial 60 took 0.777908 seconds.
+Trial 61 took 0.760451 seconds.
+Trial 62 took 0.769801 seconds.
+Trial 63 took 0.773750 seconds.
+Trial 64 took 0.767967 seconds.
+Trial 65 took 0.742644 seconds.
+Trial 66 took 0.798968 seconds.
+Trial 67 took 0.760397 seconds.
+Trial 68 took 0.746124 seconds.
+Trial 69 took 0.755488 seconds.
+Trial 70 took 0.756943 seconds.
+Trial 71 took 0.784587 seconds.
+Trial 72 took 0.715585 seconds.
+Trial 73 took 0.723314 seconds.
+Trial 74 took 0.745872 seconds.
+Trial 75 took 0.744089 seconds.
+Trial 76 took 0.771642 seconds.
+Trial 77 took 0.763857 seconds.
+Trial 78 took 0.744260 seconds.
+Trial 79 took 0.769052 seconds.
+Trial 80 took 0.742153 seconds.
+Trial 81 took 0.800699 seconds.
+Trial 82 took 0.713405 seconds.
+Trial 83 took 0.765706 seconds.
+Trial 84 took 0.771191 seconds.
+Trial 85 took 0.774555 seconds.
+Trial 86 took 0.753120 seconds.
+Trial 87 took 0.731015 seconds.
+Trial 88 took 0.764087 seconds.
+Trial 89 took 0.765007 seconds.
+Trial 90 took 0.736430 seconds.
+Trial 91 took 0.774623 seconds.
+Trial 92 took 0.762522 seconds.
+Trial 93 took 0.729469 seconds.
+Trial 94 took 0.736092 seconds.
+Trial 95 took 0.823578 seconds.
+Trial 96 took 0.751865 seconds.
+Trial 97 took 0.755164 seconds.
+Trial 98 took 0.749069 seconds.
+Trial 99 took 0.746175 seconds.
+Trial 100 took 0.758858 seconds.
+^CCaught signal 2, performing custom logic...
+serializing
+[2024-09-18 16:39:40.938] [info] [wamr_interp_frame.cpp:83] function_index 52 ip_offset 526 lp 0x128008df8 sp 0x128008f7c sp_offset 97
+1 71056 70992 112 70880 0 1000 100000 1000 1000 1000 1000000 3 8000000 71072 1000 100000 100000000 3 800000000 8071088 1000 100000 100000000 3 800000000 808071104 71072 1000 1000 8071088 1000 100000 0 111 1000 111 1000 1 1 1 48 70928 70928 0 1000 1000 100000 71072 1000 8071088 1000 808071104 1000 0 1072693248 0 0 0 32 70912 70912 0 1726648780 0 1726648779 0 1 0 0 1072693248 200823 0 429873 0 4294738246 4294967295 0 3238786512 0 1093567616 2844986337 3217904002 1436237064 1072212895 110 1436237064 1072212895 1190 110 1 111 0 0 0 70912 0 
+[2024-09-18 16:39:40.939] [info] [wamr_interp_frame.cpp:83] function_index 68 ip_offset 109 lp 0x128008da8 sp 0x128008dbc sp_offset 5
+70992 71056 71024 1 71056 
+[2024-09-18 16:39:40.939] [info] [wamr_interp_frame.cpp:83] function_index 50 ip_offset 40 lp 0x128008d60 sp 0x128008d64 sp_offset 1
+0 
+[2024-09-18 16:39:41.756] [info] [wamr.cpp:1005] Snapshot time: 0.818826 s
+[2024-09-18 16:39:41.756] [info] [wamr.cpp:1006] Max Interval: 0
+[2024-09-18 16:39:41.756] [info] [wamr.cpp:1007] Memory usage: 3215 MB

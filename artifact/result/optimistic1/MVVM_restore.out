@@ -1,0 +1,163 @@
+code 0x40000004 code_size 7908476
+[2024-05-06 19:43:49.001] [[32minfo[m] [wamr_read_write.h:134] [Server] Bind socket 128.114.53.32 12353
+[2024-05-06 19:43:49.001] [[32minfo[m] [wamr_read_write.h:139] [Server] Listening on socket
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 140737348400832, 3
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 140737352554176, 2
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 140737353897664, 1
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 1, 0
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 2, 0
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 3, 0
+restore function_index 52
+restore function_index 5016
+restore function_index 1238
+restore function_index 1232
+restore function_index 1123
+restore function_index 807
+restore function_index 810
+restore function_index 929
+restore function_index 1222
+main_env created 0x5b47399077b0 0x5b4739407f50
+
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr.cpp:604] 0 140737353897664
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr_export.cpp:380] insert_parent_child 0 1
+restore function_index 5441
+restore function_index 5410
+restore function_index 887
+restore function_index 835
+restore function_index 810
+restore function_index 929
+restore function_index 1222
+restore_env: 0x5b47396ff770 0x5b4739408130
+restored child env
+thread mgr: save_restore_call_chain 0x5b4739408130
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 140737353897664 > new:< 139715772761792 >
+child spawned 0x5b47399077b0 0x5b4739408ef0
+
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr.cpp:604] 0 140737352554176
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr_export.cpp:380] insert_parent_child 0 2
+restore function_index 5441
+restore function_index 5410
+restore function_index 887
+restore function_index 835
+restore function_index 810
+restore function_index 929
+restore function_index 1222
+restore_env: 0x5b4739484ca0 0x5b47394084c0
+restored child env
+thread mgr: save_restore_call_chain 0x5b47394084c0
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 140737352554176 > new:< 139715771332288 >
+child spawned 0x5b47399077b0 0x5b4739408790
+
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr.cpp:604] 0 140737348400832
+[2024-05-06 19:44:40.875] [[31m[1merror[m] [wamr_export.cpp:380] insert_parent_child 0 3
+restore function_index 5441
+restore function_index 5410
+restore function_index 887
+restore function_index 835
+restore function_index 810
+restore function_index 929
+restore function_index 1222
+restore_env: 0x5b47394cd550 0x5b473992dad0
+restored child env
+thread mgr: save_restore_call_chain 0x5b473992dad0
+[2024-05-06 19:44:40.875] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 140737348400832 > new:< 139715771262656 >
+child spawned 0x5b47399077b0 0x5b47394067c0
+
+invoke_init_c
+wakeup.release
+invoke main 0x5b47399077b0 0x5b4739407f50
+[2024-05-06 19:44:40.875] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 140737352567808 > new:< 139715771345920 >
+[2024-05-06 19:44:40.875] [[32minfo[m] [wamr.cpp:568] Recover time: 0.178137
+
+invoke side0x5b4739918678
+invoke side0x5b473992b138
+invoke side0x5b4739715be8
+Trial Time:          0.02334
+Trial Time:          0.02851
+Trial Time:          0.02324
+Trial Time:          0.03245
+Trial Time:          0.03623
+Trial Time:          0.02632
+Trial Time:          0.02664
+Trial Time:          0.02534
+Trial Time:          0.02553
+Trial Time:          0.02634
+Trial Time:          0.02643
+Trial Time:          0.02724
+Trial Time:          0.02435
+Trial Time:          0.02353
+Trial Time:          0.02254
+Trial Time:          0.02543
+Trial Time:          0.02643
+Trial Time:          0.03323
+Trial Time:          0.03351
+Trial Time:          0.02634
+Trial Time:          0.03524
+Trial Time:          0.03124
+Trial Time:          0.03253
+Trial Time:          0.02622
+Trial Time:          0.03063
+Trial Time:          0.02554
+Trial Time:          0.03253
+Trial Time:          0.03543
+Trial Time:          0.02245
+Trial Time:          0.02634
+Trial Time:          0.02644
+Trial Time:          0.02543
+Trial Time:          0.03364
+Trial Time:          0.03253
+Trial Time:          0.02834
+Trial Time:          0.03254
+Trial Time:          0.03279
+Trial Time:          0.02434
+Trial Time:          0.02643
+Trial Time:          0.02643
+Trial Time:          0.02453
+Trial Time:          0.02643
+Trial Time:          0.02436
+Trial Time:          0.03262
+Trial Time:          0.02743
+Trial Time:          0.02345
+Trial Time:          0.03345
+Trial Time:          0.02634
+Trial Time:          0.02735
+Trial Time:          0.02456
+Trial Time:          0.02735
+Trial Time:          0.02935
+Trial Time:          0.02885
+Trial Time:          0.03253
+Trial Time:          0.02634
+Trial Time:          0.02935
+Trial Time:          0.03325
+Trial Time:          0.03325
+Trial Time:          0.02635
+Trial Time:          0.03145
+Trial Time:          0.02734
+Trial Time:          0.02252
+Trial Time:          0.02735
+Trial Time:          0.02353
+Trial Time:          0.02632
+Trial Time:          0.03634
+Trial Time:          0.03253
+Trial Time:          0.02945
+Trial Time:          0.02356
+Trial Time:          0.02334
+Trial Time:          0.02634
+Trial Time:          0.02453
+Trial Time:          0.02643
+Trial Time:          0.03643
+Trial Time:          0.03436
+Trial Time:          0.02634
+Trial Time:          0.03224
+Trial Time:          0.02664
+Trial Time:          0.03235
+Trial Time:          0.03143
+Trial Time:          0.03364
+Trial Time:          0.02664
+Trial Time:          0.02443
+Trial Time:          0.03145
+Trial Time:          0.02953
+Trial Time:          0.02965
+Trial Time:          0.03226
+Trial Time:          0.03293
+[2024-05-06 19:45:35.718] [info] [checkpoint.cpp:128] Execution time: 75.513522 s

@@ -43,6 +43,9 @@ std::counting_semaphore<100> wakeup(0);
 std::counting_semaphore<100> thread_init(0);
 extern WriteStream *writer;
 extern std::vector<std::unique_ptr<WAMRExecEnv>> as;
+extern std::string offload_addr;
+extern int offload_port;
+extern std::string target;
 
 std::string removeExtension(std::string &filename) {
     size_t dotPos = filename.find_last_of('.');
@@ -104,7 +107,7 @@ WAMRInstance::WAMRInstance(const char *wasm_path, bool is_jit, std::string polic
         SPDLOG_ERROR("Init runtime environment failed.");
         throw;
     }
-    // initialiseWAMRNatives();
+    initialiseWAMRNatives();
     char *buffer{};
     if (!load_wasm_binary(wasm_path, &buffer)) {
         SPDLOG_ERROR("Load wasm binary failed.\n");
@@ -240,9 +243,8 @@ int WAMRInstance::invoke_fopen(std::string &path, uint32 option) {
         uint32 argv[3];
         argv[0] = buffer_for_wasm; // pass the buffer_ address for WASM space
         argv[1] = option; // the size of buffer_
-        argv[2] = 15; // the size of buffer_
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
-        wasm_runtime_call_wasm(exec_env, func, 3, argv);
+        wasm_runtime_call_wasm(exec_env, func, 2, argv);
         wasm_runtime_module_free(module_inst, buffer_for_wasm);
         return ((int)argv[0]);
     }
@@ -339,6 +341,7 @@ int WAMRInstance::invoke_preopen(uint32 fd, const std::string &path) {
     if (buffer_for_wasm != 0) {
         uint32 argv[3];
         strncpy(buffer_, path.c_str(), path.size()); // use native address for accessing in runtime
+        buffer_[path.size()] = '\0';
         argv[0] = fd; // pass the buffer_ address for WASM space
         argv[1] = buffer_for_wasm; // the size of buffer_
         argv[2] = 102; // O_RW | O_CREATE
@@ -506,8 +509,11 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 
     argptr = (ThreadArgs **)malloc(sizeof(void *) * execEnv.size());
     set_wasi_args(execEnv.front()->module_inst.wasi_ctx);
-
+    instantiate();
     this->time = std::chrono::high_resolution_clock::now();
+    // invoke_init_c();
+    // std::string stdout = "/dev/stdout";
+    // invoke_preopen(1, stdout);
 
     restore(execEnv.front(), cur_env);
     if (tid_start_arg_map.find(execEnv.back()->cur_count) != tid_start_arg_map.end()) {
@@ -519,7 +525,16 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
     auto main_env = cur_env;
     cur_thread = ((uint64_t)main_env->handle);
 
-//    invoke_init_c();
+    fprintf(stderr, "main_env created %p %p\n\n", main_env, main_saved_call_chain);
+
+    main_env->is_restore = true;
+
+    main_env->restore_call_chain = nullptr;
+
+//    std::string path = "./rgbd_dataset_freiburg3_long_office_household_validation/rgb/1341848156.474862.png";
+//    invoke_fopen( path,4);
+//    path = "./rgbd_dataset_freiburg3_long_office_household_validation/depth";
+//    invoke_fopen( path,5);
 #if WASM_ENABLE_LIB_PTHREAD != 0
     // SPDLOG_ERROR("no impl");
     // exit(-1);
@@ -806,7 +821,14 @@ long get_rss() {
 void serialize_to_file(WASMExecEnv *instance) {
     // gateway
     auto start = std::chrono::high_resolution_clock::now();
-
+    if (writer == nullptr) {
+        if (offload_addr.empty())
+            writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
+#if __linux__
+        else
+            writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
+#endif
+    }
 #if WASM_ENABLE_LIB_PTHREAD != 0
     auto cluster = wasm_exec_env_get_cluster(instance);
     auto all_count = bh_list_length(&cluster->exec_env_list);
@@ -987,6 +1009,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     // get duration in us
     auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     SPDLOG_INFO("Snapshot time: {} s", dur.count() / 1000000.0);
+    SPDLOG_INFO("Max Interval: {}", wamr->max_diff);
     SPDLOG_INFO("Memory usage: {} MB", get_rss() / 1024 / 1024);
     exit(EXIT_SUCCESS);
 }

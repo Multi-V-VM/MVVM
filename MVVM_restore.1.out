@@ -1,0 +1,12 @@
+code 0x40600004 code_size 61598088
+[2024-05-30 01:12:01.131] [[32minfo[m] [wamr_read_write.h:134] [Server] Bind socket 128.114.59.200 12346
+[2024-05-30 01:12:01.131] [[32minfo[m] [wamr_read_write.h:139] [Server] Listening on socket
+Connection to 128.114.59.200 closed.
+code 0x41600004 code_size 61598088
+^CCaught signal 2, performing custom logic...
+[2024-05-30 01:12:48.663] [[32minfo[m] [wamr_read_write.h:134] [Server] Bind socket 128.114.59.200 12346
+[2024-05-30 01:12:48.663] [[32minfo[m] [wamr_read_write.h:139] [Server] Listening on socket
+^C[2024-05-30 01:12:49.493] [[32minfo[m] [wamr.cpp:1007] Snapshot time: 0.002299 s
+[2024-05-30 01:12:49.493] [[32minfo[m] [wamr.cpp:1008] Max Interval: 0
+[2024-05-30 01:12:49.493] [[32minfo[m] [wamr.cpp:1009] Memory usage: 3337 MB
+Connection to 128.114.59.200 closed.

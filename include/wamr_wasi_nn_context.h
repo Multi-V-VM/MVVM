@@ -25,29 +25,17 @@
 /* Maximum number of graph execution context per WASM instance*/
 #define MAX_GRAPH_EXEC_CONTEXTS_PER_INST 10
 
-struct WAMRWASINNGraph {
-    std::vector<uint8_t> buffer;
-};
-
-struct WAMRWASINNInterpreter {
-    //    std::unique_ptr<tflite::Interpreter> interpreter;
-    uint32_t a; // placeholder
-};
-
 struct WAMRWASINNModel {
-    //    std::unique_ptr<tflite::FlatBufferModel> model;
-    execution_target target;
+    std::string model_name;
+    std::vector<uint8_t> input_tensor;
+    std::vector<uint32_t> dims;
 };
 
 struct WAMRWASINNContext {
-    bool is_initialized;
-    graph_encoding current_encoding;
-    std::vector<WAMRWASINNGraph> graph; // TODO: support multiple graph
-    uint32_t current_models;
+    bool is_initialized = false;
+    graph_encoding current_encoding = graph_encoding::tensorflow;
+    uint32_t current_models = 0;
     WAMRWASINNModel models[MAX_GRAPHS_PER_INST];
-    uint32_t current_interpreters;
-    WAMRWASINNInterpreter interpreters[MAX_GRAPH_EXEC_CONTEXTS_PER_INST];
-
     void dump_impl(WASINNContext *env);
     void restore_impl(WASINNContext *env);
 };

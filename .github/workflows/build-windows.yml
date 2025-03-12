@@ -55,7 +55,7 @@ jobs:
     - name: Install LLVM SDK
       run: |
         cd "C:/Program Files/"
-        wget http://108.181.27.85/LLVM.zip -O LLVM.zip
+        wget http://108.181.27.85/about/LLVM.zip -O LLVM.zip
         unzip LLVM.zip
         cp "C:/Program Files/LLVM/tools/llvm/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
         
@@ -69,7 +69,7 @@ jobs:
     - name: configure cmake
       working-directory: ${{runner.workspace}}
       run: |
-        cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
+        cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ &&cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm"
         sed -i "s/add_library(uv SHARED/add_library(uv/g" build/_deps/libuv-src/CMakeLists.txt
 
     - name: Install benchmark
@@ -80,26 +80,4 @@ jobs:
     - name: build
       working-directory: ${{runner.workspace}}/build
       run: |
-        cmake --build . --config ${{matrix.build}} && cp ${{matrix.build}}/MVVM_checkpoint.exe ${{matrix.build}}/MVVM_checkpoint-windows.exe && cp ${{matrix.build}}/MVVM_restore.exe ${{matrix.build}}/MVVM_restore-windows.exe
-
-    - uses: actions/upload-artifact@v2
-      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
-      with:
-        name: MVVM_checkpoint-windows
-        path: ${{runner.workspace}}/build/${{matrix.build}}/MVVM_checkpoint-windows.exe 
-
-    - uses: actions/upload-artifact@v2
-      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
-      with:
-        name: MVVM_restore-windows
-        path: ${{runner.workspace}}/build/${{matrix.build}}/MVVM_restore-windows.exe
-
-    - name: Publish
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/') && ${{matrix.build}} == "Release"
-      with:
-        files: |
-          ${{runner.workspace}}/build/${{matrix.build}}/MVVM_checkpoint-windows.exe
-          ${{runner.workspace}}/build/${{matrix.build}}/MVVM_restore-windows.exe
-        generate_release_notes: true
-        draft: true
+        cmake --build . --config ${{matrix.build}} 

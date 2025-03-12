@@ -92,7 +92,11 @@ std::string removeExtension(std::string &);
 bool is_ip_in_cidr(const char *base_ip, int subnet_mask_len, uint32_t ip);
 bool is_ipv6_in_cidr(const char *base_ip_str, int subnet_mask_len, struct in6_addr *ip);
 long get_rss();
-
+#define NUM_CHA_COUNTERS 4
+#define NUM_TILE_ENABLED 24
+#define EPOCHS 1
+#define LOOP_NUM 64 * 1024 * 1024
+#define MSRFLIENAME "/dev/cpu/0/msr"
 class WAMRInstance {
 public:
     WASMExecEnv *cur_env{};
@@ -101,6 +105,14 @@ public:
     WASMModuleCommon *module;
     WASMFunctionInstanceCommon *func{};
 
+    uint64_t cha_perfevtsel[NUM_CHA_COUNTERS] = {0xc817fe00000135,0xc817fe00000135,0xc817fe00000135,0xc817fe00000135};
+    long cha_counts[NUM_TILE_ENABLED][NUM_CHA_COUNTERS][2]; // 28 tiles per socket, 4 counters per tile, 2 times (before
+                                                            // and after)
+    uint64_t counters_changes[NUM_TILE_ENABLED];
+    uint64_t core2cha_map[NUM_TILE_ENABLED];
+    long max_diff{};
+    int fd;
+    long msr_val;
     std::string aot_file_path{};
     std::string wasm_file_path{};
     std::condition_variable int3_cv{};
@@ -130,10 +142,10 @@ public:
     WASMMemoryInstance **tmp_buf = nullptr;
     uint32 tmp_buf_size{};
     std::vector<struct sync_op_t>::iterator sync_iter;
-    std::map<uint64, uint64> tid_map;
-    std::map<korp_tid, korp_tid> korp_tid_map;
-    std::map<uint64, uint64> child_tid_map;
-    std::map<uint64, std::pair<int, int>> tid_start_arg_map;
+    std::map<uint64, uint64> tid_map{};
+    std::map<korp_tid, korp_tid> korp_tid_map{};
+    std::map<uint64, uint64> child_tid_map{};
+    std::map<uint64, std::pair<int, int>> tid_start_arg_map{};
     uint32 id{};
     size_t cur_thread;
     std::chrono::time_point<std::chrono::high_resolution_clock> time;
@@ -142,7 +154,7 @@ public:
     bool is_aot{};
     char error_buf[128]{};
     struct mvvm_op_data op_data {};
-    uint32 buf_size{}, stack_size = 65536, heap_size = 3355443200;
+    uint32 buf_size{}, stack_size = 65536, heap_size = 16;
     typedef struct ThreadArgs {
         wasm_exec_env_t exec_env;
     } ThreadArgs;
@@ -155,6 +167,7 @@ public:
     bool get_int3_addr();
     bool replace_int3_with_nop();
     bool replace_mfence_with_nop();
+    long get_inst_diff();
     bool replace_nop_with_int3();
     void replay_sync_ops(bool, wasm_exec_env_t);
     WASMFunction *get_func();

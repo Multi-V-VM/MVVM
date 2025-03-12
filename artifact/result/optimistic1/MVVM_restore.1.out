@@ -1,0 +1,649 @@
+^@code 0x41200004 code_size 7908476
+[2024-05-06 19:43:48.740] [[32minfo[m] [wamr_read_write.h:134] [Server] Bind socket 128.114.59.200 12346
+[2024-05-06 19:43:48.740] [[32minfo[m] [wamr_read_write.h:139] [Server] Listening on socket
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 140737348400832, 3
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 140737352554176, 2
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:143] tid_start_arg_map: 140737353897664, 1
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 1, 0
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 2, 0
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr_wasi_context.cpp:148] child_tid_map: 3, 0
+restore function_index 52
+restore function_index 5016
+restore function_index 1238
+restore function_index 1232
+restore function_index 1123
+restore function_index 807
+restore function_index 810
+restore function_index 929
+restore function_index 1222
+main_env created 0x5b47399077b0 0x5b4739407f50
+
+[2024-05-06 19:44:40.873] [[31m[1merror[m] [wamr.cpp:604] 0 140737353897664
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr_export.cpp:380] insert_parent_child 0 1
+restore function_index 5441
+restore function_index 5410
+restore function_index 887
+restore function_index 835
+restore function_index 810
+restore function_index 929
+restore function_index 1222
+restore_env: 0x5b47396ff770 0x5b4739408130
+restored child env
+thread mgr: save_restore_call_chain 0x5b4739408130
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 140737353897664 > new:< 139715772761792 >
+child spawned 0x5b47399077b0 0x5b4739408ef0
+
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr.cpp:604] 0 140737352554176
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr_export.cpp:380] insert_parent_child 0 2
+restore function_index 5441
+restore function_index 5410
+restore function_index 887
+restore function_index 835
+restore function_index 810
+restore function_index 929
+restore function_index 1222
+restore_env: 0x5b4739484ca0 0x5b47394084c0
+restored child env
+thread mgr: save_restore_call_chain 0x5b47394084c0
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 140737352554176 > new:< 139715771332288 >
+child spawned 0x5b47399077b0 0x5b4739408790
+
+[2024-05-06 19:44:40.874] [[31m[1merror[m] [wamr.cpp:604] 0 140737348400832
+[2024-05-06 19:44:40.875] [[31m[1merror[m] [wamr_export.cpp:380] insert_parent_child 0 3
+restore function_index 5441
+restore function_index 5410
+restore function_index 887
+restore function_index 835
+restore function_index 810
+restore function_index 929
+restore function_index 1222
+restore_env: 0x5b47394cd550 0x5b473992dad0
+restored child env
+thread mgr: save_restore_call_chain 0x5b473992dad0
+[2024-05-06 19:44:40.875] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 140737348400832 > new:< 139715771262656 >
+child spawned 0x5b47399077b0 0x5b47394067c0
+
+invoke_init_c
+wakeup.release
+invoke main 0x5b47399077b0 0x5b4739407f50
+[2024-05-06 19:44:40.875] [[31m[1merror[m] [wamr_export.cpp:364] wamr_handle_map old:< 140737352567808 > new:< 139715771345920 >
+[2024-05-06 19:44:40.875] [[32minfo[m] [wamr.cpp:568] Recover time: 0.178137
+
+invoke side0x5b4739918678
+invoke side0x5b473992b138
+invoke side0x5b4739715be8
+          0.02846
+Trial Time:          0.02677
+Trial Time:          0.02375
+Trial Time:          0.03163
+Trial Time:          0.02938
+Trial Time:          0.02992
+Trial Time:          0.02286
+Trial Time:          0.02592
+Trial Time:          0.02887
+Trial Time:          0.02490
+Trial Time:          -1699191.11265
+Trial Time:          0.10562
+Trial Time:          0.09628
+Trial Time:          0.10739
+Trial Time:          0.09535
+Trial Time:          0.10277
+Trial Time:          0.10663
+Trial Time:          0.10533
+Trial Time:          0.10762
+Trial Time:          0.09897
+Trial Time:          0.09971
+Trial Time:          0.11081
+Trial Time:          0.10716
+Trial Time:          0.09846
+Trial Time:          0.10676
+Trial Time:          0.09527
+Trial Time:          0.10864
+Trial Time:          0.10597
+Trial Time:          0.09891
+Trial Time:          0.09775
+Trial Time:          0.10863
+Trial Time:          0.11541
+Trial Time:          0.10707
+Trial Time:          0.10581
+Trial Time:          0.10515
+Trial Time:          0.10507
+Trial Time:          0.10512
+Trial Time:          0.10819
+Trial Time:          0.10781
+Trial Time:          0.10121
+Trial Time:          0.10775
+Trial Time:          0.11160
+Trial Time:          0.11061
+Trial Time:          0.09680
+Trial Time:          0.09739
+Trial Time:          0.10618
+Trial Time:          0.10534
+Trial Time:          0.10762
+Trial Time:          0.10714
+Trial Time:          0.10746
+Trial Time:          0.11051
+Trial Time:          0.10550
+Trial Time:          0.10598
+Trial Time:          0.11136
+Trial Time:          0.09515
+Trial Time:          0.10094
+Trial Time:          0.10838
+Trial Time:          0.10685
+Trial Time:          0.10578
+Trial Time:          0.10793
+Trial Time:          0.09891
+Trial Time:          0.11186
+Trial Time:          0.10532
+Trial Time:          0.09977
+Trial Time:          0.10737
+Trial Time:          0.10752
+Trial Time:          0.10505
+Trial Time:          0.09644
+Trial Time:          0.09797
+Trial Time:          0.09556
+Trial Time:          0.10650
+Trial Time:          0.10508
+Trial Time:          0.09660
+Trial Time:          0.10658
+Trial Time:          0.10819
+Trial Time:          0.11279
+Trial Time:          0.10554
+Trial Time:          0.10552
+Trial Time:          0.09680
+Trial Time:          0.09631
+Trial Time:          0.11533
+Trial Time:          0.11090
+Trial Time:          0.10020
+Trial Time:          0.09687
+Trial Time:          0.11450
+Trial Time:          0.11411
+Trial Time:          0.10605
+Trial Time:          0.10514
+Trial Time:          0.10814
+Trial Time:          0.10006
+Trial Time:          0.10873
+Trial Time:          0.10748
+Trial Time:          0.10810
+Trial Time:          0.10504
+Trial Time:          0.11162
+Trial Time:          0.11036
+Trial Time:          0.10539
+Trial Time:          0.11428
+Trial Time:          0.09364
+Trial Time:          0.10535
+Trial Time:          0.10540
+Trial Time:          0.11372
+Trial Time:          0.11248
+Trial Time:          0.10826
+Trial Time:          0.10858
+Trial Time:          0.10844
+Trial Time:          0.09679
+Trial Time:          0.10172
+Trial Time:          0.09880
+Trial Time:          0.10882
+Trial Time:          0.10269
+Trial Time:          0.10831
+Trial Time:          0.10527
+Trial Time:          0.10700
+Trial Time:          0.09871
+Trial Time:          0.09876
+Trial Time:          0.10239
+Trial Time:          0.10913
+Trial Time:          0.10724
+Trial Time:          0.11153
+Trial Time:          0.10759
+Trial Time:          0.09783
+Trial Time:          0.10911
+Trial Time:          0.10253
+Trial Time:          0.09967
+Trial Time:          0.10851
+Trial Time:          0.10528
+Trial Time:          0.10692
+Trial Time:          0.10527
+Trial Time:          0.10812
+Trial Time:          0.10485
+Trial Time:          0.10480
+Trial Time:          0.10827
+Trial Time:          0.10526
+Trial Time:          0.09925
+Trial Time:          0.11107
+Trial Time:          0.10748
+Trial Time:          0.11212
+Trial Time:          0.10551
+Trial Time:          0.10559
+Trial Time:          0.10552
+Trial Time:          0.10583
+Trial Time:          0.09622
+Trial Time:          0.10741
+Trial Time:          0.09928
+Trial Time:          0.10630
+Trial Time:          0.10808
+Trial Time:          0.09879
+Trial Time:          0.11653
+Trial Time:          0.10831
+Trial Time:          0.10562
+Trial Time:          0.11012
+Trial Time:          0.10548
+Trial Time:          0.09963
+Trial Time:          0.10654
+Trial Time:          0.10507
+Trial Time:          0.10521
+Trial Time:          0.09390
+Trial Time:          0.10988
+Trial Time:          0.10530
+Trial Time:          0.10784
+Trial Time:          0.10689
+Trial Time:          0.10109
+Trial Time:          0.11104
+Trial Time:          0.10583
+Trial Time:          0.10516
+Trial Time:          0.11415
+Trial Time:          0.10944
+Trial Time:          0.10592
+Trial Time:          0.10919
+Trial Time:          0.09813
+Trial Time:          0.11242
+Trial Time:          0.10891
+Trial Time:          0.10082
+Trial Time:          0.10677
+Trial Time:          0.10527
+Trial Time:          0.10654
+Trial Time:          0.11132
+Trial Time:          0.10628
+Trial Time:          0.09483
+Trial Time:          0.10621
+Trial Time:          0.10776
+Trial Time:          0.10630
+Trial Time:          0.10165
+Trial Time:          0.09960
+Trial Time:          0.10984
+Trial Time:          0.09819
+Trial Time:          0.10545
+Trial Time:          0.10503
+Trial Time:          0.10664
+Trial Time:          0.10484
+Trial Time:          0.10483
+Trial Time:          0.11887
+Trial Time:          0.10834
+Trial Time:          0.10513
+Trial Time:          0.10175
+Trial Time:          0.10836
+Trial Time:          0.10720
+Trial Time:          0.10853
+Trial Time:          0.11069
+Trial Time:          0.10585
+Trial Time:          0.11100
+Trial Time:          0.10700
+Trial Time:          0.13305
+Trial Time:          0.10856
+Trial Time:          0.09827
+Trial Time:          0.10636
+Trial Time:          0.10820
+Trial Time:          0.09755
+Trial Time:          0.11060
+Trial Time:          0.10790
+Trial Time:          0.10702
+Trial Time:          0.10510
+Trial Time:          0.09729
+Trial Time:          0.10882
+Trial Time:          0.10741
+Trial Time:          0.10639
+Trial Time:          0.10449
+Trial Time:          0.10863
+Trial Time:          0.09630
+Trial Time:          0.10790
+Trial Time:          0.09542
+Trial Time:          0.10838
+Trial Time:          0.10909
+Trial Time:          0.10071
+Trial Time:          0.10873
+Trial Time:          0.10536
+Trial Time:          0.11152
+Trial Time:          0.10586
+Trial Time:          0.11009
+Trial Time:          0.10606
+Trial Time:          0.10527
+Trial Time:          0.09724
+Trial Time:          0.10885
+Trial Time:          0.10699
+Trial Time:          0.10104
+Trial Time:          0.10463
+Trial Time:          0.10611
+Trial Time:          0.10554
+Trial Time:          0.10474
+Trial Time:          0.10911
+Trial Time:          0.09836
+Trial Time:          0.10703
+Trial Time:          0.10696
+Trial Time:          0.10746
+Trial Time:          0.10540
+Trial Time:          0.09951
+Trial Time:          0.12141
+Trial Time:          0.09629
+Trial Time:          0.10726
+Trial Time:          0.10560
+Trial Time:          0.10748
+Trial Time:          0.11323
+Trial Time:          0.09381
+Trial Time:          0.10420
+Trial Time:          0.10878
+Trial Time:          0.09682
+Trial Time:          0.10643
+Trial Time:          0.09833
+Trial Time:          0.10950
+Trial Time:          0.10870
+Trial Time:          0.10199
+Trial Time:          0.10992
+Trial Time:          0.10625
+Trial Time:          0.11010
+Trial Time:          0.10554
+Trial Time:          0.10509
+Trial Time:          0.09715
+Trial Time:          0.09409
+Trial Time:          0.10687
+Trial Time:          0.09290
+Trial Time:          0.10689
+Trial Time:          0.10836
+Trial Time:          0.10528
+Trial Time:          0.11078
+Trial Time:          0.11082
+Trial Time:          0.10094
+Trial Time:          0.10994
+Trial Time:          0.10765
+Trial Time:          0.09976
+Trial Time:          0.10650
+Trial Time:          0.11164
+Trial Time:          0.10756
+Trial Time:          0.11526
+Trial Time:          0.10118
+Trial Time:          0.10762
+Trial Time:          0.11046
+Trial Time:          0.11126
+Trial Time:          0.10535
+Trial Time:          0.10691
+Trial Time:          0.10067
+Trial Time:          0.11193
+Trial Time:          0.09847
+Trial Time:          0.10602
+Trial Time:          0.10869
+Trial Time:          0.10582
+Trial Time:          0.10542
+Trial Time:          0.10432
+Trial Time:          0.10710
+Trial Time:          0.09692
+Trial Time:          0.11518
+Trial Time:          0.11293
+Trial Time:          0.10540
+Trial Time:          0.10496
+Trial Time:          0.10770
+Trial Time:          0.10722
+Trial Time:          0.10832
+Trial Time:          0.09767
+Trial Time:          0.10789
+Trial Time:          0.10552
+Trial Time:          0.10480
+Trial Time:          0.09862
+Trial Time:          0.09886
+Trial Time:          0.10013
+Trial Time:          0.09468
+Trial Time:          0.10563
+Trial Time:          0.09789
+Trial Time:          0.10630
+Trial Time:          0.09999
+Trial Time:          0.10527
+Trial Time:          0.10812
+Trial Time:          0.10485
+Trial Time:          0.10480
+Trial Time:          0.10827
+Trial Time:          0.10526
+Trial Time:          0.09925
+Trial Time:          0.11107
+Trial Time:          0.10748
+Trial Time:          0.11212
+Trial Time:          0.10551
+Trial Time:          0.10559
+Trial Time:          0.10552
+Trial Time:          0.10583
+Trial Time:          0.09622
+Trial Time:          0.10741
+Trial Time:          0.09928
+Trial Time:          0.10630
+Trial Time:          0.10808
+Trial Time:          0.09879
+Trial Time:          0.11653
+Trial Time:          0.10831
+Trial Time:          0.10562
+Trial Time:          0.11012
+Trial Time:          0.10548
+Trial Time:          0.09963
+Trial Time:          0.10654
+Trial Time:          0.10507
+Trial Time:          0.10521
+Trial Time:          0.09390
+Trial Time:          0.10988
+Trial Time:          0.10530
+Trial Time:          0.10784
+Trial Time:          0.10689
+Trial Time:          0.10109
+Trial Time:          0.11104
+Trial Time:          0.10583
+Trial Time:          0.10516
+Trial Time:          0.11415
+Trial Time:          0.10944
+Trial Time:          0.10592
+Trial Time:          0.10919
+Trial Time:          0.09813
+Trial Time:          0.11242
+Trial Time:          0.10891
+Trial Time:          0.10082
+Trial Time:          0.10677
+Trial Time:          0.10527
+Trial Time:          0.10654
+Trial Time:          0.11132
+Trial Time:          0.10628
+Trial Time:          0.09483
+Trial Time:          0.10621
+Trial Time:          0.10776
+Trial Time:          0.10630
+Trial Time:          0.10165
+Trial Time:          0.09960
+Trial Time:          0.10984
+Trial Time:          0.09819
+Trial Time:          0.10545
+Trial Time:          0.10503
+Trial Time:          0.10664
+Trial Time:          0.10484
+Trial Time:          0.10483
+Trial Time:          0.11887
+Trial Time:          0.10834
+Trial Time:          0.10513
+Trial Time:          0.10175
+Trial Time:          0.10836
+Trial Time:          0.10720
+Trial Time:          0.10853
+Trial Time:          0.11069
+Trial Time:          0.10585
+Trial Time:          0.11100
+Trial Time:          0.10700
+Trial Time:          0.13305
+Trial Time:          0.10856
+Trial Time:          0.09827
+Trial Time:          0.10636
+Trial Time:          0.10820
+Trial Time:          0.09755
+Trial Time:          0.11060
+Trial Time:          0.10790
+Trial Time:          0.10702
+Trial Time:          0.10510
+Trial Time:          0.09729
+Trial Time:          0.10882
+Trial Time:          0.10741
+Trial Time:          0.10639
+Trial Time:          0.10449
+Trial Time:          0.10863
+Trial Time:          0.09630
+Trial Time:          0.10790
+Trial Time:          0.09542
+Trial Time:          0.10838
+Trial Time:          0.10909
+Trial Time:          0.10071
+Trial Time:          0.10873
+Trial Time:          0.10536
+Trial Time:          0.11152
+Trial Time:          0.10586
+Trial Time:          0.11009
+Trial Time:          0.10606
+Trial Time:          0.10527
+Trial Time:          0.09724
+Trial Time:          0.10885
+Trial Time:          0.10699
+Trial Time:          0.10104
+Trial Time:          0.10463
+Trial Time:          0.10611
+Trial Time:          0.10554
+Trial Time:          0.10474
+Trial Time:          0.10911
+Trial Time:          0.09836
+Trial Time:          0.10703
+Trial Time:          0.10696
+Trial Time:          0.10746
+Trial Time:          0.10540
+Trial Time:          0.09951
+Trial Time:          0.12141
+Trial Time:          0.09629
+Trial Time:          0.10726
+Trial Time:          0.10560
+Trial Time:          0.10748
+Trial Time:          0.11323
+Trial Time:          0.09381
+Trial Time:          0.10420
+Trial Time:          0.10878
+Trial Time:          0.09682
+Trial Time:          0.10643
+Trial Time:          0.09833
+Trial Time:          0.10950
+Trial Time:          0.10870
+Trial Time:          0.10199
+Trial Time:          0.10992
+Trial Time:          0.10625
+Trial Time:          0.11010
+Trial Time:          0.10554
+Trial Time:          0.10509
+Trial Time:          0.09715
+Trial Time:          0.09409
+Trial Time:          0.10687
+Trial Time:          0.09290
+Trial Time:          0.10689
+Trial Time:          0.10836
+Trial Time:          0.10528
+Trial Time:          0.11078
+Trial Time:          0.11082
+Trial Time:          0.10094
+Trial Time:          0.10994
+Trial Time:          0.10765
+Trial Time:          0.09976
+Trial Time:          0.10650
+Trial Time:          0.11164
+Trial Time:          0.10756
+Trial Time:          0.11526
+Trial Time:          0.10118
+Trial Time:          0.10762
+Trial Time:          0.11046
+Trial Time:          0.11126
+Trial Time:          0.10535
+Trial Time:          0.10691
+Trial Time:          0.10067
+Trial Time:          0.11193
+Trial Time:          0.09847
+Trial Time:          0.10602
+Trial Time:          0.10869
+Trial Time:          0.10582
+Trial Time:          0.10542
+Trial Time:          0.10432
+Trial Time:          0.10710
+Trial Time:          0.09692
+Trial Time:          0.11518
+Trial Time:          0.11293
+Trial Time:          0.10540
+Trial Time:          0.10496
+Trial Time:          0.10770
+Trial Time:          0.10722
+Trial Time:          0.10832
+Trial Time:          0.09767
+Trial Time:          0.10789
+Trial Time:          0.10552
+Trial Time:          0.10480
+Trial Time:          0.09862
+Trial Time:          0.09886
+Trial Time:          0.10013
+Trial Time:          0.09468
+Trial Time:          0.10563
+Trial Time:          0.09789
+Trial Time:          0.10630
+Trial Time:          0.09999
+Trial Time:          Caught signal 2, performing custom logic...
+serializing
+serializing
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 1222 ip_offset 181 lp 0x5b47394ce534 sp 0x5b47394ce574 sp_offset 16
+98544980 137692952 129148680 133343000 816770 276880 141890432 137692928 1048576 0 816771 3 1048575 134270240 125881600 130075920 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 929 ip_offset 380 lp 0x5b47394ce474 sp 0x5b47394ce4ac sp_offset 14
+278 3 3 5 134514324 137692944 137692956 137692952 282000 282196 276896 276880 276904 278 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 810 ip_offset 254 lp 0x5b47394ce408 sp 0x5b47394ce43c sp_offset 13
+3 134513856 136637184 3 134514324 5 278 138876 278 3 3 5 134514324 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 835 ip_offset 482 lp 0x5b47394ce3a0 sp 0x5b47394ce3cc sp_offset 11
+136637184 137692960 136748 3 136637248 12 1 0 0 3 172 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 887 ip_offset 343 lp 0x5b47394ce348 sp 0x5b47394ce35c sp_offset 5
+136637184 137693040 3 0 136637184 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 5410 ip_offset 32 lp 0x5b47394ce2e0 sp 0x5b47394ce308 sp_offset 10
+3 137693160 137693204 0 0 0 0 0 136637184 179 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 5441 ip_offset 27 lp 0x5b47394ce298 sp 0x5b47394ce2a8 sp_offset 4
+3 137693160 3 137693160 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 1222 ip_offset 234 lp 0x5b4739485c84 sp 0x5b4739485cc4 sp_offset 16
+67433996 136636248 330253 132296112 555048 276880 141890432 136636224 1048576 0 67433992 2 786431 134270240 125881600 130075920 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 929 ip_offset 380 lp 0x5b4739485bc4 sp 0x5b4739485bfc sp_offset 14
+278 2 2 5 134514324 136636240 136636252 136636248 282000 282196 276896 276880 276904 278 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 810 ip_offset 254 lp 0x5b4739485b58 sp 0x5b4739485b8c sp_offset 13
+2 134513856 135580608 2 134514324 5 278 138876 278 2 2 5 134514324 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 835 ip_offset 482 lp 0x5b4739485af0 sp 0x5b4739485b1c sp_offset 11
+135580608 136636256 136748 2 135580672 8 1 0 0 2 172 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 887 ip_offset 343 lp 0x5b4739485a98 sp 0x5b4739485aac sp_offset 5
+135580608 136636336 2 0 135580608 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 5410 ip_offset 32 lp 0x5b4739485a30 sp 0x5b4739485a58 sp_offset 10
+2 136636456 136636500 0 0 0 0 0 135580608 179 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 5441 ip_offset 27 lp 0x5b47394859e8 sp 0x5b47394859f8 sp_offset 4
+2 136636456 2 136636456 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 1222 ip_offset 234 lp 0x5b4739700754 sp 0x5b4739700794 sp_offset 16
+35734912 135579672 169868 131245532 292403 276880 141890432 135579648 1048576 0 35734900 1 524287 134270240 125881600 130075920 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 929 ip_offset 380 lp 0x5b4739700694 sp 0x5b47397006cc sp_offset 14
+278 1 1 5 134514324 135579664 135579676 135579672 282000 282196 276896 276880 276904 278 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 810 ip_offset 254 lp 0x5b4739700628 sp 0x5b473970065c sp_offset 13
+1 134513856 134524160 1 134514324 5 278 138876 278 1 1 5 134514324 
+[2024-05-06 19:45:28.172] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 835 ip_offset 482 lp 0x5b47397005c0 sp 0x5b47397005ec sp_offset 11
+134524160 135579680 136748 1 134524224 4 1 0 0 1 172 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 887 ip_offset 343 lp 0x5b4739700568 sp 0x5b473970057c sp_offset 5
+134524160 135579760 1 0 134524160 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 5410 ip_offset 32 lp 0x5b4739700500 sp 0x5b4739700528 sp_offset 10
+1 135579880 135579924 0 0 0 0 0 134524160 179 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 5441 ip_offset 27 lp 0x5b47397004b8 sp 0x5b47397004c8 sp_offset 4
+1 135579880 1 135579880 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 1222 ip_offset 234 lp 0x5b4739908970 sp 0x5b47399089b0 sp_offset 16
+4094744 275320 406487 130199612 30923 276880 141890432 275296 1048576 0 4094740 0 262143 134270240 125881600 130075920 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 929 ip_offset 380 lp 0x5b47399088b0 sp 0x5b47399088e8 sp_offset 14
+278 0 0 5 134514324 275312 275324 275320 282000 282196 276896 276880 276904 278 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 810 ip_offset 254 lp 0x5b4739908844 sp 0x5b4739908878 sp_offset 13
+0 134513856 134518016 0 134514324 5 278 138876 278 0 0 5 134514324 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 807 ip_offset 10457 lp 0x5b4739908778 sp 0x5b47399087f0 sp_offset 30
+124720 0 1 5 278 172 276588 134513856 275328 0 0 0 134524096 134502080 0 134513856 0 0 0 1 4 0 0 1 0 0 41 1 0 172 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 1123 ip_offset 54 lp 0x5b4739908708 sp 0x5b473990873c sp_offset 13
+124720 5 278 276720 276576 0 124720 0 1 5 278 172 276588 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 1232 ip_offset 1557 lp 0x5b4739908650 sp 0x5b47399086c8 sp_offset 30
+282196 282000 1 0 15 18 276592 0 276704 4081604685 7828 141890432 41828 0 31331296 0 18 0 15 0 4080226006 7828 0 0 0 0 124720 5 278 276720 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 1238 ip_offset 1463 lp 0x5b4739908590 sp 0x5b473990860c sp_offset 31
+0 227 276928 127531732 279472 412533 282072 4068458043 7828 309 0 849045720 3128451847 308 0 2854898726 3241798978 933 4294967295 125881600 1048576 0 2732040104 1069250172 0 282196 282000 412533 0 15 18 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 5016 ip_offset 109 lp 0x5b4739908540 sp 0x5b4739908554 sp_offset 5
+282208 282336 282288 3 282336 
+[2024-05-06 19:45:28.173] [[32minfo[m] [wamr_interp_frame.cpp:82] function_index 52 ip_offset 40 lp 0x5b47399084f8 sp 0x5b47399084fc sp_offset 1
+0 
+[2024-05-06 19:45:32.950] [info] [wamr.cpp:1005] Snapshot time: 4.887712 s
+[2024-05-06 19:45:32.951] [info] [wamr.cpp:1006] Memory usage: 3228 MB
