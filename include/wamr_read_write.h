@@ -14,12 +14,15 @@
 #include "ylt/struct_pack.hpp"
 #include <cstdint>
 #include <spdlog/spdlog.h>
+#include <vector>
 #ifndef _WIN32
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <s2n.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <s2n.h>
+// Include our attestation wrapper instead of the direct s2n header
+#include "wamr_attestation.h"
 #endif
 
 struct WriteStream {
@@ -169,10 +172,10 @@ static_assert(WriterStreamTrait<SocketWriteStream, char>, "Writer must conform t
 //    In a real program, do this in main() or a dedicated init function.
 // -----------------------------------------------------------------------------
 
-static s2n_config* g_server_config = nullptr;
-static s2n_config* g_client_config = nullptr;
+static s2n_config *g_server_config = nullptr;
+static s2n_config *g_client_config = nullptr;
 
-// Example cert/key strings for server (self-signed). You’d likely load from files:
+// Example cert/key strings for server (self-signed). You'd likely load from files:
 static const char SERVER_CERT_PEM[] = R"PEM(
 -----BEGIN CERTIFICATE-----
 ... Your Server Certificate ...
@@ -186,15 +189,17 @@ static const char SERVER_KEY_PEM[] = R"PEM(
 )PEM";
 
 // -----------------------------------------------------------------------------
-// 2) TLS-Enabled SecureSocketWriteStream (Client-Side)
+// 2) TLS-Enabled SecureSocketWriteStream with Attestation (Client-Side)
 // -----------------------------------------------------------------------------
-struct SecureSocketWriteStream : public WriteStream
-{
-    int             sock_fd;
-    s2n_connection* conn;  // s2n connection handle
+struct SecureSocketWriteStream : public WriteStream {
+    int sock_fd;
+    s2n_connection *conn; // s2n connection handle
+    // Added for attestation
+    wamr_attestation_type attestation_type;
+    bool attestation_enabled;
+    std::vector<uint8_t> attestation_evidence;
 
-    bool write(const char* data, std::size_t sz) const override
-    {
+    bool write(const char *data, std::size_t sz) const override {
         std::size_t totalSent = 0;
         while (totalSent < sz) {
             s2n_blocked_status blocked;
@@ -208,9 +213,19 @@ struct SecureSocketWriteStream : public WriteStream
         return true;
     }
 
-    explicit SecureSocketWriteStream(const char* address, int port)
-    {
+    // Set the attestation type
+    void enable_attestation(wamr_attestation_type type) {
+        attestation_type = type;
+        attestation_enabled = true;
+    }
 
+    // Set attestation evidence
+    void set_attestation_evidence(const std::vector<uint8_t> &evidence) { attestation_evidence = evidence; }
+
+    explicit SecureSocketWriteStream(const char *address, int port,
+                                     wamr_attestation_type att_type = WAMR_ATTESTATION_NONE)
+        : sock_fd(-1), conn(nullptr), attestation_type(att_type),
+          attestation_enabled(att_type != WAMR_ATTESTATION_NONE) {
         if (s2n_init() < 0) {
             SPDLOG_ERROR("s2n_init() failed");
             throw;
@@ -255,10 +270,10 @@ struct SecureSocketWriteStream : public WriteStream
         }
         sockaddr_in server_addr{};
         server_addr.sin_family = AF_INET;
-        server_addr.sin_port   = htons(port);
+        server_addr.sin_port = htons(port);
         inet_pton(AF_INET, address, &server_addr.sin_addr);
 
-        if (connect(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+        if (connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
             SPDLOG_ERROR("Client: connect() failed");
             close(sock_fd);
             sock_fd = -1;
@@ -283,6 +298,28 @@ struct SecureSocketWriteStream : public WriteStream
             return;
         }
 
+        // Configure attestation if enabled
+        if (attestation_enabled) {
+            if (!wamr_set_attestation_type(conn, attestation_type)) {
+                SPDLOG_ERROR("Failed to set attestation type");
+                s2n_connection_free(conn);
+                close(sock_fd);
+                sock_fd = -1;
+                return;
+            }
+
+            // If attestation evidence was already provided, set it
+            if (!attestation_evidence.empty()) {
+                if (!wamr_set_attestation_evidence(conn, attestation_evidence)) {
+                    SPDLOG_ERROR("Failed to set attestation evidence");
+                    s2n_connection_free(conn);
+                    close(sock_fd);
+                    sock_fd = -1;
+                    return;
+                }
+            }
+        }
+
         // Associate the socket with s2n
         if (s2n_connection_set_fd(conn, sock_fd) < 0) {
             SPDLOG_ERROR("Client: s2n_connection_set_fd() failed");
@@ -300,17 +337,28 @@ struct SecureSocketWriteStream : public WriteStream
         } while ((rc != 0) && (blocked == S2N_BLOCKED_ON_READ || blocked == S2N_BLOCKED_ON_WRITE));
 
         if (rc < 0) {
-            SPDLOG_ERROR("Client: TLS handshake failed");
+            SPDLOG_ERROR("Client: TLS handshake failed: {}", s2n_strerror(s2n_errno, "EN"));
             s2n_connection_free(conn);
             close(sock_fd);
             sock_fd = -1;
             return;
         }
         SPDLOG_INFO("Client: TLS handshake complete");
+
+        // If attestation was enabled, verify the peer's attestation evidence
+        if (attestation_enabled) {
+            if (!wamr_verify_attestation_evidence(conn)) {
+                SPDLOG_ERROR("Failed to verify peer attestation evidence");
+                s2n_connection_free(conn);
+                close(sock_fd);
+                sock_fd = -1;
+                return;
+            }
+            SPDLOG_INFO("Peer attestation evidence verified successfully");
+        }
     }
 
-    ~SecureSocketWriteStream() override
-    {
+    ~SecureSocketWriteStream() override {
         if (sock_fd != -1 && conn) {
             // Graceful TLS shutdown
             s2n_blocked_status blocked;
@@ -322,17 +370,19 @@ struct SecureSocketWriteStream : public WriteStream
 };
 
 // -----------------------------------------------------------------------------
-// 3) TLS-Enabled SecureSocketReadStream (Server-Side)
+// 3) TLS-Enabled SecureSocketReadStream with Attestation (Server-Side)
 // -----------------------------------------------------------------------------
-struct SecureSocketReadStream : public ReadStream
-{
-    int             sock_fd;
-    int             client_fd;
-    mutable size_t  position = 0;
-    s2n_connection* conn; // s2n connection handle
+struct SecureSocketReadStream : public ReadStream {
+    int sock_fd;
+    int client_fd;
+    mutable size_t position = 0;
+    s2n_connection *conn; // s2n connection handle
+    // Added for attestation
+    wamr_attestation_type attestation_type;
+    bool attestation_enabled;
+    std::vector<uint8_t> attestation_evidence;
 
-    bool read(char* data, std::size_t sz) const override
-    {
+    bool read(char *data, std::size_t sz) const override {
         std::size_t totalReceived = 0;
         while (totalReceived < sz) {
             s2n_blocked_status blocked;
@@ -347,16 +397,15 @@ struct SecureSocketReadStream : public ReadStream
         return true;
     }
 
-    const char* read_view(size_t len) override
-    {
-        char* buffer = new char[len];
+    const char *read_view(size_t len) override {
+        char *buffer = new char[len];
         std::size_t totalReceived = 0;
         while (totalReceived < len) {
             s2n_blocked_status blocked;
             ssize_t received = s2n_recv(conn, buffer + totalReceived, len - totalReceived, &blocked);
             if (received <= 0) {
                 SPDLOG_ERROR("Server: s2n_recv() error or connection closed");
-                delete[] buffer;  // prevent leak
+                delete[] buffer; // prevent leak
                 return nullptr;
             }
             totalReceived += received;
@@ -365,8 +414,19 @@ struct SecureSocketReadStream : public ReadStream
         return buffer; // Caller must free/handle this pointer
     }
 
-    explicit SecureSocketReadStream(const char* address, int port)
-    {
+    // Set the attestation type
+    void enable_attestation(wamr_attestation_type type) {
+        attestation_type = type;
+        attestation_enabled = true;
+    }
+
+    // Set attestation evidence
+    void set_attestation_evidence(const std::vector<uint8_t> &evidence) { attestation_evidence = evidence; }
+
+    explicit SecureSocketReadStream(const char *address, int port,
+                                    wamr_attestation_type att_type = WAMR_ATTESTATION_NONE)
+        : sock_fd(-1), client_fd(-1), conn(nullptr), attestation_type(att_type),
+          attestation_enabled(att_type != WAMR_ATTESTATION_NONE) {
         sock_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (sock_fd == -1) {
             SPDLOG_ERROR("Server socket creation failed");
@@ -375,12 +435,12 @@ struct SecureSocketReadStream : public ReadStream
 
         sockaddr_in server_addr{};
         server_addr.sin_family = AF_INET;
-        server_addr.sin_port   = htons(port);
+        server_addr.sin_port = htons(port);
         inet_pton(AF_INET, address, &server_addr.sin_addr);
 
         auto addr_len = static_cast<socklen_t>(sizeof(server_addr));
         SPDLOG_INFO("Server: Binding to %s:%d", address, port);
-        if (bind(sock_fd, (struct sockaddr*)&server_addr, addr_len) < 0) {
+        if (bind(sock_fd, (struct sockaddr *)&server_addr, addr_len) < 0) {
             SPDLOG_ERROR("Server: bind() failed");
             close(sock_fd);
             sock_fd = -1;
@@ -395,7 +455,7 @@ struct SecureSocketReadStream : public ReadStream
             return;
         }
 
-        client_fd = accept(sock_fd, (struct sockaddr*)&server_addr, &addr_len);
+        client_fd = accept(sock_fd, (struct sockaddr *)&server_addr, &addr_len);
         if (client_fd == -1) {
             SPDLOG_ERROR("Server: accept() failed");
             close(sock_fd);
@@ -411,6 +471,30 @@ struct SecureSocketReadStream : public ReadStream
             close(sock_fd);
             sock_fd = -1;
             return;
+        }
+
+        // Configure attestation if enabled
+        if (attestation_enabled) {
+            if (!wamr_set_attestation_type(conn, attestation_type)) {
+                SPDLOG_ERROR("Failed to set attestation type");
+                s2n_connection_free(conn);
+                close(client_fd);
+                close(sock_fd);
+                sock_fd = -1;
+                return;
+            }
+
+            // If attestation evidence was already provided, set it
+            if (!attestation_evidence.empty()) {
+                if (!wamr_set_attestation_evidence(conn, attestation_evidence)) {
+                    SPDLOG_ERROR("Failed to set attestation evidence");
+                    s2n_connection_free(conn);
+                    close(client_fd);
+                    close(sock_fd);
+                    sock_fd = -1;
+                    return;
+                }
+            }
         }
 
         // Attach the server config (global)
@@ -441,7 +525,7 @@ struct SecureSocketReadStream : public ReadStream
         } while ((rc != 0) && (blocked == S2N_BLOCKED_ON_READ || blocked == S2N_BLOCKED_ON_WRITE));
 
         if (rc < 0) {
-            SPDLOG_ERROR("Server: TLS handshake failed");
+            SPDLOG_ERROR("Server: TLS handshake failed: {}", s2n_strerror(s2n_errno, "EN"));
             s2n_connection_free(conn);
             close(client_fd);
             close(sock_fd);
@@ -449,10 +533,22 @@ struct SecureSocketReadStream : public ReadStream
             return;
         }
         SPDLOG_INFO("Server: TLS handshake complete");
+
+        // If attestation was enabled, verify the peer's attestation evidence
+        if (attestation_enabled) {
+            if (!wamr_verify_attestation_evidence(conn)) {
+                SPDLOG_ERROR("Failed to verify peer attestation evidence");
+                s2n_connection_free(conn);
+                close(client_fd);
+                close(sock_fd);
+                sock_fd = -1;
+                return;
+            }
+            SPDLOG_INFO("Peer attestation evidence verified successfully");
+        }
     }
 
-    bool ignore(std::size_t sz) const override
-    {
+    bool ignore(std::size_t sz) const override {
         char buffer[1024];
         std::size_t total_ignored = 0;
         while (total_ignored < sz) {
@@ -471,8 +567,7 @@ struct SecureSocketReadStream : public ReadStream
 
     std::size_t tellg() const override { return position; }
 
-    ~SecureSocketReadStream() override
-    {
+    ~SecureSocketReadStream() override {
         // Graceful TLS shutdown
         if (sock_fd != -1 && conn) {
             s2n_blocked_status blocked;
@@ -513,17 +608,17 @@ public:
     struct ibv_pd *pd = nullptr;
     struct ibv_comp_channel *io_completion_channel = nullptr;
     struct ibv_cq *cq = nullptr;
-    struct ibv_qp_init_attr qp_init_attr {};
+    struct ibv_qp_init_attr qp_init_attr{};
     struct ibv_qp *client_qp = nullptr;
     struct ibv_mr *client_metadata_mr = nullptr, *server_buffer_mr = nullptr, *server_metadata_mr = nullptr;
-    struct rdma_buffer_attr client_metadata_attr {};
-    struct rdma_buffer_attr server_metadata_attr {};
-    struct ibv_recv_wr client_recv_wr {};
+    struct rdma_buffer_attr client_metadata_attr{};
+    struct rdma_buffer_attr server_metadata_attr{};
+    struct ibv_recv_wr client_recv_wr{};
     struct ibv_recv_wr *bad_client_recv_wr = nullptr;
-    struct ibv_send_wr server_send_wr {};
+    struct ibv_send_wr server_send_wr{};
     struct ibv_send_wr *bad_server_send_wr = nullptr;
-    struct ibv_sge client_recv_sge {};
-    struct ibv_sge server_send_sge {};
+    struct ibv_sge client_recv_sge{};
+    struct ibv_sge server_send_sge{};
     RDMAEndpoint() = default;
     static void show_rdma_cmid(struct rdma_cm_id *id) {
         if (!id) {
@@ -720,7 +815,7 @@ class RDMAReadStream : public ReadStream, public RDMAEndpoint {
             return -errno;
         }
         SPDLOG_INFO("Server is listening successfully at: {} , port: {} ", inet_ntoa(server_addr->sin_addr),
-                     ntohs(server_addr->sin_port));
+                    ntohs(server_addr->sin_port));
         ret = process_rdma_cm_event(cm_event_channel, RDMA_CM_EVENT_CONNECT_REQUEST, &cm_event);
         if (ret) {
             SPDLOG_ERROR("Failed to get cm event, ret = {} ", ret);
@@ -795,7 +890,7 @@ class RDMAReadStream : public ReadStream, public RDMAEndpoint {
         server_buffer_mr =
             rdma_buffer_alloc(pd, client_metadata_attr.length,
                               (enum ibv_access_flags)(((int)IBV_ACCESS_LOCAL_WRITE) | ((int)IBV_ACCESS_REMOTE_READ) |
-                                                      ((int)IBV_ACCESS_REMOTE_WRITE)));
+                              ((int)IBV_ACCESS_REMOTE_WRITE)));
         if (!server_buffer_mr) {
             SPDLOG_ERROR("Server failed to create a buffer ");
             return -ENOMEM;
@@ -962,10 +1057,10 @@ public:
     mutable std::vector<char> buffer{};
     mutable long position = 0;
     struct ibv_cq *client_cq = nullptr;
-    struct ibv_sge client_send_sge {};
-    struct ibv_sge server_recv_sge {};
-    struct sockaddr_in server_sockaddr {};
-    struct rdma_conn_param conn_param {};
+    struct ibv_sge client_send_sge{};
+    struct ibv_sge server_recv_sge{};
+    struct sockaddr_in server_sockaddr{};
+    struct rdma_conn_param conn_param{};
     struct rdma_cm_event *cm_event = nullptr;
     struct ibv_mr *client_metadata_mr = nullptr, *client_src_mr = nullptr, *client_dst_mr = nullptr,
                   *server_metadata_mr = nullptr;
@@ -1074,7 +1169,7 @@ public:
         return 0;
     }
     int client_connect_to_server() {
-        struct rdma_conn_param conn_param {};
+        struct rdma_conn_param conn_param{};
         struct rdma_cm_event *cm_event = nullptr;
         int ret = -1;
         bzero(&conn_param, sizeof(conn_param));
