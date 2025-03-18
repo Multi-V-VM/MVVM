@@ -29,6 +29,7 @@ if (APPLE)
             /usr/local/opt/openblas/include
             $ENV{BLAS_HOME}/include)
     message(${BLAS_INCLUDE_DIRS})
+    add_compile_options(-D_GLIBCXX_USE_CXX11_ABI=0)
 elseif (LINUX)
     set(WAMR_BUILD_PLATFORM "linux")
     set(WAMR_BUILD_LIB_PTHREAD 1)

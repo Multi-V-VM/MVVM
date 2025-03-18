@@ -222,38 +222,69 @@ bool WAMRInstance::replace_mfence_with_nop() {
     }
     return true;
 }
-extern inline __attribute__((always_inline)) unsigned long rdpmc_instructions()
-{
-   unsigned long a, d, c;
 
-   c = (1UL<<30);
-   __asm__ volatile("rdpmc" : "=a" (a), "=d" (d) : "c" (c));
+const auto rdpmc_instructions = []() -> unsigned long {
+#if defined(__x86_64__)
+    unsigned long a, d, c;
+    c = (1UL << 30);
+    __asm__ volatile("rdpmc" : "=a"(a), "=d"(d) : "c"(c));
+    return (a | (d << 32));
+#elif defined(__aarch64__)
+#ifdef __APPLE__
+    // macOS ARM64 implementation using PMCCNTR_EL0
+    uint64_t val;
 
-   return (a | (d << 32));
-}
+    // 读取性能监控周期计数器
+    asm volatile("mrs %0, PMCCNTR_EL0" : "=r"(val));
+
+    // 如果计数器未启用，尝试启用它
+    if (val == 0) {
+        // 启用用户态访问PMU
+        uint64_t pmuserenr;
+        asm volatile("mrs %0, PMUSERENR_EL0" : "=r"(pmuserenr));
+        pmuserenr |= 1; // 启用用户模式访问
+        asm volatile("msr PMUSERENR_EL0, %0" ::"r"(pmuserenr));
+
+        // 启用性能计数器
+        uint64_t pmcr;
+        asm volatile("mrs %0, PMCR_EL0" : "=r"(pmcr));
+        pmcr |= (1 << 0); // 启用所有计数器
+        pmcr |= (1 << 2); // 重置周期计数器
+        asm volatile("msr PMCR_EL0, %0" ::"r"(pmcr));
+
+        // 启用周期计数器
+        uint64_t pmcntenset;
+        asm volatile("mrs %0, PMCNTENSET_EL0" : "=r"(pmcntenset));
+        pmcntenset |= (1 << 31); // 启用周期计数器
+        asm volatile("msr PMCNTENSET_EL0, %0" ::"r"(pmcntenset));
+
+        // 再次读取计数器
+        asm volatile("mrs %0, PMCCNTR_EL0" : "=r"(val));
+    }
+
+    return val;
+#else
+    // 其他 ARM64 平台的实现
+    return 0;
+#endif
+#else
+    return 0;
+#endif
+};
 
 long WAMRInstance::get_inst_diff() {
     int tile = 0;
     int counter = 0;
 
-    // for (int counter = 0; counter < NUM_CHA_COUNTERS; counter++) {
-    // auto msr_num = 0x2000 + 0x10 * tile + 0x8 + counter;
-    // pread(fd, &msr_val, sizeof(msr_val), msr_num);
     msr_val = rdpmc_instructions();
     cha_counts[tile][counter][1] = msr_val;
-    // printf("tile %llx counter %d: %ld\n", msr_num, counter, msr_val);
-    // }
-    // for (int tile = 0; tile < NUM_TILE_ENABLED; tile++)
-    //     counters_changes[tile] += (cha_counts[tile][0][1] - cha_counts[tile][0][0]);
+
     auto res = cha_counts[0][0][1] - cha_counts[0][0][0];
-    if (cha_counts[0][0][0] != 0)
+    if (cha_counts[0][0][0] != 0) {
         max_diff = std::max(max_diff, res);
-    // for (int counter = 0; counter < NUM_CHA_COUNTERS; counter++) {
-    // msr_num = 0x2000 + 0x10 * tile + 0x8 + counter;
-    // pread(fd, &msr_val, sizeof(msr_val), msr_num);
+    }
+
     cha_counts[tile][counter][0] = rdpmc_instructions();
-    // printf("tile %llx counter %d: %ld\n", msr_num, counter, msr_val);
-    // }
 
     return res;
 }

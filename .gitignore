@@ -35,3 +35,5 @@ qemu_migrate
 *bak
 sb2
 build_test
+target
+*.tflite
