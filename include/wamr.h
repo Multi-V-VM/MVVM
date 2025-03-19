@@ -50,7 +50,8 @@
 #include <winsock2.h>
 #endif
 
-#ifndef __APPLE__
+
+#if !defined(__APPLE__) || defined(__GNUC__)
 /** Barry's work*/
 struct Enumerate : std::ranges::range_adaptor_closure<Enumerate> {
     template <std::ranges::viewable_range R> constexpr auto operator()(R &&r) const {

@@ -32,10 +32,6 @@ jobs:
       run: |
         git submodule update --init --recursive
 
-    - name: Install Tensorflow
-      run: |
-        cd lib/wasm-micro-runtime/core/deps && bash ./install_tensorflow.sh
-
     - name: Install WASI SDK
       run: |
         cd /opt

@@ -20,7 +20,7 @@ extern "C" {
 #if !defined(MVVM_WASI)
 #define MVVM_WASI
 #define SNAPSHOT_DEBUG_STEP 0
-#define SNAPSHOT_STEP 1e8
+#define SNAPSHOT_STEP 1e17
 struct SocketAddrPool {
     uint8 ip4[4];
     uint16 ip6[8];
@@ -81,7 +81,11 @@ extern uint32 wasm_runtime_atomic_notify(WASMModuleInstanceCommon *module, void 
 #endif
 void serialize_to_file(struct WASMExecEnv *);
 #endif
-
+#if WASM_ENABLE_WASI_NN != 0
+void nn_load(struct WASMExecEnv *);
+void nn_set_input(struct WASMExecEnv *, uint32_t, struct tensor_wasm *);
+void nn_get_output(struct WASMExecEnv *);
+#endif
 void insert_fd(int, const char *, int, int, enum fd_op op);
 void remove_fd(int);
 void rename_fd(int, char const *, int, char const *);

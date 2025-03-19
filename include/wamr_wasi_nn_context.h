@@ -33,9 +33,9 @@ struct WAMRWASINNModel {
 
 struct WAMRWASINNContext {
     bool is_initialized = false;
-    graph_encoding current_encoding = graph_encoding::tensorflow;
-    uint32_t current_models = 0;
+    graph_encoding current_encoding = graph_encoding::tensorflowlite;
     WAMRWASINNModel models[MAX_GRAPHS_PER_INST];
+
     void dump_impl(WASINNContext *env);
     void restore_impl(WASINNContext *env);
 };

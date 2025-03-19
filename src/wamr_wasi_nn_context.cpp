@@ -9,7 +9,7 @@
  *  Copyright 2024 Regents of the Univeristy of California
  *  UC Santa Cruz Sluglab.
  */
-
+#define WASM_ENABLE_WASI_NN 1
 #if WASM_ENABLE_WASI_NN != 0
 #include "wamr_wasi_nn_context.h"
 #include "wamr.h"
@@ -23,12 +23,9 @@
 #define EPSILON 1e-8
 extern WAMRInstance *wamr;
 void WAMRWASINNContext::dump_impl(WASINNContext *env) {
-    fprintf(stderr, "dump_impl\n");
-    // take the model
-    // get target
+    // TODO: put the wamr things back.
 }
 void WAMRWASINNContext::restore_impl(WASINNContext *env) {
-    fprintf(stderr, "restore_impl\n");
     // replay the graph initialization
     if (!is_initialized) {
         for (const auto &model : models) {
@@ -83,7 +80,6 @@ void WAMRWASINNContext::restore_impl(WASINNContext *env) {
             dims.buf = (uint32_t *)malloc(dims.size * sizeof(uint32_t));
             if (dims.buf == NULL)
                 return;
-
 
             tensor tensor;
             tensor.dimensions = &dims;

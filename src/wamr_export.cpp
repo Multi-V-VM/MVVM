@@ -152,7 +152,7 @@ void replay_sock_recv_from_data(uint32_t sock, uint8 **ri_data, unsigned long *r
         src_addr->addr.ip6.port = recvFromData.src_addr.port;
     }
 }
-#endif
+
 // only support one type of requests at a time
 void set_tcp() { wamr->op_data.is_tcp = true; }
 int get_sock_fd(int fd) {
@@ -161,6 +161,26 @@ int get_sock_fd(int fd) {
     else
         return fd;
 };
+#endif
+
+#if WASM_ENABLE_WASI_NN != 0
+void nn_load(struct WASMExecEnv *){
+    // TODO: load the last model and initialize the struct
+    //get last fd
+    int last_fd = wamr->fd_map_.rbegin()->first;
+    //get the path
+    std::string path = std::get<0>(wamr->fd_map_[last_fd]);
+    //load the model
+    //initialize the struct
+    // wamr->nn_context .emplace_back( {path, {}});
+};
+void nn_set_input(struct WASMExecEnv *, uint32_t, struct tensor_wasm *){
+    // TODO: dump the input tensor
+};
+void nn_get_output(struct WASMExecEnv *){
+    // TODO: remove the above input tensor
+};
+#endif
 
 /** fopen, fseek, fwrite, fread */
 void insert_fd(int fd, const char *path, int flags, int offset, enum fd_op op) {

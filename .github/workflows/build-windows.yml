@@ -28,10 +28,6 @@ jobs:
       with:
         args: install wget msys2 ninja
 
-    - name: Install Tensorflow
-      run: |
-        cd lib/wasm-micro-runtime/core/deps && bash ./install_tensorflow.sh
-
     - name: Install Dependency
       run: |
         cd D:
