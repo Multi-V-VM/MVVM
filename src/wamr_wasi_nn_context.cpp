@@ -6,9 +6,11 @@
  *      Brian Zhao
  *      Andrew Quinn
  *
- *  Copyright 2024 Regents of the Univeristy of California
+ *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
+ *  Copyright 2025 Regents of the University of California
  *  UC Santa Cruz Sluglab.
  */
+
 #define WASM_ENABLE_WASI_NN 1
 #if WASM_ENABLE_WASI_NN != 0
 #include "wamr_wasi_nn_context.h"
@@ -24,6 +26,9 @@
 extern WAMRInstance *wamr;
 void WAMRWASINNContext::dump_impl(WASINNContext *env) {
     // TODO: put the wamr things back.
+     for (auto &model : wamr->nn_context) {
+        this->models.emplace_back(model);
+     }
 }
 void WAMRWASINNContext::restore_impl(WASINNContext *env) {
     // replay the graph initialization

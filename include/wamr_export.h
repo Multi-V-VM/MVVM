@@ -6,7 +6,8 @@
  *      Brian Zhao
  *      Andrew Quinn
  *
- *  Copyright 2024 Regents of the Univeristy of California
+ *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
+ *  Copyright 2025 Regents of the University of California
  *  UC Santa Cruz Sluglab.
  */
 
@@ -83,7 +84,7 @@ void serialize_to_file(struct WASMExecEnv *);
 #endif
 #if WASM_ENABLE_WASI_NN != 0
 void nn_load(struct WASMExecEnv *);
-void nn_set_input(struct WASMExecEnv *, uint32_t, struct tensor_wasm *);
+void nn_set_input(struct WASMExecEnv *, uint32_t, tensor *);
 void nn_get_output(struct WASMExecEnv *);
 #endif
 void insert_fd(int, const char *, int, int, enum fd_op op);

@@ -6,7 +6,8 @@
  *      Brian Zhao
  *      Andrew Quinn
  *
- *  Copyright 2024 Regents of the Univeristy of California
+ *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
+ *  Copyright 2025 Regents of the University of California
  *  UC Santa Cruz Sluglab.
  */
 
@@ -23,7 +24,7 @@
 #if !defined(_WIN32)
 #include <arpa/inet.h>
 #endif
-
+#include "absl/log/log.h"
 ReadStream *reader;
 WriteStream *writer;
 WAMRInstance *wamr = nullptr;
@@ -31,9 +32,9 @@ std::vector<std::unique_ptr<WAMRExecEnv>> as;
 std::string offload_addr;
 int offload_port;
 std::string target;
+void spdlog::logger::err_handler_(std::string const&){}
 
 int main(int argc, char **argv) {
-    spdlog::cfg::load_env_levels();
     cxxopts::Options options("MVVM", "Migratable Velocity Virtual Machine, to ship the VM state to another machine");
     options.add_options()("t,target", "The webassembly file to execute",
                           cxxopts::value<std::string>()->default_value("./test/counter.wasm"))(

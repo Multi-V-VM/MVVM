@@ -6,7 +6,8 @@
  *      Brian Zhao
  *      Andrew Quinn
  *
- *  Copyright 2024 Regents of the Univeristy of California
+ *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
+ *  Copyright 2025 Regents of the University of California
  *  UC Santa Cruz Sluglab.
  */
 
@@ -164,21 +165,33 @@ int get_sock_fd(int fd) {
 #endif
 
 #if WASM_ENABLE_WASI_NN != 0
-void nn_load(struct WASMExecEnv *){
+void nn_load(struct WASMExecEnv *) {
     // TODO: load the last model and initialize the struct
-    //get last fd
+    // get last fd
     int last_fd = wamr->fd_map_.rbegin()->first;
-    //get the path
+    // get the path
     std::string path = std::get<0>(wamr->fd_map_[last_fd]);
-    //load the model
-    //initialize the struct
-    // wamr->nn_context .emplace_back( {path, {}});
+    // load the model
+    // initialize the struct
+    std::vector<uint8_t> input_tensor;
+    std::vector<uint32_t> dims;
+    wamr->nn_context.emplace_back(path, input_tensor, dims);
 };
-void nn_set_input(struct WASMExecEnv *, uint32_t, struct tensor_wasm *){
+void nn_set_input(struct WASMExecEnv *, uint32_t, tensor *tensor_wasm){
     // TODO: dump the input tensor
+    // get the last model
+    auto last_model = wamr->nn_context.back();
+    // get the input tensor
+    auto input_tensor = last_model.input_tensor;
+    // get the dims
+    auto dims = last_model.dims;
+    // set the input tensor
+    std::memcpy(input_tensor.data(), tensor_wasm->data, tensor_wasm->size);
 };
 void nn_get_output(struct WASMExecEnv *){
     // TODO: remove the above input tensor
+    // get the last model
+    wamr->nn_context.pop_back();
 };
 #endif
 

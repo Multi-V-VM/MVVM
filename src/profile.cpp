@@ -6,7 +6,8 @@
  *      Brian Zhao
  *      Andrew Quinn
  *
- *  Copyright 2024 Regents of the Univeristy of California
+ *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
+ *  Copyright 2025 Regents of the University of California
  *  UC Santa Cruz Sluglab.
  */
 
@@ -81,9 +82,10 @@ void profile_register_sigint() {
         exit(-1);
     }
 }
+#include "absl/log/log.h"
+void spdlog::logger::err_handler_(std::string const&){}
 
 int main(int argc, char *argv[]) {
-    spdlog::cfg::load_env_levels();
     cxxopts::Options options("MVVM_profile",
                              "Migratable Velocity Virtual Machine profile part, to find the hotspot function.");
     options.add_options()("t,target", "The webassembly file to execute",

@@ -1,3 +1,16 @@
+/*
+ * The WebAssembly Live Migration Project
+ *
+ *  By: Aibo Hu
+ *      Yiwei Yang
+ *      Brian Zhao
+ *      Andrew Quinn
+ *
+ *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
+ *  Copyright 2025 Regents of the University of California
+ *  UC Santa Cruz Sluglab.
+ */
+
 #include "s2n_attestation_wrapper.h"
 #include "s2n.h"
 #include "tls/extensions/s2n_attestation.h"

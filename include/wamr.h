@@ -6,13 +6,15 @@
  *      Brian Zhao
  *      Andrew Quinn
  *
- *  Copyright 2024 Regents of the Univeristy of California
+ *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
+ *  Copyright 2025 Regents of the University of California
  *  UC Santa Cruz Sluglab.
  */
 
 #ifndef MVVM_WAMR_H
 #define MVVM_WAMR_H
 
+#include "wamr_wasi_nn_context.h"
 #if WASM_ENABLE_AOT != 0
 #include "aot_runtime.h"
 #endif
@@ -128,6 +130,7 @@ public:
     std::vector<const char *> addr_{};
     std::vector<const char *> ns_pool_{};
     std::vector<WAMRExecEnv *> execEnv{};
+    std::vector<WAMRWASINNModel> nn_context{};
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_{};
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, int> new_sock_map_{};

@@ -6,7 +6,8 @@
  *      Brian Zhao
  *      Andrew Quinn
  *
- *  Copyright 2024 Regents of the Univeristy of California
+ *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
+ *  Copyright 2025 Regents of the University of California
  *  UC Santa Cruz Sluglab.
  */
 
@@ -32,9 +33,9 @@ std::mutex as_mtx;
 std::string offload_addr;
 int offload_port;
 std::string target;
-
+#include "absl/log/log.h"
+void spdlog::logger::err_handler_(std::string const &) {}
 int main(int argc, char *argv[]) {
-    spdlog::cfg::load_env_levels();
     cxxopts::Options options(
         "MVVM_checkpoint",
         "Migratable Velocity Virtual Machine checkpoint part, to ship the VM state to another machine.");
@@ -94,7 +95,7 @@ int main(int argc, char *argv[]) {
     }
     register_sigtrap();
     register_sigint();
-    for (int i =0; i<10;i++)
+    for (int i = 0; i < 10; i++)
         fopen("checkpoint.log", "w"); // open naive file for bubble
     if (offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
