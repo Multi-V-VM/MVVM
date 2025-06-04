@@ -4,15 +4,15 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
  *  UC Santa Cruz Sluglab.
  */
 
-#include "wamr.h"
 #include "wamr_memory_instance.h"
+#include "wamr.h"
 extern WAMRInstance *wamr;
 void WAMRMemoryInstance::restore_impl(WASMMemoryInstance *env) {
     env->module_type = module_type;
@@ -29,7 +29,7 @@ void WAMRMemoryInstance::restore_impl(WASMMemoryInstance *env) {
     //             (uint8 *)mmap(NULL, wamr->heap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     //     else
     // #endif
-        // env->memory_data = (uint8 *)malloc(env->memory_data_size);
+    // env->memory_data = (uint8 *)malloc(env->memory_data_size);
     // memcpy(env->memory_data, memory_data.data(), env->memory_data_size);
     env->memory_data = memory_data.data(); // in tmp fs
     env->memory_data_end = env->memory_data + (memory_data.size());

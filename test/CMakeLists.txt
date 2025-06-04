@@ -116,5 +116,5 @@ wamr_app(tcp_client)
 
 # Add WASI-NN record and replay test
 add_executable(wasi_nn_record_replay_test wasi_nn_record_replay_test.cpp)
-target_link_libraries(wasi_nn_record_replay_test MVVM_export vmlib)
+target_link_libraries(wasi_nn_record_replay_test MVVM_export vmlib tensorflow-lite absl_log_internal_message)
 add_test(NAME wasi_nn_record_replay_test COMMAND wasi_nn_record_replay_test)

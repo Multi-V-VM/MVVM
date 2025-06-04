@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
@@ -177,7 +177,7 @@ void nn_load(struct WASMExecEnv *) {
     std::vector<uint32_t> dims;
     wamr->nn_context.emplace_back(path, input_tensor, dims);
 };
-void nn_set_input(struct WASMExecEnv *, uint32_t, tensor *tensor_wasm){
+void nn_set_input(struct WASMExecEnv *, uint32_t, tensor *tensor_wasm) {
     // TODO: dump the input tensor
     // get the last model
     auto last_model = wamr->nn_context.back();
@@ -188,7 +188,7 @@ void nn_set_input(struct WASMExecEnv *, uint32_t, tensor *tensor_wasm){
     // set the input tensor
     std::memcpy(input_tensor.data(), tensor_wasm->data, tensor_wasm->size);
 };
-void nn_get_output(struct WASMExecEnv *){
+void nn_get_output(struct WASMExecEnv *) {
     // TODO: remove the above input tensor
     // get the last model
     wamr->nn_context.pop_back();

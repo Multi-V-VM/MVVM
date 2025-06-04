@@ -4,19 +4,19 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  Copyright 2023 Regents of the Univeristy of California
  *  UC Santa Cruz Sluglab.
  */
 
+#include <coroutine>
 #include <crafter.h>
 #include <crafter/Utils/TCPConnection.h>
+#include <exception>
 #include <iostream>
 #include <string>
 #include <thread>
-#include <coroutine>
-#include <exception>
 
 /* Collapse namespaces */
 using namespace std;
@@ -86,23 +86,25 @@ void clear_forward() {
     system("iptables --delete FORWARD --in-interface eth0 --jump ACCEPT");
 }
 
-template<typename T>
-struct task;
+template <typename T> struct task;
 
 // Specialization for void
-template<>
-struct task<void> {
+template <> struct task<void> {
     struct promise_type;
     using handle_type = std::coroutine_handle<promise_type>;
     handle_type coro;
 
     task(handle_type h) : coro(h) {}
-    ~task() { if (coro) coro.destroy(); }
+    ~task() {
+        if (coro)
+            coro.destroy();
+    }
 
     void get() {
         if (coro) {
             coro.resume();
-            if (coro.done()) coro.promise().rethrow_if_exception();
+            if (coro.done())
+                coro.promise().rethrow_if_exception();
         }
     }
 
@@ -116,14 +118,15 @@ struct task<void> {
         void unhandled_exception() { exception = std::current_exception(); }
 
         void rethrow_if_exception() {
-            if (exception) std::rethrow_exception(exception);
+            if (exception)
+                std::rethrow_exception(exception);
         }
     };
 };
 
 class SyncOperation {
 public:
-    explicit SyncOperation(TCPConnection& conn,TCPConnection& conn2 ) : _conn(conn),_conn2(conn2) {}
+    explicit SyncOperation(TCPConnection &conn, TCPConnection &conn2) : _conn(conn), _conn2(conn2) {}
 
     // Check if the operation is already complete (e.g., for immediate completion)
     bool await_ready() const noexcept {
@@ -150,14 +153,13 @@ public:
     }
 
 private:
-    TCPConnection& _conn;
-    TCPConnection& _conn2;
+    TCPConnection &_conn;
+    TCPConnection &_conn2;
 };
-
 
 task<void> SyncAndBlockTraffic(string src_ip, string dst_ip, short_word dstport, string iface) {
     // Begin the spoofing
-    ARPContext* arp_context = ARPSpoofingReply(dst_ip, src_ip, iface);
+    ARPContext *arp_context = ARPSpoofingReply(dst_ip, src_ip, iface);
     PrintARPContext(*arp_context);
 
     string filter = "tcp and host " + dst_ip + " and host " + src_ip;

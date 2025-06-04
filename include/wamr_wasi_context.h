@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California

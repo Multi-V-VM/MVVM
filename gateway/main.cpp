@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  Copyright 2024 Regents of the Univeristy of California
  *  UC Santa Cruz Sluglab.

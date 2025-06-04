@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
@@ -292,7 +292,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         csp.resize(csp.size() - (n));                                                                                  \
         frame_ip = cur_func->u.func->code + csp.back()->target_addr;                                                   \
         /* copy arity values of block */                                                                               \
-        frame_sp = reinterpret_cast<uint32 *>(exec_env->wasm_stack.bottom + csp.back()->frame_sp);                   \
+        frame_sp = reinterpret_cast<uint32 *>(exec_env->wasm_stack.bottom + csp.back()->frame_sp);                     \
         cell_num_to_copy = csp.back()->cell_num;                                                                       \
         frame_sp += cell_num_to_copy;                                                                                  \
     } while (0)

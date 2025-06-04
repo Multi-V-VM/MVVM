@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
@@ -26,14 +26,13 @@
 #include <sys/socket.h>
 #endif
 
-WAMRInstance *wamr = nullptr;
-std::ostringstream re{};
-FwriteStream *writer;
-std::vector<std::unique_ptr<WAMRExecEnv>> as;
-std::mutex as_mtx;
-std::string offload_addr;
-int offload_port;
-std::string target;
+extern WAMRInstance *wamr;
+extern std::string offload_addr;
+extern int offload_port;
+extern std::string target;
+extern ReadStream *reader;
+extern WriteStream *writer;
+
 
 std::vector<std::vector<std::pair<size_t, size_t>>> stack_record;
 void unwind(WASMExecEnv *instance) {
@@ -83,7 +82,7 @@ void profile_register_sigint() {
     }
 }
 #include "absl/log/log.h"
-void spdlog::logger::err_handler_(std::string const&){}
+void spdlog::logger::err_handler_(std::string const &) {}
 
 int main(int argc, char *argv[]) {
     cxxopts::Options options("MVVM_profile",

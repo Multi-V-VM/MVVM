@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
@@ -39,6 +39,15 @@
 #include <windows.h>
 #endif
 
+WAMRInstance *wamr = nullptr;
+std::ostringstream re{};
+WriteStream *writer;
+ReadStream *reader;
+std::vector<std::unique_ptr<WAMRExecEnv>> as;
+std::mutex as_mtx;
+std::string offload_addr;
+int offload_port;
+std::string target;
 WAMRInstance::ThreadArgs **argptr;
 std::counting_semaphore<100> wakeup(0);
 std::counting_semaphore<100> thread_init(0);
@@ -556,7 +565,7 @@ void WAMRInstance::recover(std::vector<std::unique_ptr<WAMRExecEnv>> *e_) {
 #if WASM_ENABLE_LIB_PTHREAD != 0
         SPDLOG_ERROR("no impl");
         exit(-1);
-        fprintf(stderr, "invoke main %p %u\n", cur_env, cur_env->call_chain_size);
+        fprintf(stderr, "invoke main %p %zu\n", cur_env, cur_env->call_chain_size);
         // replay sync ops to get OS state matching
         wamr_handle_map(execEnv.front()->cur_count, ((uint64_t)main_env->handle));
 
@@ -1014,3 +1023,5 @@ void serialize_to_file(WASMExecEnv *instance) {
     SPDLOG_INFO("Memory usage: {} MB", get_rss() / 1024 / 1024);
     exit(EXIT_SUCCESS);
 }
+spdlog::details::log_msg::log_msg(spdlog::source_loc, fmt::v9::basic_string_view<char>, spdlog::level::level_enum,
+                                  fmt::v9::basic_string_view<char>) {}

@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
@@ -51,7 +51,6 @@
 #else
 #include <winsock2.h>
 #endif
-
 
 #if !defined(__APPLE__) || defined(__GNUC__)
 /** Barry's work*/
@@ -108,7 +107,8 @@ public:
     WASMModuleCommon *module;
     WASMFunctionInstanceCommon *func{};
 
-    uint64_t cha_perfevtsel[NUM_CHA_COUNTERS] = {0xc817fe00000135,0xc817fe00000135,0xc817fe00000135,0xc817fe00000135};
+    uint64_t cha_perfevtsel[NUM_CHA_COUNTERS] = {0xc817fe00000135, 0xc817fe00000135, 0xc817fe00000135,
+                                                 0xc817fe00000135};
     long cha_counts[NUM_TILE_ENABLED][NUM_CHA_COUNTERS][2]; // 28 tiles per socket, 4 counters per tile, 2 times (before
                                                             // and after)
     uint64_t counters_changes[NUM_TILE_ENABLED];

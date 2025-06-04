@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
@@ -610,17 +610,17 @@ public:
     struct ibv_pd *pd = nullptr;
     struct ibv_comp_channel *io_completion_channel = nullptr;
     struct ibv_cq *cq = nullptr;
-    struct ibv_qp_init_attr qp_init_attr{};
+    struct ibv_qp_init_attr qp_init_attr {};
     struct ibv_qp *client_qp = nullptr;
     struct ibv_mr *client_metadata_mr = nullptr, *server_buffer_mr = nullptr, *server_metadata_mr = nullptr;
-    struct rdma_buffer_attr client_metadata_attr{};
-    struct rdma_buffer_attr server_metadata_attr{};
-    struct ibv_recv_wr client_recv_wr{};
+    struct rdma_buffer_attr client_metadata_attr {};
+    struct rdma_buffer_attr server_metadata_attr {};
+    struct ibv_recv_wr client_recv_wr {};
     struct ibv_recv_wr *bad_client_recv_wr = nullptr;
-    struct ibv_send_wr server_send_wr{};
+    struct ibv_send_wr server_send_wr {};
     struct ibv_send_wr *bad_server_send_wr = nullptr;
-    struct ibv_sge client_recv_sge{};
-    struct ibv_sge server_send_sge{};
+    struct ibv_sge client_recv_sge {};
+    struct ibv_sge server_send_sge {};
     RDMAEndpoint() = default;
     static void show_rdma_cmid(struct rdma_cm_id *id) {
         if (!id) {
@@ -880,7 +880,7 @@ class RDMAReadStream : public ReadStream, public RDMAEndpoint {
         return ret;
     }
     int send_server_metadata_to_client() {
-        struct ibv_wc wc{};
+        struct ibv_wc wc {};
         int ret = -1;
         ret = process_work_completion_events(io_completion_channel, &wc, 1);
         if (ret != 1) {
@@ -892,7 +892,7 @@ class RDMAReadStream : public ReadStream, public RDMAEndpoint {
         server_buffer_mr =
             rdma_buffer_alloc(pd, client_metadata_attr.length,
                               (enum ibv_access_flags)(((int)IBV_ACCESS_LOCAL_WRITE) | ((int)IBV_ACCESS_REMOTE_READ) |
-                              ((int)IBV_ACCESS_REMOTE_WRITE)));
+                                                      ((int)IBV_ACCESS_REMOTE_WRITE)));
         if (!server_buffer_mr) {
             SPDLOG_ERROR("Server failed to create a buffer ");
             return -ENOMEM;
@@ -1059,10 +1059,10 @@ public:
     mutable std::vector<char> buffer{};
     mutable long position = 0;
     struct ibv_cq *client_cq = nullptr;
-    struct ibv_sge client_send_sge{};
-    struct ibv_sge server_recv_sge{};
-    struct sockaddr_in server_sockaddr{};
-    struct rdma_conn_param conn_param{};
+    struct ibv_sge client_send_sge {};
+    struct ibv_sge server_recv_sge {};
+    struct sockaddr_in server_sockaddr {};
+    struct rdma_conn_param conn_param {};
     struct rdma_cm_event *cm_event = nullptr;
     struct ibv_mr *client_metadata_mr = nullptr, *client_src_mr = nullptr, *client_dst_mr = nullptr,
                   *server_metadata_mr = nullptr;
@@ -1171,7 +1171,7 @@ public:
         return 0;
     }
     int client_connect_to_server() {
-        struct rdma_conn_param conn_param{};
+        struct rdma_conn_param conn_param {};
         struct rdma_cm_event *cm_event = nullptr;
         int ret = -1;
         bzero(&conn_param, sizeof(conn_param));

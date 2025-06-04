@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
@@ -80,7 +80,7 @@ void WAMRModuleInstance::restore_impl(WASMModuleInstance *env) {
         }
         env->table_count = tables.size();
     }
-    //env->global_table_data.memory_instances[0] = **env->memories;
+    // env->global_table_data.memory_instances[0] = **env->memories;
     if (wamr->is_aot) {
         auto module = (AOTModule *)env->module;
         module->aux_data_end_global_index = aux_data_end_global_index;

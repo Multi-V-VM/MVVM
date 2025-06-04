@@ -341,7 +341,7 @@ This project is licensed under (LGPL-2.1 OR BSD-2-Clause) - see the [LICENSE](..
 - **Aibo Hu** - Core development
 - **Yiwei Yang** - Architecture and implementation  
 - **Brian Zhao** - Testing and optimization
-- **Andrew Quinn** - Documentation and examples
+- **Andi Quinn** - Documentation and examples
 
 ## 🙏 Acknowledgments
 

@@ -4,19 +4,19 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
  *  UC Santa Cruz Sluglab.
  */
 
-#include "ylt/struct_pack.hpp"
 #include "wamr.h"
 #include "wamr_exec_env.h"
 #include "wamr_export.h"
 #include "wamr_read_write.h"
 #include "wasm_runtime.h"
+#include "ylt/struct_pack.hpp"
 #include <cxxopts.hpp>
 #include <iostream>
 #include <memory>
@@ -24,15 +24,15 @@
 #if !defined(_WIN32)
 #include <arpa/inet.h>
 #endif
-#include "absl/log/log.h"
-ReadStream *reader;
-WriteStream *writer;
-WAMRInstance *wamr = nullptr;
-std::vector<std::unique_ptr<WAMRExecEnv>> as;
-std::string offload_addr;
-int offload_port;
-std::string target;
-void spdlog::logger::err_handler_(std::string const&){}
+extern WAMRInstance *wamr;
+extern std::string offload_addr;
+extern int offload_port;
+extern std::string target;
+extern ReadStream *reader;
+extern WriteStream *writer;
+
+
+void spdlog::logger::err_handler_(std::string const &) {}
 
 int main(int argc, char **argv) {
     cxxopts::Options options("MVVM", "Migratable Velocity Virtual Machine, to ship the VM state to another machine");
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
         reader = new FreadStream((removeExtension(target) + ".bin").c_str()); // writer
 #if !defined(_WIN32)
 #if __linux__
-    else if(rdma)
+    else if (rdma)
         reader = new RDMAReadStream(source_addr.c_str(), source_port);
 #endif
     else

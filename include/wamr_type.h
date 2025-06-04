@@ -4,7 +4,7 @@
  *  By: Aibo Hu
  *      Yiwei Yang
  *      Brian Zhao
- *      Andrew Quinn
+ *      Andi Quinn
  *
  *  SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
  *  Copyright 2025 Regents of the University of California
@@ -13,8 +13,8 @@
 
 #ifndef MVVM_WAMR_TYPE_H
 #define MVVM_WAMR_TYPE_H
-#include "wasm_runtime.h"
 #include "wamr_serializer.h"
+#include "wasm_runtime.h"
 
 struct WAMRType {
     uint16 param_count;
