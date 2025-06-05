@@ -17,6 +17,7 @@
 #include "wasi_nn.h"
 #include "wasi_nn_types.h"
 #include "wasm_export.h"
+#include "wasi_nn_app_native.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -26,6 +27,15 @@
 #define MAX_GRAPHS_PER_INST 10
 /* Maximum number of graph execution context per WASM instance*/
 #define MAX_GRAPH_EXEC_CONTEXTS_PER_INST 10
+
+// The tensor types are defined in wasi_nn_app_native.h, so we include that
+
+// Forward declaration
+struct WAMRWASINNContext;
+
+// We need to use the WAMR library's WASINNContext, but avoid conflicts
+// Include the required header that defines it
+#include "wasi_nn_private.h"
 
 // 操作类型枚举
 enum class WASINNOperationType { LOAD_MODEL, INIT_EXECUTION_CONTEXT, SET_INPUT, COMPUTE, GET_OUTPUT };
@@ -56,6 +66,16 @@ struct WAMRWASINNOperation {
     uint32_t output_index;
     std::vector<uint8_t> output_data;
     uint32_t output_size;
+
+    // 计算此操作的内存大小
+    size_t get_memory_size() const {
+        size_t size = sizeof(WAMRWASINNOperation);
+        size += model_name.capacity();
+        size += tensor_data.capacity();
+        size += tensor_dims.capacity() * sizeof(uint32_t);
+        size += output_data.capacity();
+        return size;
+    }
 };
 
 // 模型结构
@@ -63,6 +83,15 @@ struct WAMRWASINNModel {
     std::string model_name;
     std::vector<uint8_t> input_tensor;
     std::vector<uint32_t> dims;
+
+    // 计算此模型的内存大小
+    size_t get_memory_size() const {
+        size_t size = sizeof(WAMRWASINNModel);
+        size += model_name.capacity();
+        size += input_tensor.capacity();
+        size += dims.capacity() * sizeof(uint32_t);
+        return size;
+    }
 };
 
 // 上下文结构
@@ -78,6 +107,11 @@ struct WAMRWASINNContext {
     std::vector<WAMRWASINNOperation> recorded_operations;
     size_t replay_position = 0;
 
+    // Size tracking
+    size_t total_memory_size = 0; // 总内存使用量(字节)
+    size_t peak_memory_size = 0; // 峰值内存使用量(字节)
+    size_t operation_count = 0; // 记录的操作总数
+
     // Context mapping for replay
     std::unordered_map<graph, graph> graph_mapping;
     std::unordered_map<graph_execution_context, graph_execution_context> context_mapping;
@@ -91,10 +125,42 @@ struct WAMRWASINNContext {
     void enable_recording(bool enable) { recording_enabled = enable; }
     void enable_replay(bool enable) { replaying_enabled = enable; }
     void reset_replay() { replay_position = 0; }
+
+    // 大小统计方法
+    size_t get_current_memory_size() const { return total_memory_size; }
+    size_t get_peak_memory_size() const { return peak_memory_size; }
+    size_t get_operation_count() const { return operation_count; }
+    void reset_statistics() {
+        total_memory_size = 0;
+        peak_memory_size = 0;
+        operation_count = 0;
+    }
+
+    // 计算当前使用的内存大小
+    size_t calculate_current_size() const {
+        size_t size = sizeof(WAMRWASINNContext);
+
+        // 模型大小
+        for (const auto &model : models) {
+            size += model.get_memory_size();
+        }
+
+        // 操作记录大小
+        for (const auto &op : recorded_operations) {
+            size += op.get_memory_size();
+        }
+
+        // 映射表大小
+        size += graph_mapping.size() * (sizeof(graph) * 2);
+        size += context_mapping.size() * (sizeof(graph_execution_context) * 2);
+
+        return size;
+    }
 };
 
-template <SerializerTrait<WASINNContext *> T> void dump(T t, WASINNContext *env) { t->dump_impl(env); }
-template <SerializerTrait<WASINNContext *> T> void restore(T t, WASINNContext *env) { t->restore_impl(env); }
+// 修复模板定义
+template <typename T> void dump(T *t, WASINNContext *env) { t->dump_impl(env); }
+template <typename T> void restore(T *t, WASINNContext *env) { t->restore_impl(env); }
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,6 +191,11 @@ error wamr_wasi_nn_compute_with_recording(wasm_exec_env_t exec_env, graph_execut
 error wamr_wasi_nn_get_output_with_recording(wasm_exec_env_t exec_env, graph_execution_context ctx, uint32_t index,
                                              tensor_data output_tensor, uint32_t output_tensor_len,
                                              uint32_t *output_tensor_size);
+
+// 新增函数: 获取记录器的内存使用情况
+size_t wamr_wasi_nn_get_recorder_memory_size(wasm_module_inst_t instance);
+size_t wamr_wasi_nn_get_recorder_peak_memory_size(wasm_module_inst_t instance);
+size_t wamr_wasi_nn_get_recorder_operation_count(wasm_module_inst_t instance);
 
 #ifdef __cplusplus
 }
