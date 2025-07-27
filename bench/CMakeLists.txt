@@ -233,7 +233,7 @@ if (WAMR_BUILD_AOT)
 
     function(bench_wamr_app input)
         add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.simple_func.opt
-                COMMAND python3 /workspaces/MVVM/wasm_static_analysis.py ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+                COMMAND python3 /root/MVVM/wasm_static_analysis.py ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
                 DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
         )
         add_custom_target(${input}_static_analysis DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.simple_func.opt)

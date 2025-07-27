@@ -3,7 +3,7 @@ import multiprocessing
 import time
 import pickle
 
-BUILDDIR = "/workspaces/MVVM/build"
+BUILDDIR = "/root/MVVM/build"
 RUNNER_WORKDIR = f"{BUILDDIR}/bench"
 MAX_COMPILE_THREADS = 16
 

@@ -19,7 +19,6 @@
 #include "wamr_read_write.h"
 #include "wamr_exec_env.h"
 #include "wasi_nn.h"
-#include "wasi_nn_app_native.h"
 #include "wasm_export.h"
 #include <cstdio>
 #include <cstdlib>

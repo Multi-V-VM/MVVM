@@ -16,6 +16,11 @@
 #include <condition_variable>
 #include <cstdlib>
 #include <mutex>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern WAMRInstance *wamr;
 size_t snapshot_threshold;
 size_t call_count = 0;
@@ -185,8 +190,28 @@ void nn_set_input(struct WASMExecEnv *, uint32_t, tensor *tensor_wasm) {
     auto input_tensor = last_model.input_tensor;
     // get the dims
     auto dims = last_model.dims;
+    // Calculate the tensor size based on dimensions
+    size_t tensor_size = 1;
+    if (tensor_wasm->dimensions) {
+        for (uint32_t i = 0; i < tensor_wasm->dimensions->size; i++) {
+            tensor_size *= tensor_wasm->dimensions->buf[i];
+        }
+    }
+    // Adjust size based on tensor type
+    switch (tensor_wasm->type) {
+        case fp16:
+            tensor_size *= 2;
+            break;
+        case fp32:
+        case ip32:
+            tensor_size *= 4;
+            break;
+        case up8:
+            tensor_size *= 1;
+            break;
+    }
     // set the input tensor
-    std::memcpy(input_tensor.data(), tensor_wasm->data, tensor_wasm->size);
+    std::memcpy(input_tensor.data(), tensor_wasm->data, tensor_size);
 };
 void nn_get_output(struct WASMExecEnv *) {
     // TODO: remove the above input tensor
@@ -625,3 +650,7 @@ void register_sigint() {
     }
 #endif
 }
+
+#ifdef __cplusplus
+}
+#endif

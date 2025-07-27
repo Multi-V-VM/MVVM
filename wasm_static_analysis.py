@@ -490,8 +490,8 @@ if __name__ == "__main__":
 
     assert len(sys.argv) == 2, "Invalid arguments"
 
-    # wasm_file = "/workspaces/MVVM/build/test/vadd.wasm"
-    # wasm_file = "/workspaces/MVVM/build/bench/redis.wasm"
+    # wasm_file = "/root/MVVM/build/test/vadd.wasm"
+    # wasm_file = "/root/MVVM/build/bench/redis.wasm"
     wasm_file = sys.argv[1]
     assert wasm_file.endswith(".wasm"), "Invalid wasm file"
     assert os.path.exists(wasm_file), "Wasm file not found"

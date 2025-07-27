@@ -17,7 +17,13 @@
 #include "wasi_nn.h"
 #include "wasi_nn_types.h"
 #include "wasm_export.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "wasi_nn_app_native.h"
+#ifdef __cplusplus
+}
+#endif
 #include <memory>
 #include <string>
 #include <unordered_map>

@@ -33,7 +33,6 @@ extern std::string target;
 extern ReadStream *reader;
 extern WriteStream *writer;
 
-
 std::vector<std::vector<std::pair<size_t, size_t>>> stack_record;
 void unwind(WASMExecEnv *instance) {
     auto cur_frame = (AOTFrame *)instance->cur_frame;
@@ -57,7 +56,7 @@ void profile_sigtrap_handler(int sig) {
 }
 
 void profile_register_sigtrap() {
-    struct sigaction sa {};
+    struct sigaction sa{};
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = profile_sigtrap_handler;
     sa.sa_flags = SA_RESTART;
@@ -70,7 +69,7 @@ void profile_register_sigtrap() {
 }
 
 void profile_register_sigint() {
-    struct sigaction sa {};
+    struct sigaction sa{};
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = profile_sigint_handler;
     sa.sa_flags = SA_RESTART;
@@ -213,7 +212,7 @@ int main(int argc, char *argv[]) {
     for (const auto &e : func_count) {
         func_idx.emplace_back(e.first);
     }
-    auto get_func_name = "python3 /workspaces/MVVM/artifact/get_func_name.py " + wasm_file;
+    auto get_func_name = "python3 /root/MVVM/artifact/get_func_name.py " + wasm_file;
     for (const auto &e : func_idx) {
         get_func_name += " " + std::to_string(e);
     }
