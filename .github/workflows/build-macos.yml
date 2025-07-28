@@ -53,8 +53,17 @@ jobs:
         make -j
 
     - name: configure cmake
-      run: cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ && cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/opt/homebrew/opt/llvm@14/lib/cmake/llvm/
+      run: cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ && LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/ cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/opt/homebrew/opt/llvm@14/lib/cmake/llvm/
 
     - name: build
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config ${{matrix.build}}
+      run: LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/ cmake --build . --config ${{matrix.build}}
+
+    - name: Upload artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: mvvm-macos-${{matrix.build}}-${{matrix.standard}}
+        path: |
+          ${{runner.workspace}}/build/MVVM_*
+        retention-days: 7

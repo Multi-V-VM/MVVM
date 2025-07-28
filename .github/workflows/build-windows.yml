@@ -78,4 +78,13 @@ jobs:
     - name: build
       working-directory: ${{runner.workspace}}/build
       run: |
-        cmake --build . --config ${{matrix.build}} 
+        cmake --build . --config ${{matrix.build}}
+
+    - name: Upload artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: mvvm-windows-${{matrix.build}}-${{matrix.standard}}
+        path: |
+          ${{runner.workspace}}/build/MVVM_*.exe
+        retention-days: 7 

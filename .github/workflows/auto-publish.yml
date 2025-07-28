@@ -1,0 +1,189 @@
+name: auto-publish
+
+on:
+  workflow_run:
+    workflows: ["build-ubuntu", "build-macos", "build-windows"]
+    types:
+      - completed
+
+jobs:
+  check-and-publish:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check all workflows completed
+      id: check_workflows
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const headSha = context.payload.workflow_run.head_sha;
+          const runNumber = context.payload.workflow_run.run_number;
+          
+          console.log(`Checking workflows for SHA: ${headSha}, run: ${runNumber}`);
+          
+          // Check if all three workflows completed successfully
+          const workflows = ['build-ubuntu', 'build-macos', 'build-windows'];
+          const results = {};
+          
+          for (const workflowName of workflows) {
+            try {
+              const runs = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: `${workflowName}.yml`,
+                head_sha: headSha,
+                status: 'completed',
+                per_page: 5
+              });
+              
+              const successfulRun = runs.data.workflow_runs.find(run => 
+                run.conclusion === 'success' && run.head_sha === headSha
+              );
+              
+              results[workflowName] = !!successfulRun;
+              if (successfulRun) {
+                console.log(`✓ ${workflowName}: completed successfully (run ${successfulRun.run_number})`);
+              } else {
+                console.log(`✗ ${workflowName}: not yet successful`);
+              }
+            } catch (error) {
+              console.log(`✗ ${workflowName}: error checking - ${error.message}`);
+              results[workflowName] = false;
+            }
+          }
+          
+          const allSuccess = Object.values(results).every(v => v === true);
+          core.setOutput('all_success', allSuccess);
+          core.setOutput('results', JSON.stringify(results));
+          
+          return allSuccess;
+    
+    - name: Download artifacts from all workflows
+      if: steps.check_workflows.outputs.all_success == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const headSha = context.payload.workflow_run.head_sha;
+          const fs = require('fs');
+          
+          // Create artifacts directory
+          fs.mkdirSync('collected-artifacts', { recursive: true });
+          
+          // Get artifacts from all workflow runs
+          const workflows = ['build-ubuntu', 'build-macos', 'build-windows'];
+          
+          for (const workflowName of workflows) {
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner,
+              repo,
+              workflow_id: `${workflowName}.yml`,
+              head_sha: headSha,
+              status: 'completed',
+              conclusion: 'success',
+              per_page: 1
+            });
+            
+            if (runs.data.workflow_runs.length > 0) {
+              const runId = runs.data.workflow_runs[0].id;
+              
+              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                owner,
+                repo,
+                run_id: runId
+              });
+              
+              for (const artifact of artifacts.data.artifacts) {
+                console.log(`Downloading ${artifact.name} from ${workflowName}`);
+                
+                const download = await github.rest.actions.downloadArtifact({
+                  owner,
+                  repo,
+                  artifact_id: artifact.id,
+                  archive_format: 'zip'
+                });
+                
+                fs.writeFileSync(`collected-artifacts/${artifact.name}.zip`, Buffer.from(download.data));
+              }
+            }
+          }
+    
+    - name: Extract artifacts
+      if: steps.check_workflows.outputs.all_success == 'true'
+      run: |
+        mkdir -p release-artifacts
+        cd collected-artifacts
+        for file in *.zip; do
+          echo "Extracting $file"
+          unzip -o "$file" -d ../release-artifacts/
+        done
+        cd ..
+        ls -la release-artifacts/
+    
+    - name: Generate release version
+      if: steps.check_workflows.outputs.all_success == 'true'
+      id: version
+      run: |
+        # Generate version based on date and commit
+        VERSION="$(date +'%Y.%m.%d')-${GITHUB_SHA::7}"
+        TAG="v${VERSION}"
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "tag=${TAG}" >> $GITHUB_OUTPUT
+        echo "Generated version: ${VERSION}"
+    
+    - name: Create Release
+      if: steps.check_workflows.outputs.all_success == 'true'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: "MVVM ${{ steps.version.outputs.version }}"
+        body: |
+          ## MVVM Automated Release
+          
+          **Version:** ${{ steps.version.outputs.version }}  
+          **Commit:** ${{ github.event.workflow_run.head_sha }}
+          
+          ### 📦 Included Builds
+          
+          | Platform | Debug | Release |
+          |----------|-------|---------|
+          | Ubuntu 24.04 | ✅ | ✅ |
+          | macOS 16 | ✅ | ✅ |
+          | Windows Latest | ✅ | ✅ |
+          
+          ### 📥 Installation
+          
+          1. Download the appropriate binary for your platform
+          2. Extract the archive
+          3. Run the executable
+          
+          ### 📝 Commit Information
+          
+          **SHA:** `${{ github.event.workflow_run.head_sha }}`  
+          **Author:** ${{ github.event.workflow_run.head_commit.author.name }}  
+          **Message:**
+          ```
+          ${{ github.event.workflow_run.head_commit.message }}
+          ```
+          
+          ### 🔗 Links
+          
+          - [Commit Details](https://github.com/${{ github.repository }}/commit/${{ github.event.workflow_run.head_sha }})
+          - [Compare Changes](https://github.com/${{ github.repository }}/compare/${{ github.event.workflow_run.before }}...${{ github.event.workflow_run.head_sha }})
+          
+          ---
+          *This release was automatically generated by GitHub Actions*
+        draft: false
+        prerelease: false
+        files: |
+          release-artifacts/**/*
+        fail_on_unmatched_files: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
