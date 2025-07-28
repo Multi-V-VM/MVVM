@@ -76,7 +76,7 @@ jobs:
         cp -r "C:/Program Files/LLVM/build" lib/wasm-micro-runtime/wamr-compiler
 
     - name: build
-      working-directory: ${{runner.workspace}}\build
+      working-directory: ${{runner.workspace}}/MVVM/build
       run: |
         cmake --build . --config ${{matrix.build}}
 
