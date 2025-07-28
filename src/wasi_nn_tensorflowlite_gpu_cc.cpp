@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
+#include "logger.h"
 #include "wasi_nn.h"
 #include "wasi_nn_tensorflowlite.hpp"
-#include "logger.h"
 
 #include "bh_platform.h"
 #include "wasm_export.h"
 
+#include <tensorflow/lite/error_reporter.h>
 #include <tensorflow/lite/interpreter.h>
 #include <tensorflow/lite/kernels/register.h>
 #include <tensorflow/lite/model.h>
 #include <tensorflow/lite/optional_debug_tools.h>
-#include <tensorflow/lite/error_reporter.h>
 
 #if WASM_ENABLE_WASI_NN_GPU != 0
 #include <tensorflow/lite/delegates/gpu/delegate.h>
@@ -50,15 +50,13 @@ typedef struct {
     Interpreter interpreters[MAX_GRAPH_EXEC_CONTEXTS_PER_INST];
     korp_mutex g_lock;
     TfLiteDelegate *delegate;
-    void *gpu_cc_ctx;  // GPU Confidential Computing context
+    void *gpu_cc_ctx; // GPU Confidential Computing context
     bool gpu_cc_enabled;
 } TFLiteContext;
 
 /* Utils */
 
-static error
-initialize_g(TFLiteContext *tfl_ctx, graph *g)
-{
+static error initialize_g(TFLiteContext *tfl_ctx, graph *g) {
     os_mutex_lock(&tfl_ctx->g_lock);
     if (tfl_ctx->current_models == MAX_GRAPHS_PER_INST) {
         os_mutex_unlock(&tfl_ctx->g_lock);
@@ -69,10 +67,7 @@ initialize_g(TFLiteContext *tfl_ctx, graph *g)
     os_mutex_unlock(&tfl_ctx->g_lock);
     return success;
 }
-static error
-initialize_graph_ctx(TFLiteContext *tfl_ctx, graph g,
-                     graph_execution_context *ctx)
-{
+static error initialize_graph_ctx(TFLiteContext *tfl_ctx, graph g, graph_execution_context *ctx) {
     os_mutex_lock(&tfl_ctx->g_lock);
     if (tfl_ctx->current_interpreters == MAX_GRAPH_EXEC_CONTEXTS_PER_INST) {
         os_mutex_unlock(&tfl_ctx->g_lock);
@@ -84,9 +79,7 @@ initialize_graph_ctx(TFLiteContext *tfl_ctx, graph g,
     return success;
 }
 
-static error
-is_valid_graph(TFLiteContext *tfl_ctx, graph g)
-{
+static error is_valid_graph(TFLiteContext *tfl_ctx, graph g) {
     if (g >= MAX_GRAPHS_PER_INST) {
         NN_ERR_PRINTF("Invalid graph: %d >= %d.", g, MAX_GRAPHS_PER_INST);
         return runtime_error;
@@ -102,13 +95,9 @@ is_valid_graph(TFLiteContext *tfl_ctx, graph g)
     return success;
 }
 
-static error
-is_valid_graph_execution_context(TFLiteContext *tfl_ctx,
-                                 graph_execution_context ctx)
-{
+static error is_valid_graph_execution_context(TFLiteContext *tfl_ctx, graph_execution_context ctx) {
     if (ctx >= MAX_GRAPH_EXEC_CONTEXTS_PER_INST) {
-        NN_ERR_PRINTF("Invalid graph execution context: %d >= %d", ctx,
-                      MAX_GRAPH_EXEC_CONTEXTS_PER_INST);
+        NN_ERR_PRINTF("Invalid graph execution context: %d >= %d", ctx, MAX_GRAPH_EXEC_CONTEXTS_PER_INST);
         return runtime_error;
     }
     if (tfl_ctx->interpreters[ctx].interpreter == NULL) {
@@ -120,10 +109,8 @@ is_valid_graph_execution_context(TFLiteContext *tfl_ctx,
 
 /* WASI-NN (tensorflow) implementation */
 
-error
-tensorflowlite_load(void *tflite_ctx, graph_builder_array *builder,
-                    graph_encoding encoding, execution_target target, graph *g)
-{
+error tensorflowlite_load(void *tflite_ctx, graph_builder_array *builder, graph_encoding encoding,
+                          execution_target target, graph *g) {
     TFLiteContext *tfl_ctx = (TFLiteContext *)tflite_ctx;
 
     if (builder->size != 1) {
@@ -154,13 +141,11 @@ tensorflowlite_load(void *tflite_ctx, graph_builder_array *builder,
         return missing_memory;
     }
 
-    bh_memcpy_s(tfl_ctx->models[*g].model_pointer, size, builder->buf[0].buf,
-                size);
+    bh_memcpy_s(tfl_ctx->models[*g].model_pointer, size, builder->buf[0].buf, size);
 
     // Save model flatbuffer
     tfl_ctx->models[*g].model =
-        std::move(tflite::FlatBufferModel::BuildFromBuffer(
-            tfl_ctx->models[*g].model_pointer, size, NULL));
+        std::move(tflite::FlatBufferModel::BuildFromBuffer(tfl_ctx->models[*g].model_pointer, size, NULL));
 
     if (tfl_ctx->models[*g].model == NULL) {
         NN_ERR_PRINTF("Loading model error.");
@@ -174,10 +159,7 @@ tensorflowlite_load(void *tflite_ctx, graph_builder_array *builder,
     return success;
 }
 
-error
-tensorflowlite_init_execution_context(void *tflite_ctx, graph g,
-                                      graph_execution_context *ctx)
-{
+error tensorflowlite_init_execution_context(void *tflite_ctx, graph g, graph_execution_context *ctx) {
     TFLiteContext *tfl_ctx = (TFLiteContext *)tflite_ctx;
 
     error res;
@@ -189,8 +171,7 @@ tensorflowlite_init_execution_context(void *tflite_ctx, graph g,
 
     // Build the interpreter with the InterpreterBuilder.
     tflite::ops::builtin::BuiltinOpResolver resolver;
-    tflite::InterpreterBuilder tflite_builder(*tfl_ctx->models[g].model,
-                                              resolver);
+    tflite::InterpreterBuilder tflite_builder(*tfl_ctx->models[g].model, resolver);
     tflite_builder(&tfl_ctx->interpreters[*ctx].interpreter);
     if (tfl_ctx->interpreters[*ctx].interpreter == NULL) {
         NN_ERR_PRINTF("Error when generating the interpreter.");
@@ -199,110 +180,97 @@ tensorflowlite_init_execution_context(void *tflite_ctx, graph g,
 
     bool use_default = false;
     switch (tfl_ctx->models[g].target) {
-        case gpu:
-        {
+    case gpu: {
 #if WASM_ENABLE_WASI_NN_GPU != 0
-            // Check if GPU CC should be enabled (can be configured)
-            bool enable_gpu_cc = true; // Default to enabled for security
-            
-            if (enable_gpu_cc && !tfl_ctx->gpu_cc_enabled) {
-                NN_WARN_PRINTF("GPU with Confidential Computing enabled.");
-                
-                // Initialize GPU CC if not already initialized
+        // Check if GPU CC should be enabled (can be configured)
+        bool enable_gpu_cc = true; // Default to enabled for security
+
+        if (enable_gpu_cc && !tfl_ctx->gpu_cc_enabled) {
+            NN_WARN_PRINTF("GPU with Confidential Computing enabled.");
+
+            // Initialize GPU CC if not already initialized
+            if (!tfl_ctx->gpu_cc_ctx) {
+                tfl_ctx->gpu_cc_ctx = wasi_nn_tflite_gpu_cc_create();
                 if (!tfl_ctx->gpu_cc_ctx) {
-                    tfl_ctx->gpu_cc_ctx = wasi_nn_tflite_gpu_cc_create();
-                    if (!tfl_ctx->gpu_cc_ctx) {
-                        NN_ERR_PRINTF("Failed to create GPU CC context.");
-                        use_default = true;
-                        break;
-                    }
-                    
-                    // Initialize with auto-detected vendor and secure inference enabled
-                    if (wasi_nn_tflite_gpu_cc_initialize(tfl_ctx->gpu_cc_ctx, 0, true) != 0) {
-                        NN_ERR_PRINTF("Failed to initialize GPU CC.");
-                        wasi_nn_tflite_gpu_cc_destroy(tfl_ctx->gpu_cc_ctx);
-                        tfl_ctx->gpu_cc_ctx = NULL;
-                        use_default = true;
-                        break;
-                    }
-                    
-                    tfl_ctx->gpu_cc_enabled = true;
+                    NN_ERR_PRINTF("Failed to create GPU CC context.");
+                    use_default = true;
+                    break;
                 }
-                
-                // Create GPU delegate with CC support
-                tfl_ctx->delegate = (TfLiteDelegate*)wasi_nn_tflite_gpu_cc_create_delegate(tfl_ctx->gpu_cc_ctx);
-            } else {
-                NN_WARN_PRINTF("GPU enabled (without CC).");
-                // Fall back to standard GPU delegate
-                TfLiteGpuDelegateOptionsV2 options =
-                    TfLiteGpuDelegateOptionsV2Default();
-                options.inference_preference =
-                    TFLITE_GPU_INFERENCE_PREFERENCE_SUSTAINED_SPEED;
-                options.inference_priority1 =
-                    TFLITE_GPU_INFERENCE_PRIORITY_MIN_LATENCY;
-                tfl_ctx->delegate = TfLiteGpuDelegateV2Create(&options);
+
+                // Initialize with auto-detected vendor and secure inference enabled
+                if (wasi_nn_tflite_gpu_cc_initialize(tfl_ctx->gpu_cc_ctx, 0, true) != 0) {
+                    NN_ERR_PRINTF("Failed to initialize GPU CC.");
+                    wasi_nn_tflite_gpu_cc_destroy(tfl_ctx->gpu_cc_ctx);
+                    tfl_ctx->gpu_cc_ctx = NULL;
+                    use_default = true;
+                    break;
+                }
+
+                tfl_ctx->gpu_cc_enabled = true;
             }
-            
-            if (tfl_ctx->delegate == NULL) {
-                NN_ERR_PRINTF("Error when generating GPU delegate.");
-                use_default = true;
-                return missing_memory;
-            }
-            if (tfl_ctx->interpreters[*ctx]
-                    .interpreter->ModifyGraphWithDelegate(tfl_ctx->delegate)
-                != kTfLiteOk) {
-                NN_ERR_PRINTF("Error when enabling GPU delegate.");
-                use_default = true;
-            }
+
+            // Create GPU delegate with CC support
+            tfl_ctx->delegate = (TfLiteDelegate *)wasi_nn_tflite_gpu_cc_create_delegate(tfl_ctx->gpu_cc_ctx);
+        } else {
+            NN_WARN_PRINTF("GPU enabled (without CC).");
+            // Fall back to standard GPU delegate
+            TfLiteGpuDelegateOptionsV2 options = TfLiteGpuDelegateOptionsV2Default();
+            options.inference_preference = TFLITE_GPU_INFERENCE_PREFERENCE_SUSTAINED_SPEED;
+            options.inference_priority1 = TFLITE_GPU_INFERENCE_PRIORITY_MIN_LATENCY;
+            tfl_ctx->delegate = TfLiteGpuDelegateV2Create(&options);
+        }
+
+        if (tfl_ctx->delegate == NULL) {
+            NN_ERR_PRINTF("Error when generating GPU delegate.");
+            use_default = true;
+            return missing_memory;
+        }
+        if (tfl_ctx->interpreters[*ctx].interpreter->ModifyGraphWithDelegate(tfl_ctx->delegate) != kTfLiteOk) {
+            NN_ERR_PRINTF("Error when enabling GPU delegate.");
+            use_default = true;
+        }
 #elif defined(WASI_NN_ENABLE_EXTERNAL_DELEGATE)
-            NN_WARN_PRINTF("external delegation enabled.");
-            TfLiteExternalDelegateOptions options =
-                TfLiteExternalDelegateOptionsDefault(WASI_NN_EXT_DELEGATE_PATH);
-            tfl_ctx->delegate = TfLiteExternalDelegateCreate(&options);
-            if (tfl_ctx->delegate == NULL) {
-                NN_ERR_PRINTF("Error when generating External delegate.");
-                use_default = true;
-                return missing_memory;
-            }
-            if (tfl_ctx->interpreters[*ctx]
-                    .interpreter->ModifyGraphWithDelegate(tfl_ctx->delegate)
-                != kTfLiteOk) {
-                NN_ERR_PRINTF("Error when enabling External delegate.");
-                use_default = true;
-            }
-#else
-            NN_WARN_PRINTF("GPU not enabled.");
+        NN_WARN_PRINTF("external delegation enabled.");
+        TfLiteExternalDelegateOptions options = TfLiteExternalDelegateOptionsDefault(WASI_NN_EXT_DELEGATE_PATH);
+        tfl_ctx->delegate = TfLiteExternalDelegateCreate(&options);
+        if (tfl_ctx->delegate == NULL) {
+            NN_ERR_PRINTF("Error when generating External delegate.");
             use_default = true;
-#endif
-            break;
+            return missing_memory;
         }
-        case tpu:
-        {
+        if (tfl_ctx->interpreters[*ctx].interpreter->ModifyGraphWithDelegate(tfl_ctx->delegate) != kTfLiteOk) {
+            NN_ERR_PRINTF("Error when enabling External delegate.");
+            use_default = true;
+        }
+#else
+        NN_WARN_PRINTF("GPU not enabled.");
+        use_default = true;
+#endif
+        break;
+    }
+    case tpu: {
 #if WASM_ENABLE_WASI_NN_EXTERNAL_DELEGATE != 0
-            NN_WARN_PRINTF("external delegation enabled.");
-            TfLiteExternalDelegateOptions options =
-                TfLiteExternalDelegateOptionsDefault(
-                    WASM_WASI_NN_EXTERNAL_DELEGATE_PATH);
-            tfl_ctx->delegate = TfLiteExternalDelegateCreate(&options);
-            if (tfl_ctx->delegate == NULL) {
-                NN_ERR_PRINTF("Error when generating External delegate.");
-                use_default = true;
-                return missing_memory;
-            }
-            if (tfl_ctx->interpreters[*ctx]
-                    .interpreter->ModifyGraphWithDelegate(tfl_ctx->delegate)
-                != kTfLiteOk) {
-                NN_ERR_PRINTF("Error when enabling External delegate.");
-                use_default = true;
-            }
-#else
-            NN_WARN_PRINTF("External delegate not enabled.");
+        NN_WARN_PRINTF("external delegation enabled.");
+        TfLiteExternalDelegateOptions options =
+            TfLiteExternalDelegateOptionsDefault(WASM_WASI_NN_EXTERNAL_DELEGATE_PATH);
+        tfl_ctx->delegate = TfLiteExternalDelegateCreate(&options);
+        if (tfl_ctx->delegate == NULL) {
+            NN_ERR_PRINTF("Error when generating External delegate.");
             use_default = true;
-#endif
-            break;
+            return missing_memory;
         }
-        default:
+        if (tfl_ctx->interpreters[*ctx].interpreter->ModifyGraphWithDelegate(tfl_ctx->delegate) != kTfLiteOk) {
+            NN_ERR_PRINTF("Error when enabling External delegate.");
             use_default = true;
+        }
+#else
+        NN_WARN_PRINTF("External delegate not enabled.");
+        use_default = true;
+#endif
+        break;
+    }
+    default:
+        use_default = true;
     }
     if (use_default)
         NN_WARN_PRINTF("Default encoding is CPU.");
@@ -311,18 +279,14 @@ tensorflowlite_init_execution_context(void *tflite_ctx, graph g,
     return success;
 }
 
-error
-tensorflowlite_set_input(void *tflite_ctx, graph_execution_context ctx,
-                         uint32_t index, tensor *input_tensor)
-{
+error tensorflowlite_set_input(void *tflite_ctx, graph_execution_context ctx, uint32_t index, tensor *input_tensor) {
     TFLiteContext *tfl_ctx = (TFLiteContext *)tflite_ctx;
 
     error res;
     if (success != (res = is_valid_graph_execution_context(tfl_ctx, ctx)))
         return res;
 
-    uint32_t num_tensors =
-        tfl_ctx->interpreters[ctx].interpreter->inputs().size();
+    uint32_t num_tensors = tfl_ctx->interpreters[ctx].interpreter->inputs().size();
     NN_DBG_PRINTF("Number of tensors (%d)", num_tensors);
     if (index + 1 > num_tensors) {
         return runtime_error;
@@ -350,28 +314,21 @@ tensorflowlite_set_input(void *tflite_ctx, graph_execution_context ctx,
 
     if (tensor->quantization.type == kTfLiteNoQuantization) {
         NN_DBG_PRINTF("No quantization information. Using float as default");
-        float *it =
-            tfl_ctx->interpreters[ctx].interpreter->typed_input_tensor<float>(
-                index);
+        float *it = tfl_ctx->interpreters[ctx].interpreter->typed_input_tensor<float>(index);
 
         int size = model_tensor_size * sizeof(float);
         bh_memcpy_s(it, size, input_tensor->data, size);
-    }
-    else { // TODO: Assumming uint8 quantized networks.
-        TfLiteAffineQuantization *quant_info =
-            (TfLiteAffineQuantization *)tensor->quantization.params;
+    } else { // TODO: Assumming uint8 quantized networks.
+        TfLiteAffineQuantization *quant_info = (TfLiteAffineQuantization *)tensor->quantization.params;
         if (quant_info->scale->size != 1 || quant_info->zero_point->size != 1) {
             NN_ERR_PRINTF("Quantization per channel is not supported");
             return runtime_error;
         }
-        uint8_t *it =
-            tfl_ctx->interpreters[ctx].interpreter->typed_input_tensor<uint8_t>(
-                index);
+        uint8_t *it = tfl_ctx->interpreters[ctx].interpreter->typed_input_tensor<uint8_t>(index);
 
         float scale = quant_info->scale->data[0];
         float zero_point = (float)quant_info->zero_point->data[0];
-        NN_DBG_PRINTF("input tensor: (scale, offset) = (%f, %f)", scale,
-                      zero_point);
+        NN_DBG_PRINTF("input tensor: (scale, offset) = (%f, %f)", scale, zero_point);
 
         float *input_tensor_f = (float *)input_tensor->data;
         for (uint32_t i = 0; i < model_tensor_size; ++i) {
@@ -382,9 +339,7 @@ tensorflowlite_set_input(void *tflite_ctx, graph_execution_context ctx,
     return success;
 }
 
-error
-tensorflowlite_compute(void *tflite_ctx, graph_execution_context ctx)
-{
+error tensorflowlite_compute(void *tflite_ctx, graph_execution_context ctx) {
     TFLiteContext *tfl_ctx = (TFLiteContext *)tflite_ctx;
 
     error res;
@@ -395,19 +350,15 @@ tensorflowlite_compute(void *tflite_ctx, graph_execution_context ctx)
     return success;
 }
 
-error
-tensorflowlite_get_output(void *tflite_ctx, graph_execution_context ctx,
-                          uint32_t index, tensor_data output_tensor,
-                          uint32_t *output_tensor_size)
-{
+error tensorflowlite_get_output(void *tflite_ctx, graph_execution_context ctx, uint32_t index,
+                                tensor_data output_tensor, uint32_t *output_tensor_size) {
     TFLiteContext *tfl_ctx = (TFLiteContext *)tflite_ctx;
 
     error res;
     if (success != (res = is_valid_graph_execution_context(tfl_ctx, ctx)))
         return res;
 
-    uint32_t num_output_tensors =
-        tfl_ctx->interpreters[ctx].interpreter->outputs().size();
+    uint32_t num_output_tensors = tfl_ctx->interpreters[ctx].interpreter->outputs().size();
     NN_DBG_PRINTF("Number of tensors (%d)", num_output_tensors);
 
     if (index + 1 > num_output_tensors) {
@@ -432,27 +383,21 @@ tensorflowlite_get_output(void *tflite_ctx, graph_execution_context ctx,
 
     if (tensor->quantization.type == kTfLiteNoQuantization) {
         NN_DBG_PRINTF("No quantization information");
-        float *ot =
-            tfl_ctx->interpreters[ctx].interpreter->typed_output_tensor<float>(
-                index);
+        float *ot = tfl_ctx->interpreters[ctx].interpreter->typed_output_tensor<float>(index);
 
         int size = model_tensor_size * sizeof(float);
         bh_memcpy_s(output_tensor, size, ot, size);
-    }
-    else { // TODO: Assumming uint8 quantized networks.
-        TfLiteAffineQuantization *quant_info =
-            (TfLiteAffineQuantization *)tensor->quantization.params;
+    } else { // TODO: Assumming uint8 quantized networks.
+        TfLiteAffineQuantization *quant_info = (TfLiteAffineQuantization *)tensor->quantization.params;
         if (quant_info->scale->size != 1 || quant_info->zero_point->size != 1) {
             NN_ERR_PRINTF("Quantization per channel is not supported");
             return runtime_error;
         }
-        uint8_t *ot = tfl_ctx->interpreters[ctx]
-                          .interpreter->typed_output_tensor<uint8_t>(index);
+        uint8_t *ot = tfl_ctx->interpreters[ctx].interpreter->typed_output_tensor<uint8_t>(index);
 
         float scale = quant_info->scale->data[0];
         float zero_point = (float)quant_info->zero_point->data[0];
-        NN_DBG_PRINTF("output tensor: (scale, offset) = (%f, %f)", scale,
-                      zero_point);
+        NN_DBG_PRINTF("output tensor: (scale, offset) = (%f, %f)", scale, zero_point);
 
         float *output_tensor_f = (float *)output_tensor;
         for (uint32_t i = 0; i < model_tensor_size; ++i) {
@@ -464,9 +409,7 @@ tensorflowlite_get_output(void *tflite_ctx, graph_execution_context ctx,
     return success;
 }
 
-void
-tensorflowlite_initialize(void **tflite_ctx)
-{
+void tensorflowlite_initialize(void **tflite_ctx) {
     TFLiteContext *tfl_ctx = new TFLiteContext();
     if (tfl_ctx == NULL) {
         NN_ERR_PRINTF("Error when allocating memory for tensorflowlite.");
@@ -492,9 +435,7 @@ tensorflowlite_initialize(void **tflite_ctx)
     *tflite_ctx = (void *)tfl_ctx;
 }
 
-void
-tensorflowlite_destroy(void *tflite_ctx)
-{
+void tensorflowlite_destroy(void *tflite_ctx) {
     /*
         TensorFlow Lite memory is internally managed by tensorflow
 
@@ -524,25 +465,22 @@ tensorflowlite_destroy(void *tflite_ctx)
         if (tfl_ctx->models[i].model_pointer) {
             if (tfl_ctx->delegate) {
                 switch (tfl_ctx->models[i].target) {
-                    case gpu:
-                    {
+                case gpu: {
 #if WASM_ENABLE_WASI_NN_GPU != 0
-                        TfLiteGpuDelegateV2Delete(tfl_ctx->delegate);
+                    TfLiteGpuDelegateV2Delete(tfl_ctx->delegate);
 #else
-                        NN_ERR_PRINTF("GPU delegate delete but not enabled.");
+                    NN_ERR_PRINTF("GPU delegate delete but not enabled.");
 #endif
-                        break;
-                    }
-                    case tpu:
-                    {
+                    break;
+                }
+                case tpu: {
 #if WASM_ENABLE_WASI_NN_EXTERNAL_DELEGATE != 0
-                        TfLiteExternalDelegateDelete(tfl_ctx->delegate);
+                    TfLiteExternalDelegateDelete(tfl_ctx->delegate);
 #else
-                        NN_ERR_PRINTF(
-                            "External delegate delete but not enabled.");
+                    NN_ERR_PRINTF("External delegate delete but not enabled.");
 #endif
-                        break;
-                    }
+                    break;
+                }
                 }
             }
             wasm_runtime_free(tfl_ctx->models[i].model_pointer);

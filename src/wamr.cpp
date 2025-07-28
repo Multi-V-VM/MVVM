@@ -1023,5 +1023,3 @@ void serialize_to_file(WASMExecEnv *instance) {
     SPDLOG_INFO("Memory usage: {} MB", get_rss() / 1024 / 1024);
     exit(EXIT_SUCCESS);
 }
-spdlog::details::log_msg::log_msg(spdlog::source_loc, fmt::v9::basic_string_view<char>, spdlog::level::level_enum,
-                                  fmt::v9::basic_string_view<char>) {}

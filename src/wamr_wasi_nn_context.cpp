@@ -16,19 +16,18 @@
 
 #include "wamr_wasi_nn_context.h"
 #include "wamr.h"
-#include "wamr_read_write.h"
 #include "wamr_exec_env.h"
+#include "wamr_read_write.h"
 #include "wasi_nn.h"
 #include "wasm_export.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <mutex>
+#include <string>
 #include <unordered_map>
 #include <vector>
-#include <string>
-#include <memory>
-
 
 #define MAX_MODEL_SIZE 85000000
 #define MAX_OUTPUT_TENSOR_SIZE 1000000

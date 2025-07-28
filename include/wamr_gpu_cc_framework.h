@@ -10,13 +10,13 @@
 #ifndef WAMR_GPU_CC_FRAMEWORK_H
 #define WAMR_GPU_CC_FRAMEWORK_H
 
+#include "wamr_security_framework.h"
+#include "wamr_type.h"
+#include <functional>
 #include <memory>
-#include <vector>
 #include <string>
 #include <unordered_map>
-#include <functional>
-#include "wamr_type.h"
-#include "wamr_security_framework.h"
+#include <vector>
 
 // Forward declarations
 struct WriteStream;
@@ -26,29 +26,24 @@ namespace mvvm {
 namespace gpu {
 
 // GPU vendor types
-enum class GPUVendor {
-    NVIDIA,
-    AMD,
-    INTEL,
-    GENERIC
-};
+enum class GPUVendor { NVIDIA, AMD, INTEL, GENERIC };
 
 // Confidential computing features
 enum class CCFeature {
-    MEMORY_ENCRYPTION,      // Encrypted GPU memory
-    SECURE_BOOT,           // Secure boot attestation
-    REMOTE_ATTESTATION,    // Remote attestation support
-    SEALED_STORAGE,        // Sealed persistent storage
-    SECURE_CHANNELS,       // Encrypted communication channels
-    TRUSTED_EXECUTION      // Trusted execution environment
+    MEMORY_ENCRYPTION, // Encrypted GPU memory
+    SECURE_BOOT, // Secure boot attestation
+    REMOTE_ATTESTATION, // Remote attestation support
+    SEALED_STORAGE, // Sealed persistent storage
+    SECURE_CHANNELS, // Encrypted communication channels
+    TRUSTED_EXECUTION // Trusted execution environment
 };
 
 // GPU memory types
 enum class MemoryType {
-    DEVICE_LOCAL,          // GPU device memory
-    HOST_VISIBLE,          // CPU-accessible GPU memory
-    UNIFIED,              // Unified memory (CPU+GPU)
-    SECURE                // Encrypted/secure memory
+    DEVICE_LOCAL, // GPU device memory
+    HOST_VISIBLE, // CPU-accessible GPU memory
+    UNIFIED, // Unified memory (CPU+GPU)
+    SECURE // Encrypted/secure memory
 };
 
 // GPU compute capability
@@ -58,7 +53,7 @@ struct ComputeCapability {
     size_t max_threads_per_block;
     size_t max_blocks_per_grid;
     size_t shared_memory_per_block;
-    bool supports_cc;  // Confidential computing support
+    bool supports_cc; // Confidential computing support
 };
 
 // GPU device information
@@ -75,9 +70,9 @@ struct GPUDevice {
 // Secure GPU context
 struct SecureGPUContext {
     GPUDevice device;
-    void* secure_context_handle;
+    void *secure_context_handle;
     std::vector<uint8_t> attestation_report;
-    std::unordered_map<std::string, void*> secure_buffers;
+    std::unordered_map<std::string, void *> secure_buffers;
     bool is_verified;
 };
 
@@ -87,39 +82,38 @@ struct GPUKernel {
     std::vector<uint8_t> binary_code;
     size_t num_parameters;
     size_t required_shared_memory;
-    std::vector<uint8_t> signature;  // Code signature for verification
+    std::vector<uint8_t> signature; // Code signature for verification
 };
 
 // Abstract GPU Confidential Computing Interface
 class GPUCCInterface {
 public:
     virtual ~GPUCCInterface() = default;
-    
+
     // Device management
     virtual std::vector<GPUDevice> enumerateDevices() = 0;
     virtual bool selectDevice(size_t device_id) = 0;
     virtual GPUDevice getCurrentDevice() = 0;
-    
+
     // Confidential computing initialization
-    virtual bool initializeCC(const std::vector<CCFeature>& required_features) = 0;
+    virtual bool initializeCC(const std::vector<CCFeature> &required_features) = 0;
     virtual bool verifyDevice() = 0;
     virtual std::vector<uint8_t> getAttestationReport() = 0;
-    
+
     // Secure memory management
-    virtual void* allocateSecureMemory(size_t size, MemoryType type) = 0;
-    virtual void freeSecureMemory(void* ptr) = 0;
-    virtual bool encryptMemory(void* ptr, size_t size) = 0;
-    virtual bool decryptMemory(void* ptr, size_t size) = 0;
-    
+    virtual void *allocateSecureMemory(size_t size, MemoryType type) = 0;
+    virtual void freeSecureMemory(void *ptr) = 0;
+    virtual bool encryptMemory(void *ptr, size_t size) = 0;
+    virtual bool decryptMemory(void *ptr, size_t size) = 0;
+
     // Secure kernel execution
-    virtual bool loadSecureKernel(const GPUKernel& kernel) = 0;
-    virtual bool executeSecureKernel(const std::string& kernel_name,
-                                   void** args, size_t num_args,
-                                   size_t grid_size, size_t block_size) = 0;
-    
+    virtual bool loadSecureKernel(const GPUKernel &kernel) = 0;
+    virtual bool executeSecureKernel(const std::string &kernel_name, void **args, size_t num_args, size_t grid_size,
+                                     size_t block_size) = 0;
+
     // Migration support
-    virtual bool checkpointGPUState(WriteStream* writer) = 0;
-    virtual bool restoreGPUState(ReadStream* reader) = 0;
+    virtual bool checkpointGPUState(WriteStream *writer) = 0;
+    virtual bool restoreGPUState(ReadStream *reader) = 0;
 };
 
 // NVIDIA Confidential Computing implementation
@@ -127,27 +121,26 @@ class NVIDIAGPUCCImpl : public GPUCCInterface {
 public:
     NVIDIAGPUCCImpl();
     ~NVIDIAGPUCCImpl() override;
-    
+
     std::vector<GPUDevice> enumerateDevices() override;
     bool selectDevice(size_t device_id) override;
     GPUDevice getCurrentDevice() override;
-    
-    bool initializeCC(const std::vector<CCFeature>& required_features) override;
+
+    bool initializeCC(const std::vector<CCFeature> &required_features) override;
     bool verifyDevice() override;
     std::vector<uint8_t> getAttestationReport() override;
-    
-    void* allocateSecureMemory(size_t size, MemoryType type) override;
-    void freeSecureMemory(void* ptr) override;
-    bool encryptMemory(void* ptr, size_t size) override;
-    bool decryptMemory(void* ptr, size_t size) override;
-    
-    bool loadSecureKernel(const GPUKernel& kernel) override;
-    bool executeSecureKernel(const std::string& kernel_name,
-                           void** args, size_t num_args,
-                           size_t grid_size, size_t block_size) override;
-    
-    bool checkpointGPUState(WriteStream* writer) override;
-    bool restoreGPUState(ReadStream* reader) override;
+
+    void *allocateSecureMemory(size_t size, MemoryType type) override;
+    void freeSecureMemory(void *ptr) override;
+    bool encryptMemory(void *ptr, size_t size) override;
+    bool decryptMemory(void *ptr, size_t size) override;
+
+    bool loadSecureKernel(const GPUKernel &kernel) override;
+    bool executeSecureKernel(const std::string &kernel_name, void **args, size_t num_args, size_t grid_size,
+                             size_t block_size) override;
+
+    bool checkpointGPUState(WriteStream *writer) override;
+    bool restoreGPUState(ReadStream *reader) override;
 
 private:
     struct Impl;
@@ -159,33 +152,32 @@ class AMDGPUCCImpl : public GPUCCInterface {
 public:
     AMDGPUCCImpl();
     ~AMDGPUCCImpl() override;
-    
+
     // Device management
     std::vector<GPUDevice> enumerateDevices() override;
     bool selectDevice(size_t device_id) override;
     GPUDevice getCurrentDevice() override;
-    
+
     // Confidential computing setup
-    bool initializeCC(const std::vector<CCFeature>& required_features) override;
+    bool initializeCC(const std::vector<CCFeature> &required_features) override;
     bool verifyDevice() override;
     std::vector<uint8_t> getAttestationReport() override;
-    
+
     // Memory management
-    void* allocateSecureMemory(size_t size, MemoryType type) override;
-    void freeSecureMemory(void* ptr) override;
-    bool encryptMemory(void* ptr, size_t size) override;
-    bool decryptMemory(void* ptr, size_t size) override;
-    
+    void *allocateSecureMemory(size_t size, MemoryType type) override;
+    void freeSecureMemory(void *ptr) override;
+    bool encryptMemory(void *ptr, size_t size) override;
+    bool decryptMemory(void *ptr, size_t size) override;
+
     // Kernel management
-    bool loadSecureKernel(const GPUKernel& kernel) override;
-    bool executeSecureKernel(const std::string& kernel_name,
-                           void** args, size_t num_args,
-                           size_t grid_size, size_t block_size) override;
-    
+    bool loadSecureKernel(const GPUKernel &kernel) override;
+    bool executeSecureKernel(const std::string &kernel_name, void **args, size_t num_args, size_t grid_size,
+                             size_t block_size) override;
+
     // State management
-    bool checkpointGPUState(WriteStream* writer) override;
-    bool restoreGPUState(ReadStream* reader) override;
-    
+    bool checkpointGPUState(WriteStream *writer) override;
+    bool restoreGPUState(ReadStream *reader) override;
+
 private:
     struct Impl;
     std::unique_ptr<Impl> pImpl;
@@ -196,33 +188,32 @@ class IntelGPUCCImpl : public GPUCCInterface {
 public:
     IntelGPUCCImpl();
     ~IntelGPUCCImpl() override;
-    
+
     // Device management
     std::vector<GPUDevice> enumerateDevices() override;
     bool selectDevice(size_t device_id) override;
     GPUDevice getCurrentDevice() override;
-    
+
     // Confidential computing setup
-    bool initializeCC(const std::vector<CCFeature>& required_features) override;
+    bool initializeCC(const std::vector<CCFeature> &required_features) override;
     bool verifyDevice() override;
     std::vector<uint8_t> getAttestationReport() override;
-    
+
     // Memory management
-    void* allocateSecureMemory(size_t size, MemoryType type) override;
-    void freeSecureMemory(void* ptr) override;
-    bool encryptMemory(void* ptr, size_t size) override;
-    bool decryptMemory(void* ptr, size_t size) override;
-    
+    void *allocateSecureMemory(size_t size, MemoryType type) override;
+    void freeSecureMemory(void *ptr) override;
+    bool encryptMemory(void *ptr, size_t size) override;
+    bool decryptMemory(void *ptr, size_t size) override;
+
     // Kernel management
-    bool loadSecureKernel(const GPUKernel& kernel) override;
-    bool executeSecureKernel(const std::string& kernel_name,
-                           void** args, size_t num_args,
-                           size_t grid_size, size_t block_size) override;
-    
+    bool loadSecureKernel(const GPUKernel &kernel) override;
+    bool executeSecureKernel(const std::string &kernel_name, void **args, size_t num_args, size_t grid_size,
+                             size_t block_size) override;
+
     // State management
-    bool checkpointGPUState(WriteStream* writer) override;
-    bool restoreGPUState(ReadStream* reader) override;
-    
+    bool checkpointGPUState(WriteStream *writer) override;
+    bool restoreGPUState(ReadStream *reader) override;
+
 private:
     struct Impl;
     std::unique_ptr<Impl> pImpl;
@@ -233,35 +224,30 @@ class GPUCCFramework {
 public:
     GPUCCFramework();
     ~GPUCCFramework();
-    
+
     // Initialize framework with specific vendor
     bool initialize(GPUVendor vendor = GPUVendor::GENERIC);
     void shutdown();
-    
+
     // Get GPU interface
-    GPUCCInterface* getInterface();
-    
+    GPUCCInterface *getInterface();
+
     // High-level secure computation
-    bool setupSecureComputation(const std::vector<CCFeature>& features);
+    bool setupSecureComputation(const std::vector<CCFeature> &features);
     bool verifySecureEnvironment();
-    
+
     // Secure data transfer
-    bool secureDataTransferToGPU(const void* host_data, void* gpu_data, 
-                                size_t size, bool encrypt = true);
-    bool secureDataTransferFromGPU(const void* gpu_data, void* host_data,
-                                  size_t size, bool decrypt = true);
-    
+    bool secureDataTransferToGPU(const void *host_data, void *gpu_data, size_t size, bool encrypt = true);
+    bool secureDataTransferFromGPU(const void *gpu_data, void *host_data, size_t size, bool decrypt = true);
+
     // Kernel management
-    bool registerSecureKernel(const std::string& name, const void* code, 
-                            size_t code_size);
-    bool runSecureKernel(const std::string& name, 
-                        const std::vector<void*>& args,
-                        size_t grid_size, size_t block_size);
-    
+    bool registerSecureKernel(const std::string &name, const void *code, size_t code_size);
+    bool runSecureKernel(const std::string &name, const std::vector<void *> &args, size_t grid_size, size_t block_size);
+
     // Migration support
-    bool prepareGPUMigration(WriteStream* writer);
-    bool completeGPUMigration(ReadStream* reader);
-    
+    bool prepareGPUMigration(WriteStream *writer);
+    bool completeGPUMigration(ReadStream *reader);
+
     // Performance monitoring
     struct PerformanceMetrics {
         double kernel_execution_time_ms;
@@ -269,9 +255,9 @@ public:
         double encryption_overhead_ms;
         size_t memory_usage_bytes;
     };
-    
+
     PerformanceMetrics getPerformanceMetrics() const;
-    
+
     // Security policy management
     void setSecurityLevel(security::SecurityPolicy level);
     bool validateSecurityCompliance();
@@ -286,27 +272,24 @@ class WasmToGPUTranslator {
 public:
     WasmToGPUTranslator();
     ~WasmToGPUTranslator();
-    
+
     // Translation options
     struct TranslationOptions {
-        bool optimize_for_cc;      // Optimize for confidential computing
+        bool optimize_for_cc; // Optimize for confidential computing
         bool enable_vectorization;
         bool enable_shared_memory;
         size_t target_compute_capability;
     };
-    
+
     // Translate WASM module to GPU kernel
-    GPUKernel translateModule(const void* wasm_module, size_t module_size,
-                            const TranslationOptions& options);
-    
+    GPUKernel translateModule(const void *wasm_module, size_t module_size, const TranslationOptions &options);
+
     // Translate specific function
-    GPUKernel translateFunction(const void* wasm_module, size_t module_size,
-                              const std::string& function_name,
-                              const TranslationOptions& options);
-    
+    GPUKernel translateFunction(const void *wasm_module, size_t module_size, const std::string &function_name,
+                                const TranslationOptions &options);
+
     // Verify translation correctness
-    bool verifyTranslation(const GPUKernel& kernel, const void* wasm_module,
-                         size_t module_size);
+    bool verifyTranslation(const GPUKernel &kernel, const void *wasm_module, size_t module_size);
 
 private:
     struct Impl;
@@ -318,20 +301,20 @@ class SecureGPUMemoryPool {
 public:
     SecureGPUMemoryPool(size_t pool_size, MemoryType type);
     ~SecureGPUMemoryPool();
-    
+
     // Memory allocation from pool
-    void* allocate(size_t size, size_t alignment = 256);
-    void deallocate(void* ptr);
-    
+    void *allocate(size_t size, size_t alignment = 256);
+    void deallocate(void *ptr);
+
     // Pool management
     size_t getAvailableMemory() const;
     size_t getTotalMemory() const;
     void defragment();
-    
+
     // Security features
-    bool enableEncryption(const std::vector<uint8_t>& key);
-    bool rotateEncryptionKey(const std::vector<uint8_t>& new_key);
-    
+    bool enableEncryption(const std::vector<uint8_t> &key);
+    bool rotateEncryptionKey(const std::vector<uint8_t> &new_key);
+
 private:
     struct Impl;
     std::unique_ptr<Impl> pImpl;
@@ -342,33 +325,33 @@ class GPUCCScheduler {
 public:
     GPUCCScheduler();
     ~GPUCCScheduler();
-    
+
     // Task definition
     struct Task {
         std::string kernel_name;
-        std::vector<void*> arguments;
+        std::vector<void *> arguments;
         size_t grid_size;
         size_t block_size;
         std::function<void(bool)> completion_callback;
     };
-    
+
     // Submit task for execution
-    void submitTask(const Task& task);
-    
+    void submitTask(const Task &task);
+
     // Batch execution
-    void submitBatch(const std::vector<Task>& tasks);
-    
+    void submitBatch(const std::vector<Task> &tasks);
+
     // Wait for completion
     void waitForCompletion();
-    void waitForTask(const std::string& task_id);
-    
+    void waitForTask(const std::string &task_id);
+
     // Priority scheduling
-    void setTaskPriority(const std::string& task_id, int priority);
-    
+    void setTaskPriority(const std::string &task_id, int priority);
+
     // Resource management
     void setMaxConcurrentTasks(size_t max_tasks);
     void setMemoryLimit(size_t memory_bytes);
-    
+
 private:
     struct Impl;
     std::unique_ptr<Impl> pImpl;

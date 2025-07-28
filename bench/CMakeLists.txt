@@ -218,18 +218,18 @@ ExternalProject_Add(hdastar-native
 )
 
 if (WAMR_BUILD_AOT)
-    function(bench_wamr_app_compile_opt_counter input counter)
-        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot
-                COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.simple_func.opt ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot.simple_func.opt
-                COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.modified_locals.opt ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot.modified_locals.opt
-                COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.skip_ckpt.opt ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot.skip_ckpt.opt
-                COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc
-                --checkpoint-freq=${counter} --disable-aux-stack-check --enable-counter-loop-checkpoint
-                -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
-                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.simple_func.opt
-        )
-        add_custom_target(${input}_ckpt_loop_counter_${counter}_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot)
-    endfunction()
+#     function(bench_wamr_app_compile_opt_counter input counter)
+#         add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot
+#                 COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.simple_func.opt ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot.simple_func.opt
+#                 COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.modified_locals.opt ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot.modified_locals.opt
+#                 COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.skip_ckpt.opt ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot.skip_ckpt.opt
+#                 COMMAND ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/wamr-compiler/build/wamrc
+#                 --checkpoint-freq=${counter} --disable-aux-stack-check --enable-counter-loop-checkpoint
+#                 -o ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm
+#                 DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.simple_func.opt
+#         )
+#         add_custom_target(${input}_ckpt_loop_counter_${counter}_compile DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-counter-${counter}.aot)
+#     endfunction()
 
     function(bench_wamr_app input)
         add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}.wasm.simple_func.opt
@@ -283,7 +283,7 @@ if (WAMR_BUILD_AOT)
         # bench_wamr_app_compile_opt_counter(${input} 16)
         # bench_wamr_app_compile_opt_counter(${input} 256)
         # bench_wamr_app_compile_opt_counter(${input} 65536)
-        bench_wamr_app_compile_opt_counter(${input} 1048576)
+        # bench_wamr_app_compile_opt_counter(${input} 1048576)
         add_custom_target(
                 ${input}_bench_compile
                 ALL
@@ -296,7 +296,7 @@ if (WAMR_BUILD_AOT)
                         # ${input}_ckpt_loop_counter_16_compile 
                         # ${input}_ckpt_loop_counter_256_compile
                         # ${input}_ckpt_loop_counter_65536_compile
-                        ${input}_ckpt_loop_counter_1048576_compile
+                        # ${input}_ckpt_loop_counter_1048576_compile
         )
 
         # add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${input}-ckpt-loop-dirty.aot

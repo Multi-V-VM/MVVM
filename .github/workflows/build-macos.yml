@@ -26,7 +26,7 @@ jobs:
       run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
 
     - name: Install Dependency
-      run: brew install cxxopts fmt llvm@14 ninja spdlog openblas
+      run: brew install cxxopts fmt llvm@14 ninja spdlog openblas jsoncpp
 
     - name: Checkout
       run: |
@@ -49,11 +49,11 @@ jobs:
         cd lib/wasm-micro-runtime/wamr-compiler
         mkdir build
         cd build
-        cmake .. -DWAMR_BUILD_AOT=1 -DWAMR_BUILD_AOT_STACK_FRAME=1 -DWAMR_BUILD_DEBUG_AOT=0 -DWAMR_BUILD_DUMP_CALL_STACK=1  -DWAMR_BUILD_CUSTOM_NAME_SECTION=1 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_WITH_CUSTOM_LLVM=1 -DWAMR_BUILD_LOAD_CUSTOM_SECTION=1 -DLLVM_DIR=/usr/local/opt/llvm@14/lib/cmake/llvm/
+        cmake .. -DWAMR_BUILD_AOT=1 -DWAMR_BUILD_AOT_STACK_FRAME=1 -DWAMR_BUILD_DEBUG_AOT=0 -DWAMR_BUILD_DUMP_CALL_STACK=1  -DWAMR_BUILD_CUSTOM_NAME_SECTION=1 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_WITH_CUSTOM_LLVM=1 -DWAMR_BUILD_LOAD_CUSTOM_SECTION=1 -DLLVM_DIR=/opt/homebrew/opt/llvm@14/lib/cmake/llvm/
         make -j
 
     - name: configure cmake
-      run: cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ && cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/local/opt/llvm@14/lib/cmake/llvm/
+      run: cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ && cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/opt/homebrew/opt/llvm@14/lib/cmake/llvm/
 
     - name: build
       working-directory: ${{runner.workspace}}/build

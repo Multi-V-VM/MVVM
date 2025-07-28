@@ -199,16 +199,16 @@ void nn_set_input(struct WASMExecEnv *, uint32_t, tensor *tensor_wasm) {
     }
     // Adjust size based on tensor type
     switch (tensor_wasm->type) {
-        case fp16:
-            tensor_size *= 2;
-            break;
-        case fp32:
-        case ip32:
-            tensor_size *= 4;
-            break;
-        case up8:
-            tensor_size *= 1;
-            break;
+    case fp16:
+        tensor_size *= 2;
+        break;
+    case fp32:
+    case ip32:
+        tensor_size *= 4;
+        break;
+    case up8:
+        tensor_size *= 1;
+        break;
     }
     // set the input tensor
     std::memcpy(input_tensor.data(), tensor_wasm->data, tensor_size);
