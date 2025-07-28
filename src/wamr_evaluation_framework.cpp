@@ -12,7 +12,9 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
-#if !defined(__APPLE__)
+#if defined(_WIN32) || defined(_WIN64)
+#include <json/json.h>
+#elif !defined(__APPLE__)
 #include <jsoncpp/json/json.h>
 #else
 #include <json/json.h>
@@ -178,7 +180,7 @@ void MigrationOverheadBenchmark::setNetworkBandwidth(double bandwidth_mbps) {
 // SecurityOverheadBenchmark implementation
 struct SecurityOverheadBenchmark::Impl {
     BenchmarkConfig config;
-    security::SecurityPolicy policy = security::SecurityPolicy::BALANCED;
+    security::SecurityPolicy policy = security::SecurityPolicy::POLICY_BALANCED;
     size_t data_size = 10 * 1024 * 1024; // 10MB default
     std::unique_ptr<security::SecurityFramework> security_framework;
     std::vector<uint8_t> test_data;

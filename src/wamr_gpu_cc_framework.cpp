@@ -11,6 +11,24 @@
 #include <cstring>
 #include <algorithm>
 
+// Cross-platform aligned allocation
+#ifdef _WIN32
+#include <malloc.h>
+static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
+    return _aligned_malloc(size, alignment);
+}
+static inline void aligned_free_wrapper(void* ptr) {
+    _aligned_free(ptr);
+}
+#else
+static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
+    return std::aligned_alloc(alignment, size);
+}
+static inline void aligned_free_wrapper(void* ptr) {
+    std::free(ptr);
+}
+#endif
+
 // For TDX attestation on Intel platforms
 #ifdef __linux__
 #include "../lib/wasm-micro-runtime/core/shared/platform/linux-tdx/tdx_attestation.h"
@@ -25,7 +43,7 @@ struct GPUCCFramework::Impl {
     GPUVendor current_vendor;
     bool initialized = false;
     PerformanceMetrics metrics;
-    security::SecurityPolicy security_level = security::SecurityPolicy::BALANCED;
+    security::SecurityPolicy security_level = security::SecurityPolicy::POLICY_BALANCED;
     
     // Timing utilities
     std::chrono::high_resolution_clock::time_point start_time;
@@ -276,22 +294,22 @@ bool GPUCCFramework::validateSecurityCompliance() {
     auto device = pImpl->gpu_interface->getCurrentDevice();
     
     switch (pImpl->security_level) {
-        case security::SecurityPolicy::MINIMAL:
+        case security::SecurityPolicy::POLICY_MINIMAL:
             // Minimal requirements
             return true;
             
-        case security::SecurityPolicy::BALANCED:
+        case security::SecurityPolicy::POLICY_BALANCED:
             // Standard security features required
             return std::find(device.cc_features.begin(), device.cc_features.end(),
                            CCFeature::MEMORY_ENCRYPTION) != device.cc_features.end();
             
-        case security::SecurityPolicy::STRICT:
+        case security::SecurityPolicy::POLICY_STRICT:
             // All security features required
             return device.cc_features.size() >= 3 &&
                    std::find(device.cc_features.begin(), device.cc_features.end(),
                            CCFeature::REMOTE_ATTESTATION) != device.cc_features.end();
             
-        case security::SecurityPolicy::CUSTOM:
+        case security::SecurityPolicy::POLICY_CUSTOM:
             // Custom policy - for now, same as balanced
             return std::find(device.cc_features.begin(), device.cc_features.end(),
                            CCFeature::MEMORY_ENCRYPTION) != device.cc_features.end();
@@ -325,7 +343,7 @@ SecureGPUMemoryPool::SecureGPUMemoryPool(size_t pool_size, MemoryType type)
     pImpl->memory_type = type;
     
     // Allocate pool - simplified
-    pImpl->pool_base = std::aligned_alloc(256, pool_size);
+    pImpl->pool_base = aligned_alloc_wrapper(256, pool_size);
     if (pImpl->pool_base) {
         std::memset(pImpl->pool_base, 0, pool_size);
         SPDLOG_INFO("Allocated secure GPU memory pool: {} bytes", pool_size);
@@ -359,7 +377,7 @@ void* SecureGPUMemoryPool::allocate(size_t size, size_t alignment) {
                 return block.ptr;
             }
         }
-        offset = std::max(offset, 
+        offset = (std::max)(offset, 
                          reinterpret_cast<uintptr_t>(block.ptr) - 
                          reinterpret_cast<uintptr_t>(pImpl->pool_base) + block.size);
     }

@@ -7,6 +7,24 @@
 #include <cstring>
 #include <map>
 
+// Cross-platform aligned allocation
+#ifdef _WIN32
+#include <malloc.h>
+static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
+    return _aligned_malloc(size, alignment);
+}
+static inline void aligned_free_wrapper(void* ptr) {
+    _aligned_free(ptr);
+}
+#else
+static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
+    return std::aligned_alloc(alignment, size);
+}
+static inline void aligned_free_wrapper(void* ptr) {
+    std::free(ptr);
+}
+#endif
+
 // NVIDIA specific headers would go here
 // #include <cuda_runtime.h>
 // #include <nvml.h>
@@ -191,7 +209,7 @@ void* NVIDIAGPUCCImpl::allocateSecureMemory(size_t size, MemoryType type) {
     // Allocate memory with encryption enabled
     // In real implementation, would use CUDA encrypted memory APIs
     
-    void* ptr = std::aligned_alloc(256, size);
+    void* ptr = aligned_alloc_wrapper(256, size);
     if (ptr) {
         std::memset(ptr, 0, size);
         pImpl->secure_allocations[ptr] = size;

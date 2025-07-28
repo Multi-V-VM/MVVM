@@ -135,7 +135,7 @@ public:
 
         // Initialize security framework with healthcare requirements
         security_framework = std::make_unique<security::SecurityFramework>();
-        security_framework->initialize(security::SecurityPolicy::STRICT);
+        security_framework->initialize(security::SecurityPolicy::POLICY_STRICT);
 
         // Initialize evaluation components
         benchmark_suite = std::make_unique<evaluation::BenchmarkSuite>();

@@ -212,7 +212,7 @@ public:
 
         // Initialize security framework
         security_framework = std::make_unique<security::SecurityFramework>();
-        security_framework->initialize(security::SecurityPolicy::BALANCED);
+        security_framework->initialize(security::SecurityPolicy::POLICY_BALANCED);
 
         // Initialize GPU CC framework if available
         if (DeviceRegistry().get_capability(current_device).has_gpu) {

@@ -75,7 +75,7 @@ struct BenchmarkConfig {
     std::vector<MigrationStrategy> migration_strategies = {
         MigrationStrategy::INCREMENTAL, MigrationStrategy::COMPRESSION, MigrationStrategy::DELTA_ENCODING};
     std::vector<security::SecurityPolicy> security_policies = {
-        security::SecurityPolicy::MINIMAL, security::SecurityPolicy::BALANCED, security::SecurityPolicy::STRICT};
+        security::SecurityPolicy::POLICY_MINIMAL, security::SecurityPolicy::POLICY_BALANCED, security::SecurityPolicy::POLICY_STRICT};
 };
 
 // Abstract benchmark interface

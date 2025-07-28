@@ -26,7 +26,7 @@ namespace security {
 
 // Implementation details
 struct SecurityFramework::Impl {
-    SecurityPolicy current_policy = SecurityPolicy::BALANCED;
+    SecurityPolicy current_policy = SecurityPolicy::POLICY_BALANCED;
     std::unordered_map<std::string, SecurityContext> active_contexts;
     std::unordered_map<std::string, std::chrono::time_point<std::chrono::steady_clock>> rate_limits;
     std::vector<AccessControlEntry> access_controls;
@@ -79,19 +79,19 @@ bool SecurityFramework::initialize(SecurityPolicy policy) {
 
     // Set up default access controls based on policy
     switch (policy) {
-    case SecurityPolicy::STRICT:
+    case SecurityPolicy::POLICY_STRICT:
         // Add strict access controls
         pImpl->access_controls.push_back({"memory", {"read"}, [](const std::string &op) { return op == "read"; }});
         break;
-    case SecurityPolicy::BALANCED:
+    case SecurityPolicy::POLICY_BALANCED:
         // Balanced controls
         pImpl->access_controls.push_back(
             {"memory", {"read", "write"}, [](const std::string &op) { return op == "read" || op == "write"; }});
         break;
-    case SecurityPolicy::MINIMAL:
+    case SecurityPolicy::POLICY_MINIMAL:
         // Minimal controls
         break;
-    case SecurityPolicy::CUSTOM:
+    case SecurityPolicy::POLICY_CUSTOM:
         // User will add custom policies
         break;
     }
@@ -143,7 +143,7 @@ bool SecurityFramework::authorizeMigration(const std::string &source, const std:
     std::lock_guard<std::mutex> lock(pImpl->mutex);
 
     // Check if migration is authorized based on policy
-    if (pImpl->current_policy == SecurityPolicy::STRICT) {
+    if (pImpl->current_policy == SecurityPolicy::POLICY_STRICT) {
         // In strict mode, check whitelist
         // For demo, allow all
         SPDLOG_INFO("Authorizing migration from {} to {}", source, destination);
@@ -344,7 +344,7 @@ bool SecurityFramework::checkAccess(const std::string &resource, const std::stri
     }
 
     // Default deny if not explicitly allowed
-    return pImpl->current_policy == SecurityPolicy::MINIMAL;
+    return pImpl->current_policy == SecurityPolicy::POLICY_MINIMAL;
 }
 
 bool SecurityFramework::detectThreat(const SecurityContext &ctx, ThreatType &detected_threat) {

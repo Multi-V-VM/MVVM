@@ -38,10 +38,10 @@ enum class ThreatType {
 
 // Security policies
 enum class SecurityPolicy {
-    STRICT, // All security measures enabled
-    BALANCED, // Balance between security and performance
-    MINIMAL, // Basic security only
-    CUSTOM // User-defined policy
+    POLICY_STRICT, // All security measures enabled
+    POLICY_BALANCED, // Balance between security and performance
+    POLICY_MINIMAL, // Basic security only
+    POLICY_CUSTOM // User-defined policy
 };
 
 // Cryptographic algorithms

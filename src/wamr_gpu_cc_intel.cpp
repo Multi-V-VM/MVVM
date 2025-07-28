@@ -7,6 +7,24 @@
 #include <cstring>
 #include <map>
 
+// Cross-platform aligned allocation
+#ifdef _WIN32
+#include <malloc.h>
+static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
+    return _aligned_malloc(size, alignment);
+}
+static inline void aligned_free_wrapper(void* ptr) {
+    _aligned_free(ptr);
+}
+#else
+static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
+    return std::aligned_alloc(alignment, size);
+}
+static inline void aligned_free_wrapper(void* ptr) {
+    std::free(ptr);
+}
+#endif
+
 // Intel specific headers would go here
 // #include <level_zero/ze_api.h>
 // #include <igsc/igsc.h>
@@ -50,7 +68,7 @@ struct IntelGPUCCImpl::Impl {
         
         // Device info
         std::memcpy(&report[64], current_device.name.c_str(), 
-                   std::min(current_device.name.size(), size_t(64)));
+                   (std::min)(current_device.name.size(), size_t(64)));
         
         // TDX integration
 #ifdef __linux__
@@ -58,7 +76,7 @@ struct IntelGPUCCImpl::Impl {
             tdx_report_full_t tdx_report;
             if (tdx_attestation_get_td_info(&tdx_report) == TDX_ATTEST_SUCCESS) {
                 std::memcpy(&report[192], &tdx_report, 
-                           std::min(sizeof(tdx_report), size_t(256)));
+                           (std::min)(sizeof(tdx_report), size_t(256)));
             }
         }
 #endif
@@ -66,7 +84,7 @@ struct IntelGPUCCImpl::Impl {
         // GPU measurements
         if (!gpu_measurement.empty()) {
             std::memcpy(&report[448], gpu_measurement.data(),
-                       std::min(gpu_measurement.size(), size_t(64)));
+                       (std::min)(gpu_measurement.size(), size_t(64)));
         }
         
         return report;
@@ -255,7 +273,7 @@ void* IntelGPUCCImpl::allocateSecureMemory(size_t size, MemoryType type) {
     // Allocate memory with Intel PRM (Protected Region Memory)
     // In real implementation, would use Level Zero protected memory APIs
     
-    void* ptr = std::aligned_alloc(4096, size);  // Page aligned for PRM
+    void* ptr = aligned_alloc_wrapper(4096, size);  // Page aligned for PRM
     if (ptr) {
         std::memset(ptr, 0, size);
         pImpl->secure_allocations[ptr] = size;

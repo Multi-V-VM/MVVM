@@ -7,6 +7,24 @@
 #include <cstring>
 #include <map>
 
+// Cross-platform aligned allocation
+#ifdef _WIN32
+#include <malloc.h>
+static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
+    return _aligned_malloc(size, alignment);
+}
+static inline void aligned_free_wrapper(void* ptr) {
+    _aligned_free(ptr);
+}
+#else
+static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
+    return std::aligned_alloc(alignment, size);
+}
+static inline void aligned_free_wrapper(void* ptr) {
+    std::free(ptr);
+}
+#endif
+
 // AMD specific headers would go here
 // #include <hip/hip_runtime.h>
 // #include <rocm_smi/rocm_smi.h>
@@ -55,7 +73,7 @@ struct AMDGPUCCImpl::Impl {
         // Guest measurement
         if (!sev_measurement.empty()) {
             std::memcpy(&report[192], sev_measurement.data(), 
-                       std::min(sev_measurement.size(), size_t(64)));
+                       (std::min)(sev_measurement.size(), size_t(64)));
         }
         
         return report;
@@ -204,7 +222,7 @@ void* AMDGPUCCImpl::allocateSecureMemory(size_t size, MemoryType type) {
     // Allocate SEV-encrypted memory
     // In real implementation, would use HIP/ROCm encrypted memory APIs
     
-    void* ptr = std::aligned_alloc(256, size);
+    void* ptr = aligned_alloc_wrapper(256, size);
     if (ptr) {
         std::memset(ptr, 0, size);
         pImpl->secure_allocations[ptr] = size;

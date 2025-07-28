@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     std::cout << "--------------------------\n";
     {
         security::SecurityFramework security;
-        security.initialize(security::SecurityPolicy::BALANCED);
+        security.initialize(security::SecurityPolicy::POLICY_BALANCED);
 
         // Authenticate peer
         if (security.authenticatePeer("demo_peer", security::AuthMethod::MUTUAL_TLS)) {
