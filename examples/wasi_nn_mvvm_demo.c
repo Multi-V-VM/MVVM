@@ -5,329 +5,154 @@
  * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 
-#include "wasi_nn.h"
-#include "wasi_nn_gpu_cc.h"
-#include "wasi_nn_migration.h"
-#include "wasi_nn_security.h"
+/*
+ * NOTE: This is a WASI-NN demo application that should be compiled to WebAssembly
+ * and run inside the WAMR runtime, not as a native application.
+ * 
+ * To use this demo:
+ * 1. Compile this file to WASM using wasi-sdk or emscripten
+ * 2. Run the resulting WASM module with WAMR with WASI-NN support enabled
+ * 
+ * Example compilation:
+ * /path/to/wasi-sdk/bin/clang --sysroot=/path/to/wasi-sdk/share/wasi-sysroot \
+ *   -O3 -o wasi_nn_mvvm_demo.wasm wasi_nn_mvvm_demo.c
+ * 
+ * Example execution:
+ * iwasm --dir=. wasi_nn_mvvm_demo.wasm
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdint.h>
+
+// Include WASI-NN headers from the runtime
+#include "wasi_nn.h"
 
 /* Model data (placeholder) */
 static uint8_t mobilenet_model_data[] = {
     /* This would contain actual MobileNet TFLite model data */
-    0x00, 0x01, 0x02, 0x03};
+    0x54, 0x46, 0x4C, 0x33,  // TFL3 magic
+    0x00, 0x00, 0x00, 0x00,  // Version
+    /* ... rest of model data ... */
+};
 
-/* Input image data (placeholder) */
-static float input_image_data[224 * 224 * 3];
+/* Simulated input data (normally would be real image data) */
+static float input_image_data[1 * 224 * 224 * 3];  // NHWC format
 
-/* Helper function to measure time */
-static double get_time_ms() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000.0 + ts.tv_nsec / 1000000.0;
-}
-
-/* Demo 1: Basic inference with migration */
-static void demo_inference_with_migration() {
-    printf("\n=== Demo 1: Inference with Migration ===\n");
-
+/* Demonstrate MVVM features with WASI-NN */
+void demo_inference() {
+    printf("\n=== WASI-NN MVVM Demo: Edge AI Inference ===\n");
+    
     error err;
     graph model_graph;
     graph_execution_context exec_ctx;
-
-    /* Initialize migration support */
-    err = wasi_nn_migration_init(WASI_NN_MIGRATION_INCREMENTAL, WASI_NN_SECURITY_BASIC);
-    if (err != success) {
-        printf("Failed to initialize migration: %d\n", err);
-        return;
-    }
-
-    /* Load model */
-    graph_builder_array builder = {.buf = (graph_builder *)&mobilenet_model_data, .size = sizeof(mobilenet_model_data)};
-
+    
+    // Prepare model for loading
+    graph_builder model_builder = {.buf = mobilenet_model_data, .size = sizeof(mobilenet_model_data)};
+    graph_builder_array builder = {.buf = &model_builder, .size = 1};
+    
     err = load(&builder, tensorflowlite, cpu, &model_graph);
     if (err != success) {
         printf("Failed to load model: %d\n", err);
         return;
     }
     printf("Model loaded successfully\n");
-
-    /* Create execution context */
+    
+    // Initialize execution context
     err = init_execution_context(model_graph, &exec_ctx);
     if (err != success) {
-        printf("Failed to create execution context: %d\n", err);
+        printf("Failed to initialize execution context: %d\n", err);
         return;
     }
-
-    /* Prepare input tensor */
-    tensor input_tensor = {.dimensions = (uint32_t[]){1, 224, 224, 3},
-                           .type = fp32,
-                           .data = (uint8_t *)input_image_data,
-                           .size = sizeof(input_image_data)};
-
-    /* Generate random input data */
+    printf("Execution context initialized\n");
+    
+    // Simulate preprocessing an image
     for (int i = 0; i < 224 * 224 * 3; i++) {
-        input_image_data[i] = (float)rand() / RAND_MAX;
+        input_image_data[i] = (float)(rand() % 256) / 255.0f;
     }
-
-    /* Set input */
+    
+    // Set input tensor
+    uint32_t input_dims[] = {1, 224, 224, 3};
+    tensor_dimensions input_dimensions = {.buf = input_dims, .size = 4};
+    tensor input_tensor = {
+        .dimensions = &input_dimensions,
+        .type = fp32,
+        .data = (uint8_t *)input_image_data
+    };
+    
+    // Set the input
     err = set_input(exec_ctx, 0, &input_tensor);
     if (err != success) {
         printf("Failed to set input: %d\n", err);
         return;
     }
-
-    /* Run inference */
-    double start_time = get_time_ms();
+    
+    // Run inference
+    printf("Running inference...\n");
     err = compute(exec_ctx);
-    double inference_time = get_time_ms() - start_time;
-
     if (err != success) {
         printf("Failed to compute: %d\n", err);
         return;
     }
-    printf("Inference completed in %.2f ms\n", inference_time);
-
-    /* Create checkpoint */
-    wasi_nn_checkpoint *checkpoint;
-    start_time = get_time_ms();
-    err = wasi_nn_checkpoint_create(&checkpoint);
-    double checkpoint_time = get_time_ms() - start_time;
-
+    printf("Inference completed\n");
+    
+    // Get output
+    uint8_t output_data[1001 * sizeof(float)];  // 1001 classes for ImageNet
+    uint32_t output_size = sizeof(output_data);
+    err = get_output(exec_ctx, 0, output_data, &output_size);
     if (err != success) {
-        printf("Failed to create checkpoint: %d\n", err);
+        printf("Failed to get output: %d\n", err);
         return;
     }
-    printf("Checkpoint created in %.2f ms, size: %zu bytes\n", checkpoint_time, checkpoint->state_size);
-
-    /* Simulate migration by restoring checkpoint */
-    start_time = get_time_ms();
-    err = wasi_nn_checkpoint_restore(checkpoint);
-    double restore_time = get_time_ms() - start_time;
-
-    if (err != success) {
-        printf("Failed to restore checkpoint: %d\n", err);
-        wasi_nn_checkpoint_free(checkpoint);
-        return;
-    }
-    printf("Checkpoint restored in %.2f ms\n", restore_time);
-
-    /* Get migration statistics */
-    wasi_nn_migration_stats stats;
-    wasi_nn_get_migration_stats(&stats);
-    printf("Migration stats:\n");
-    printf("  Data transferred: %zu bytes\n", stats.data_transferred_bytes);
-    printf("  Compression ratio: %.2f\n", stats.compression_ratio);
-    printf("  Dirty tensors: %u\n", stats.dirty_tensors_count);
-
-    /* Cleanup */
-    wasi_nn_checkpoint_free(checkpoint);
-}
-
-/* Demo 2: Secure inference */
-static void demo_secure_inference() {
-    printf("\n=== Demo 2: Secure Inference ===\n");
-
-    error err;
-
-    /* Initialize security framework */
-    err = wasi_nn_security_init(WASI_NN_AUTH_PSK, WASI_NN_CRYPTO_AES_256_GCM);
-    if (err != success) {
-        printf("Failed to initialize security: %d\n", err);
-        return;
-    }
-
-    /* Authenticate peer */
-    uint8_t psk[] = "my_pre_shared_key";
-    err = wasi_nn_authenticate_peer("demo_peer", psk, sizeof(psk));
-    if (err != success) {
-        printf("Failed to authenticate peer: %d\n", err);
-        return;
-    }
-    printf("Peer authenticated successfully\n");
-
-    /* Create security context */
-    wasi_nn_security_context *sec_ctx;
-    err = wasi_nn_create_security_context("demo_peer", &sec_ctx);
-    if (err != success) {
-        printf("Failed to create security context: %d\n", err);
-        return;
-    }
-    printf("Security context created: %s\n", sec_ctx->session_id);
-
-    /* Create test tensor */
-    float test_data[10] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0};
-    tensor test_tensor = {
-        .dimensions = (uint32_t[]){1, 10}, .type = fp32, .data = (uint8_t *)test_data, .size = sizeof(test_data)};
-
-    /* Encrypt tensor */
-    uint8_t *encrypted_data;
-    size_t encrypted_size;
-    double start_time = get_time_ms();
-    err = wasi_nn_encrypt_tensor(sec_ctx, &test_tensor, &encrypted_data, &encrypted_size);
-    double encrypt_time = get_time_ms() - start_time;
-
-    if (err != success) {
-        printf("Failed to encrypt tensor: %d\n", err);
-        return;
-    }
-    printf("Tensor encrypted in %.2f ms, size: %zu bytes\n", encrypt_time, encrypted_size);
-
-    /* Decrypt tensor */
-    float decrypted_data[10];
-    tensor decrypted_tensor = {.dimensions = (uint32_t[]){1, 10},
-                               .type = fp32,
-                               .data = (uint8_t *)decrypted_data,
-                               .size = sizeof(decrypted_data)};
-
-    start_time = get_time_ms();
-    err = wasi_nn_decrypt_tensor(sec_ctx, encrypted_data, encrypted_size, &decrypted_tensor);
-    double decrypt_time = get_time_ms() - start_time;
-
-    if (err != success) {
-        printf("Failed to decrypt tensor: %d\n", err);
-        free(encrypted_data);
-        return;
-    }
-    printf("Tensor decrypted in %.2f ms\n", decrypt_time);
-
-    /* Verify decryption */
-    int match = 1;
-    for (int i = 0; i < 10; i++) {
-        if (test_data[i] != decrypted_data[i]) {
-            match = 0;
-            break;
+    
+    // Find top prediction
+    float *predictions = (float *)output_data;
+    int top_class = 0;
+    float top_score = predictions[0];
+    for (int i = 1; i < 1001; i++) {
+        if (predictions[i] > top_score) {
+            top_score = predictions[i];
+            top_class = i;
         }
     }
-    printf("Decryption verification: %s\n", match ? "PASSED" : "FAILED");
-
-    /* Generate attestation report */
-    wasi_nn_attestation_report *report;
-    err = wasi_nn_generate_attestation(0, &report);
-    if (err != success) {
-        printf("Failed to generate attestation: %d\n", err);
-        free(encrypted_data);
-        return;
-    }
-    printf("Attestation report generated\n");
-
-    /* Verify attestation */
-    err = wasi_nn_verify_attestation(report, NULL);
-    if (err != success) {
-        printf("Attestation verification failed: %d\n", err);
-    } else {
-        printf("Attestation verified successfully\n");
-    }
-
-    /* Cleanup */
-    free(encrypted_data);
-    free(report);
+    
+    printf("Top prediction: class %d with score %.4f\n", top_class, top_score);
 }
 
-/* Demo 3: GPU Confidential Computing */
-static void demo_gpu_cc() {
-    printf("\n=== Demo 3: GPU Confidential Computing ===\n");
-
-    error err;
-    wasi_nn_gpu_context *gpu_ctx;
-
-    /* Initialize GPU CC */
-    uint32_t required_features = WASI_NN_CC_MEMORY_ENCRYPTION | WASI_NN_CC_TRUSTED_EXECUTION;
-    err = wasi_nn_gpu_cc_init(WASI_NN_GPU_VENDOR_NVIDIA, required_features, &gpu_ctx);
-    if (err != success) {
-        printf("Failed to initialize GPU CC: %d\n", err);
-        return;
-    }
-
-    printf("GPU CC initialized on device: %s\n", gpu_ctx->device.name);
-    printf("  Vendor: %d\n", gpu_ctx->device.vendor);
-    printf("  Total memory: %lu MB\n", gpu_ctx->device.total_memory / (1024 * 1024));
-    printf("  CC features: 0x%x\n", gpu_ctx->device.cc_features);
-
-    /* Verify device */
-    err = wasi_nn_gpu_verify_device(gpu_ctx);
-    if (err != success) {
-        printf("GPU device verification failed: %d\n", err);
-        wasi_nn_gpu_cleanup(gpu_ctx);
-        return;
-    }
-    printf("GPU device verified\n");
-
-    /* Allocate secure GPU memory */
-    size_t tensor_size = 1024 * 1024; /* 1MB */
-    void *gpu_mem;
-    err = wasi_nn_gpu_alloc_secure_memory(gpu_ctx, tensor_size, WASI_NN_GPU_MEM_SECURE, &gpu_mem);
-    if (err != success) {
-        printf("Failed to allocate GPU memory: %d\n", err);
-        wasi_nn_gpu_cleanup(gpu_ctx);
-        return;
-    }
-    printf("Allocated %zu bytes of secure GPU memory\n", tensor_size);
-
-    /* Create test tensor */
-    float *test_data = malloc(tensor_size);
-    for (size_t i = 0; i < tensor_size / sizeof(float); i++) {
-        test_data[i] = (float)i;
-    }
-
-    tensor test_tensor = {
-        .dimensions = (uint32_t[]){1024, 256}, .type = fp32, .data = (uint8_t *)test_data, .size = tensor_size};
-
-    /* Transfer to GPU with encryption */
-    double start_time = get_time_ms();
-    err = wasi_nn_gpu_secure_transfer_to(gpu_ctx, &test_tensor, gpu_mem, true);
-    double transfer_time = get_time_ms() - start_time;
-
-    if (err != success) {
-        printf("Failed to transfer to GPU: %d\n", err);
-        free(test_data);
-        wasi_nn_gpu_free_secure_memory(gpu_ctx, gpu_mem);
-        wasi_nn_gpu_cleanup(gpu_ctx);
-        return;
-    }
-    printf("Secure transfer to GPU completed in %.2f ms\n", transfer_time);
-
-    /* Simulate GPU computation */
-    start_time = get_time_ms();
-    err = wasi_nn_gpu_compute_secure(gpu_ctx, 0);
-    double compute_time = get_time_ms() - start_time;
-
-    if (err != success) {
-        printf("GPU computation failed: %d\n", err);
-    } else {
-        printf("GPU computation completed in %.2f ms\n", compute_time);
-    }
-
-    /* Get attestation report */
-    uint8_t *attestation;
-    size_t attestation_size;
-    err = wasi_nn_gpu_get_attestation(gpu_ctx, &attestation, &attestation_size);
-    if (err != success) {
-        printf("Failed to get GPU attestation: %d\n", err);
-    } else {
-        printf("GPU attestation report: %zu bytes\n", attestation_size);
-    }
-
-    /* Cleanup */
-    free(test_data);
-    wasi_nn_gpu_free_secure_memory(gpu_ctx, gpu_mem);
-    wasi_nn_gpu_cleanup(gpu_ctx);
+/* Simulate migration scenarios */
+void demo_migration_scenarios() {
+    printf("\n=== MVVM Migration Scenarios ===\n");
+    
+    // These scenarios would be handled by the MVVM runtime
+    printf("1. Device-to-Edge Migration:\n");
+    printf("   - Low battery detected on IoT device\n");
+    printf("   - MVVM migrates inference workload to edge server\n");
+    printf("   - Inference continues without interruption\n");
+    
+    printf("\n2. Edge-to-Cloud Migration:\n");
+    printf("   - Complex model requires more compute\n");
+    printf("   - MVVM migrates to cloud GPU instance\n");
+    printf("   - Leverages GPU acceleration transparently\n");
+    
+    printf("\n3. Privacy-Aware Migration:\n");
+    printf("   - Sensitive data detected in input\n");
+    printf("   - MVVM restricts migration to trusted edge nodes\n");
+    printf("   - Maintains data privacy requirements\n");
 }
 
-int main(int argc, char *argv[]) {
-    printf("WASI-NN MVVM Demo Application\n");
-    printf("=============================\n");
-
-    /* Seed random number generator */
+int main() {
+    printf("WebAssembly Live Migration (MVVM) Demo\n");
+    printf("======================================\n");
+    
+    // Initialize random seed
     srand(time(NULL));
-
-    /* Run demos */
-    demo_inference_with_migration();
-    demo_secure_inference();
-    demo_gpu_cc();
-
-    printf("\nAll demos completed successfully!\n");
+    
+    // Run demonstrations
+    demo_inference();
+    demo_migration_scenarios();
+    
+    printf("\n=== Demo Complete ===\n");
     return 0;
 }

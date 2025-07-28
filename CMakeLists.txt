@@ -136,6 +136,7 @@ if (MVVM_BUILD_BENCH)
 endif()
 add_definitions(-DMVVM_BUILD_TEST=1)
 add_subdirectory(test)
+add_subdirectory(examples)
 
 find_package(OpenSSL REQUIRED)
 find_package(ZLIB REQUIRED)
@@ -143,14 +144,21 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(ZSTD libzstd)
 
 file(GLOB_RECURSE SOURCE_FILES src/wamr*.cpp)
-add_library(MVVM_export ${SOURCE_FILES} ${UNCOMMON_SHARED_SOURCE})
+# Add GPU CC implementation files
+set(GPU_CC_SOURCES
+    src/wamr_gpu_cc_framework.cpp
+    src/wamr_gpu_cc_nvidia.cpp
+    src/wamr_gpu_cc_amd.cpp
+    src/wamr_gpu_cc_intel.cpp
+)
+add_library(MVVM_export ${SOURCE_FILES} ${GPU_CC_SOURCES} ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_restore src/restore.cpp ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_checkpoint src/checkpoint.cpp ${UNCOMMON_SHARED_SOURCE})
 add_executable(MVVM_profile src/profile.cpp ${UNCOMMON_SHARED_SOURCE})
 include_directories(${LLVM_INCLUDE_DIRS} ${s2n_SOURCE_DIR}/api)
 add_definitions(${LLVM_DEFINITIONS})
-target_link_libraries(MVVM_export fmt::fmt spdlog::spdlog ${BLAS_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY} ZLIB::ZLIB ${ZSTD_LIBRARIES} dl)
-target_link_libraries(MVVM_restore ${LLVM_LIBRARIES} LLVM fmt::fmt spdlog::spdlog cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib s2n  tensorflow-lite absl_log_internal_message)
-target_link_libraries(MVVM_checkpoint ${LLVM_LIBRARIES} LLVM fmt::fmt spdlog::spdlog cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib s2n tensorflow-lite absl_log_internal_message)
-target_link_libraries(MVVM_profile ${LLVM_LIBRARIES} LLVM fmt::fmt spdlog::spdlog cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib s2n tensorflow-lite absl_log_internal_message)
+target_link_libraries(MVVM_export fmt::fmt spdlog::spdlog jsoncpp_lib ${BLAS_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY} ZLIB::ZLIB ${ZSTD_LIBRARIES} dl)
+target_link_libraries(MVVM_restore ${LLVM_LIBRARIES} LLVM fmt::fmt spdlog::spdlog cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib s2n  tensorflow-lite)
+target_link_libraries(MVVM_checkpoint ${LLVM_LIBRARIES} LLVM fmt::fmt spdlog::spdlog cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib s2n tensorflow-lite)
+target_link_libraries(MVVM_profile ${LLVM_LIBRARIES} LLVM fmt::fmt spdlog::spdlog cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib s2n tensorflow-lite)
 add_definitions(-DCXXOPTS_NO_RTTI=1)

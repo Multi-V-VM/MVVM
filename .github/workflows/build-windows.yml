@@ -67,7 +67,7 @@ jobs:
 
     - name: configure cmake
       run: |
-        cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ &&cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm" -DBUILD_SHARED_LIBS=ON -DBUILD_DEPS=ON -DS2N_NO_PQ_ASM=ON
+        cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ &&cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm" -DBUILD_SHARED_LIBS=OFF -Dcrypto_LIBRARY=D:/vcpkg/installed/x64-windows/bin/libcrypto.lib -DBUILD_DEPS=ON -DS2N_NO_PQ_ASM=ON
         sed -i "s/add_library(uv SHARED/add_library(uv/g" build/_deps/libuv-src/CMakeLists.txt
 
     - name: Install benchmark

@@ -3,11 +3,29 @@
  * This demonstrates secure inference using GPU CC features
  */
 
-#include "wasi_nn.h"
+/*
+ * NOTE: This is a WASI-NN demo application that should be compiled to WebAssembly
+ * and run inside the WAMR runtime with GPU CC support, not as a native application.
+ * 
+ * To use this demo:
+ * 1. Compile this file to WASM using wasi-sdk or emscripten
+ * 2. Run the resulting WASM module with WAMR with WASI-NN and GPU CC support enabled
+ * 
+ * Example compilation:
+ * /path/to/wasi-sdk/bin/clang --sysroot=/path/to/wasi-sdk/share/wasi-sysroot \
+ *   -O3 -o wasi_nn_tflite_gpu_cc_demo.wasm wasi_nn_tflite_gpu_cc_demo.c
+ * 
+ * Example execution:
+ * iwasm --dir=. --enable-gpu-cc wasi_nn_tflite_gpu_cc_demo.wasm
+ */
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Include WASI-NN headers
+#include "wasi_nn.h"
 
 // Simple MobileNet model for demonstration
 // In production, this would be loaded from a file
@@ -28,119 +46,103 @@ void print_attestation_report(uint8_t *report, size_t report_size) {
 }
 
 int main() {
-    printf("=== WASI-NN TFLite GPU CC Demo ===\n");
-
-    // Initialize WASI-NN
+    printf("=== WASI-NN TensorFlow Lite GPU CC Demo ===\n");
+    printf("This demo shows secure AI inference using GPU Confidential Computing\n\n");
+    
     graph model_graph;
     graph_execution_context ctx;
     error err;
-
-    // Load model with GPU target (CC will be enabled automatically)
-    printf("Loading model with GPU CC support...\n");
-    graph_builder_array model_builder = {.buf = (uint8_t *)mobilenet_model, .size = sizeof(mobilenet_model)};
-    graph_builder_array builders[] = {model_builder};
-
-    err = load(builders, 1, graph_encoding_tensorflowlite, execution_target_gpu, &model_graph);
+    
+    // Load the TFLite model with GPU execution target
+    printf("Loading TFLite model for GPU execution...\n");
+    graph_builder model_builder = {
+        .buf = (uint8_t *)mobilenet_model,
+        .size = sizeof(mobilenet_model)
+    };
+    graph_builder_array builders = {
+        .buf = &model_builder,
+        .size = 1
+    };
+    
+    err = load(&builders, tensorflowlite, gpu, &model_graph);
     if (err != success) {
-        printf("Error loading model: %d\n", err);
+        printf("Failed to load model: %d\n", err);
         return 1;
     }
-    printf("Model loaded successfully with GPU CC\n");
-
+    printf("Model loaded successfully on GPU\n");
+    
     // Initialize execution context
+    printf("Initializing GPU execution context...\n");
     err = init_execution_context(model_graph, &ctx);
     if (err != success) {
-        printf("Error initializing execution context: %d\n", err);
+        printf("Failed to initialize context: %d\n", err);
         return 1;
     }
-    printf("Execution context initialized\n");
-
-    // Prepare input tensor (224x224x3 image)
-    const int input_size = 224 * 224 * 3;
-    float *input_data = malloc(input_size * sizeof(float));
-    if (!input_data) {
-        printf("Failed to allocate input buffer\n");
-        return 1;
+    
+    // Prepare input data (random data for demo)
+    printf("Preparing secure input data...\n");
+    float input_data[224 * 224 * 3]; // MobileNet input size
+    for (int i = 0; i < 224 * 224 * 3; i++) {
+        input_data[i] = (float)(rand() % 256) / 255.0f;
     }
-
-    // Fill with dummy data (normally would be preprocessed image)
-    for (int i = 0; i < input_size; i++) {
-        input_data[i] = (float)(i % 256) / 255.0f;
-    }
-
-    tensor input_tensor = {.dimensions = (int32_t[]){1, 224, 224, 3}, .type = fp32, .data = (uint8_t *)input_data};
-
-    // Set input
-    printf("Setting secure input tensor...\n");
+    
+    // Set input tensor
+    uint32_t dims[] = {1, 224, 224, 3};
+    tensor_dimensions dimensions = {.buf = dims, .size = 4};
+    tensor input_tensor = {
+        .dimensions = &dimensions,
+        .type = fp32,
+        .data = (uint8_t *)input_data
+    };
+    
+    printf("Setting encrypted input to GPU...\n");
     err = set_input(ctx, 0, &input_tensor);
     if (err != success) {
-        printf("Error setting input: %d\n", err);
-        free(input_data);
+        printf("Failed to set input: %d\n", err);
         return 1;
     }
-
-    // Run secure inference
+    
+    // Run inference on GPU with CC protection
     printf("Running secure inference on GPU...\n");
     err = compute(ctx);
     if (err != success) {
-        printf("Error during computation: %d\n", err);
-        free(input_data);
+        printf("Failed to compute: %d\n", err);
         return 1;
     }
-    printf("Secure inference completed\n");
-
-    // Get output
-    const int output_size = 1001; // ImageNet classes
-    float *output_data = malloc(output_size * sizeof(float));
-    if (!output_data) {
-        printf("Failed to allocate output buffer\n");
-        free(input_data);
-        return 1;
-    }
-
-    uint32_t output_bytes = output_size * sizeof(float);
-    err = get_output(ctx, 0, (uint8_t *)output_data, &output_bytes);
+    printf("Inference completed securely\n");
+    
+    // Get output (classifications)
+    float output_buffer[1001]; // ImageNet classes
+    uint32_t output_bytes = sizeof(output_buffer);
+    
+    printf("Retrieving secure results...\n");
+    err = get_output(ctx, 0, output_buffer, &output_bytes);
     if (err != success) {
-        printf("Error getting output: %d\n", err);
-        free(input_data);
-        free(output_data);
+        printf("Failed to get output: %d\n", err);
         return 1;
     }
-
+    
     // Find top prediction
-    float max_prob = 0.0f;
-    int max_idx = 0;
-    for (int i = 0; i < output_size; i++) {
-        if (output_data[i] > max_prob) {
-            max_prob = output_data[i];
-            max_idx = i;
+    int top_class = 0;
+    float top_score = output_buffer[0];
+    for (int i = 1; i < 1001; i++) {
+        if (output_buffer[i] > top_score) {
+            top_score = output_buffer[i];
+            top_class = i;
         }
     }
-
-    printf("\nInference Results:\n");
-    printf("Top prediction: Class %d with probability %.4f\n", max_idx, max_prob);
-
-    // GPU CC specific: Get attestation report
-    // This would be exposed through WASI-NN extensions in production
-    printf("\nGPU CC Security Features:\n");
-    printf("- Memory encryption: ENABLED\n");
-    printf("- Secure boot verification: PASSED\n");
-    printf("- Model weights encryption: ENABLED\n");
-    printf("- Intermediate tensor encryption: ENABLED\n");
-
-    // Simulate attestation report
-    uint8_t attestation_report[512];
-    size_t report_size = 512;
-    // In production, this would call wasi_nn_get_attestation()
-    for (size_t i = 0; i < report_size; i++) {
-        attestation_report[i] = (uint8_t)((i * 37 + 89) % 256);
+    
+    printf("\n=== Results ===\n");
+    printf("Top prediction: Class %d (score: %.4f)\n", top_class, top_score);
+    printf("All computations performed in GPU secure enclave\n");
+    
+    // Simulate GPU attestation report
+    uint8_t mock_attestation[64];
+    for (int i = 0; i < 64; i++) {
+        mock_attestation[i] = rand() % 256;
     }
-    print_attestation_report(attestation_report, report_size);
-
-    // Cleanup
-    free(input_data);
-    free(output_data);
-
-    printf("\nDemo completed successfully!\n");
+    print_attestation_report(mock_attestation, 64);
+    
+    printf("\n=== Demo Complete ===\n");
     return 0;
 }

@@ -121,6 +121,5 @@ target_link_libraries(wasi_nn_record_replay_test
     vmlib 
     MVVM_export 
     -Wl,--end-group
-    tensorflow-lite 
-    absl_log_internal_message)
+    tensorflow-lite)
 add_test(NAME wasi_nn_record_replay_test COMMAND wasi_nn_record_replay_test)

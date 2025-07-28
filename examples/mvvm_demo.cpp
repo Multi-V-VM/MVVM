@@ -11,6 +11,7 @@
 #include "wamr_gpu_cc_framework.h"
 #include "wamr_migration_optimization.h"
 #include "wamr_security_framework.h"
+#include "wamr_read_write.h"
 #include <chrono>
 #include <iostream>
 #include <memory>

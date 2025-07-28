@@ -12,7 +12,11 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#if !defined(__APPLE__)
 #include <jsoncpp/json/json.h>
+#else
+#include <json/json.h>
+#endif
 #include <numeric>
 #include <random>
 #include <spdlog/spdlog.h>
