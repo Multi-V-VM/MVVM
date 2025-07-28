@@ -80,8 +80,6 @@ void profile_register_sigint() {
         exit(-1);
     }
 }
-#include "absl/log/log.h"
-void spdlog::logger::err_handler_(std::string const &) {}
 
 int main(int argc, char *argv[]) {
     cxxopts::Options options("MVVM_profile",
