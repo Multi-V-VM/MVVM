@@ -1,22 +1,40 @@
 # Migratable Velocity Virtual Machine
 [![MacOS](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-windows.yml/badge.svg)](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-windows.yml)[![MacOS](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-macos.yml/badge.svg)](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-macos.yml)[![Ubuntu](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-ubuntu.yml)[![Generate page](https://github.com/Multi-V-VM/Multi-V-VM.github.io/actions/workflows/mkdocs.yml/badge.svg)](https://github.com/Multi-V-VM/Multi-V-VM.github.io/actions/workflows/mkdocs.yml)
 
-<img width="526" alt="arch" src="https://github.com/Multi-V-VM/MVVM/assets/40686366/0e600853-c2d2-44dc-83cb-4a6904f63019">
+![arch](./doc/img_4.png)
 
-Heterogeneous Containerization of Large Language Model Apps
+The rise of AI agents powered by Large Language
+Models (LLMs) presents critical challenges: how to securely exe-
+cute and migrate these agents across heterogeneous environments
+while protecting sensitive user data, maintaining availability
+during network failures, minimizing response latency for time-
+critical decisions, and ensuring output safety in mission-critical
+applications. We present MVVM, a WebAssembly-based secure
+container framework that enables transparent live migration
+of LLM agent workspaces between edge devices and cloud
+servers with end-to-end privacy guarantees, resilient multi-tier
+replication, speculative execution for latency optimization, and
+integrated validation for safety assurance.
+MVVM introduces two key innovations: (1) a two-way sand-
+boxing framework leveraging hardware enclaves and accelerator
+extensions that protects both the agent from malicious hosts
+and the host from compromised agents; (2) an efficient cross-
+platform migration mechanism using WebAssembly and WASI’s
+platform-agnostic design, enabling seamless movement across
+ARM phones, RISC-V MCUs, x86 servers, and heterogeneous
+accelerators.
 
 ## Just run
 ```bash
-wamrc --opt-level=3 --threshold-bits=16 --disable-aux-stack-check --enable-counter-loop-checkpoint -o bc.aot bench/bc.aot
+wamrc --opt-level=3 --disable-aux-stack-check --enable-counter-loop-checkpoint -o bc.aot bench/bc.aot
 ./MVVM_checkpoint -t bench/bc.aot -a -g20,-n1000
 ./MVVM_restore -t bench/bc.aot
 ```
 Policy for `wamrc`
 1. counter loop checkpoint `--enable-counter-loop-checkpoint`
-2. loop threshold for 1 << x per checkpoint
-3. loop checkpoint `--enable-loop-checkpoint`, meaning without the counter to checkpoint
-3. loop dirty checkpoint `--enable-loop-dirty-checkpoint`, meaning use the dirty bit to checkpoint
-4. `--enable-checkpoint`, enable function level checkpoint
+2. loop dirty checkpoint `--enable-loop-dirty-checkpoint`, meaning use the dirty bit to checkpoint
+3. `--enable-checkpoint`, enable function level checkpoint
+4. `--disable-aux-stack-check`, disable the aux stack check
 
 ## To debug mode checkpoint and migrate a WAMR nano process
 First comment out the following in `checkpoint.cpp`
@@ -38,7 +56,6 @@ SPDLOG_LEVEL=debug ./MVVM_restore -t test/tcp_client.aot # All the wasi env will
 5. -c Counter: The WASM instruction counter to stop and checkpoint(Conflict with -f and -x)
 6. -a Arguments: The arguments to the function
 7. -e Environment: The environment variables to the function
-<img width="585" alt="image" src="https://github.com/Multi-V-VM/MVVM/assets/40686366/e10dba2b-51f2-4373-a119-0b53f7622407">
 
 ## Design Doc
 1. All the pointers will be stored as offset to the linear memory.
@@ -46,8 +63,12 @@ SPDLOG_LEVEL=debug ./MVVM_restore -t test/tcp_client.aot # All the wasi env will
 3. Use AOT compiler convention with a stable point to achieve cross-platform.
 
 ## Performance
-<img width="506" alt="image" src="https://github.com/Multi-V-VM/MVVM/assets/40686366/ab5fb538-82e7-4a62-9516-d29052670c38">
-<img width="506" alt="image" src="https://github.com/Multi-V-VM/MVVM/assets/40686366/1f3dc51d-75ee-44cb-ae89-288157d8f498">
+![perf](./doc/img_5.png)
+
+## Use Cases
+1. Privacy-aware scheduling that automatically determines whether to execute locally or remotely based on data sensitivity and resource availability;
+2. Multi-tier replication with intelligent quality degradation that maintains service availability despite network failures or resource constraints;
+3. A comprehensive execution framework combining speculative execution for 10× latency reduction with parallel validation that ensures output safety without compromising responsiveness
 
 ## Cite
 ```
