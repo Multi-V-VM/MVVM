@@ -23,16 +23,23 @@
 #include <random>
 #include <spdlog/spdlog.h>
 #include <sstream>
+#ifndef _WIN32
 #include <sys/resource.h>
+#endif
 
 namespace mvvm {
 namespace evaluation {
 
 // Helper to get current memory usage
 static size_t getCurrentMemoryUsage() {
+#ifdef _WIN32
+    // Windows implementation using GetProcessMemoryInfo
+    return 0; // Simplified for now, would need to use Windows API
+#else
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
     return usage.ru_maxrss * 1024; // Convert to bytes
+#endif
 }
 
 // Helper to get CPU usage

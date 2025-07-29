@@ -14,9 +14,12 @@
 #ifndef MVVM_WAMR_WASI_NN_H
 #define MVVM_WAMR_WASI_NN_H
 
+#include "wasm_export.h"
+
+// Only include WASI-NN headers if it's enabled
+#if defined(WAMR_BUILD_WASI_NN) && WAMR_BUILD_WASI_NN != 0
 #include "wasi_nn.h"
 #include "wasi_nn_types.h"
-#include "wasm_export.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -24,6 +27,7 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+#endif // WAMR_BUILD_WASI_NN
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -39,10 +43,13 @@ extern "C" {
 // Forward declaration
 struct WAMRWASINNContext;
 
+#if defined(WAMR_BUILD_WASI_NN) && WAMR_BUILD_WASI_NN != 0
 // We need to use the WAMR library's WASINNContext, but avoid conflicts
 // Include the required header that defines it
 #include "wasi_nn_private.h"
+#endif
 
+#if defined(WAMR_BUILD_WASI_NN) && WAMR_BUILD_WASI_NN != 0
 // 操作类型枚举
 enum class WASINNOperationType { LOAD_MODEL, INIT_EXECUTION_CONTEXT, SET_INPUT, COMPUTE, GET_OUTPUT };
 
@@ -168,9 +175,13 @@ struct WAMRWASINNContext {
 template <typename T> void dump(T *t, WASINNContext *env) { t->dump_impl(env); }
 template <typename T> void restore(T *t, WASINNContext *env) { t->restore_impl(env); }
 
+#endif // WAMR_BUILD_WASI_NN
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#if defined(WAMR_BUILD_WASI_NN) && WAMR_BUILD_WASI_NN != 0
 
 // Initialize the WASI-NN recorder for a module instance
 void wamr_wasi_nn_recorder_init(wasm_module_inst_t instance);
@@ -202,6 +213,8 @@ error wamr_wasi_nn_get_output_with_recording(wasm_exec_env_t exec_env, graph_exe
 size_t wamr_wasi_nn_get_recorder_memory_size(wasm_module_inst_t instance);
 size_t wamr_wasi_nn_get_recorder_peak_memory_size(wasm_module_inst_t instance);
 size_t wamr_wasi_nn_get_recorder_operation_count(wasm_module_inst_t instance);
+
+#endif // WAMR_BUILD_WASI_NN
 
 #ifdef __cplusplus
 }

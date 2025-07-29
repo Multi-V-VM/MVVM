@@ -17,11 +17,12 @@
 #include <cstdlib>
 #include <mutex>
 
+// This declaration must be outside extern "C" to match the header
+extern WAMRInstance *wamr;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-extern WAMRInstance *wamr;
 size_t snapshot_threshold;
 size_t call_count = 0;
 bool checkpoint = false;
@@ -169,7 +170,7 @@ int get_sock_fd(int fd) {
 };
 #endif
 
-#if WASM_ENABLE_WASI_NN != 0
+#if defined(WAMR_BUILD_WASI_NN) && WAMR_BUILD_WASI_NN != 0
 void nn_load(struct WASMExecEnv *) {
     // TODO: load the last model and initialize the struct
     // get last fd

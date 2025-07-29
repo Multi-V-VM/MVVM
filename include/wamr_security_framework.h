@@ -230,7 +230,7 @@ public:
     ~SecureMigrationProtocol();
 
     // Protocol states
-    enum class ProtocolState { INIT, HANDSHAKE, AUTHENTICATED, MIGRATING, COMPLETED, ERROR };
+    enum class ProtocolState { STATE_INIT, STATE_HANDSHAKE, STATE_AUTHENTICATED, STATE_MIGRATING, STATE_COMPLETED, STATE_ERROR };
 
     // Initialize protocol
     bool initializeProtocol(bool is_source);

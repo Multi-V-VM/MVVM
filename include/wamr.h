@@ -130,8 +130,10 @@ public:
     std::vector<const char *> addr_{};
     std::vector<const char *> ns_pool_{};
     std::vector<WAMRExecEnv *> execEnv{};
+#if defined(WAMR_BUILD_WASI_NN) && WAMR_BUILD_WASI_NN != 0
     std::vector<WAMRWASINNModel> nn_context{};
     WAMRWASINNContext nn_context_mvvm;
+#endif
     std::map<int, std::tuple<std::string, std::vector<std::tuple<int, int, fd_op>>>> fd_map_{};
     // add offset to pair->tuple, 3rd param 'int'
     std::map<int, int> new_sock_map_{};

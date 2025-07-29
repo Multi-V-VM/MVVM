@@ -14,8 +14,13 @@
 #include <numeric>
 #include <signal.h>
 #include <spdlog/spdlog.h>
+#ifndef _WIN32
 #include <sys/mman.h>
 #include <unistd.h>
+#else
+#include <windows.h>
+#include <io.h>
+#endif
 #include <zlib.h>
 
 namespace mvvm {
@@ -271,11 +276,16 @@ size_t MigrationOptimizer::decompressData(const void *input, size_t input_size, 
 }
 
 void MigrationOptimizer::setupLazyLoading(void *memory_base, size_t memory_size) {
+#ifndef _WIN32
     // Protect memory to trigger page faults on access
     if (mprotect(memory_base, memory_size, PROT_NONE) != 0) {
         SPDLOG_ERROR("Failed to setup lazy loading: {}", strerror(errno));
         return;
     }
+#else
+    // Windows implementation would use VirtualProtect
+    SPDLOG_WARN("Lazy loading not implemented on Windows");
+#endif
 
     MemoryRegion region;
     region.base_addr = memory_base;
@@ -304,9 +314,14 @@ void MigrationOptimizer::handlePageFault(void *fault_addr) {
 
     // Load the page data (would be from remote in real implementation)
     // For now, just make it accessible
+#ifndef _WIN32
     if (mprotect(page_addr, Impl::PAGE_SIZE, PROT_READ | PROT_WRITE) != 0) {
         SPDLOG_ERROR("Failed to handle page fault: {}", strerror(errno));
     }
+#else
+    // Windows implementation would use VirtualProtect
+    SPDLOG_WARN("Page fault handling not implemented on Windows");
+#endif
 
     SPDLOG_DEBUG("Handled page fault for page {}", page_num);
 }
@@ -379,15 +394,28 @@ struct ZeroCopyTransfer::RDMAContext {
 ZeroCopyTransfer::ZeroCopyTransfer() : shared_mem_base(nullptr), shared_mem_size(0) {}
 
 ZeroCopyTransfer::~ZeroCopyTransfer() {
+#ifndef _WIN32
     if (shared_mem_base) {
         munmap(shared_mem_base, shared_mem_size);
     }
+#else
+    // Windows implementation would use UnmapViewOfFile
+    if (shared_mem_base) {
+        UnmapViewOfFile(shared_mem_base);
+    }
+#endif
 }
 
 bool ZeroCopyTransfer::setupSharedMemory(size_t size) {
     shared_mem_size = size;
+#ifndef _WIN32
     shared_mem_base = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     return shared_mem_base != MAP_FAILED;
+#else
+    // Windows implementation would use CreateFileMapping/MapViewOfFile
+    SPDLOG_WARN("Zero-copy transfer not implemented on Windows");
+    return false;
+#endif
 }
 
 void *ZeroCopyTransfer::getSharedMemoryPtr() { return shared_mem_base; }
@@ -395,10 +423,18 @@ void *ZeroCopyTransfer::getSharedMemoryPtr() { return shared_mem_base; }
 void ZeroCopyTransfer::transferDirect(int fd, const void *data, size_t size) {
     // Use sendfile for zero-copy transfer when possible
     // For now, fallback to regular write
+#ifdef _WIN32
+    // Windows implementation using _write
+    int written = _write(fd, data, static_cast<unsigned int>(size));
+    if (written < 0 || static_cast<size_t>(written) != size) {
+        SPDLOG_ERROR("Failed to write data: {}", strerror(errno));
+    }
+#else
     ssize_t written = write(fd, data, size);
     if (written < 0 || static_cast<size_t>(written) != size) {
         SPDLOG_ERROR("Failed to write data: {}", strerror(errno));
     }
+#endif
 }
 
 // MigrationPredictor implementation

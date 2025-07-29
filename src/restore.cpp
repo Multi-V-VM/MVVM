@@ -31,9 +31,6 @@ extern std::string target;
 extern ReadStream *reader;
 extern WriteStream *writer;
 
-
-void spdlog::logger::err_handler_(std::string const &) {}
-
 int main(int argc, char **argv) {
     cxxopts::Options options("MVVM", "Migratable Velocity Virtual Machine, to ship the VM state to another machine");
     options.add_options()("t,target", "The webassembly file to execute",

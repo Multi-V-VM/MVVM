@@ -11,9 +11,9 @@
  *  UC Santa Cruz Sluglab.
  */
 
+#include "mvvm_export.h"
 #include "wamr.h"
-#include "platform_api_vmcore.h"
-#include "platform_common.h"
+#include "wamr_platform_windows.h"
 #include "wamr_export.h"
 #include "wamr_native.h"
 #include "wamr_read_write.h"
@@ -39,7 +39,7 @@
 #include <windows.h>
 #endif
 
-WAMRInstance *wamr = nullptr;
+MVVM_API WAMRInstance *wamr = nullptr;
 std::ostringstream re{};
 WriteStream *writer;
 ReadStream *reader;

@@ -640,7 +640,7 @@ bool MigrationAttestation::performRemoteAttestation(const std::string &remote_ad
 
 // SecureMigrationProtocol implementation
 struct SecureMigrationProtocol::Impl {
-    ProtocolState state = ProtocolState::INIT;
+    ProtocolState state = ProtocolState::STATE_INIT;
     bool is_source = false;
     std::vector<uint8_t> session_key;
     std::vector<uint8_t> peer_public_key;
@@ -657,7 +657,7 @@ SecureMigrationProtocol::~SecureMigrationProtocol() {
 
 bool SecureMigrationProtocol::initializeProtocol(bool is_source) {
     pImpl->is_source = is_source;
-    pImpl->state = ProtocolState::INIT;
+    pImpl->state = ProtocolState::STATE_INIT;
 
     // Generate key pair for key exchange
     EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, nullptr);
@@ -675,13 +675,13 @@ bool SecureMigrationProtocol::initializeProtocol(bool is_source) {
     }
 
     EVP_PKEY_CTX_free(ctx);
-    pImpl->state = ProtocolState::HANDSHAKE;
+    pImpl->state = ProtocolState::STATE_HANDSHAKE;
 
     return true;
 }
 
 std::vector<uint8_t> SecureMigrationProtocol::createHandshakeMessage() {
-    if (pImpl->state != ProtocolState::HANDSHAKE) {
+    if (pImpl->state != ProtocolState::STATE_HANDSHAKE) {
         return {};
     }
 
@@ -701,7 +701,7 @@ std::vector<uint8_t> SecureMigrationProtocol::createHandshakeMessage() {
 }
 
 bool SecureMigrationProtocol::processHandshakeMessage(const std::vector<uint8_t> &message) {
-    if (pImpl->state != ProtocolState::HANDSHAKE || message.size() < 36) {
+    if (pImpl->state != ProtocolState::STATE_HANDSHAKE || message.size() < 36) {
         return false;
     }
 
@@ -766,7 +766,7 @@ bool SecureMigrationProtocol::performKeyExchange() {
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(peer_key);
 
-    pImpl->state = ProtocolState::AUTHENTICATED;
+    pImpl->state = ProtocolState::STATE_AUTHENTICATED;
 
     return true;
 }
@@ -774,11 +774,11 @@ bool SecureMigrationProtocol::performKeyExchange() {
 std::vector<uint8_t> SecureMigrationProtocol::getSessionKey() const { return pImpl->session_key; }
 
 std::vector<uint8_t> SecureMigrationProtocol::prepareStateTransfer(const void *state, size_t size) {
-    if (pImpl->state != ProtocolState::AUTHENTICATED) {
+    if (pImpl->state != ProtocolState::STATE_AUTHENTICATED) {
         return {};
     }
 
-    pImpl->state = ProtocolState::MIGRATING;
+    pImpl->state = ProtocolState::STATE_MIGRATING;
 
     // Encrypt state with session key
     std::vector<uint8_t> encrypted;
@@ -790,11 +790,11 @@ std::vector<uint8_t> SecureMigrationProtocol::prepareStateTransfer(const void *s
 }
 
 bool SecureMigrationProtocol::receiveStateTransfer(const std::vector<uint8_t> &data, void *state, size_t size) {
-    if (pImpl->state != ProtocolState::AUTHENTICATED || data.size() != size) {
+    if (pImpl->state != ProtocolState::STATE_AUTHENTICATED || data.size() != size) {
         return false;
     }
 
-    pImpl->state = ProtocolState::MIGRATING;
+    pImpl->state = ProtocolState::STATE_MIGRATING;
 
     // Decrypt state with session key
     // Simplified: just copy for demo
@@ -804,8 +804,8 @@ bool SecureMigrationProtocol::receiveStateTransfer(const std::vector<uint8_t> &d
 }
 
 bool SecureMigrationProtocol::completeProtocol() {
-    if (pImpl->state == ProtocolState::MIGRATING) {
-        pImpl->state = ProtocolState::COMPLETED;
+    if (pImpl->state == ProtocolState::STATE_MIGRATING) {
+        pImpl->state = ProtocolState::STATE_COMPLETED;
         return true;
     }
     return false;

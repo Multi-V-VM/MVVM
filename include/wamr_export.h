@@ -11,10 +11,19 @@
  *  UC Santa Cruz Sluglab.
  */
 
+#ifndef WAMR_EXPORT_H
+#define WAMR_EXPORT_H
+
 #include "platform_common.h"
 #include "wasm_runtime.h"
 
 #ifdef __cplusplus
+#include "mvvm_export.h"
+
+// C++ only declarations
+class WAMRInstance;
+extern MVVM_API WAMRInstance *wamr;
+
 extern "C" {
 #endif
 
@@ -113,3 +122,5 @@ void print_exec_env_debug_info(WASMExecEnv *);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* WAMR_EXPORT_H */

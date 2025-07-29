@@ -3,6 +3,9 @@
  */
 
 #include "wamr_wasi_nn_tflite_gpu_cc.h"
+
+#if defined(WAMR_BUILD_WASI_NN) && WAMR_BUILD_WASI_NN != 0
+
 #include <chrono>
 #include <cstring>
 #include <spdlog/spdlog.h>
@@ -243,3 +246,5 @@ int wasi_nn_tflite_gpu_cc_get_attestation(void *gpu_cc_ctx, uint8_t *report_buff
 
 } // namespace wasi_nn
 } // namespace mvvm
+
+#endif // WAMR_BUILD_WASI_NN

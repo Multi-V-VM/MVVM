@@ -11,8 +11,7 @@
  *  UC Santa Cruz Sluglab.
  */
 
-#define WASM_ENABLE_WASI_NN 1
-#if WASM_ENABLE_WASI_NN != 0
+#if defined(WAMR_BUILD_WASI_NN) && WAMR_BUILD_WASI_NN != 0
 
 #include "wamr_wasi_nn_context.h"
 #include "wamr.h"
@@ -654,4 +653,4 @@ void WAMRWASINNContext::restore_impl(WASINNContext *env) {
     // Stub implementation - do nothing
 }
 
-#endif // WASM_ENABLE_WASI_NN
+#endif // WAMR_BUILD_WASI_NN
