@@ -86,5 +86,5 @@ jobs:
       with:
         name: mvvm-windows-${{matrix.build}}-${{matrix.standard}}
         path: |
-          ${{runner.workspace}}/build/MVVM_*.exe
+          ${{runner.workspace}}/build/${{matrix.build}}/MVVM_*.exe
         retention-days: 7 
