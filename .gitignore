@@ -38,3 +38,4 @@ sb2
 build_test
 target
 *.tflite
+build-cxl
