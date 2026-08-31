@@ -12,6 +12,9 @@
  */
 
 #include "wamr.h"
+#if defined(MVVM_ENABLE_CXL)
+#include "wamr_cxl_stream.h"
+#endif
 #include "mvvm_export.h"
 #include "wamr_export.h"
 #include "wamr_native.h"
@@ -1012,7 +1015,14 @@ void serialize_to_file(WASMExecEnv *instance) {
 
     } else
 #endif
+    {
         struct_pack::serialize_to(*writer, as);
+#if defined(MVVM_ENABLE_CXL)
+        if (auto *cxl_writer = dynamic_cast<mvvm::cxl::WriteStream *>(writer);
+            cxl_writer != nullptr && !cxl_writer->commit())
+            throw std::runtime_error("failed to commit checkpoint to CXL/DAX storage");
+#endif
+    }
 
     auto end = std::chrono::high_resolution_clock::now();
     // get duration in us

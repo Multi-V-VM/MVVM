@@ -15,6 +15,9 @@
 #include "wamr_exec_env.h"
 #include "wamr_export.h"
 #include "wamr_read_write.h"
+#if defined(MVVM_ENABLE_CXL)
+#include "wamr_cxl_stream.h"
+#endif
 #include "wasm_runtime.h"
 #include "ylt/struct_pack.hpp"
 #include <cxxopts.hpp>
@@ -42,7 +45,11 @@ int main(int argc, char **argv) {
         "o,offload_addr", "The next hop to offload", cxxopts::value<std::string>()->default_value(""))(
         "s,offload_port", "The next hop port to offload", cxxopts::value<int>()->default_value("0"))(
         "c,count", "The value for epoch value", cxxopts::value<size_t>()->default_value("0"))(
-        "r,rdma", "Whether to use RDMA device", cxxopts::value<bool>()->default_value("0"));
+        "r,rdma", "Whether to use RDMA device", cxxopts::value<bool>()->default_value("0"))
+#if defined(MVVM_ENABLE_CXL)
+        ("cxl-file", "Checkpoint file on a DAX-enabled filesystem", cxxopts::value<std::string>()->default_value(""))
+#endif
+        ;
     // Can first discover from the wasi context.
 
     auto result = options.parse(argc, argv);
@@ -57,6 +64,11 @@ int main(int argc, char **argv) {
     offload_port = result["offload_port"].as<int>();
     auto count = result["count"].as<size_t>();
     auto rdma = result["rdma"].as<bool>();
+#if defined(MVVM_ENABLE_CXL)
+    const auto cxl_file = result["cxl-file"].as<std::string>();
+    if (!cxl_file.empty() && !source_addr.empty())
+        throw std::invalid_argument("--cxl-file cannot be combined with network/RDMA input");
+#endif
 
     snapshot_threshold = count;
     register_sigtrap();
@@ -66,7 +78,18 @@ int main(int argc, char **argv) {
 
     wamr->get_int3_addr();
     wamr->replace_int3_with_nop();
-    if (source_addr.empty())
+    if (
+#if defined(MVVM_ENABLE_CXL)
+        !cxl_file.empty()) {
+        auto *cxl_reader = new mvvm::cxl::ReadStream(mvvm::cxl::SharedRegion::openDaxFile(cxl_file));
+        if (!cxl_reader->waitUntilReady(std::chrono::seconds(30))) {
+            delete cxl_reader;
+            throw std::runtime_error("CXL checkpoint was not committed within 30 seconds");
+        }
+        reader = cxl_reader;
+    } else if (
+#endif
+        source_addr.empty())
         reader = new FreadStream((removeExtension(target) + ".bin").c_str()); // writer
 #if !defined(_WIN32)
 #if defined(__linux__) && defined(MVVM_ENABLE_RDMA)

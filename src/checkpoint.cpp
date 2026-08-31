@@ -13,6 +13,9 @@
 
 #include "aot_runtime.h"
 #include "wamr.h"
+#if defined(MVVM_ENABLE_CXL)
+#include "wamr_cxl_stream.h"
+#endif
 #include <cxxopts.hpp>
 #include <sstream>
 #include <string>
@@ -56,7 +59,13 @@ int main(int argc, char *argv[]) {
         "o,offload_addr", "The next hop to offload", cxxopts::value<std::string>()->default_value(""))(
         "s,offload_port", "The next hop port to offload", cxxopts::value<int>()->default_value("0"))(
         "c,count", "The step index to test execution", cxxopts::value<int>()->default_value("0"))(
-        "r,rdma", "Whether to use RDMA device", cxxopts::value<bool>()->default_value("0"));
+        "r,rdma", "Whether to use RDMA device", cxxopts::value<bool>()->default_value("0"))
+#if defined(MVVM_ENABLE_CXL)
+        ("cxl-file", "Checkpoint file on a DAX-enabled filesystem",
+         cxxopts::value<std::string>()->default_value(""))("cxl-capacity", "CXL checkpoint payload capacity in bytes",
+                                                           cxxopts::value<std::size_t>()->default_value("1073741824"))
+#endif
+        ;
 
     auto result = options.parse(argc, argv);
     if (result["help"].as<bool>()) {
@@ -74,6 +83,12 @@ int main(int argc, char *argv[]) {
     auto offload_port = result["offload_port"].as<int>();
     auto ns_pool = result["ns_pool"].as<std::vector<std::string>>();
     auto rdma = result["rdma"].as<bool>();
+#if defined(MVVM_ENABLE_CXL)
+    const auto cxl_file = result["cxl-file"].as<std::string>();
+    const auto cxl_capacity = result["cxl-capacity"].as<std::size_t>();
+    if (!cxl_file.empty() && !offload_addr.empty())
+        throw std::invalid_argument("--cxl-file cannot be combined with network/RDMA offload");
+#endif
     snapshot_threshold = result["count"].as<int>();
     stop_func_threshold = result["function_count"].as<int>();
     is_debug = result["is_debug"].as<bool>();
@@ -94,7 +109,13 @@ int main(int argc, char *argv[]) {
     register_sigint();
     for (int i = 0; i < 10; i++)
         fopen("checkpoint.log", "w"); // open naive file for bubble
-    if (offload_addr.empty())
+    if (
+#if defined(MVVM_ENABLE_CXL)
+        !cxl_file.empty())
+        writer = new mvvm::cxl::WriteStream(mvvm::cxl::SharedRegion::createDaxFile(cxl_file, cxl_capacity));
+    else if (
+#endif
+        offload_addr.empty())
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
 
 #ifndef _WIN32

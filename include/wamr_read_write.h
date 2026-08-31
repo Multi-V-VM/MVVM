@@ -13,6 +13,7 @@
 
 #ifndef MVVM_WAMR_READ_WRITE_H
 #define MVVM_WAMR_READ_WRITE_H
+#include "wamr_serializer.h"
 #include "ylt/struct_pack.hpp"
 #include <cstdint>
 #include <spdlog/spdlog.h>
