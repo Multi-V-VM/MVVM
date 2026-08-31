@@ -1,11 +1,14 @@
 #include "wamr_cxl_stream.h"
 
 #include <atomic>
+#include <cctype>
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
+#include <fstream>
 #include <limits>
 #include <linux/memfd.h>
+#include <linux/mempolicy.h>
 #include <linux/stat.h>
 #include <stdexcept>
 #include <string_view>
@@ -14,6 +17,7 @@
 #include <sys/syscall.h>
 #include <time.h>
 #include <unistd.h>
+#include <vector>
 
 namespace mvvm::cxl {
 namespace {
@@ -77,14 +81,60 @@ void *mapFile(int fd, std::size_t length, bool hardware_dax) {
     return mapping;
 }
 
-int createMemfd() { return static_cast<int>(::syscall(SYS_memfd_create, "mvvm-cxl-fork-test", MFD_CLOEXEC)); }
+int createMemfd() { return static_cast<int>(::syscall(SYS_memfd_create, "mvvm-cxl-shared-region", MFD_CLOEXEC)); }
+
+void bindMappingToNode(void *mapping, std::size_t length, int node) {
+    if (node < 0)
+        throw std::invalid_argument("NUMA node must be non-negative");
+    constexpr std::size_t kBitsPerWord = sizeof(unsigned long) * 8;
+    /* Linux validates mbind masks against the configured MAX_NUMNODES width.
+     * This kernel exposes that width through the Mems_allowed mask. */
+    std::ifstream status_file("/proc/self/status");
+    std::string status_line;
+    std::size_t mask_bits = 0;
+    while (std::getline(status_file, status_line)) {
+        if (!status_line.starts_with("Mems_allowed:"))
+            continue;
+        for (const char character : status_line.substr(status_line.find(':') + 1))
+            if (std::isxdigit(static_cast<unsigned char>(character)))
+                mask_bits += 4;
+        break;
+    }
+    if (mask_bits == 0 || static_cast<std::size_t>(node) >= mask_bits)
+        throw std::runtime_error("cannot determine a valid kernel NUMA mask width");
+    const std::size_t word_count = (mask_bits + kBitsPerWord - 1) / kBitsPerWord;
+    std::vector<unsigned long> node_mask(word_count);
+    node_mask[static_cast<std::size_t>(node) / kBitsPerWord] |= 1UL << (static_cast<unsigned int>(node) % kBitsPerWord);
+    const unsigned long max_node = static_cast<unsigned long>(mask_bits + 1);
+    if (::syscall(SYS_mbind, mapping, length, MPOL_BIND, node_mask.data(), max_node, MPOL_MF_MOVE | MPOL_MF_STRICT) !=
+        0) {
+        const int saved_errno = errno;
+        throw std::runtime_error("mbind to NUMA node " + std::to_string(node) +
+                                 " failed: " + std::strerror(saved_errno));
+    }
+}
+
+void populateWritablePages(void *mapping, std::size_t length, int node) {
+#if defined(MADV_POPULATE_WRITE)
+    if (::madvise(mapping, length, MADV_POPULATE_WRITE) == 0)
+        return;
+    const int saved_errno = errno;
+    throw std::runtime_error("pre-faulting the NUMA node " + std::to_string(node) +
+                             " shared region failed: " + std::strerror(saved_errno));
+#else
+    (void)mapping;
+    (void)length;
+    (void)node;
+    throw std::runtime_error("MADV_POPULATE_WRITE is required for the NUMA CXL backend");
+#endif
+}
 
 } // namespace
 
 SharedRegion::SharedRegion(int fd, void *mapping, std::size_t mapping_size, std::size_t payload_offset,
-                           bool hardware_dax)
+                           bool hardware_dax, int numa_node)
     : fd_(fd), mapping_(mapping), mapping_size_(mapping_size), payload_offset_(payload_offset),
-      hardware_dax_(hardware_dax) {}
+      hardware_dax_(hardware_dax), numa_node_(numa_node) {}
 
 SharedRegion::~SharedRegion() {
     if (mapping_ != MAP_FAILED && mapping_ != nullptr)
@@ -181,6 +231,18 @@ std::shared_ptr<SharedRegion> SharedRegion::createForkTestRegion(std::size_t pay
     return mapNew(fd, payload_capacity, false);
 }
 
+std::shared_ptr<SharedRegion> SharedRegion::createNumaForkRegion(std::size_t payload_capacity, int numa_node,
+                                                                 bool prepopulate) {
+    auto region = createForkTestRegion(payload_capacity);
+    bindMappingToNode(region->mapping_, region->mapping_size_, numa_node);
+    /* Pay shmem allocation and first-touch costs once, before the checkpoint
+     * critical path.  The same region can then be reset and reused. */
+    if (prepopulate)
+        populateWritablePages(region->mapping_, region->mapping_size_, numa_node);
+    region->numa_node_ = numa_node;
+    return region;
+}
+
 std::byte *SharedRegion::payload() const noexcept { return static_cast<std::byte *>(mapping_) + payload_offset_; }
 
 std::size_t SharedRegion::payloadCapacity() const noexcept {
@@ -197,6 +259,20 @@ bool SharedRegion::contains(const void *address, std::size_t size) const noexcep
     const auto candidate = reinterpret_cast<std::uintptr_t>(address);
     const auto capacity = payloadCapacity();
     return candidate >= begin && candidate - begin <= capacity && size <= capacity - (candidate - begin);
+}
+
+int SharedRegion::pageNumaNode(const void *address) const {
+    if (!contains(address))
+        throw std::invalid_argument("address is outside the shared CXL region");
+    void *page = const_cast<void *>(address);
+    int status = -1;
+    if (::syscall(SYS_move_pages, 0, 1UL, &page, nullptr, &status, 0) != 0) {
+        const int saved_errno = errno;
+        throw std::runtime_error("move_pages NUMA query failed: " + std::string(std::strerror(saved_errno)));
+    }
+    if (status < 0)
+        throw std::runtime_error("move_pages NUMA query returned: " + std::string(std::strerror(-status)));
+    return status;
 }
 
 WriteStream::WriteStream(std::shared_ptr<SharedRegion> region) : region_(std::move(region)) {

@@ -1,5 +1,5 @@
 /*
- * CXL/DAX backed struct_pack streams.
+ * CXL System-RAM NUMA and filesystem-DAX backed struct_pack streams.
  *
  * The mapping is created before fork and remains MAP_SHARED in both the
  * checkpoint producer and restore consumer.  read_view() deliberately returns
@@ -10,7 +10,7 @@
 #define MVVM_WAMR_CXL_STREAM_H
 
 #if !defined(__linux__)
-#error "The CXL stream currently requires Linux DAX/mmap support"
+#error "The CXL stream currently requires Linux mmap/NUMA support"
 #endif
 
 #include "wamr_read_write.h"
@@ -34,6 +34,11 @@ public:
      * but does not claim that memory is physically attached over CXL. */
     static std::shared_ptr<SharedRegion> createForkTestRegion(std::size_t payload_capacity);
 
+    /* Bind a shared memfd mapping to an already-online System-RAM NUMA node.
+     * This path never creates or reconfigures a devdax device. */
+    static std::shared_ptr<SharedRegion> createNumaForkRegion(std::size_t payload_capacity, int numa_node,
+                                                              bool prepopulate = true);
+
     ~SharedRegion();
     SharedRegion(const SharedRegion &) = delete;
     SharedRegion &operator=(const SharedRegion &) = delete;
@@ -43,12 +48,15 @@ public:
     [[nodiscard]] std::size_t committedSize() const noexcept;
     [[nodiscard]] bool contains(const void *address, std::size_t size = 1) const noexcept;
     [[nodiscard]] bool isHardwareDax() const noexcept { return hardware_dax_; }
+    [[nodiscard]] int numaNode() const noexcept { return numa_node_; }
+    [[nodiscard]] int pageNumaNode(const void *address) const;
 
 private:
     friend class WriteStream;
     friend class ReadStream;
 
-    SharedRegion(int fd, void *mapping, std::size_t mapping_size, std::size_t payload_offset, bool hardware_dax);
+    SharedRegion(int fd, void *mapping, std::size_t mapping_size, std::size_t payload_offset, bool hardware_dax,
+                 int numa_node = -1);
     static std::shared_ptr<SharedRegion> mapNew(int fd, std::size_t payload_capacity, bool hardware_dax);
     static std::shared_ptr<SharedRegion> mapExisting(int fd, bool hardware_dax);
 
@@ -57,6 +65,7 @@ private:
     std::size_t mapping_size_;
     std::size_t payload_offset_;
     bool hardware_dax_;
+    int numa_node_;
 };
 
 class WriteStream final : public ::WriteStream {
