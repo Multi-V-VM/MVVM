@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
     if (source_addr.empty())
         reader = new FreadStream((removeExtension(target) + ".bin").c_str()); // writer
 #if !defined(_WIN32)
-#if __linux__
+#if defined(__linux__) && defined(MVVM_ENABLE_RDMA)
     else if (rdma)
         reader = new RDMAReadStream(source_addr.c_str(), source_port);
 #endif
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     if (!a[a.size() - 1]
              ->module_inst.wasi_ctx.socket_fd_map.empty()) { // new ip, old ip // only if tcp requires keepalive
         // tell gateway to stop keep alive the server
-        struct sockaddr_in addr {};
+        struct sockaddr_in addr{};
         int fd = 0;
         bool is_tcp_server;
         SocketAddrPool src_addr = wamr->local_addr;

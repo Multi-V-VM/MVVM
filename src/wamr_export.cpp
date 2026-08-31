@@ -338,7 +338,7 @@ void update_socket_fd_address(int fd, SocketAddrPool *address) {
 void init_gateway(SocketAddrPool *address) {
     // tell gateway to keep alive the server
     if (wamr->op_data.op != MVVM_SOCK_RESUME && wamr->op_data.op != MVVM_SOCK_RESUME_TCP_SERVER) {
-        struct sockaddr_in addr {};
+        struct sockaddr_in addr{};
         int fd = 0;
         ssize_t rc;
         wamr->op_data.op = MVVM_SOCK_INIT;
@@ -582,12 +582,12 @@ void register_sigtrap() {
     signal(SIGILL, sigtrap_handler);
     SPDLOG_DEBUG("SIGILL registered");
 #else
-    struct sigaction sa {};
+    struct sigaction sa{};
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = sigtrap_handler;
     sa.sa_flags = SA_RESTART;
 
-    struct sigaction sb {};
+    struct sigaction sb{};
     sigemptyset(&sb.sa_mask);
     sb.sa_handler = segfault_handler;
     sb.sa_flags = SA_RESTART;
@@ -633,7 +633,7 @@ void register_sigint() {
     signal(SIGINT, sigint_handler);
 #else
     // Define the sigaction structure
-    struct sigaction sa {};
+    struct sigaction sa{};
 
     // Clear the structure
     sigemptyset(&sa.sa_mask);

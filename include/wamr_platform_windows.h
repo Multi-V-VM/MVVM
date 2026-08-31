@@ -25,8 +25,8 @@
 // Note: platform_internal.h will include windows.h and winsock2.h in the correct order
 #include "../lib/wasm-micro-runtime/core/shared/platform/windows/platform_internal.h"
 #else
-#include "platform_common.h"
 #include "platform_api_vmcore.h"
+#include "platform_common.h"
 #endif // _WIN32
 
 #endif // WAMR_PLATFORM_WINDOWS_H

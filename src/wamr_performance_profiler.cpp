@@ -22,17 +22,11 @@ struct PerformanceProfiler::Impl {
 PerformanceProfiler::PerformanceProfiler() : pImpl(std::make_unique<Impl>()) {}
 PerformanceProfiler::~PerformanceProfiler() = default;
 
-void PerformanceProfiler::startProfiling() {
-    pImpl->is_profiling = true;
-}
+void PerformanceProfiler::startProfiling() { pImpl->is_profiling = true; }
 
-void PerformanceProfiler::stopProfiling() {
-    pImpl->is_profiling = false;
-}
+void PerformanceProfiler::stopProfiling() { pImpl->is_profiling = false; }
 
-void PerformanceProfiler::reset() {
-    pImpl->data = ProfilingData{};
-}
+void PerformanceProfiler::reset() { pImpl->data = ProfilingData{}; }
 
 void PerformanceProfiler::recordEvent(const std::string &event_name) {
     if (pImpl->is_profiling) {
@@ -64,9 +58,7 @@ void PerformanceProfiler::recordGPUUsage() {
     }
 }
 
-PerformanceProfiler::ProfilingData PerformanceProfiler::getData() const {
-    return pImpl->data;
-}
+PerformanceProfiler::ProfilingData PerformanceProfiler::getData() const { return pImpl->data; }
 
 void PerformanceProfiler::exportData(const std::string &filename) {
     std::cerr << "PerformanceProfiler::exportData - Not implemented: " << filename << std::endl;

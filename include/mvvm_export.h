@@ -10,13 +10,13 @@
 #define MVVM_EXPORT_H
 
 #ifdef _WIN32
-    #ifdef MVVM_EXPORT_EXPORTS
-        #define MVVM_API __declspec(dllexport)
-    #else
-        #define MVVM_API __declspec(dllimport)
-    #endif
+#ifdef MVVM_EXPORT_EXPORTS
+#define MVVM_API __declspec(dllexport)
 #else
-    #define MVVM_API
+#define MVVM_API __declspec(dllimport)
+#endif
+#else
+#define MVVM_API
 #endif
 
 #endif // MVVM_EXPORT_H

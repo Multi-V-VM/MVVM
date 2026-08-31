@@ -1,817 +1,557 @@
-/*
- * The WebAssembly Live Migration Project
- * Security Framework Implementation
- *
- * SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
- * Copyright 2025 Regents of the University of California
- * UC Santa Cruz Sluglab.
- */
-
+/* Cryptographic migration security.  All unauthenticated paths fail closed. */
 #include "wamr_security_framework.h"
+
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstring>
-#include <openssl/aes.h>
-#include <openssl/err.h>
+#include <deque>
+#include <limits>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
-#include <openssl/pem.h>
+#include <openssl/kdf.h>
 #include <openssl/rand.h>
-#include <openssl/rsa.h>
-#include <openssl/sha.h>
-#include <openssl/ssl.h>
 #include <spdlog/spdlog.h>
 
-namespace mvvm {
-namespace security {
+namespace mvvm::security {
+namespace {
+constexpr std::array<uint8_t, 4> magic{{'M', 'V', 'S', '1'}};
+constexpr size_t nonce_size = 12, tag_size = 16, header_size = 4 + 1 + 8 + nonce_size + 4;
+void put32(std::vector<uint8_t> &out, uint32_t n) {
+    for (unsigned s = 0; s < 32; s += 8)
+        out.push_back(uint8_t(n >> s));
+}
+void put64(std::vector<uint8_t> &out, uint64_t n) {
+    for (unsigned s = 0; s < 64; s += 8)
+        out.push_back(uint8_t(n >> s));
+}
+bool get32(const std::vector<uint8_t> &in, size_t &p, uint32_t &n) {
+    if (p + 4 > in.size())
+        return false;
+    n = 0;
+    for (unsigned s = 0; s < 32; s += 8)
+        n |= uint32_t(in[p++]) << s;
+    return true;
+}
+bool get64(const std::vector<uint8_t> &in, size_t &p, uint64_t &n) {
+    if (p + 8 > in.size())
+        return false;
+    n = 0;
+    for (unsigned s = 0; s < 64; s += 8)
+        n |= uint64_t(in[p++]) << s;
+    return true;
+}
+bool valid(const SecurityContext &c) {
+    return !c.session_id.empty() && c.encryption_algo == CryptoAlgorithm::AES_256_GCM && c.session_key.size() == 32;
+}
+bool hash(const void *data, size_t size, std::vector<uint8_t> &out) {
+    if (!data && size)
+        return false;
+    out.assign(32, 0);
+    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+    unsigned int n = 0;
+    bool ok = ctx && EVP_DigestInit_ex(ctx, EVP_sha3_256(), nullptr) == 1 && EVP_DigestUpdate(ctx, data, size) == 1 &&
+              EVP_DigestFinal_ex(ctx, out.data(), &n) == 1 && n == out.size();
+    EVP_MD_CTX_free(ctx);
+    return ok;
+}
+std::vector<uint8_t> aad(const std::vector<uint8_t> &head, const SecurityContext &c) {
+    std::vector<uint8_t> out(head.begin(), head.begin() + 4 + 1 + 8 + nonce_size);
+    out.insert(out.end(), c.session_id.begin(), c.session_id.end());
+    return out;
+}
+bool encrypt(const uint8_t *src, size_t len, const SecurityContext &c, const std::vector<uint8_t> &associated,
+             const uint8_t *nonce, std::vector<uint8_t> &dst, std::array<uint8_t, tag_size> &tag) {
+    if (len > size_t(std::numeric_limits<int>::max()))
+        return false;
+    EVP_CIPHER_CTX *x = EVP_CIPHER_CTX_new();
+    if (!x)
+        return false;
+    dst.assign(len, 0);
+    int a = 0, b = 0;
+    bool ok = EVP_EncryptInit_ex(x, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1 &&
+              EVP_CIPHER_CTX_ctrl(x, EVP_CTRL_GCM_SET_IVLEN, nonce_size, nullptr) == 1 &&
+              EVP_EncryptInit_ex(x, nullptr, nullptr, c.session_key.data(), nonce) == 1 &&
+              EVP_EncryptUpdate(x, nullptr, &a, associated.data(), int(associated.size())) == 1 &&
+              EVP_EncryptUpdate(x, dst.data(), &a, src, int(len)) == 1 &&
+              EVP_EncryptFinal_ex(x, dst.data() + a, &b) == 1 &&
+              EVP_CIPHER_CTX_ctrl(x, EVP_CTRL_GCM_GET_TAG, tag_size, tag.data()) == 1;
+    EVP_CIPHER_CTX_free(x);
+    if (!ok) {
+        dst.clear();
+        return false;
+    }
+    dst.resize(a + b);
+    return dst.size() == len;
+}
+bool decrypt(const uint8_t *src, size_t len, const SecurityContext &c, const std::vector<uint8_t> &associated,
+             const uint8_t *nonce, const uint8_t *tag, std::vector<uint8_t> &dst) {
+    if (len > size_t(std::numeric_limits<int>::max()))
+        return false;
+    EVP_CIPHER_CTX *x = EVP_CIPHER_CTX_new();
+    if (!x)
+        return false;
+    dst.assign(len, 0);
+    int a = 0, b = 0;
+    bool ok = EVP_DecryptInit_ex(x, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1 &&
+              EVP_CIPHER_CTX_ctrl(x, EVP_CTRL_GCM_SET_IVLEN, nonce_size, nullptr) == 1 &&
+              EVP_DecryptInit_ex(x, nullptr, nullptr, c.session_key.data(), nonce) == 1 &&
+              EVP_DecryptUpdate(x, nullptr, &a, associated.data(), int(associated.size())) == 1 &&
+              EVP_DecryptUpdate(x, dst.data(), &a, src, int(len)) == 1 &&
+              EVP_CIPHER_CTX_ctrl(x, EVP_CTRL_GCM_SET_TAG, tag_size, const_cast<uint8_t *>(tag)) == 1 &&
+              EVP_DecryptFinal_ex(x, dst.data() + a, &b) == 1;
+    EVP_CIPHER_CTX_free(x);
+    if (!ok) {
+        dst.clear();
+        return false;
+    }
+    dst.resize(a + b);
+    return dst.size() == len;
+}
+} // namespace
 
-// Implementation details
 struct SecurityFramework::Impl {
-    SecurityPolicy current_policy = SecurityPolicy::POLICY_BALANCED;
-    std::unordered_map<std::string, SecurityContext> active_contexts;
-    std::unordered_map<std::string, std::chrono::time_point<std::chrono::steady_clock>> rate_limits;
-    std::vector<AccessControlEntry> access_controls;
-    std::vector<SecurityEvent> security_events;
+    SecurityPolicy policy = SecurityPolicy::POLICY_BALANCED;
+    bool initialized = false;
+    std::unordered_map<std::string, SecurityContext> contexts;
+    std::unordered_map<std::string, uint64_t> sent, received;
+    std::unordered_map<std::string, std::deque<std::chrono::steady_clock::time_point>> requests;
+    std::vector<AccessControlEntry> acl;
+    std::unordered_map<std::string, std::function<bool(const SecurityContext &)>> custom;
+    std::vector<SecurityEvent> events;
     std::mutex mutex;
-
-    // Crypto contexts
-    EVP_CIPHER_CTX *cipher_ctx = nullptr;
-    EVP_MD_CTX *md_ctx = nullptr;
-
-    // Rate limiting parameters
-    static constexpr int MAX_REQUESTS_PER_MINUTE = 60;
-    static constexpr auto RATE_LIMIT_WINDOW = std::chrono::minutes(1);
-
-    Impl() {
-        cipher_ctx = EVP_CIPHER_CTX_new();
-        md_ctx = EVP_MD_CTX_new();
-        OpenSSL_add_all_algorithms();
-    }
-
-    ~Impl() {
-        if (cipher_ctx)
-            EVP_CIPHER_CTX_free(cipher_ctx);
-        if (md_ctx)
-            EVP_MD_CTX_free(md_ctx);
-    }
 };
-
-SecurityFramework::SecurityFramework() : pImpl(std::make_unique<Impl>()) {
-    SPDLOG_INFO("Security framework initialized");
-}
-
+SecurityFramework::SecurityFramework() : pImpl(std::make_unique<Impl>()) {}
 SecurityFramework::~SecurityFramework() = default;
-
-bool SecurityFramework::initialize(SecurityPolicy policy) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-    pImpl->current_policy = policy;
-
-// Initialize OpenSSL (modern approach)
-// In OpenSSL 1.1.0+ initialization is automatic
-// For compatibility with older versions, we can use OPENSSL_init_ssl
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-    SSL_library_init();
-    SSL_load_error_strings();
-#else
-    // OpenSSL 1.1.0+ handles initialization automatically
-    // But we can explicitly initialize if needed
-    OPENSSL_init_ssl(0, NULL);
-#endif
-
-    // Set up default access controls based on policy
-    switch (policy) {
-    case SecurityPolicy::POLICY_STRICT:
-        // Add strict access controls
-        pImpl->access_controls.push_back({"memory", {"read"}, [](const std::string &op) { return op == "read"; }});
-        break;
-    case SecurityPolicy::POLICY_BALANCED:
-        // Balanced controls
-        pImpl->access_controls.push_back(
-            {"memory", {"read", "write"}, [](const std::string &op) { return op == "read" || op == "write"; }});
-        break;
-    case SecurityPolicy::POLICY_MINIMAL:
-        // Minimal controls
-        break;
-    case SecurityPolicy::POLICY_CUSTOM:
-        // User will add custom policies
-        break;
-    }
-
-    return true;
+bool SecurityFramework::initialize(SecurityPolicy p) {
+    std::lock_guard lock(pImpl->mutex);
+    pImpl->policy = p;
+    pImpl->initialized = RAND_status() == 1;
+    pImpl->acl.clear();
+    if (p == SecurityPolicy::POLICY_STRICT)
+        pImpl->acl.push_back({"memory", {"read"}, [](const std::string &o) { return o == "read"; }});
+    if (p == SecurityPolicy::POLICY_BALANCED)
+        pImpl->acl.push_back(
+            {"memory", {"read", "write"}, [](const std::string &o) { return o == "read" || o == "write"; }});
+    return pImpl->initialized;
 }
-
 void SecurityFramework::shutdown() {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-    pImpl->active_contexts.clear();
-    pImpl->access_controls.clear();
+    std::lock_guard lock(pImpl->mutex);
+    for (auto &[_, c] : pImpl->contexts)
+        OPENSSL_cleanse(c.session_key.data(), c.session_key.size());
+    pImpl->contexts.clear();
+    pImpl->sent.clear();
+    pImpl->received.clear();
+    pImpl->requests.clear();
+    pImpl->acl.clear();
+    pImpl->initialized = false;
 }
-
-void SecurityFramework::setSecurityPolicy(SecurityPolicy policy) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-    pImpl->current_policy = policy;
+void SecurityFramework::setSecurityPolicy(SecurityPolicy p) { initialize(p); }
+void SecurityFramework::addCustomPolicy(const std::string &n, std::function<bool(const SecurityContext &)> f) {
+    std::lock_guard lock(pImpl->mutex);
+    if (!n.empty() && f)
+        pImpl->custom[n] = std::move(f);
 }
-
-bool SecurityFramework::authenticatePeer(const std::string &peer_id, AuthMethod method) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-    switch (method) {
-    case AuthMethod::MUTUAL_TLS:
-        // Implement mutual TLS authentication
-        SPDLOG_INFO("Authenticating peer {} using mutual TLS", peer_id);
-        // In real implementation, verify certificates
-        return true;
-
-    case AuthMethod::ATTESTATION:
-        // Use attestation for authentication
-        SPDLOG_INFO("Authenticating peer {} using attestation", peer_id);
-        return true;
-
-    case AuthMethod::PRE_SHARED_KEY:
-        // PSK authentication
-        SPDLOG_INFO("Authenticating peer {} using PSK", peer_id);
-        return true;
-
-    case AuthMethod::CERTIFICATE:
-        // Certificate-based authentication
-        SPDLOG_INFO("Authenticating peer {} using certificate", peer_id);
-        return true;
-    }
-
+bool SecurityFramework::authenticatePeer(const std::string &peer, AuthMethod method) {
+    (void)method;
+    SPDLOG_ERROR("Authentication of {} refused: this API accepts no credentials, certificate, or attestation evidence",
+                 peer);
     return false;
 }
-
 bool SecurityFramework::authorizeMigration(const std::string &source, const std::string &destination) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-    // Check if migration is authorized based on policy
-    if (pImpl->current_policy == SecurityPolicy::POLICY_STRICT) {
-        // In strict mode, check whitelist
-        // For demo, allow all
-        SPDLOG_INFO("Authorizing migration from {} to {}", source, destination);
+    if (source.empty() || destination.empty())
+        return false;
+    std::lock_guard lock(pImpl->mutex);
+    if (!pImpl->initialized)
+        return false;
+    if (pImpl->policy == SecurityPolicy::POLICY_MINIMAL)
         return true;
+    for (const auto &a : pImpl->acl)
+        if ((a.resource == "migration" || a.resource == "migration:" + source + "->" + destination) &&
+            std::find(a.allowed_operations.begin(), a.allowed_operations.end(), "migrate") !=
+                a.allowed_operations.end() &&
+            (!a.validator || a.validator("migrate")))
+            return true;
+    return false;
+}
+SecurityContext SecurityFramework::createSecurityContext(const std::string &peer) {
+    SecurityContext c{};
+    if (peer.empty())
+        return c;
+    c.session_id = peer + "_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+    c.auth_method = AuthMethod::MUTUAL_TLS;
+    c.encryption_algo = CryptoAlgorithm::AES_256_GCM;
+    c.session_key.resize(32);
+    c.nonce.resize(nonce_size);
+    c.created_at = std::chrono::steady_clock::now();
+    if (RAND_bytes(c.session_key.data(), 32) != 1 || RAND_bytes(c.nonce.data(), nonce_size) != 1)
+        return {};
+    std::lock_guard lock(pImpl->mutex);
+    if (!pImpl->initialized)
+        return {};
+    pImpl->contexts[c.session_id] = c;
+    return c;
+}
+std::vector<uint8_t> SecurityFramework::encryptData(const void *data, size_t size, const SecurityContext &c) {
+    if ((!data && size) || !valid(c) || size > UINT32_MAX)
+        return {};
+    uint64_t seq;
+    {
+        std::lock_guard lock(pImpl->mutex);
+        auto it = pImpl->contexts.find(c.session_id);
+        if (!pImpl->initialized || it == pImpl->contexts.end() ||
+            CRYPTO_memcmp(it->second.session_key.data(), c.session_key.data(), 32) != 0)
+            return {};
+        seq = ++pImpl->sent[c.session_id];
     }
-
-    return true;
+    std::vector<uint8_t> out(magic.begin(), magic.end());
+    out.push_back(1);
+    put64(out, seq);
+    std::array<uint8_t, nonce_size> n{};
+    if (RAND_bytes(n.data(), n.size()) != 1)
+        return {};
+    out.insert(out.end(), n.begin(), n.end());
+    put32(out, uint32_t(size));
+    std::vector<uint8_t> ct;
+    std::array<uint8_t, tag_size> tag{};
+    if (!encrypt(static_cast<const uint8_t *>(data), size, c, aad(out, c), n.data(), ct, tag))
+        return {};
+    out.insert(out.end(), ct.begin(), ct.end());
+    out.insert(out.end(), tag.begin(), tag.end());
+    return out;
 }
-
-SecurityContext SecurityFramework::createSecurityContext(const std::string &peer_id) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-    SecurityContext ctx;
-    ctx.session_id = peer_id + "_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
-    ctx.auth_method = AuthMethod::MUTUAL_TLS;
-    ctx.encryption_algo = CryptoAlgorithm::AES_256_GCM;
-    ctx.sequence_number = 0;
-    ctx.created_at = std::chrono::steady_clock::now();
-
-    // Generate session key
-    ctx.session_key.resize(32); // 256 bits
-    RAND_bytes(ctx.session_key.data(), ctx.session_key.size());
-
-    // Generate nonce
-    ctx.nonce.resize(12); // 96 bits for GCM
-    RAND_bytes(ctx.nonce.data(), ctx.nonce.size());
-
-    pImpl->active_contexts[ctx.session_id] = ctx;
-
-    return ctx;
-}
-
-std::vector<uint8_t> SecurityFramework::encryptData(const void *data, size_t size, const SecurityContext &ctx) {
-    std::vector<uint8_t> encrypted;
-
-    if (ctx.encryption_algo == CryptoAlgorithm::AES_256_GCM) {
-        encrypted.resize(size + EVP_CIPHER_block_size(EVP_aes_256_gcm()));
-
-        int len;
-        int ciphertext_len;
-
-        EVP_CIPHER_CTX_reset(pImpl->cipher_ctx);
-
-        // Initialize encryption
-        EVP_EncryptInit_ex(pImpl->cipher_ctx, EVP_aes_256_gcm(), nullptr, ctx.session_key.data(), ctx.nonce.data());
-
-        // Encrypt
-        EVP_EncryptUpdate(pImpl->cipher_ctx, encrypted.data(), &len, static_cast<const unsigned char *>(data), size);
-        ciphertext_len = len;
-
-        // Finalize
-        EVP_EncryptFinal_ex(pImpl->cipher_ctx, encrypted.data() + len, &len);
-        ciphertext_len += len;
-
-        // Get tag
-        std::vector<uint8_t> tag(16);
-        EVP_CIPHER_CTX_ctrl(pImpl->cipher_ctx, EVP_CTRL_GCM_GET_TAG, 16, tag.data());
-
-        // Append tag
-        encrypted.resize(ciphertext_len);
-        encrypted.insert(encrypted.end(), tag.begin(), tag.end());
+std::vector<uint8_t> SecurityFramework::decryptData(const void *data, size_t size, const SecurityContext &c) {
+    if ((!data && size) || !valid(c) || size < header_size + tag_size)
+        return {};
+    const auto *raw = static_cast<const uint8_t *>(data);
+    std::vector<uint8_t> in(raw, raw + size);
+    if (!std::equal(magic.begin(), magic.end(), in.begin()) || in[4] != 1)
+        return {};
+    size_t p = 5;
+    uint64_t seq;
+    uint32_t len;
+    if (!get64(in, p, seq) || p + nonce_size > in.size())
+        return {};
+    const uint8_t *n = in.data() + p;
+    p += nonce_size;
+    if (!get32(in, p, len) || len != in.size() - header_size - tag_size)
+        return {};
+    {
+        std::lock_guard lock(pImpl->mutex);
+        auto it = pImpl->contexts.find(c.session_id);
+        if (!pImpl->initialized || it == pImpl->contexts.end() ||
+            CRYPTO_memcmp(it->second.session_key.data(), c.session_key.data(), 32) != 0 ||
+            seq <= pImpl->received[c.session_id])
+            return {};
     }
-
-    return encrypted;
+    std::vector<uint8_t> plain;
+    if (!decrypt(in.data() + p, len, c, aad(std::vector<uint8_t>(in.begin(), in.begin() + header_size), c), n,
+                 in.data() + p + len, plain))
+        return {};
+    std::lock_guard lock(pImpl->mutex);
+    pImpl->received[c.session_id] = seq;
+    return plain;
 }
-
-std::vector<uint8_t> SecurityFramework::decryptData(const void *encrypted_data, size_t size,
-                                                    const SecurityContext &ctx) {
-    std::vector<uint8_t> decrypted;
-
-    if (ctx.encryption_algo == CryptoAlgorithm::AES_256_GCM && size > 16) {
-        const uint8_t *data = static_cast<const uint8_t *>(encrypted_data);
-        size_t ciphertext_len = size - 16; // Subtract tag size
-
-        decrypted.resize(ciphertext_len);
-
-        int len;
-        int plaintext_len;
-
-        EVP_CIPHER_CTX_reset(pImpl->cipher_ctx);
-
-        // Initialize decryption
-        EVP_DecryptInit_ex(pImpl->cipher_ctx, EVP_aes_256_gcm(), nullptr, ctx.session_key.data(), ctx.nonce.data());
-
-        // Set tag
-        EVP_CIPHER_CTX_ctrl(pImpl->cipher_ctx, EVP_CTRL_GCM_SET_TAG, 16, const_cast<uint8_t *>(data + ciphertext_len));
-
-        // Decrypt
-        EVP_DecryptUpdate(pImpl->cipher_ctx, decrypted.data(), &len, data, ciphertext_len);
-        plaintext_len = len;
-
-        // Finalize
-        int ret = EVP_DecryptFinal_ex(pImpl->cipher_ctx, decrypted.data() + len, &len);
-        if (ret > 0) {
-            plaintext_len += len;
-            decrypted.resize(plaintext_len);
-        } else {
-            decrypted.clear(); // Authentication failed
-        }
-    }
-
-    return decrypted;
-}
-
 IntegrityCheck SecurityFramework::createIntegrityCheck(const void *data, size_t size) {
-    IntegrityCheck check;
-    check.hash_algo = CryptoAlgorithm::SHA3_256;
-    check.hash.resize(SHA256_DIGEST_LENGTH);
-
-    EVP_MD_CTX_reset(pImpl->md_ctx);
-    EVP_DigestInit_ex(pImpl->md_ctx, EVP_sha3_256(), nullptr);
-    EVP_DigestUpdate(pImpl->md_ctx, data, size);
-    EVP_DigestFinal_ex(pImpl->md_ctx, check.hash.data(), nullptr);
-
-    check.verified = false;
-
-    return check;
+    IntegrityCheck c{};
+    c.hash_algo = CryptoAlgorithm::SHA3_256;
+    if (!hash(data, size, c.hash))
+        c.hash.clear();
+    return c;
 }
-
-bool SecurityFramework::verifyIntegrity(const void *data, size_t size, const IntegrityCheck &check) {
-    if (check.hash_algo == CryptoAlgorithm::SHA3_256) {
-        std::vector<uint8_t> computed_hash(SHA256_DIGEST_LENGTH);
-
-        EVP_MD_CTX_reset(pImpl->md_ctx);
-        EVP_DigestInit_ex(pImpl->md_ctx, EVP_sha3_256(), nullptr);
-        EVP_DigestUpdate(pImpl->md_ctx, data, size);
-        EVP_DigestFinal_ex(pImpl->md_ctx, computed_hash.data(), nullptr);
-
-        return computed_hash == check.hash;
+bool SecurityFramework::verifyIntegrity(const void *data, size_t size, const IntegrityCheck &c) {
+    std::vector<uint8_t> h;
+    return c.hash_algo == CryptoAlgorithm::SHA3_256 && c.hash.size() == 32 && hash(data, size, h) &&
+           CRYPTO_memcmp(h.data(), c.hash.data(), 32) == 0;
+}
+bool SecurityFramework::checkReplayAttack(const SecurityContext &c, uint64_t n) {
+    std::lock_guard lock(pImpl->mutex);
+    return n > pImpl->received[c.session_id];
+}
+void SecurityFramework::updateSequenceNumber(SecurityContext &c, uint64_t n) {
+    if (n > c.sequence_number)
+        c.sequence_number = n;
+}
+bool SecurityFramework::checkRateLimit(const std::string &s) {
+    if (s.empty())
+        return false;
+    std::lock_guard lock(pImpl->mutex);
+    auto &q = pImpl->requests[s];
+    auto now = std::chrono::steady_clock::now();
+    while (!q.empty() && now - q.front() >= std::chrono::minutes(1))
+        q.pop_front();
+    return q.size() < 60;
+}
+void SecurityFramework::updateRateLimit(const std::string &s) {
+    if (!s.empty()) {
+        std::lock_guard lock(pImpl->mutex);
+        pImpl->requests[s].push_back(std::chrono::steady_clock::now());
     }
-
+}
+bool SecurityFramework::establishSecureChannel(const std::string &host, int port) {
+    SPDLOG_ERROR(
+        "Refusing plaintext channel to {}:{}; use SecureSocket streams with an authenticated TLS configuration", host,
+        port);
     return false;
 }
-
-bool SecurityFramework::checkReplayAttack(const SecurityContext &ctx, uint64_t sequence_num) {
-    // Check if sequence number is valid (greater than last seen)
-    return sequence_num > ctx.sequence_number;
+void SecurityFramework::closeSecureChannel(const std::string &) {}
+void SecurityFramework::addAccessControl(const AccessControlEntry &e) {
+    std::lock_guard lock(pImpl->mutex);
+    pImpl->acl.push_back(e);
 }
-
-void SecurityFramework::updateSequenceNumber(SecurityContext &ctx, uint64_t new_seq) { ctx.sequence_number = new_seq; }
-
-bool SecurityFramework::checkRateLimit(const std::string &source_ip) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-    auto now = std::chrono::steady_clock::now();
-    auto it = pImpl->rate_limits.find(source_ip);
-
-    if (it == pImpl->rate_limits.end()) {
-        pImpl->rate_limits[source_ip] = now;
-        return true;
-    }
-
-    auto elapsed = now - it->second;
-    if (elapsed > Impl::RATE_LIMIT_WINDOW) {
-        it->second = now;
-        return true;
-    }
-
-    // Check if too many requests
-    // Simplified: just check time between requests
-    if (elapsed < std::chrono::seconds(1)) {
-        return false; // Too fast
-    }
-
-    return true;
-}
-
-void SecurityFramework::updateRateLimit(const std::string &source_ip) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-    pImpl->rate_limits[source_ip] = std::chrono::steady_clock::now();
-}
-
-bool SecurityFramework::establishSecureChannel(const std::string &remote_addr, int port) {
-    SPDLOG_INFO("Establishing secure channel to {}:{}", remote_addr, port);
-    // In real implementation, set up TLS connection
-    return true;
-}
-
-void SecurityFramework::closeSecureChannel(const std::string &channel_id) {
-    SPDLOG_INFO("Closing secure channel {}", channel_id);
-}
-
-void SecurityFramework::addAccessControl(const AccessControlEntry &entry) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-    pImpl->access_controls.push_back(entry);
-}
-
-bool SecurityFramework::checkAccess(const std::string &resource, const std::string &operation) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-    for (const auto &acl : pImpl->access_controls) {
-        if (acl.resource == resource) {
-            auto it = std::find(acl.allowed_operations.begin(), acl.allowed_operations.end(), operation);
-            if (it != acl.allowed_operations.end()) {
-                return acl.validator ? acl.validator(operation) : true;
-            }
-        }
-    }
-
-    // Default deny if not explicitly allowed
-    return pImpl->current_policy == SecurityPolicy::POLICY_MINIMAL;
-}
-
-bool SecurityFramework::detectThreat(const SecurityContext &ctx, ThreatType &detected_threat) {
-    // Simple threat detection heuristics
-
-    // Check for expired context
-    auto now = std::chrono::steady_clock::now();
-    auto age = now - ctx.created_at;
-    if (age > std::chrono::hours(24)) {
-        detected_threat = ThreatType::REPLAY_ATTACK;
-        return true;
-    }
-
-    // Check for suspicious sequence numbers
-    if (ctx.sequence_number > 1000000) {
-        detected_threat = ThreatType::RESOURCE_EXHAUSTION;
-        return true;
-    }
-
+bool SecurityFramework::checkAccess(const std::string &r, const std::string &o) {
+    std::lock_guard lock(pImpl->mutex);
+    for (const auto &a : pImpl->acl)
+        if (a.resource == r &&
+            std::find(a.allowed_operations.begin(), a.allowed_operations.end(), o) != a.allowed_operations.end() &&
+            (!a.validator || a.validator(o)))
+            return true;
     return false;
 }
-
-void SecurityFramework::respondToThreat(ThreatType threat, const std::string &source) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-    SecurityEvent event;
-    event.timestamp = std::chrono::steady_clock::now();
-    event.threat_type = threat;
-    event.source_ip = source;
-    event.blocked = true;
-
-    switch (threat) {
-    case ThreatType::MAN_IN_THE_MIDDLE:
-        event.description = "Potential MITM attack detected";
-        break;
-    case ThreatType::STATE_TAMPERING:
-        event.description = "VM state tampering detected";
-        break;
-    case ThreatType::REPLAY_ATTACK:
-        event.description = "Replay attack detected";
-        break;
-    case ThreatType::RESOURCE_EXHAUSTION:
-        event.description = "Resource exhaustion attack detected";
-        break;
-    case ThreatType::PRIVILEGE_ESCALATION:
-        event.description = "Privilege escalation attempt detected";
-        break;
-    case ThreatType::DATA_LEAKAGE:
-        event.description = "Data leakage detected";
-        break;
+bool SecurityFramework::detectThreat(const SecurityContext &c, ThreatType &t) {
+    if (!valid(c) || std::chrono::steady_clock::now() - c.created_at > std::chrono::hours(24)) {
+        t = ThreatType::REPLAY_ATTACK;
+        return true;
     }
-
-    pImpl->security_events.push_back(event);
-    SPDLOG_WARN("Security threat detected: {}", event.description);
+    if (c.sequence_number > 1000000) {
+        t = ThreatType::RESOURCE_EXHAUSTION;
+        return true;
+    }
+    return false;
 }
-
-void SecurityFramework::logSecurityEvent(const SecurityEvent &event) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-    pImpl->security_events.push_back(event);
+void SecurityFramework::respondToThreat(ThreatType t, const std::string &s) {
+    SecurityEvent e{std::chrono::steady_clock::now(), t, "migration security policy blocked a threat", s, true};
+    logSecurityEvent(e);
 }
-
+void SecurityFramework::logSecurityEvent(const SecurityEvent &e) {
+    std::lock_guard lock(pImpl->mutex);
+    pImpl->events.push_back(e);
+}
 std::vector<SecurityEvent>
 SecurityFramework::getSecurityEvents(std::chrono::time_point<std::chrono::steady_clock> since) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-    std::vector<SecurityEvent> recent_events;
-    for (const auto &event : pImpl->security_events) {
-        if (event.timestamp >= since) {
-            recent_events.push_back(event);
-        }
-    }
-
-    return recent_events;
+    std::lock_guard lock(pImpl->mutex);
+    std::vector<SecurityEvent> out;
+    for (auto &e : pImpl->events)
+        if (e.timestamp >= since)
+            out.push_back(e);
+    return out;
 }
-
-std::vector<uint8_t> SecurityFramework::secureSerialize(const void *state, size_t size, const SecurityContext &ctx) {
-    // Create integrity check
-    auto integrity = createIntegrityCheck(state, size);
-
-    // Encrypt the state
-    auto encrypted = encryptData(state, size, ctx);
-
-    // Combine integrity check and encrypted data
-    std::vector<uint8_t> result;
-    result.insert(result.end(), integrity.hash.begin(), integrity.hash.end());
-    result.insert(result.end(), encrypted.begin(), encrypted.end());
-
-    return result;
+std::vector<uint8_t> SecurityFramework::secureSerialize(const void *state, size_t size, const SecurityContext &c) {
+    if (!state && size)
+        return {};
+    auto enc = encryptData(state, size, c);
+    auto check = createIntegrityCheck(state, size);
+    if (enc.empty() || check.hash.empty())
+        return {};
+    enc.insert(enc.begin(), check.hash.begin(), check.hash.end());
+    return enc;
 }
-
 bool SecurityFramework::secureDeserialize(const std::vector<uint8_t> &data, void *state, size_t size,
-                                          const SecurityContext &ctx) {
-    if (data.size() < SHA256_DIGEST_LENGTH) {
+                                          const SecurityContext &c) {
+    if ((!state && size) || data.size() < 32 + header_size + tag_size)
         return false;
-    }
-
-    // Extract integrity check
-    IntegrityCheck check;
+    IntegrityCheck check{};
     check.hash_algo = CryptoAlgorithm::SHA3_256;
-    check.hash.assign(data.begin(), data.begin() + SHA256_DIGEST_LENGTH);
-
-    // Decrypt the data
-    auto encrypted_start = data.begin() + SHA256_DIGEST_LENGTH;
-    auto decrypted = decryptData(&*encrypted_start, data.size() - SHA256_DIGEST_LENGTH, ctx);
-
-    if (decrypted.size() != size) {
+    check.hash.assign(data.begin(), data.begin() + 32);
+    auto plain = decryptData(data.data() + 32, data.size() - 32, c);
+    if (plain.size() != size || !verifyIntegrity(plain.data(), plain.size(), check))
         return false;
-    }
-
-    // Verify integrity
-    if (!verifyIntegrity(decrypted.data(), decrypted.size(), check)) {
-        return false;
-    }
-
-    // Copy to output
-    std::memcpy(state, decrypted.data(), size);
-
+    memcpy(state, plain.data(), size);
     return true;
 }
 
-// WASISecurityExtensions implementation
 struct WASISecurityExtensions::Impl {
-    std::vector<Capability> active_capabilities;
-    SandboxPolicy current_sandbox_policy;
+    std::vector<Capability> caps;
+    SandboxPolicy policy{};
     std::mutex mutex;
 };
-
 WASISecurityExtensions::WASISecurityExtensions() : pImpl(std::make_unique<Impl>()) {}
-
 WASISecurityExtensions::~WASISecurityExtensions() = default;
-
-WASISecurityExtensions::Capability WASISecurityExtensions::grantCapability(const std::string &resource,
-                                                                           const std::vector<std::string> &permissions,
-                                                                           std::chrono::seconds duration) {
-
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-    Capability cap;
-    cap.resource_type = resource;
-    cap.permissions = permissions;
-    cap.expires_at = std::chrono::steady_clock::now() + duration;
-
-    pImpl->active_capabilities.push_back(cap);
-
-    return cap;
+WASISecurityExtensions::Capability WASISecurityExtensions::grantCapability(const std::string &r,
+                                                                           const std::vector<std::string> &p,
+                                                                           std::chrono::seconds d) {
+    Capability c{r, p, std::chrono::steady_clock::now() + d};
+    std::lock_guard lock(pImpl->mutex);
+    pImpl->caps.push_back(c);
+    return c;
 }
-
-bool WASISecurityExtensions::checkCapability(const Capability &cap, const std::string &operation) {
-    auto now = std::chrono::steady_clock::now();
-    if (now > cap.expires_at) {
-        return false; // Capability expired
-    }
-
-    return std::find(cap.permissions.begin(), cap.permissions.end(), operation) != cap.permissions.end();
-}
-
-void WASISecurityExtensions::revokeCapability(const Capability &cap) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-
-    pImpl->active_capabilities.erase(
-        std::remove_if(pImpl->active_capabilities.begin(), pImpl->active_capabilities.end(),
-                       [&cap](const Capability &c) {
-                           return c.resource_type == cap.resource_type && c.permissions == cap.permissions;
-                       }),
-        pImpl->active_capabilities.end());
-}
-
-void WASISecurityExtensions::enforceSandboxPolicy(const SandboxPolicy &policy) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex);
-    pImpl->current_sandbox_policy = policy;
-}
-
-bool WASISecurityExtensions::validateSandboxCompliance(const SandboxPolicy &policy) {
-    // Check current resource usage against policy
-    // In real implementation, would check actual resource usage
-    return true;
-}
-
-WASISecurityExtensions::SecureFdMigration WASISecurityExtensions::prepareSecureFdMigration(int fd) {
-    SecureFdMigration migration;
-    migration.original_fd = fd;
-
-    // Get file descriptor metadata
-    // In real implementation, get actual fd info
-    migration.fd_type = "file";
-
-    // Encrypt metadata
-    std::string metadata = "fd_metadata";
-    migration.encrypted_metadata.assign(metadata.begin(), metadata.end());
-
-    // Create integrity check
-    migration.integrity_check.resize(32);
-    RAND_bytes(migration.integrity_check.data(), migration.integrity_check.size());
-
-    return migration;
-}
-
-int WASISecurityExtensions::restoreSecureFd(const SecureFdMigration &migration_data) {
-    // Verify integrity
-    // Decrypt metadata
-    // Restore file descriptor
-
-    // For demo, return a dummy fd
-    return migration_data.original_fd;
-}
-
-// MigrationAttestation implementation
-struct MigrationAttestation::Impl {
-    bool tpm_initialized = false;
-    bool sgx_initialized = false;
-};
-
-MigrationAttestation::MigrationAttestation() : pImpl(std::make_unique<Impl>()) {}
-
-MigrationAttestation::~MigrationAttestation() = default;
-
-std::vector<uint8_t> MigrationAttestation::generateAttestationReport(const void *vm_state, size_t state_size) {
-
-    std::vector<uint8_t> report;
-
-    // Create hash of VM state
-    std::vector<uint8_t> state_hash(SHA256_DIGEST_LENGTH);
-    SHA256(static_cast<const unsigned char *>(vm_state), state_size, state_hash.data());
-
-    // Add attestation metadata
-    report.insert(report.end(), state_hash.begin(), state_hash.end());
-
-    // Add timestamp
-    auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
-    report.insert(report.end(), reinterpret_cast<uint8_t *>(&timestamp),
-                  reinterpret_cast<uint8_t *>(&timestamp) + sizeof(timestamp));
-
-    return report;
-}
-
-bool MigrationAttestation::verifyAttestationReport(const std::vector<uint8_t> &report, const void *expected_state,
-                                                   size_t state_size) {
-    if (report.size() < SHA256_DIGEST_LENGTH) {
+bool WASISecurityExtensions::checkCapability(const Capability &c, const std::string &o) {
+    if (std::chrono::steady_clock::now() > c.expires_at)
         return false;
-    }
-
-    // Verify state hash
-    std::vector<uint8_t> expected_hash(SHA256_DIGEST_LENGTH);
-    SHA256(static_cast<const unsigned char *>(expected_state), state_size, expected_hash.data());
-
-    return std::equal(report.begin(), report.begin() + SHA256_DIGEST_LENGTH, expected_hash.begin());
+    std::lock_guard lock(pImpl->mutex);
+    return std::find_if(pImpl->caps.begin(), pImpl->caps.end(),
+                        [&](const Capability &a) {
+                            return a.resource_type == c.resource_type && a.permissions == c.permissions &&
+                                   a.expires_at == c.expires_at;
+                        }) != pImpl->caps.end() &&
+           std::find(c.permissions.begin(), c.permissions.end(), o) != c.permissions.end();
 }
-
-bool MigrationAttestation::initializeTPM() {
-    // In real implementation, initialize TPM
-    pImpl->tpm_initialized = true;
-    return true;
+void WASISecurityExtensions::revokeCapability(const Capability &c) {
+    std::lock_guard lock(pImpl->mutex);
+    std::erase_if(pImpl->caps, [&](const Capability &a) {
+        return a.resource_type == c.resource_type && a.permissions == c.permissions && a.expires_at == c.expires_at;
+    });
 }
-
-std::vector<uint8_t> MigrationAttestation::createTPMQuote(const std::vector<uint8_t> &pcr_values) {
-
-    if (!pImpl->tpm_initialized) {
-        return {};
-    }
-
-    // In real implementation, create TPM quote
-    std::vector<uint8_t> quote;
-    quote.insert(quote.end(), pcr_values.begin(), pcr_values.end());
-
-    return quote;
+void WASISecurityExtensions::enforceSandboxPolicy(const SandboxPolicy &p) {
+    std::lock_guard lock(pImpl->mutex);
+    pImpl->policy = p;
 }
-
-bool MigrationAttestation::initializeSGX() {
-    // In real implementation, initialize SGX
-    pImpl->sgx_initialized = true;
-    return true;
+bool WASISecurityExtensions::validateSandboxCompliance(const SandboxPolicy &p) {
+    std::lock_guard lock(pImpl->mutex);
+    return p.allow_network_access == pImpl->policy.allow_network_access &&
+           p.allow_file_access == pImpl->policy.allow_file_access && p.allowed_paths == pImpl->policy.allowed_paths &&
+           p.max_memory_usage == pImpl->policy.max_memory_usage && p.max_cpu_time_ms == pImpl->policy.max_cpu_time_ms;
 }
-
-std::vector<uint8_t> MigrationAttestation::createSGXReport(const void *report_data, size_t size) {
-    if (!pImpl->sgx_initialized) {
-        return {};
-    }
-
-    // In real implementation, create SGX report
-    std::vector<uint8_t> report;
-    report.resize(size);
-    std::memcpy(report.data(), report_data, size);
-
-    return report;
+WASISecurityExtensions::SecureFdMigration WASISecurityExtensions::prepareSecureFdMigration(int) {
+    SPDLOG_ERROR(
+        "Secure FD migration requires a negotiated transport and does not serialize process-local descriptors");
+    return {-1, {}, {}, {}};
 }
+int WASISecurityExtensions::restoreSecureFd(const SecureFdMigration &) { return -1; }
 
-bool MigrationAttestation::performRemoteAttestation(const std::string &remote_addr,
-                                                    const std::vector<uint8_t> &local_report) {
-    SPDLOG_INFO("Performing remote attestation with {}", remote_addr);
-    // In real implementation, perform remote attestation protocol
-    return true;
+struct MigrationAttestation::Impl {};
+MigrationAttestation::MigrationAttestation() : pImpl(std::make_unique<Impl>()) {}
+MigrationAttestation::~MigrationAttestation() = default;
+std::vector<uint8_t> MigrationAttestation::generateAttestationReport(const void *, size_t) {
+    SPDLOG_ERROR("No hardware attestation provider configured; refusing fabricated report");
+    return {};
 }
+bool MigrationAttestation::verifyAttestationReport(const std::vector<uint8_t> &, const void *, size_t) { return false; }
+bool MigrationAttestation::initializeTPM() { return false; }
+std::vector<uint8_t> MigrationAttestation::createTPMQuote(const std::vector<uint8_t> &) { return {}; }
+bool MigrationAttestation::initializeSGX() { return false; }
+std::vector<uint8_t> MigrationAttestation::createSGXReport(const void *, size_t) { return {}; }
+bool MigrationAttestation::performRemoteAttestation(const std::string &, const std::vector<uint8_t> &) { return false; }
 
-// SecureMigrationProtocol implementation
 struct SecureMigrationProtocol::Impl {
     ProtocolState state = ProtocolState::STATE_INIT;
-    bool is_source = false;
-    std::vector<uint8_t> session_key;
-    std::vector<uint8_t> peer_public_key;
-    EVP_PKEY *key_pair = nullptr;
+    bool source = false;
+    std::vector<uint8_t> key, peer;
+    EVP_PKEY *identity = nullptr;
+    uint64_t sent = 0, received = 0;
 };
-
 SecureMigrationProtocol::SecureMigrationProtocol() : pImpl(std::make_unique<Impl>()) {}
-
 SecureMigrationProtocol::~SecureMigrationProtocol() {
-    if (pImpl->key_pair) {
-        EVP_PKEY_free(pImpl->key_pair);
-    }
+    if (pImpl->identity)
+        EVP_PKEY_free(pImpl->identity);
+    OPENSSL_cleanse(pImpl->key.data(), pImpl->key.size());
 }
-
-bool SecureMigrationProtocol::initializeProtocol(bool is_source) {
-    pImpl->is_source = is_source;
-    pImpl->state = ProtocolState::STATE_INIT;
-
-    // Generate key pair for key exchange
-    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, nullptr);
-    if (!ctx)
-        return false;
-
-    if (EVP_PKEY_keygen_init(ctx) <= 0) {
-        EVP_PKEY_CTX_free(ctx);
-        return false;
-    }
-
-    if (EVP_PKEY_keygen(ctx, &pImpl->key_pair) <= 0) {
-        EVP_PKEY_CTX_free(ctx);
+bool SecureMigrationProtocol::initializeProtocol(bool source) {
+    if (pImpl->identity)
+        EVP_PKEY_free(pImpl->identity);
+    pImpl->identity = nullptr;
+    pImpl->key.clear();
+    pImpl->peer.clear();
+    EVP_PKEY_CTX *x = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, nullptr);
+    bool ok = x && EVP_PKEY_keygen_init(x) == 1 && EVP_PKEY_keygen(x, &pImpl->identity) == 1;
+    EVP_PKEY_CTX_free(x);
+    if (!ok) {
+        pImpl->state = ProtocolState::STATE_ERROR;
         return false;
     }
-
-    EVP_PKEY_CTX_free(ctx);
+    pImpl->source = source;
+    pImpl->sent = pImpl->received = 0;
     pImpl->state = ProtocolState::STATE_HANDSHAKE;
-
     return true;
 }
-
 std::vector<uint8_t> SecureMigrationProtocol::createHandshakeMessage() {
-    if (pImpl->state != ProtocolState::STATE_HANDSHAKE) {
+    if (pImpl->state != ProtocolState::STATE_HANDSHAKE || !pImpl->identity)
         return {};
-    }
-
-    std::vector<uint8_t> message;
-
-    // Add protocol version
-    uint32_t version = 1;
-    message.insert(message.end(), reinterpret_cast<uint8_t *>(&version),
-                   reinterpret_cast<uint8_t *>(&version) + sizeof(version));
-
-    // Add public key
-    size_t key_len = 32; // X25519 public key size
-    message.resize(message.size() + key_len);
-    EVP_PKEY_get_raw_public_key(pImpl->key_pair, message.data() + sizeof(version), &key_len);
-
-    return message;
+    std::vector<uint8_t> m{'M', 'V', 'H', '1'};
+    m.resize(36);
+    size_t n = 32;
+    if (EVP_PKEY_get_raw_public_key(pImpl->identity, m.data() + 4, &n) != 1 || n != 32)
+        return {};
+    return m;
 }
-
-bool SecureMigrationProtocol::processHandshakeMessage(const std::vector<uint8_t> &message) {
-    if (pImpl->state != ProtocolState::STATE_HANDSHAKE || message.size() < 36) {
+bool SecureMigrationProtocol::processHandshakeMessage(const std::vector<uint8_t> &m) {
+    if (pImpl->state != ProtocolState::STATE_HANDSHAKE || m.size() != 36 || memcmp(m.data(), "MVH1", 4) != 0)
         return false;
-    }
-
-    // Check protocol version
-    uint32_t version;
-    std::memcpy(&version, message.data(), sizeof(version));
-    if (version != 1) {
-        return false;
-    }
-
-    // Extract peer public key
-    pImpl->peer_public_key.assign(message.begin() + sizeof(version), message.end());
-
+    pImpl->peer.assign(m.begin() + 4, m.end());
     return performKeyExchange();
 }
-
 bool SecureMigrationProtocol::performKeyExchange() {
-    if (pImpl->peer_public_key.empty() || !pImpl->key_pair) {
+    if (!pImpl->identity || pImpl->peer.size() != 32)
+        return false;
+    EVP_PKEY *peer = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, nullptr, pImpl->peer.data(), 32);
+    EVP_PKEY_CTX *x = EVP_PKEY_CTX_new(pImpl->identity, nullptr);
+    size_t n = 0;
+    bool ok = peer && x && EVP_PKEY_derive_init(x) == 1 && EVP_PKEY_derive_set_peer(x, peer) == 1 &&
+              EVP_PKEY_derive(x, nullptr, &n) == 1;
+    std::vector<uint8_t> secret(ok ? n : 0);
+    ok = ok && EVP_PKEY_derive(x, secret.data(), &n) == 1;
+    EVP_PKEY_CTX_free(x);
+    EVP_PKEY_free(peer);
+    if (!ok)
+        return false;
+    pImpl->key.assign(32, 0);
+    EVP_PKEY_CTX *h = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr);
+    const char info[] = "MVVM migration v1";
+    size_t out = 32;
+    ok = h && EVP_PKEY_derive_init(h) == 1 && EVP_PKEY_CTX_set_hkdf_md(h, EVP_sha256()) == 1 &&
+         EVP_PKEY_CTX_set1_hkdf_salt(h, nullptr, 0) == 1 && EVP_PKEY_CTX_set1_hkdf_key(h, secret.data(), n) == 1 &&
+         EVP_PKEY_CTX_add1_hkdf_info(h, reinterpret_cast<const unsigned char *>(info), sizeof(info) - 1) == 1 &&
+         EVP_PKEY_derive(h, pImpl->key.data(), &out) == 1 && out == 32;
+    EVP_PKEY_CTX_free(h);
+    OPENSSL_cleanse(secret.data(), secret.size());
+    if (!ok) {
+        pImpl->key.clear();
         return false;
     }
-
-    // Create peer public key object
-    EVP_PKEY *peer_key = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, nullptr, pImpl->peer_public_key.data(),
-                                                     pImpl->peer_public_key.size());
-    if (!peer_key) {
-        return false;
-    }
-
-    // Derive shared secret
-    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(pImpl->key_pair, nullptr);
-    if (!ctx) {
-        EVP_PKEY_free(peer_key);
-        return false;
-    }
-
-    if (EVP_PKEY_derive_init(ctx) <= 0) {
-        EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(peer_key);
-        return false;
-    }
-
-    if (EVP_PKEY_derive_set_peer(ctx, peer_key) <= 0) {
-        EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(peer_key);
-        return false;
-    }
-
-    size_t secret_len;
-    if (EVP_PKEY_derive(ctx, nullptr, &secret_len) <= 0) {
-        EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(peer_key);
-        return false;
-    }
-
-    pImpl->session_key.resize(secret_len);
-    if (EVP_PKEY_derive(ctx, pImpl->session_key.data(), &secret_len) <= 0) {
-        EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(peer_key);
-        return false;
-    }
-
-    EVP_PKEY_CTX_free(ctx);
-    EVP_PKEY_free(peer_key);
-
     pImpl->state = ProtocolState::STATE_AUTHENTICATED;
-
     return true;
 }
-
-std::vector<uint8_t> SecureMigrationProtocol::getSessionKey() const { return pImpl->session_key; }
-
+std::vector<uint8_t> SecureMigrationProtocol::getSessionKey() const { return pImpl->key; }
 std::vector<uint8_t> SecureMigrationProtocol::prepareStateTransfer(const void *state, size_t size) {
-    if (pImpl->state != ProtocolState::STATE_AUTHENTICATED) {
+    if (pImpl->state != ProtocolState::STATE_AUTHENTICATED || (!state && size) || size > UINT32_MAX)
         return {};
-    }
-
+    SecurityContext c{"migration", AuthMethod::MUTUAL_TLS, CryptoAlgorithm::AES_256_GCM, pImpl->key, {}, ++pImpl->sent,
+                      {}};
+    std::array<uint8_t, nonce_size> n{};
+    if (RAND_bytes(n.data(), n.size()) != 1)
+        return {};
+    std::vector<uint8_t> out{'M', 'V', 'P', '1'};
+    put64(out, c.sequence_number);
+    out.insert(out.end(), n.begin(), n.end());
+    put32(out, uint32_t(size));
+    std::vector<uint8_t> ct;
+    std::array<uint8_t, tag_size> tag{};
+    if (!encrypt(static_cast<const uint8_t *>(state), size, c, out, n.data(), ct, tag))
+        return {};
+    out.insert(out.end(), ct.begin(), ct.end());
+    out.insert(out.end(), tag.begin(), tag.end());
     pImpl->state = ProtocolState::STATE_MIGRATING;
-
-    // Encrypt state with session key
-    std::vector<uint8_t> encrypted;
-    // Simplified: just copy for demo
-    encrypted.resize(size);
-    std::memcpy(encrypted.data(), state, size);
-
-    return encrypted;
+    return out;
 }
-
-bool SecureMigrationProtocol::receiveStateTransfer(const std::vector<uint8_t> &data, void *state, size_t size) {
-    if (pImpl->state != ProtocolState::STATE_AUTHENTICATED || data.size() != size) {
+bool SecureMigrationProtocol::receiveStateTransfer(const std::vector<uint8_t> &d, void *state, size_t size) {
+    if (pImpl->state != ProtocolState::STATE_AUTHENTICATED || (!state && size) ||
+        d.size() < 4 + 8 + nonce_size + 4 + tag_size || memcmp(d.data(), "MVP1", 4) != 0)
         return false;
-    }
-
+    size_t p = 4;
+    uint64_t seq;
+    uint32_t len;
+    if (!get64(d, p, seq) || p + nonce_size > d.size())
+        return false;
+    const uint8_t *n = d.data() + p;
+    p += nonce_size;
+    if (!get32(d, p, len) || seq <= pImpl->received || len != size ||
+        d.size() != 4 + 8 + nonce_size + 4 + len + tag_size)
+        return false;
+    SecurityContext c{"migration", AuthMethod::MUTUAL_TLS, CryptoAlgorithm::AES_256_GCM, pImpl->key, {}, seq, {}};
+    std::vector<uint8_t> plain;
+    if (!decrypt(d.data() + p, len, c, std::vector<uint8_t>(d.begin(), d.begin() + p), n, d.data() + p + len, plain) ||
+        plain.size() != size)
+        return false;
+    memcpy(state, plain.data(), size);
+    pImpl->received = seq;
     pImpl->state = ProtocolState::STATE_MIGRATING;
-
-    // Decrypt state with session key
-    // Simplified: just copy for demo
-    std::memcpy(state, data.data(), size);
-
     return true;
 }
-
 bool SecureMigrationProtocol::completeProtocol() {
-    if (pImpl->state == ProtocolState::STATE_MIGRATING) {
-        pImpl->state = ProtocolState::STATE_COMPLETED;
-        return true;
-    }
-    return false;
+    if (pImpl->state != ProtocolState::STATE_MIGRATING)
+        return false;
+    pImpl->state = ProtocolState::STATE_COMPLETED;
+    return true;
 }
-
 SecureMigrationProtocol::ProtocolState SecureMigrationProtocol::getCurrentState() const { return pImpl->state; }
-
-} // namespace security
-} // namespace mvvm
+} // namespace mvvm::security

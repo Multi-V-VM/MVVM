@@ -268,7 +268,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
         auto e = std::make_unique<WAMRBranchBlock>();                                                                  \
         e->cell_num = cell_num;                                                                                        \
         e->begin_addr = frame_ip - cur_func->u.func->code;                                                             \
-        e->target_addr = (_target_addr)-cur_func->u.func->code;                                                        \
+        e->target_addr = (_target_addr) - cur_func->u.func->code;                                                      \
         e->frame_sp = reinterpret_cast<uint8 *>(frame_sp - (param_cell_num)) - exec_env->wasm_stack.s.bottom;          \
         csp.emplace_back(std::move(e));                                                                                \
     }

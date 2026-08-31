@@ -471,8 +471,8 @@ static WAMRWASINNContext *get_current_wamr_nn_context() {
 #else // WASM_ENABLE_WASI_NN == 0
 
 // Minimal type definitions for stub implementations
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 // Forward declarations
 struct WAMRWASINNContext;
@@ -511,7 +511,7 @@ typedef struct {
 
 typedef uint8_t *tensor_data;
 
-// Additional stub type definitions  
+// Additional stub type definitions
 enum class WASINNOperationType { LOAD_MODEL, INIT_EXECUTION_CONTEXT, SET_INPUT, COMPUTE, GET_OUTPUT };
 typedef enum { fp16, fp32, up8, ip32 } tensor_type;
 
@@ -521,22 +521,22 @@ typedef enum { fp16, fp32, up8, ip32 } tensor_type;
 struct WAMRWASINNOperation {
     WASINNOperationType type;
     uint32_t sequence_id;
-    
+
     // For LOAD_MODEL
     std::string model_name;
     graph_encoding encoding;
     execution_target target;
     graph graph_id;
-    
-    // For INIT_EXECUTION_CONTEXT  
+
+    // For INIT_EXECUTION_CONTEXT
     graph_execution_context ctx_id;
-    
+
     // For SET_INPUT
     uint32_t input_index;
     std::vector<uint8_t> tensor_data;
     std::vector<uint32_t> tensor_dims;
     tensor_type data_type;
-    
+
     // For GET_OUTPUT
     uint32_t output_index;
     std::vector<uint8_t> output_data;
@@ -552,24 +552,24 @@ struct WASINNContext {
 struct WAMRWASINNContext {
     bool is_initialized = false;
     graph_encoding current_encoding = tensorflowlite;
-    
+
     // Record and replay data
     std::vector<WAMRWASINNOperation> recorded_operations;
     size_t replay_position = 0;
     bool recording_enabled = true;
     bool replaying_enabled = false;
-    
+
     // Size tracking
     size_t total_memory_size = 0;
     size_t peak_memory_size = 0;
     size_t operation_count = 0;
-    
+
     // Methods
     void record_operation(const WAMRWASINNOperation &op);
     WAMRWASINNOperation *get_next_operation();
     void dump_impl(WASINNContext *env);
     void restore_impl(WASINNContext *env);
-    
+
     // Inline methods
     void enable_recording(bool enable) { recording_enabled = enable; }
     void enable_replay(bool enable) { replaying_enabled = enable; }
@@ -584,12 +584,10 @@ void wamr_wasi_nn_recorder_init(wasm_module_inst_t instance) {
 }
 
 void wamr_wasi_nn_recorder_cleanup(wasm_module_inst_t instance) {
-    // Stub implementation  
+    // Stub implementation
 }
 
-WAMRWASINNContext *wamr_get_wasi_nn_mvvm_context(wasm_module_inst_t instance) {
-    return nullptr;
-}
+WAMRWASINNContext *wamr_get_wasi_nn_mvvm_context(wasm_module_inst_t instance) { return nullptr; }
 
 error wamr_wasi_nn_load_with_recording(wasm_exec_env_t exec_env, graph_builder_wasm *builder,
                                        uint32_t builder_wasm_size, graph_encoding encoding, execution_target target,
@@ -617,17 +615,11 @@ error wamr_wasi_nn_get_output_with_recording(wasm_exec_env_t exec_env, graph_exe
     return invalid_encoding;
 }
 
-size_t wamr_wasi_nn_get_recorder_memory_size(wasm_module_inst_t instance) {
-    return 0;
-}
+size_t wamr_wasi_nn_get_recorder_memory_size(wasm_module_inst_t instance) { return 0; }
 
-size_t wamr_wasi_nn_get_recorder_peak_memory_size(wasm_module_inst_t instance) {
-    return 0;
-}
+size_t wamr_wasi_nn_get_recorder_peak_memory_size(wasm_module_inst_t instance) { return 0; }
 
-size_t wamr_wasi_nn_get_recorder_operation_count(wasm_module_inst_t instance) {
-    return 0;
-}
+size_t wamr_wasi_nn_get_recorder_operation_count(wasm_module_inst_t instance) { return 0; }
 
 } // extern "C"
 

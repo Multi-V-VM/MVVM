@@ -11,11 +11,11 @@
  *  UC Santa Cruz Sluglab.
  */
 
-#include "mvvm_export.h"
 #include "wamr.h"
-#include "wamr_platform_windows.h"
+#include "mvvm_export.h"
 #include "wamr_export.h"
 #include "wamr_native.h"
+#include "wamr_platform_windows.h"
 #include "wamr_read_write.h"
 #include "wasm_export.h"
 #include "wasm_interp.h"
@@ -753,8 +753,7 @@ bool is_ip_in_cidr(const char *base_ip, int subnet_mask_len, uint32_t ip) {
     return ip_net_order >= network_addr && ip_net_order <= broadcast_addr;
 }
 bool is_ipv6_in_cidr(const char *base_ip_str, int subnet_mask_len, struct in6_addr *ip) {
-    struct in6_addr base_ip {
-    }, subnet_mask{}, network_addr{}, ip_min{}, ip_max{};
+    struct in6_addr base_ip{}, subnet_mask{}, network_addr{}, ip_min{}, ip_max{};
     unsigned char mask;
 
     // Convert base IP to binary
@@ -834,7 +833,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     if (writer == nullptr) {
         if (offload_addr.empty())
             writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
-#if __linux__
+#if defined(__linux__) && defined(MVVM_ENABLE_RDMA)
         else
             writer = new SocketWriteStream(offload_addr.c_str(), offload_port);
 #endif
@@ -857,7 +856,7 @@ void serialize_to_file(WASMExecEnv *instance) {
 #if !defined(_WIN32)
     if (!wamr->socket_fd_map_.empty() && wamr->should_snapshot) {
         // tell gateway to keep alive the server
-        struct sockaddr_in addr {};
+        struct sockaddr_in addr{};
         int fd = 0;
         ssize_t rc;
         SocketAddrPool src_addr{};
@@ -1003,7 +1002,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     // get duration in us
     auto dur1 = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start);
     SPDLOG_INFO("Snapshot Overhead: {} s", dur1.count() / 1000000.0);
-#if __linux__
+#if defined(__linux__) && defined(MVVM_ENABLE_RDMA)
     if (dynamic_cast<RDMAWriteStream *>(writer)) {
         auto buffer = struct_pack::serialize(as);
         ((RDMAWriteStream *)writer)->buffer = buffer;

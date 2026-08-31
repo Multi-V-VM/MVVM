@@ -75,7 +75,7 @@ unsigned short in_cksum(unsigned short *buf, int len) {
 // https://github.com/pellegre/libcrafter-examples/blob/03832c5c6f68b55a714877bf53aaba2fc33c43ff/SimpleHijackConnection/main.cpp#L113
 void forward(const unsigned char *buf, int len) {
     int sock;
-    struct sockaddr_in dst {};
+    struct sockaddr_in dst{};
 
     memset(&dst, 0, sizeof(dst));
     dst.sin_family = AF_INET;
@@ -91,7 +91,7 @@ void forward(const unsigned char *buf, int len) {
 }
 void forwardv6(const unsigned char *buf, int len) {
     int sock;
-    struct sockaddr_in6 dst {};
+    struct sockaddr_in6 dst{};
 
     memset(&dst, 0, sizeof(dst));
     dst.sin6_family = AF_INET6;
@@ -304,7 +304,7 @@ void send_fin(std::string source_ip, int source_port, std::string dest_ip, int d
 }
 
 void sigterm_handler(int sig) {
-    struct pcap_stat stats {};
+    struct pcap_stat stats{};
 
     if (pcap_stats(handle, &stats) >= 0) {
         SPDLOG_INFO("{} packets captured", packets);
@@ -324,13 +324,13 @@ void sigterm_handler(int sig) {
 // }
 int main() {
     spdlog::cfg::load_env_levels();
-    struct sockaddr_in address {};
+    struct sockaddr_in address{};
     int opt = 1;
     ssize_t rc;
     int addrlen = sizeof(address);
     char buffer[1024], buffer1[1024] = {0};
     char errbuf[PCAP_ERRBUF_SIZE];
-    struct bpf_program fp {};
+    struct bpf_program fp{};
     // char filter_exp[] = ""; // The filter expression
     char filter_exp[] = "net 172.17.0.0/24";
     bpf_u_int32 netmask;

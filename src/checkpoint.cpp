@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
         writer = new FwriteStream((removeExtension(target) + ".bin").c_str());
 
 #ifndef _WIN32
-#if __linux__
+#if defined(__linux__) && defined(MVVM_ENABLE_RDMA)
     else if (rdma)
         writer = new RDMAWriteStream(offload_addr.c_str(), offload_port);
 #endif

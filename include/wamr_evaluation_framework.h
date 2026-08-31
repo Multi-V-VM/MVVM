@@ -74,8 +74,9 @@ struct BenchmarkConfig {
     std::vector<size_t> problem_sizes = {1024, 4096, 16384, 65536};
     std::vector<MigrationStrategy> migration_strategies = {
         MigrationStrategy::INCREMENTAL, MigrationStrategy::COMPRESSION, MigrationStrategy::DELTA_ENCODING};
-    std::vector<security::SecurityPolicy> security_policies = {
-        security::SecurityPolicy::POLICY_MINIMAL, security::SecurityPolicy::POLICY_BALANCED, security::SecurityPolicy::POLICY_STRICT};
+    std::vector<security::SecurityPolicy> security_policies = {security::SecurityPolicy::POLICY_MINIMAL,
+                                                               security::SecurityPolicy::POLICY_BALANCED,
+                                                               security::SecurityPolicy::POLICY_STRICT};
 };
 
 // Abstract benchmark interface

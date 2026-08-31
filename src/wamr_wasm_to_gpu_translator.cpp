@@ -24,8 +24,8 @@ WasmToGPUTranslator::WasmToGPUTranslator() : pImpl(std::make_unique<Impl>()) {
 
 WasmToGPUTranslator::~WasmToGPUTranslator() = default;
 
-GPUKernel WasmToGPUTranslator::translateModule(const void *wasm_module, size_t module_size, 
-                                                const TranslationOptions &options) {
+GPUKernel WasmToGPUTranslator::translateModule(const void *wasm_module, size_t module_size,
+                                               const TranslationOptions &options) {
     // Stub implementation
     std::cerr << "WasmToGPUTranslator::translateModule - Not implemented" << std::endl;
     GPUKernel kernel;
@@ -35,9 +35,8 @@ GPUKernel WasmToGPUTranslator::translateModule(const void *wasm_module, size_t m
     return kernel;
 }
 
-GPUKernel WasmToGPUTranslator::translateFunction(const void *wasm_module, size_t module_size, 
-                                                  const std::string &function_name,
-                                                  const TranslationOptions &options) {
+GPUKernel WasmToGPUTranslator::translateFunction(const void *wasm_module, size_t module_size,
+                                                 const std::string &function_name, const TranslationOptions &options) {
     // Stub implementation
     std::cerr << "WasmToGPUTranslator::translateFunction - Not implemented" << std::endl;
     GPUKernel kernel;
@@ -47,8 +46,7 @@ GPUKernel WasmToGPUTranslator::translateFunction(const void *wasm_module, size_t
     return kernel;
 }
 
-bool WasmToGPUTranslator::verifyTranslation(const GPUKernel &kernel, const void *wasm_module, 
-                                             size_t module_size) {
+bool WasmToGPUTranslator::verifyTranslation(const GPUKernel &kernel, const void *wasm_module, size_t module_size) {
     // Stub implementation
     std::cerr << "WasmToGPUTranslator::verifyTranslation - Not implemented" << std::endl;
     return false;

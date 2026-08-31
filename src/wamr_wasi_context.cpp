@@ -26,7 +26,7 @@ using namespace std::chrono_literals;
 #include <netinet/in.h>
 #include <sys/socket.h>
 struct sockaddr_in sockaddr_from_ip4(const SocketAddrPool &addr) {
-    struct sockaddr_in sockaddr4 {};
+    struct sockaddr_in sockaddr4{};
     memset(&sockaddr4, 0, sizeof(sockaddr4));
     sockaddr4.sin_family = AF_INET;
     sockaddr4.sin_port = addr.port;
@@ -35,7 +35,7 @@ struct sockaddr_in sockaddr_from_ip4(const SocketAddrPool &addr) {
 }
 
 struct sockaddr_in6 sockaddr_from_ip6(const SocketAddrPool &addr) {
-    struct sockaddr_in6 sockaddr6 {};
+    struct sockaddr_in6 sockaddr6{};
     memset(&sockaddr6, 0, sizeof(sockaddr6));
     sockaddr6.sin6_family = AF_INET6;
     sockaddr6.sin6_port = addr.port;

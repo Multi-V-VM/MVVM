@@ -12,13 +12,6 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
-#if defined(_WIN32) || defined(_WIN64)
-#include <json/json.h>
-#elif !defined(__APPLE__)
-#include <jsoncpp/json/json.h>
-#else
-#include <json/json.h>
-#endif
 #include <numeric>
 #include <random>
 #include <spdlog/spdlog.h>
@@ -29,6 +22,29 @@
 
 namespace mvvm {
 namespace evaluation {
+
+static std::string escapeJSON(const std::string &value) {
+    std::ostringstream escaped;
+    for (const unsigned char ch : value) {
+        switch (ch) {
+        case '\"': escaped << "\\\""; break;
+        case '\\': escaped << "\\\\"; break;
+        case '\b': escaped << "\\b"; break;
+        case '\f': escaped << "\\f"; break;
+        case '\n': escaped << "\\n"; break;
+        case '\r': escaped << "\\r"; break;
+        case '\t': escaped << "\\t"; break;
+        default:
+            if (ch < 0x20) {
+                escaped << "\\u" << std::hex << std::setw(4) << std::setfill('0')
+                        << static_cast<unsigned>(ch) << std::dec << std::setfill(' ');
+            } else {
+                escaped << ch;
+            }
+        }
+    }
+    return escaped.str();
+}
 
 // Helper to get current memory usage
 static size_t getCurrentMemoryUsage() {
@@ -579,33 +595,28 @@ void BenchmarkSuite::exportResults(const std::string &format, const std::string 
 }
 
 void BenchmarkSuite::exportJSON(const std::string &filename) {
-    Json::Value root;
-    Json::Value results(Json::arrayValue);
-
-    for (const auto &result : pImpl->results) {
-        Json::Value r;
-        r["name"] = result.benchmark_name;
-        r["category"] = static_cast<int>(result.category);
-        r["execution_time_ms"] = result.execution_time_ms;
-        r["throughput_mbps"] = result.throughput_mbps;
-        r["memory_usage_bytes"] = Json::Value::Int64(result.memory_usage_bytes);
-
-        Json::Value metrics;
-        for (const auto &[name, value] : result.custom_metrics) {
-            metrics[name] = value;
-        }
-        r["custom_metrics"] = metrics;
-
-        results.append(r);
-    }
-
-    root["results"] = results;
-
     std::ofstream file(filename);
-    Json::StreamWriterBuilder builder;
-    std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
-    writer->write(root, &file);
-    file.close();
+    if (!file) {
+        SPDLOG_ERROR("Unable to open JSON result file: {}", filename);
+        return;
+    }
+    file << "{\n  \"results\": [";
+    for (size_t result_index = 0; result_index < pImpl->results.size(); ++result_index) {
+        const auto &result = pImpl->results[result_index];
+        file << (result_index ? ",\n" : "\n")
+             << "    {\"name\": \"" << escapeJSON(result.benchmark_name) << "\", "
+             << "\"category\": " << static_cast<int>(result.category) << ", "
+             << "\"execution_time_ms\": " << std::setprecision(17) << result.execution_time_ms << ", "
+             << "\"throughput_mbps\": " << result.throughput_mbps << ", "
+             << "\"memory_usage_bytes\": " << result.memory_usage_bytes << ", "
+             << "\"custom_metrics\": {";
+        size_t metric_index = 0;
+        for (const auto &[name, value] : result.custom_metrics) {
+            file << (metric_index++ ? ", " : "") << "\"" << escapeJSON(name) << "\": " << value;
+        }
+        file << "}}";
+    }
+    file << "\n  ]\n}\n";
 }
 
 void BenchmarkSuite::exportCSV(const std::string &filename) {

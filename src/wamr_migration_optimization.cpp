@@ -18,8 +18,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #else
-#include <windows.h>
 #include <io.h>
+#include <windows.h>
 #endif
 #include <zlib.h>
 

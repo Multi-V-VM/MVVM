@@ -1,342 +1,213 @@
-/*
- * AMD GPU Confidential Computing Implementation
- */
-
+/* AMD GPU execution inside an AMD SEV-SNP guest.  SEV-SNP protects guest
+ * memory; it must not be advertised as an AMD GPU encryption feature. */
 #include "wamr_gpu_cc_framework.h"
-#include <spdlog/spdlog.h>
+#include <algorithm>
+#include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <map>
-
-// Cross-platform aligned allocation
-#ifdef _WIN32
-#include <malloc.h>
-static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
-    return _aligned_malloc(size, alignment);
-}
-static inline void aligned_free_wrapper(void* ptr) {
-    _aligned_free(ptr);
-}
-#else
-static inline void* aligned_alloc_wrapper(size_t alignment, size_t size) {
-    return std::aligned_alloc(alignment, size);
-}
-static inline void aligned_free_wrapper(void* ptr) {
-    std::free(ptr);
-}
+#include <openssl/crypto.h>
+#include <openssl/rand.h>
+#include <spdlog/spdlog.h>
+#include <string>
+#ifdef __linux__
+#include <fcntl.h>
+#include <linux/sev-guest.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <unistd.h>
 #endif
 
-// AMD specific headers would go here
-// #include <hip/hip_runtime.h>
-// #include <rocm_smi/rocm_smi.h>
-
-namespace mvvm {
-namespace gpu {
+namespace mvvm::gpu {
+namespace {
+std::string trim(std::string s) {
+    while (!s.empty() && (s.back() == '\n' || s.back() == '\r' || s.back() == ' '))
+        s.pop_back();
+    return s;
+}
+std::string readFile(const std::filesystem::path &p) {
+    std::ifstream f(p);
+    std::string s;
+    std::getline(f, s);
+    return trim(s);
+}
+uint64_t readNumber(const std::filesystem::path &p) {
+    const auto s = readFile(p);
+    try {
+        return s.empty() ? 0 : std::stoull(s, nullptr, 0);
+    } catch (...) {
+        return 0;
+    }
+}
+#ifdef __linux__
+bool snpReport(const std::vector<uint8_t> &binding, std::vector<uint8_t> &report) {
+    int fd = open("/dev/sev-guest", O_RDWR | O_CLOEXEC);
+    if (fd < 0)
+        return false;
+    snp_report_req request{};
+    std::memcpy(request.user_data, binding.data(), std::min(binding.size(), sizeof(request.user_data)));
+    snp_report_resp response{};
+    snp_guest_request_ioctl ioctl_request{};
+    ioctl_request.msg_version = 1;
+    ioctl_request.req_data = reinterpret_cast<uint64_t>(&request);
+    ioctl_request.resp_data = reinterpret_cast<uint64_t>(&response);
+    const bool ok = ioctl(fd, SNP_GET_REPORT, &ioctl_request) == 0;
+    close(fd);
+    if (!ok)
+        return false;
+    report.assign(response.data, response.data + sizeof(response.data));
+    return true;
+}
+#else
+bool snpReport(const std::vector<uint8_t> &, std::vector<uint8_t> &) { return false; }
+#endif
+bool hasFeature(const GPUDevice &device, CCFeature feature) {
+    return std::find(device.cc_features.begin(), device.cc_features.end(), feature) != device.cc_features.end();
+}
+} // namespace
 
 struct AMDGPUCCImpl::Impl {
-    GPUDevice current_device;
-    bool sev_snp_enabled = false;  // AMD SEV-SNP for GPU
-    bool cc_initialized = false;
-    std::map<std::string, GPUKernel> loaded_kernels;
-    std::map<void*, size_t> secure_allocations;
-    
-    // AMD specific CC state
-    std::vector<uint8_t> sev_measurement;
-    std::vector<uint8_t> platform_certificate;
-    
-    std::vector<uint8_t> generateAttestationReport() {
-        std::vector<uint8_t> report(512);
-        
-        // AMD SEV-SNP attestation report format
-        // [0-31] = Version and flags
-        // [32-63] = Guest SVN
-        // [64-95] = Platform info
-        // [96-127] = Family/Model/Stepping
-        // [128-159] = Image ID
-        // [160-191] = VMPL
-        // [192-255] = Guest measurement
-        // [256-319] = Host data
-        // [320-511] = Signature
-        
-        // Version
-        report[0] = 0x02;  // SEV-SNP
-        
-        // Platform info
-        uint64_t platform_info = 0;
-        if (sev_snp_enabled) {
-            platform_info |= (1ULL << 0);  // SME enabled
-            platform_info |= (1ULL << 1);  // SEV enabled
-            platform_info |= (1ULL << 2);  // SEV-ES enabled
-            platform_info |= (1ULL << 3);  // SEV-SNP enabled
-        }
-        std::memcpy(&report[64], &platform_info, sizeof(platform_info));
-        
-        // Guest measurement
-        if (!sev_measurement.empty()) {
-            std::memcpy(&report[192], sev_measurement.data(), 
-                       (std::min)(sev_measurement.size(), size_t(64)));
-        }
-        
-        return report;
-    }
+    GPUDevice device{};
+    bool selected = false, initialized = false, snp = false;
+    std::vector<uint8_t> last_report;
+    std::map<void *, size_t> allocations;
+    std::map<std::string, GPUKernel> kernels;
 };
-
-AMDGPUCCImpl::AMDGPUCCImpl() : pImpl(std::make_unique<Impl>()) {
-    SPDLOG_INFO("Initializing AMD GPU CC implementation");
-}
-
+AMDGPUCCImpl::AMDGPUCCImpl() : pImpl(std::make_unique<Impl>()) {}
 AMDGPUCCImpl::~AMDGPUCCImpl() {
-    // Cleanup secure allocations
-    for (const auto& [ptr, size] : pImpl->secure_allocations) {
-        std::free(ptr);
+    for (const auto &[p, n] : pImpl->allocations) {
+        OPENSSL_cleanse(p, n);
+#ifdef __linux__
+        munlock(p, n);
+#endif
+        std::free(p);
     }
 }
 
 std::vector<GPUDevice> AMDGPUCCImpl::enumerateDevices() {
     std::vector<GPUDevice> devices;
-    
-    // Mock AMD GPU enumeration
-    GPUDevice device;
-    device.name = "AMD Instinct MI300X";
-    device.vendor = GPUVendor::AMD;
-    device.device_id = 0;
-    device.total_memory = 192ULL * 1024 * 1024 * 1024;  // 192GB HBM3
-    device.available_memory = 190ULL * 1024 * 1024 * 1024;
-    
-    device.capability.major_version = 9;
-    device.capability.minor_version = 4;
-    device.capability.max_threads_per_block = 1024;
-    device.capability.max_blocks_per_grid = 2147483647;
-    device.capability.shared_memory_per_block = 64 * 1024;
-    device.capability.supports_cc = true;
-    
-    // MI300X with SEV-SNP support
-    device.cc_features.push_back(CCFeature::MEMORY_ENCRYPTION);
-    device.cc_features.push_back(CCFeature::SECURE_BOOT);
-    device.cc_features.push_back(CCFeature::REMOTE_ATTESTATION);
-    device.cc_features.push_back(CCFeature::TRUSTED_EXECUTION);
-    device.cc_features.push_back(CCFeature::SEALED_STORAGE);
-    
-    devices.push_back(device);
-    
-    // Add a consumer GPU
-    GPUDevice device2;
-    device2.name = "AMD Radeon RX 7900 XTX";
-    device2.vendor = GPUVendor::AMD;
-    device2.device_id = 1;
-    device2.total_memory = 24ULL * 1024 * 1024 * 1024;
-    device2.available_memory = 23ULL * 1024 * 1024 * 1024;
-    device2.capability.major_version = 11;
-    device2.capability.minor_version = 0;
-    device2.capability.supports_cc = false;
-    
-    devices.push_back(device2);
-    
+#ifdef __linux__
+    const std::filesystem::path root{"/sys/class/drm"};
+    std::error_code ec;
+    for (const auto &entry : std::filesystem::directory_iterator(root, ec)) {
+        const auto name = entry.path().filename().string();
+        if (name.rfind("card", 0) != 0 || name.find('-') != std::string::npos)
+            continue;
+        const auto dev = entry.path() / "device";
+        if (readFile(dev / "vendor") != "0x1002")
+            continue;
+        GPUDevice d{};
+        const auto id = readFile(dev / "device");
+        d.name = "AMD GPU " + (id.empty() ? std::string("unknown") : id);
+        d.vendor = GPUVendor::AMD;
+        d.device_id = devices.size();
+        d.total_memory = readNumber(dev / "mem_info_vram_total");
+        d.available_memory = readNumber(dev / "mem_info_vram_used");
+        if (d.available_memory <= d.total_memory)
+            d.available_memory = d.total_memory - d.available_memory;
+        d.capability = {0, 0, 0, 0, 0, false};
+        /* An SNP guest gives an AMD GPU a hardware-attested encrypted host-memory path.
+         * It does not prove protected VRAM or a secure kernel launch interface. */
+        std::vector<uint8_t> probe(32, 0), report;
+        if (snpReport(probe, report)) {
+            d.cc_features = {CCFeature::MEMORY_ENCRYPTION, CCFeature::REMOTE_ATTESTATION};
+            d.capability.supports_cc = true;
+        }
+        devices.push_back(std::move(d));
+    }
+#endif
     return devices;
 }
-
-bool AMDGPUCCImpl::selectDevice(size_t device_id) {
+bool AMDGPUCCImpl::selectDevice(size_t id) {
     auto devices = enumerateDevices();
-    if (device_id >= devices.size()) {
-        SPDLOG_ERROR("Invalid device ID: {}", device_id);
+    if (id >= devices.size())
         return false;
-    }
-    
-    pImpl->current_device = devices[device_id];
-    SPDLOG_INFO("Selected device: {}", pImpl->current_device.name);
-    
+    pImpl->device = devices[id];
+    pImpl->selected = true;
     return true;
 }
-
-GPUDevice AMDGPUCCImpl::getCurrentDevice() {
-    return pImpl->current_device;
-}
-
-bool AMDGPUCCImpl::initializeCC(const std::vector<CCFeature>& required_features) {
-    if (!pImpl->current_device.capability.supports_cc) {
-        SPDLOG_ERROR("Current device does not support confidential computing");
+GPUDevice AMDGPUCCImpl::getCurrentDevice() { return pImpl->device; }
+bool AMDGPUCCImpl::initializeCC(const std::vector<CCFeature> &features) {
+    if (!pImpl->selected || !pImpl->device.capability.supports_cc)
         return false;
-    }
-    
-    // Check feature support
-    for (const auto& feature : required_features) {
-        bool found = false;
-        for (const auto& dev_feature : pImpl->current_device.cc_features) {
-            if (dev_feature == feature) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            SPDLOG_ERROR("Device does not support required CC feature");
+    for (auto f : features)
+        if (!hasFeature(pImpl->device, f)) {
+            SPDLOG_ERROR("AMD SEV-SNP guest does not provide requested GPU CC feature");
             return false;
         }
-    }
-    
-    // Initialize AMD SEV-SNP for GPU
-    if (pImpl->current_device.name.find("MI300") != std::string::npos) {
-        pImpl->sev_snp_enabled = true;
-        SPDLOG_INFO("Enabled AMD SEV-SNP for GPU");
-        
-        // Generate initial measurement
-        pImpl->sev_measurement.resize(48);  // SHA-384
-        for (size_t i = 0; i < 48; ++i) {
-            pImpl->sev_measurement[i] = static_cast<uint8_t>((i * 3 + 7) % 256);
-        }
-        
-        // Generate platform certificate
-        pImpl->platform_certificate.resize(256);
-        for (size_t i = 0; i < 256; ++i) {
-            pImpl->platform_certificate[i] = static_cast<uint8_t>((i * 5 + 11) % 256);
-        }
-    }
-    
-    pImpl->cc_initialized = true;
-    return true;
-}
-
-bool AMDGPUCCImpl::verifyDevice() {
-    if (!pImpl->cc_initialized) {
+    std::vector<uint8_t> nonce(32);
+    if (RAND_bytes(nonce.data(), nonce.size()) != 1 || !snpReport(nonce, pImpl->last_report)) {
+        SPDLOG_ERROR("AMD SEV-SNP report request failed");
         return false;
     }
-    
-    // Verify SEV-SNP platform certificate
-    // In real implementation, would verify against AMD root certificate
-    
-    SPDLOG_INFO("AMD platform verification successful");
+    pImpl->snp = true;
+    pImpl->initialized = true;
     return true;
 }
-
-std::vector<uint8_t> AMDGPUCCImpl::getAttestationReport() {
-    if (!pImpl->cc_initialized) {
-        return {};
-    }
-    
-    return pImpl->generateAttestationReport();
+bool AMDGPUCCImpl::verifyDevice() {
+    if (!pImpl->initialized)
+        return false;
+    std::vector<uint8_t> nonce(32), report;
+    if (RAND_bytes(nonce.data(), nonce.size()) != 1 || !snpReport(nonce, report))
+        return false; /* Firmware signature validation belongs to the relying party with AMD VCEK collateral. */
+    pImpl->last_report = std::move(report);
+    return true;
 }
-
-void* AMDGPUCCImpl::allocateSecureMemory(size_t size, MemoryType type) {
-    if (!pImpl->cc_initialized) {
+std::vector<uint8_t> AMDGPUCCImpl::getAttestationReport() {
+    return pImpl->initialized ? pImpl->last_report : std::vector<uint8_t>{};
+}
+void *AMDGPUCCImpl::allocateSecureMemory(size_t size, MemoryType type) {
+#ifdef _WIN32
+    (void)size;
+    (void)type;
+    return nullptr;
+#else
+    if (!pImpl->initialized || type != MemoryType::SECURE || !size)
+        return nullptr;
+    void *p = nullptr;
+    if (posix_memalign(&p, 4096, ((size + 4095) / 4096) * 4096) != 0)
+        return nullptr;
+    std::memset(p, 0, size);
+#ifdef __linux__
+    if (mlock(p, size) != 0) {
+        OPENSSL_cleanse(p, size);
+        std::free(p);
         return nullptr;
     }
-    
-    // Allocate SEV-encrypted memory
-    // In real implementation, would use HIP/ROCm encrypted memory APIs
-    
-    void* ptr = aligned_alloc_wrapper(256, size);
-    if (ptr) {
-        std::memset(ptr, 0, size);
-        pImpl->secure_allocations[ptr] = size;
-        
-        SPDLOG_DEBUG("Allocated {} bytes of SEV-encrypted memory", size);
-    }
-    
-    return ptr;
+#endif
+    pImpl->allocations[p] = size;
+    return p;
+#endif
 }
-
-void AMDGPUCCImpl::freeSecureMemory(void* ptr) {
-    auto it = pImpl->secure_allocations.find(ptr);
-    if (it != pImpl->secure_allocations.end()) {
-        // Clear memory before freeing
-        std::memset(ptr, 0, it->second);
-        std::free(ptr);
-        pImpl->secure_allocations.erase(it);
-        
-        SPDLOG_DEBUG("Freed SEV-encrypted memory");
-    }
+void AMDGPUCCImpl::freeSecureMemory(void *p) {
+    auto it = pImpl->allocations.find(p);
+    if (it == pImpl->allocations.end())
+        return;
+    OPENSSL_cleanse(p, it->second);
+#ifdef __linux__
+    munlock(p, it->second);
+#endif
+    std::free(p);
+    pImpl->allocations.erase(it);
 }
-
-bool AMDGPUCCImpl::encryptMemory(void* ptr, size_t size) {
-    if (!pImpl->sev_snp_enabled) {
-        SPDLOG_WARN("Memory encryption not available without SEV-SNP");
-        return true;
-    }
-    
-    // Simulate AES-256 encryption with SEV key
-    uint8_t* data = static_cast<uint8_t*>(ptr);
-    
-    // Use measurement as encryption key
-    for (size_t i = 0; i < size; ++i) {
-        data[i] ^= pImpl->sev_measurement[i % pImpl->sev_measurement.size()];
-        data[i] = (data[i] << 1) | (data[i] >> 7);  // Rotate for added complexity
-    }
-    
-    return true;
+bool AMDGPUCCImpl::encryptMemory(void *p, size_t size) {
+    return pImpl->initialized && pImpl->allocations.contains(p) && size <= pImpl->allocations[p];
 }
-
-bool AMDGPUCCImpl::decryptMemory(void* ptr, size_t size) {
-    if (!pImpl->sev_snp_enabled) {
-        return true;
-    }
-    
-    uint8_t* data = static_cast<uint8_t*>(ptr);
-    
-    // Reverse the encryption
-    for (size_t i = 0; i < size; ++i) {
-        data[i] = (data[i] >> 1) | (data[i] << 7);  // Reverse rotation
-        data[i] ^= pImpl->sev_measurement[i % pImpl->sev_measurement.size()];
-    }
-    
-    return true;
-}
-
-bool AMDGPUCCImpl::loadSecureKernel(const GPUKernel& kernel) {
-    if (!pImpl->cc_initialized) {
+bool AMDGPUCCImpl::decryptMemory(void *p, size_t size) { return encryptMemory(p, size); }
+bool AMDGPUCCImpl::loadSecureKernel(const GPUKernel &kernel) {
+    if (!pImpl->initialized || kernel.name.empty() || kernel.binary_code.empty() || kernel.signature.empty())
         return false;
-    }
-    
-    // Verify kernel measurement against SEV-SNP policy
-    // In real implementation, would measure kernel and verify
-    
-    pImpl->loaded_kernels[kernel.name] = kernel;
-    SPDLOG_INFO("Loaded secure kernel into SEV-SNP environment: {}", kernel.name);
-    
-    // Update measurement
-    for (size_t i = 0; i < kernel.signature.size() && i < pImpl->sev_measurement.size(); ++i) {
-        pImpl->sev_measurement[i] ^= kernel.signature[i];
-    }
-    
+    pImpl->kernels[kernel.name] = kernel;
     return true;
 }
-
-bool AMDGPUCCImpl::executeSecureKernel(const std::string& kernel_name,
-                                       void** args, size_t num_args,
-                                       size_t grid_size, size_t block_size) {
-    auto it = pImpl->loaded_kernels.find(kernel_name);
-    if (it == pImpl->loaded_kernels.end()) {
-        SPDLOG_ERROR("Kernel not found: {}", kernel_name);
-        return false;
-    }
-    
-    // Execute kernel in SEV-SNP protected environment
-    // In real implementation, would use HIP kernel launch
-    
-    SPDLOG_DEBUG("Executing kernel {} in SEV-SNP environment", kernel_name);
-    
-    // Simulate secure execution
-    
-    return true;
+bool AMDGPUCCImpl::executeSecureKernel(const std::string &, void **, size_t, size_t, size_t) {
+    SPDLOG_ERROR("AMD GPU kernel launch is unavailable: no HIP protected-execution backend is linked");
+    return false;
 }
-
-bool AMDGPUCCImpl::checkpointGPUState(WriteStream* writer) {
-    if (!writer) return false;
-    
-    // Save SEV-SNP state including:
-    // - Measurements
-    // - Encrypted memory regions
-    // - Kernel state
-    
-    SPDLOG_INFO("Checkpointed AMD GPU CC state");
-    return true;
+bool AMDGPUCCImpl::checkpointGPUState(WriteStream *) {
+    SPDLOG_ERROR("AMD GPU driver contexts cannot be migrated safely by serializing process memory");
+    return false;
 }
-
-bool AMDGPUCCImpl::restoreGPUState(ReadStream* reader) {
-    if (!reader) return false;
-    
-    // Restore and re-verify SEV-SNP state
-    
-    SPDLOG_INFO("Restored AMD GPU CC state");
-    return true;
-}
-
-} // namespace gpu
-} // namespace mvvm
+bool AMDGPUCCImpl::restoreGPUState(ReadStream *) { return false; }
+} // namespace mvvm::gpu
