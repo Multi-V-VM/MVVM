@@ -48,6 +48,10 @@ GPUKernel translate(const void *wasm_module, size_t module_size, const char *fun
     if (!options.enable_vectorization) {
         return translationError(requested_name, "tensor-wasm-jit requires vectorization to emit PTX");
     }
+    if (options.enable_shared_memory) {
+        return translationError(requested_name,
+                                "tensor-wasm-jit 0.3.8 does not expose verified shared-memory lowering");
+    }
     if (options.target_compute_capability > std::numeric_limits<uint32_t>::max()) {
         return translationError(requested_name, "CUDA compute capability is out of range");
     }

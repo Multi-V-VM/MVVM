@@ -11,6 +11,8 @@ use wasmparser::{ExternalKind, Parser, Payload, Validator};
 use crate::cache::{CacheKey, KernelCache};
 use crate::rewrite::{rewrite_wasm, OffloadedFunction, RewriteOptions};
 
+const MAX_WASM_BYTES: usize = 256 * 1024 * 1024;
+
 /// An owned translation result. Release it with
 /// [`mvvm_tensor_wasm_jit_translation_free`].
 #[repr(C)]
@@ -207,6 +209,12 @@ pub unsafe extern "C" fn mvvm_tensor_wasm_jit_translate(
     if wasm.is_null() || wasm_len == 0 {
         return set_error(out, "WebAssembly input is empty".to_owned());
     }
+    if wasm_len > MAX_WASM_BYTES {
+        return set_error(
+            out,
+            format!("WebAssembly input exceeds the {MAX_WASM_BYTES}-byte safety limit"),
+        );
+    }
     let wasm = std::slice::from_raw_parts(wasm, wasm_len);
     let requested = if function_name.is_null() {
         None
@@ -251,7 +259,12 @@ pub unsafe extern "C" fn mvvm_tensor_wasm_jit_verify(
     ptx_len: usize,
     signature: *const u8,
 ) -> i32 {
-    if wasm.is_null() || ptx.is_null() || signature.is_null() {
+    if wasm.is_null()
+        || wasm_len == 0
+        || wasm_len > MAX_WASM_BYTES
+        || ptx.is_null()
+        || signature.is_null()
+    {
         return 0;
     }
     let wasm = std::slice::from_raw_parts(wasm, wasm_len);
