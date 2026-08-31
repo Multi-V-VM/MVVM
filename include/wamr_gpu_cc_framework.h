@@ -79,13 +79,32 @@ struct SecureGPUContext {
     bool is_verified;
 };
 
-// GPU kernel metadata
+// GPU kernel metadata. The format is explicit because CUDA PTX cannot be
+// passed to Level Zero (SPIR-V) or HIP (AMDGPU code-object) loaders.
+enum class GPUKernelFormat { UNKNOWN, NVIDIA_PTX, INTEL_SPIRV, AMD_CODE_OBJECT };
+
 struct GPUKernel {
     std::string name;
     std::vector<uint8_t> binary_code;
-    size_t num_parameters;
-    size_t required_shared_memory;
+    GPUKernelFormat format = GPUKernelFormat::UNKNOWN;
+    size_t num_parameters = 0;
+    size_t required_shared_memory = 0;
     std::vector<uint8_t> signature; // Code signature for verification
+    std::vector<uint8_t> rewritten_module;
+    std::string requested_function;
+    uint32_t function_index = 0;
+    uint64_t fingerprint = 0;
+    uint32_t grid_size = 0;
+    uint32_t block_size = 0;
+    uint32_t target_compute_capability = 0;
+    uint64_t tenant_id = 0;
+    float v128_ratio_threshold = 0.8F;
+    uint64_t min_loop_trip_count = 64;
+    std::string translation_error;
+
+    [[nodiscard]] bool valid() const {
+        return translation_error.empty() && format != GPUKernelFormat::UNKNOWN && !binary_code.empty();
+    }
 };
 
 // Abstract GPU Confidential Computing Interface
@@ -298,10 +317,13 @@ public:
 
     // Translation options
     struct TranslationOptions {
-        bool optimize_for_cc; // Optimize for confidential computing
-        bool enable_vectorization;
-        bool enable_shared_memory;
-        size_t target_compute_capability;
+        bool optimize_for_cc = true; // Preserve integrity metadata for confidential execution
+        bool enable_vectorization = true;
+        bool enable_shared_memory = false;
+        size_t target_compute_capability = 80;
+        float v128_ratio_threshold = 0.8F;
+        uint64_t min_loop_trip_count = 64;
+        uint64_t tenant_id = 0;
     };
 
     // Translate WASM module to GPU kernel

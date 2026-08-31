@@ -6,6 +6,8 @@ option(MVVM_ENABLE_WASI_NN "Build the TensorFlow Lite WASI-NN backend" OFF)
 option(MVVM_ENABLE_RDMA "Build the libibverbs/rdma-core transport" OFF)
 option(MVVM_ENABLE_LEVEL_ZERO "Build Intel Level Zero GPU execution when its SDK is available" ON)
 option(MVVM_ENABLE_HIP "Build AMD HIP GPU execution when ROCm is available" ON)
+option(MVVM_ENABLE_TENSOR_WASM_JIT "Build the tensor-wasm-jit CUDA/PTX translator" ON)
+option(MVVM_BUILD_TEST "Build focused MVVM integration tests" OFF)
 
 find_path(MVVM_FMT_INCLUDE_DIR fmt/format.h REQUIRED)
 find_path(MVVM_SPDLOG_INCLUDE_DIR spdlog/spdlog.h REQUIRED)
@@ -147,7 +149,9 @@ set(WAMR_BUILD_CUSTOM_NAME_SECTION 1)
 set(WAMR_BUILD_CHECKPOINT_RESTORE 1)
 set(WAMR_DISABLE_HW_BOUND_CHECK 1)
 
-set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-U,_get_ext_lib_export_apis")
+if(APPLE)
+    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-U,_get_ext_lib_export_apis")
+endif()
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 
 set(CMAKE_MACOSX_RPATH True)
@@ -179,9 +183,58 @@ find_package(zstd REQUIRED)
 
 file(GLOB_RECURSE SOURCE_FILES src/wamr*.cpp)
 add_library(MVVM_export STATIC ${SOURCE_FILES} ${UNCOMMON_SHARED_SOURCE})
+set_target_properties(vmlib MVVM_export PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(MVVM_export PRIVATE MVVM_EXPORT_EXPORTS)
+set(MVVM_JS_BACKENDS core)
+if(MVVM_ENABLE_TENSOR_WASM_JIT)
+    find_program(MVVM_CARGO_EXECUTABLE cargo REQUIRED)
+    set(MVVM_TENSOR_WASM_JIT_MANIFEST
+        "${CMAKE_CURRENT_SOURCE_DIR}/rust/tensor-wasm-jit/Cargo.toml")
+    set(MVVM_TENSOR_WASM_JIT_TARGET_DIR
+        "${CMAKE_CURRENT_BINARY_DIR}/tensor-wasm-jit-target")
+    set(MVVM_TENSOR_WASM_JIT_LIBRARY
+        "${MVVM_TENSOR_WASM_JIT_TARGET_DIR}/release/${CMAKE_STATIC_LIBRARY_PREFIX}tensor_wasm_jit${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    file(GLOB_RECURSE MVVM_TENSOR_WASM_JIT_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/rust/tensor-wasm-jit/src/*.rs")
+    add_custom_command(
+        OUTPUT "${MVVM_TENSOR_WASM_JIT_LIBRARY}"
+        COMMAND "${MVVM_CARGO_EXECUTABLE}" build --locked --release
+                --features cuda-oxide-backend
+                --manifest-path "${MVVM_TENSOR_WASM_JIT_MANIFEST}"
+                --target-dir "${MVVM_TENSOR_WASM_JIT_TARGET_DIR}"
+        DEPENDS
+            "${MVVM_TENSOR_WASM_JIT_MANIFEST}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rust/tensor-wasm-jit/Cargo.lock"
+            ${MVVM_TENSOR_WASM_JIT_SOURCES}
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "Compiling the MVVM tensor-wasm-jit fork with cuda-oxide-backend"
+        VERBATIM)
+    add_custom_target(mvvm_tensor_wasm_jit_build DEPENDS "${MVVM_TENSOR_WASM_JIT_LIBRARY}")
+    add_library(mvvm_tensor_wasm_jit STATIC IMPORTED GLOBAL)
+    set_target_properties(mvvm_tensor_wasm_jit PROPERTIES
+        IMPORTED_LOCATION "${MVVM_TENSOR_WASM_JIT_LIBRARY}")
+    add_dependencies(mvvm_tensor_wasm_jit mvvm_tensor_wasm_jit_build)
+    add_dependencies(MVVM_export mvvm_tensor_wasm_jit_build)
+    target_compile_definitions(MVVM_export PRIVATE MVVM_ENABLE_TENSOR_WASM_JIT=1)
+    target_link_libraries(MVVM_export mvvm_tensor_wasm_jit)
+    if(MVVM_BUILD_TEST)
+        add_executable(mvvm_tensor_wasm_jit_integration_test
+            test/wasm_to_gpu_translator_integration_test.cpp
+            src/wamr_wasm_to_gpu_translator.cpp)
+        target_compile_definitions(mvvm_tensor_wasm_jit_integration_test PRIVATE
+            MVVM_ENABLE_TENSOR_WASM_JIT=1)
+        target_include_directories(mvvm_tensor_wasm_jit_integration_test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_link_libraries(mvvm_tensor_wasm_jit_integration_test PRIVATE
+            mvvm_tensor_wasm_jit ${CMAKE_DL_LIBS})
+        add_test(NAME mvvm_tensor_wasm_jit_integration
+                 COMMAND mvvm_tensor_wasm_jit_integration_test)
+    endif()
+    list(APPEND MVVM_JS_BACKENDS tensor_wasm_jit)
+endif()
 if(MVVM_ENABLE_WASI_NN)
     target_compile_definitions(MVVM_export PUBLIC WAMR_BUILD_WASI_NN=1)
+    list(APPEND MVVM_JS_BACKENDS wasi_nn)
 endif()
 if(MVVM_ENABLE_LEVEL_ZERO AND UNIX AND NOT APPLE)
     find_path(MVVM_LEVEL_ZERO_INCLUDE_DIR level_zero/ze_api.h)
@@ -190,6 +243,7 @@ if(MVVM_ENABLE_LEVEL_ZERO AND UNIX AND NOT APPLE)
         target_compile_definitions(MVVM_export PRIVATE MVVM_ENABLE_LEVEL_ZERO=1)
         target_include_directories(MVVM_export PRIVATE ${MVVM_LEVEL_ZERO_INCLUDE_DIR})
         target_link_libraries(MVVM_export ${MVVM_LEVEL_ZERO_LIBRARY})
+        list(APPEND MVVM_JS_BACKENDS level_zero)
         message(STATUS "Intel Level Zero GPU backend enabled")
     else()
         message(STATUS "Intel Level Zero GPU backend disabled (install libze-dev/level-zero-dev)")
@@ -202,6 +256,7 @@ if(MVVM_ENABLE_HIP AND UNIX AND NOT APPLE)
         target_compile_definitions(MVVM_export PRIVATE MVVM_ENABLE_HIP=1 __HIP_PLATFORM_AMD__=1)
         target_include_directories(MVVM_export PRIVATE ${MVVM_HIP_INCLUDE_DIR})
         target_link_libraries(MVVM_export ${MVVM_HIP_LIBRARY})
+        list(APPEND MVVM_JS_BACKENDS hip)
         message(STATUS "AMD HIP GPU backend enabled")
     else()
         message(STATUS "AMD HIP GPU backend disabled (install libamdhip64-dev/ROCm)")
@@ -234,5 +289,16 @@ else()
     target_link_libraries(MVVM_restore ${LLVM_LIBRARIES} cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib s2n ${_MVVM_OPTIONAL_WASI_NN_LIBS})
     target_link_libraries(MVVM_checkpoint ${LLVM_LIBRARIES} cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib s2n ${_MVVM_OPTIONAL_WASI_NN_LIBS})
     target_link_libraries(MVVM_profile ${LLVM_LIBRARIES} cxxopts::cxxopts ${BLAS_LIBRARIES} MVVM_export vmlib s2n ${_MVVM_OPTIONAL_WASI_NN_LIBS})
+    set(_MVVM_JS_LINK_LIBS ${LLVM_LIBRARIES} ${BLAS_LIBRARIES} MVVM_export vmlib s2n ${_MVVM_OPTIONAL_WASI_NN_LIBS})
+    function(add_mvvm_js_library target output_name backend_name)
+        add_library(${target} SHARED src/mvvm_js_api.cpp)
+        target_compile_definitions(${target} PRIVATE MVVM_JS_BACKEND_NAME="${backend_name}")
+        target_link_libraries(${target} PRIVATE ${_MVVM_JS_LINK_LIBS})
+        set_target_properties(${target} PROPERTIES OUTPUT_NAME "${output_name}" POSITION_INDEPENDENT_CODE ON)
+    endfunction()
+    add_mvvm_js_library(MVVM_js_default MVVM default)
+    foreach(_MVVM_JS_BACKEND IN LISTS MVVM_JS_BACKENDS)
+        add_mvvm_js_library(MVVM_js_${_MVVM_JS_BACKEND} MVVM_${_MVVM_JS_BACKEND} ${_MVVM_JS_BACKEND})
+    endforeach()
 endif()
 add_definitions(-DCXXOPTS_NO_RTTI=1)
