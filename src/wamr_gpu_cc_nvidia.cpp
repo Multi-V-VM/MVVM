@@ -82,4 +82,7 @@ bool NVIDIAGPUCCImpl::loadSecureKernel(const GPUKernel &) { return false; }
 bool NVIDIAGPUCCImpl::executeSecureKernel(const std::string &, void **, size_t, size_t, size_t) { return false; }
 bool NVIDIAGPUCCImpl::checkpointGPUState(WriteStream *) { return false; }
 bool NVIDIAGPUCCImpl::restoreGPUState(ReadStream *) { return false; }
+bool NVIDIAGPUCCImpl::setMigrationKey(const std::vector<uint8_t> &) { return false; }
+bool NVIDIAGPUCCImpl::setMigrationAttestationVerifier(AttestationVerifier) { return false; }
+void *NVIDIAGPUCCImpl::remapRestoredPointer(uint64_t) const { return nullptr; }
 } // namespace mvvm::gpu

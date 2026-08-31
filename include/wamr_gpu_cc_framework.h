@@ -28,6 +28,9 @@ namespace gpu {
 // GPU vendor types
 enum class GPUVendor { NVIDIA, AMD, INTEL, GENERIC };
 
+using AttestationVerifier =
+    std::function<bool(GPUVendor, const std::vector<uint8_t> &, const std::vector<uint8_t> &)>;
+
 // Confidential computing features
 enum class CCFeature {
     MEMORY_ENCRYPTION, // Encrypted GPU memory
@@ -114,6 +117,14 @@ public:
     // Migration support
     virtual bool checkpointGPUState(WriteStream *writer) = 0;
     virtual bool restoreGPUState(ReadStream *reader) = 0;
+    // Set a 32-byte, per-migration key established with the destination.
+    // Implementations consume it after one successful checkpoint or restore.
+    virtual bool setMigrationKey(const std::vector<uint8_t> &key) = 0;
+    // The verifier must validate vendor signatures/collateral, freshness and policy.
+    // The final vector is the SHA-512 snapshot digest bound into report data.
+    virtual bool setMigrationAttestationVerifier(AttestationVerifier verifier) = 0;
+    // Driver and allocation addresses are recreated, never serialized as live handles.
+    virtual void *remapRestoredPointer(uint64_t old_address) const = 0;
 };
 
 // NVIDIA Confidential Computing implementation
@@ -141,6 +152,9 @@ public:
 
     bool checkpointGPUState(WriteStream *writer) override;
     bool restoreGPUState(ReadStream *reader) override;
+    bool setMigrationKey(const std::vector<uint8_t> &key) override;
+    bool setMigrationAttestationVerifier(AttestationVerifier verifier) override;
+    void *remapRestoredPointer(uint64_t old_address) const override;
 
 private:
     struct Impl;
@@ -177,6 +191,9 @@ public:
     // State management
     bool checkpointGPUState(WriteStream *writer) override;
     bool restoreGPUState(ReadStream *reader) override;
+    bool setMigrationKey(const std::vector<uint8_t> &key) override;
+    bool setMigrationAttestationVerifier(AttestationVerifier verifier) override;
+    void *remapRestoredPointer(uint64_t old_address) const override;
 
 private:
     struct Impl;
@@ -213,6 +230,9 @@ public:
     // State management
     bool checkpointGPUState(WriteStream *writer) override;
     bool restoreGPUState(ReadStream *reader) override;
+    bool setMigrationKey(const std::vector<uint8_t> &key) override;
+    bool setMigrationAttestationVerifier(AttestationVerifier verifier) override;
+    void *remapRestoredPointer(uint64_t old_address) const override;
 
 private:
     struct Impl;
@@ -247,6 +267,9 @@ public:
     // Migration support
     bool prepareGPUMigration(WriteStream *writer);
     bool completeGPUMigration(ReadStream *reader);
+    bool setMigrationKey(const std::vector<uint8_t> &key);
+    bool setMigrationAttestationVerifier(AttestationVerifier verifier);
+    void *remapRestoredPointer(uint64_t old_address) const;
 
     // Performance monitoring
     struct PerformanceMetrics {

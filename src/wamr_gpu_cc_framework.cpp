@@ -128,7 +128,8 @@ bool GPUCCFramework::setupSecureComputation(const std::vector<CCFeature> &featur
 
     pImpl->metrics.encryption_overhead_ms = pImpl->endTiming();
 
-    SPDLOG_INFO("Secure computation setup completed");
+    SPDLOG_INFO("GPU runtime initialized and nonce-bound local attestation evidence acquired; remote vendor "
+                "collateral verification is still required");
     return true;
 }
 
@@ -162,6 +163,15 @@ bool GPUCCFramework::secureDataTransferToGPU(const void *host_data, void *gpu_da
 
     if ((!host_data && size) || (!gpu_data && size))
         return false;
+    if (encrypt) {
+        const auto device = pImpl->gpu_interface->getCurrentDevice();
+        if (std::find(device.cc_features.begin(), device.cc_features.end(), CCFeature::MEMORY_ENCRYPTION) ==
+            device.cc_features.end()) {
+            SPDLOG_ERROR("Refusing a confidential GPU transfer: this backend has no verified GPU-memory "
+                         "encryption capability");
+            return false;
+        }
+    }
     // This abstraction has host pointers, not CUDA/HIP/Level-Zero handles.
     // Copy only into a buffer registered by the platform implementation; no
     // caller-owned const buffer is ever encrypted in place.
@@ -184,6 +194,15 @@ bool GPUCCFramework::secureDataTransferFromGPU(const void *gpu_data, void *host_
 
     if ((!host_data && size) || (!gpu_data && size))
         return false;
+    if (decrypt) {
+        const auto device = pImpl->gpu_interface->getCurrentDevice();
+        if (std::find(device.cc_features.begin(), device.cc_features.end(), CCFeature::MEMORY_ENCRYPTION) ==
+            device.cc_features.end()) {
+            SPDLOG_ERROR("Refusing a confidential GPU transfer: this backend has no verified GPU-memory "
+                         "encryption capability");
+            return false;
+        }
+    }
     if (decrypt && !pImpl->gpu_interface->decryptMemory(const_cast<void *>(gpu_data), size))
         return false;
     std::memcpy(host_data, gpu_data, size);
@@ -251,6 +270,21 @@ bool GPUCCFramework::completeGPUMigration(ReadStream *reader) {
     }
 
     return pImpl->gpu_interface->restoreGPUState(reader);
+}
+
+bool GPUCCFramework::setMigrationKey(const std::vector<uint8_t> &key) {
+    return pImpl->initialized && pImpl->gpu_interface && pImpl->gpu_interface->setMigrationKey(key);
+}
+
+bool GPUCCFramework::setMigrationAttestationVerifier(AttestationVerifier verifier) {
+    return pImpl->initialized && pImpl->gpu_interface &&
+           pImpl->gpu_interface->setMigrationAttestationVerifier(std::move(verifier));
+}
+
+void *GPUCCFramework::remapRestoredPointer(uint64_t old_address) const {
+    return pImpl->initialized && pImpl->gpu_interface
+               ? pImpl->gpu_interface->remapRestoredPointer(old_address)
+               : nullptr;
 }
 
 GPUCCFramework::PerformanceMetrics GPUCCFramework::getPerformanceMetrics() const { return pImpl->metrics; }
