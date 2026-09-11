@@ -40,6 +40,7 @@ extern WriteStream *writer;
 namespace {
 
 thread_local std::string last_error;
+constexpr uint32_t js_api_heap_size = 64 * 1024;
 
 std::string str(const char *value) { return value == nullptr ? std::string{} : std::string(value); }
 
@@ -59,10 +60,31 @@ std::vector<std::string> list_or_default(const char *value, const char *fallback
 
 void set_error(const std::string &message) { last_error = message; }
 
-bool file_exists(const char *file) { return file != nullptr && std::filesystem::exists(file); }
+bool path_exists(const char *file) {
+    if (file == nullptr)
+        return false;
+    std::error_code error;
+    return std::filesystem::exists(file, error) && !error;
+}
+
+bool checkpoint_ready(const char *file) {
+    if (file == nullptr)
+        return false;
+    std::error_code error;
+    if (!std::filesystem::is_regular_file(file, error) || error)
+        return false;
+    return std::filesystem::file_size(file, error) > 0 && !error;
+}
+
+std::string checkpoint_log_path(const char *checkpoint_path) {
+    auto directory = std::filesystem::path(str(checkpoint_path)).parent_path();
+    if (directory.empty())
+        return "checkpoint.log";
+    return (directory / "checkpoint.log").string();
+}
 
 int normalize_child_status(int status, const char *checkpoint_path, bool expect_checkpoint) {
-    if (expect_checkpoint && file_exists(checkpoint_path))
+    if (expect_checkpoint && checkpoint_ready(checkpoint_path))
         return 0;
     if (WIFEXITED(status))
         return WEXITSTATUS(status);
@@ -143,20 +165,26 @@ int checkpoint_child(const char *target_path, const char *checkpoint_path, const
     is_debug = debug != 0;
     stop_func_index = function_index;
 
+    auto dirs = list_or_default(dir, "./");
+    auto map_dirs = list_or_empty(map_dir);
+    auto envs = list_or_default(env, "a=b");
     auto argv = list_or_empty(arg);
     argv.insert(argv.begin(), target);
+    auto addrs = list_or_default(addr, "0.0.0.0/36");
+    auto ns_pools = list_or_empty(ns_pool);
 
     register_sigtrap();
     register_sigint();
+    const auto log_path = checkpoint_log_path(checkpoint_path);
     for (int i = 0; i < 10; i++) {
-        FILE *file = fopen("checkpoint.log", "w");
+        FILE *file = fopen(log_path.c_str(), "w");
         if (file != nullptr)
             fclose(file);
     }
 
     wamr = new WAMRInstance(target.c_str(), jit != 0);
-    wamr->set_wasi_args(list_or_default(dir, "./"), list_or_empty(map_dir), list_or_default(env, "a=b"), argv,
-                        list_or_default(addr, "0.0.0.0/36"), list_or_empty(ns_pool));
+    wamr->heap_size = js_api_heap_size;
+    wamr->set_wasi_args(dirs, map_dirs, envs, argv, addrs, ns_pools);
     wamr->instantiate();
     wamr->get_int3_addr();
     wamr->replace_int3_with_nop();
@@ -179,6 +207,7 @@ int restore_child(const char *target_path, const char *checkpoint_path, int jit,
     register_sigtrap();
     register_sigint();
     wamr = new WAMRInstance(target.c_str(), jit != 0);
+    wamr->heap_size = js_api_heap_size;
     wamr->instantiate();
     wamr->get_int3_addr();
     wamr->replace_int3_with_nop();
@@ -197,7 +226,7 @@ int validate_paths(const char *target_path, const char *checkpoint_path, bool ch
         set_error("target is required");
         return 1;
     }
-    if (!file_exists(target_path)) {
+    if (!path_exists(target_path)) {
         set_error("target does not exist: " + str(target_path));
         return 1;
     }
@@ -205,7 +234,7 @@ int validate_paths(const char *target_path, const char *checkpoint_path, bool ch
         set_error("checkpoint_path is required");
         return 1;
     }
-    if (checkpoint_must_exist && !file_exists(checkpoint_path)) {
+    if (checkpoint_must_exist && !checkpoint_ready(checkpoint_path)) {
         set_error("checkpoint does not exist: " + str(checkpoint_path));
         return 1;
     }
@@ -228,7 +257,12 @@ int mvvm_checkpoint(const char *target_path, const char *checkpoint_path, const 
         set_error("count and function_index are mutually exclusive");
         return 1;
     }
-    std::filesystem::remove(checkpoint_path);
+    std::error_code error;
+    std::filesystem::remove(checkpoint_path, error);
+    if (error) {
+        set_error("failed to remove existing checkpoint: " + error.message());
+        return 1;
+    }
     return run_child(
         [&]() {
             return checkpoint_child(target_path, checkpoint_path, dir, map_dir, env, arg, addr, ns_pool, jit, count,
