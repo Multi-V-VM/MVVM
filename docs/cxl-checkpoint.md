@@ -1,6 +1,6 @@
 # CXL checkpoint streams
 
-MVVM's CXL stream writes the `struct_pack` checkpoint directly into one shared
+MVVM's CXL stream writes the `reflection codec` checkpoint directly into one shared
 mapping. During restore, `read_view()` makes WAMR's linear memory a span over
 those same bytes. The app heap is represented as an offset and length inside
 linear memory, so it is not serialized or allocated a second time.

@@ -107,9 +107,9 @@ int main(int argc, char **argv) {
             if (!reader.waitUntilReady(std::chrono::minutes(5)))
                 childFail("timed out waiting for committed checkpoint");
             const auto restore_start = std::chrono::steady_clock::now();
-            auto result = struct_pack::deserialize<WAMRMemoryInstance>(reader);
+            auto result = mvvm::codec::deserialize<WAMRMemoryInstance>(reader);
             if (!result)
-                childFail("struct_pack failed to deserialize checkpoint");
+                childFail("reflection codec failed to deserialize checkpoint");
             WAMRMemoryInstance restored = std::move(result.value());
             if (!region->contains(restored.memory_data.data(), restored.memory_data.size()))
                 childFail("linear memory was copied outside the shared mapping");
@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
         ::close(child_status_pipe[1]);
         mvvm::cxl::WriteStream writer(region);
         const auto serialize_start = std::chrono::steady_clock::now();
-        struct_pack::serialize_to(writer, checkpoint);
+        mvvm::codec::serialize_to(writer, checkpoint);
         const auto serialize_end = std::chrono::steady_clock::now();
         if (!writer.commit())
             throw std::runtime_error("failed to commit CXL checkpoint");
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
         mvvm::cxl::ReadStream parent_reader(region);
         if (!parent_reader.waitUntilReady(std::chrono::seconds(1)))
             throw std::runtime_error("parent could not observe committed checkpoint");
-        auto parent_result = struct_pack::deserialize<WAMRMemoryInstance>(parent_reader);
+        auto parent_result = mvvm::codec::deserialize<WAMRMemoryInstance>(parent_reader);
         if (!parent_result)
             throw std::runtime_error("parent could not deserialize checkpoint view");
         WAMRMemoryInstance parent_view = std::move(parent_result.value());

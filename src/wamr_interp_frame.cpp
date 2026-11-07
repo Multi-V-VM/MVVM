@@ -42,7 +42,7 @@ std::vector<std::unique_ptr<WAMRBranchBlock>> wasm_replay_csp_bytecode(WASMExecE
 void WAMRInterpFrame::restore_impl(WASMInterpFrame *env) {
     auto module_inst = (WASMModuleInstance *)wamr->get_exec_env()->module_inst;
     if (0 < function_index && function_index < module_inst->e->function_count) {
-        // LOGV(INFO) << fmt::format("function_index {} restored",
+        // LOGV(INFO) << std::format("function_index {} restored",
         // function_index);
         env->function = &module_inst->e->functions[function_index];
         if (env->function->is_import_func) {

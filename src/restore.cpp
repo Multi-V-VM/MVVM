@@ -19,7 +19,7 @@
 #include "wamr_cxl_stream.h"
 #endif
 #include "wasm_runtime.h"
-#include "ylt/struct_pack.hpp"
+#include "mvvm/reflection_codec.hpp"
 #include <cxxopts.hpp>
 #include <iostream>
 #include <memory>
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     else
         reader = new SocketReadStream(source_addr.c_str(), source_port);
 #endif
-    auto a = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
+    auto a = mvvm::codec::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
 
 #if !defined(_WIN32)
     // is server for all and the is server?

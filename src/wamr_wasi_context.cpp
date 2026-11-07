@@ -15,7 +15,7 @@
 #include "platform_wasi_types.h"
 #include "wamr.h"
 #include <chrono>
-#include <fmt/core.h>
+#include <format>
 #include <string>
 #include <sys/types.h>
 extern WAMRInstance *wamr;
@@ -40,7 +40,7 @@ struct sockaddr_in6 sockaddr_from_ip6(const SocketAddrPool &addr) {
     sockaddr6.sin6_family = AF_INET6;
     sockaddr6.sin6_port = addr.port;
     std::string ipv6_addr_str =
-        fmt::format("{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}", addr.ip6[0], addr.ip6[1], addr.ip6[2], addr.ip6[3],
+        std::format("{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}:{:#}", addr.ip6[0], addr.ip6[1], addr.ip6[2], addr.ip6[3],
                     addr.ip6[4], addr.ip6[5], addr.ip6[6], addr.ip6[7]);
     if (inet_pton(AF_INET6, ipv6_addr_str.c_str(), &sockaddr6.sin6_addr) != 1) {
         exit(EXIT_FAILURE);

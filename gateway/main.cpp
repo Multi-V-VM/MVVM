@@ -15,6 +15,7 @@
 #include "crafter/Utils/TCPConnection.h"
 #include "wamr.h"
 #include <chrono>
+#include <format>
 #include <crafter.h>
 #include <cstddef>
 #include <cstdlib>
@@ -407,18 +408,18 @@ int main() {
                 for (int idx = 0; idx < op_data->size; idx++) {
                     if (op_data->addr[idx][0].is_4) {
                         server_ip =
-                            fmt::format("{}.{}.{}.{}", op_data->addr[idx][0].ip4[0], op_data->addr[idx][0].ip4[1],
+                            std::format("{}.{}.{}.{}", op_data->addr[idx][0].ip4[0], op_data->addr[idx][0].ip4[1],
                                         op_data->addr[idx][0].ip4[2], op_data->addr[idx][0].ip4[3]);
                         client_ip =
-                            fmt::format("{}.{}.{}.{}", op_data->addr[idx][1].ip4[0], op_data->addr[idx][1].ip4[1],
+                            std::format("{}.{}.{}.{}", op_data->addr[idx][1].ip4[0], op_data->addr[idx][1].ip4[1],
                                         op_data->addr[idx][1].ip4[2], op_data->addr[idx][1].ip4[3]);
                     } else {
-                        server_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                        server_ip = std::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
                                                 op_data->addr[idx][0].ip6[0], op_data->addr[idx][0].ip6[1],
                                                 op_data->addr[idx][0].ip6[2], op_data->addr[idx][0].ip6[3],
                                                 op_data->addr[idx][0].ip6[4], op_data->addr[idx][0].ip6[5],
                                                 op_data->addr[idx][0].ip6[6], op_data->addr[idx][0].ip6[7]);
-                        client_ip = fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                        client_ip = std::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
                                                 op_data->addr[idx][1].ip6[0], op_data->addr[idx][1].ip6[1],
                                                 op_data->addr[idx][1].ip6[2], op_data->addr[idx][1].ip6[3],
                                                 op_data->addr[idx][1].ip6[4], op_data->addr[idx][1].ip6[5],
@@ -436,9 +437,9 @@ int main() {
                         SPDLOG_INFO("send fin");
                         send_fin(client_ip, client_port, server_ip, server_port, (char *)op_data);
                     } else {
-                        auto to_stop = tcp_pair[fmt::format("{}:{}", server_ip, server_port)];
+                        auto to_stop = tcp_pair[std::format("{}:{}", server_ip, server_port)];
 
-                        SPDLOG_ERROR("is_tcp_server", fmt::format("{}:{}", server_ip, server_port))
+                        SPDLOG_ERROR("is_tcp_server", std::format("{}:{}", server_ip, server_port))
                         , to_stop.new_server, to_stop.new_client;
                         SPDLOG_INFO("send fin");
                         sleep(2);
@@ -465,13 +466,13 @@ int main() {
 
                 auto tmp_tuple = forward_pair[forward_pair.size() - 1];
                 auto &&tmp_ip4 = op_data->addr[0][0].ip4;
-                std::get<2>(tmp_tuple) = fmt::format("{}.{}.{}.{}", tmp_ip4[0], tmp_ip4[1], tmp_ip4[2], tmp_ip4[3]);
+                std::get<2>(tmp_tuple) = std::format("{}.{}.{}.{}", tmp_ip4[0], tmp_ip4[1], tmp_ip4[2], tmp_ip4[3]);
                 SPDLOG_ERROR("forward_pair[forward_pair.size()]", std::get<0>(forward_pair[forward_pair.size() - 1]))
                 , std::get<1>(forward_pair[forward_pair.size() - 1]);
 
                 if (op_data->is_tcp) {
                     // client
-                    auto to_start = tcp_pair[fmt::format("{}:{}", server_ip, server_port)];
+                    auto to_start = tcp_pair[std::format("{}:{}", server_ip, server_port)];
                     SPDLOG_ERROR("{}.{}.{}.{} server_ip {}:{}", tmp_ip4[0], tmp_ip4[1], tmp_ip4[2], tmp_ip4[3],
                                  server_ip, server_port);
 
@@ -546,7 +547,7 @@ int main() {
                     });
                     to_start.new_server = new_server;
                     to_start.is_sleep = false;
-                    tcp_pair[fmt::format("{}:{}", std::get<2>(tmp_tuple), server_port)] = to_start;
+                    tcp_pair[std::format("{}:{}", std::get<2>(tmp_tuple), server_port)] = to_start;
                 } else
                     is_forward = true;
                 break;
@@ -555,18 +556,18 @@ int main() {
                 // init
                 SPDLOG_ERROR("init");
                 if (op_data->addr[0][0].is_4) {
-                    server_ip = fmt::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0], op_data->addr[0][0].ip4[1],
+                    server_ip = std::format("{}.{}.{}.{}", op_data->addr[0][0].ip4[0], op_data->addr[0][0].ip4[1],
                                             op_data->addr[0][0].ip4[2], op_data->addr[0][0].ip4[3]);
-                    client_ip = fmt::format("{}.{}.{}.{}", op_data->addr[0][1].ip4[0], op_data->addr[0][1].ip4[1],
+                    client_ip = std::format("{}.{}.{}.{}", op_data->addr[0][1].ip4[0], op_data->addr[0][1].ip4[1],
                                             op_data->addr[0][1].ip4[2], op_data->addr[0][1].ip4[3]);
                 } else {
                     server_ip =
-                        fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                        std::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
                                     op_data->addr[0][0].ip6[0], op_data->addr[0][0].ip6[1], op_data->addr[0][0].ip6[2],
                                     op_data->addr[0][0].ip6[3], op_data->addr[0][0].ip6[4], op_data->addr[0][0].ip6[5],
                                     op_data->addr[0][0].ip6[6], op_data->addr[0][0].ip6[7]);
                     client_ip =
-                        fmt::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
+                        std::format("{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}:{:04x}",
                                     op_data->addr[0][1].ip6[0], op_data->addr[0][1].ip6[1], op_data->addr[0][1].ip6[2],
                                     op_data->addr[0][1].ip6[3], op_data->addr[0][1].ip6[4], op_data->addr[0][1].ip6[5],
                                     op_data->addr[0][1].ip6[6], op_data->addr[0][1].ip6[7]);
@@ -667,7 +668,7 @@ int main() {
                 });
                 // client send this for the server so reverse order
                 SPDLOG_ERROR("{}:{}", client_ip, client_port);
-                tcp_pair[fmt::format("{}:{}", client_ip, client_port)] = cp;
+                tcp_pair[std::format("{}:{}", client_ip, client_port)] = cp;
                 break;
             }
             }

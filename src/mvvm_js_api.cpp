@@ -8,7 +8,7 @@
 #include "wamr.h"
 #include "wamr_export.h"
 #include "wamr_read_write.h"
-#include "ylt/struct_pack.hpp"
+#include "mvvm/reflection_codec.hpp"
 
 #include <chrono>
 #include <cstdio>
@@ -212,7 +212,7 @@ int restore_child(const char *target_path, const char *checkpoint_path, int jit,
     wamr->get_int3_addr();
     wamr->replace_int3_with_nop();
     reader = new FreadStream(checkpoint_path);
-    auto state = struct_pack::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
+    auto state = mvvm::codec::deserialize<std::vector<std::unique_ptr<WAMRExecEnv>>>(*reader).value();
     wamr->recover(&state);
     delete reader;
     reader = nullptr;

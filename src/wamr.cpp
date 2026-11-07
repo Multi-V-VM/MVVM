@@ -12,6 +12,7 @@
  */
 
 #include "wamr.h"
+#include <format>
 #if defined(MVVM_ENABLE_CXL)
 #include "wamr_cxl_stream.h"
 #endif
@@ -682,7 +683,7 @@ void WAMRInstance::set_wasi_args(WAMRWASIContext &context) {
 extern WAMRInstance *wamr;
 extern "C" { // stop name mangling so it can be linked externally
 void wamr_wait(wasm_exec_env_t exec_env) {
-    SPDLOG_DEBUG("child getting ready to wait {}", fmt::ptr(exec_env));
+    SPDLOG_DEBUG("child getting ready to wait {}", static_cast<const void *>(exec_env));
     thread_init.release(1);
     wamr->spawn_child(exec_env, false);
     SPDLOG_DEBUG("finish child restore");
@@ -876,9 +877,9 @@ void serialize_to_file(WASMExecEnv *instance) {
             int idx = wamr->op_data.size;
             src_addr = sock_data.socketAddress;
             auto tmp_ip4 =
-                fmt::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);
+                std::format("{}.{}.{}.{}", src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2], src_addr.ip4[3]);
             auto tmp_ip6 =
-                fmt::format("{}:{}:{}:{}:{}:{}:{}:{}", src_addr.ip6[0], src_addr.ip6[1], src_addr.ip6[2],
+                std::format("{}:{}:{}:{}:{}:{}:{}:{}", src_addr.ip6[0], src_addr.ip6[1], src_addr.ip6[2],
                             src_addr.ip6[3], src_addr.ip6[4], src_addr.ip6[5], src_addr.ip6[6], src_addr.ip6[7]);
             if (src_addr.is_4 && tmp_ip4 == "0.0.0.0" || !src_addr.is_4 && tmp_ip6 == "0:0:0:0:0:0:0:0") {
                 src_addr = wamr->local_addr;
@@ -887,11 +888,11 @@ void serialize_to_file(WASMExecEnv *instance) {
             SPDLOG_INFO("addr: {} {}.{}.{}.{}  port: {}", tmp_fd, src_addr.ip4[0], src_addr.ip4[1], src_addr.ip4[2],
                         src_addr.ip4[3], src_addr.port);
             // make the rest coroutine?
-            tmp_ip4 = fmt::format("{}.{}.{}.{}", sock_data.socketSentToData.dest_addr.ip.ip4[0],
+            tmp_ip4 = std::format("{}.{}.{}.{}", sock_data.socketSentToData.dest_addr.ip.ip4[0],
                                   sock_data.socketSentToData.dest_addr.ip.ip4[1],
                                   sock_data.socketSentToData.dest_addr.ip.ip4[2],
                                   sock_data.socketSentToData.dest_addr.ip.ip4[3]);
-            tmp_ip6 = fmt::format(
+            tmp_ip6 = std::format(
                 "{}:{}:{}:{}:{}:{}:{}:{}", sock_data.socketSentToData.dest_addr.ip.ip6[0],
                 sock_data.socketSentToData.dest_addr.ip.ip6[1], sock_data.socketSentToData.dest_addr.ip.ip6[2],
                 sock_data.socketSentToData.dest_addr.ip.ip6[3], sock_data.socketSentToData.dest_addr.ip.ip6[4],
@@ -1007,7 +1008,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     SPDLOG_INFO("Snapshot Overhead: {} s", dur1.count() / 1000000.0);
 #if defined(__linux__) && defined(MVVM_ENABLE_RDMA)
     if (dynamic_cast<RDMAWriteStream *>(writer)) {
-        auto buffer = struct_pack::serialize(as);
+        auto buffer = mvvm::codec::serialize(as);
         ((RDMAWriteStream *)writer)->buffer = buffer;
         ((RDMAWriteStream *)writer)->position = buffer.size();
         SPDLOG_DEBUG("Snapshot size: {}\n", buffer.size());
@@ -1016,7 +1017,7 @@ void serialize_to_file(WASMExecEnv *instance) {
     } else
 #endif
     {
-        struct_pack::serialize_to(*writer, as);
+        mvvm::codec::serialize_to(*writer, as);
 #if defined(MVVM_ENABLE_CXL)
         if (auto *cxl_writer = dynamic_cast<mvvm::cxl::WriteStream *>(writer);
             cxl_writer != nullptr && !cxl_writer->commit())

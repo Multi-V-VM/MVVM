@@ -1,5 +1,5 @@
 /*
- * CXL System-RAM NUMA and filesystem-DAX backed struct_pack streams.
+ * CXL System-RAM NUMA and filesystem-DAX backed reflection codec streams.
  *
  * The mapping is created before fork and remains MAP_SHARED in both the
  * checkpoint producer and restore consumer.  read_view() deliberately returns

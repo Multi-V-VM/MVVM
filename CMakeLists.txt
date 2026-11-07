@@ -39,9 +39,8 @@ else()
     option(MVVM_ENABLE_CXL "Build Linux CXL/DAX checkpoint streams" OFF)
 endif()
 
-find_path(MVVM_FMT_INCLUDE_DIR fmt/format.h REQUIRED)
 find_path(MVVM_SPDLOG_INCLUDE_DIR spdlog/spdlog.h REQUIRED)
-add_compile_definitions(SPDLOG_HEADER_ONLY=1 FMT_HEADER_ONLY=1)
+add_compile_definitions(SPDLOG_HEADER_ONLY=1 SPDLOG_USE_STD_FORMAT=1)
 find_package(cxxopts REQUIRED)
 # Some development machines have a stale /usr/local LLVMConfig.cmake.  Prefer
 # the newest complete distro LLVM unless the caller selected LLVM_DIR.
@@ -192,7 +191,7 @@ include(${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 add_library(vmlib STATIC ${WAMR_RUNTIME_LIB_SOURCE})
 
 include(${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/wasm-micro-runtime/core/iwasm/aot ${CMAKE_CURRENT_SOURCE_DIR}/lib/yalantinglibs/include ${BLAS_INCLUDE_DIRS} ${MVVM_FMT_INCLUDE_DIR} ${MVVM_SPDLOG_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrafter/libcrafter/)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/wasm-micro-runtime/core/iwasm/aot ${BLAS_INCLUDE_DIRS} ${MVVM_SPDLOG_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrafter/libcrafter/)
 
 if(NOT WIN32)
     # s2n-tls is not compatible with Windows

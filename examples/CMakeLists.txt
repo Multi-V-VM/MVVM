@@ -7,7 +7,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/core/iwasm/libraries/wasi-nn/include
     ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/core/shared/utils
     ${CMAKE_SOURCE_DIR}/lib/wasm-micro-runtime/core/shared/platform/include
-    ${CMAKE_SOURCE_DIR}/lib/yalantinglibs/include
     ${LLVM_INCLUDE_DIRS}
     ${s2n_SOURCE_DIR}/api
 )
@@ -20,7 +19,6 @@ set(EXAMPLE_COMMON_LIBS
     vmlib
     s2n
     tensorflow-lite
-    fmt::fmt
     spdlog::spdlog
     jsoncpp_lib  # Add JSON library
     ${LLVM_LIBRARIES}

@@ -23,6 +23,7 @@ set(WAMR_BUILD_DUMP_CALL_STACK 1)
 set(WAMR_BUILD_COPY_CALL_STACK 1)
 set(WAMR_BUILD_AOT_STACK_FRAME 1)
 set(WAMR_BUILD_CUSTOM_NAME_SECTION 1)
+set(WAMR_BUILD_REF_TYPES 1)
 
 set(WAMR_ROOT_DIR "${PROJECT_SOURCE_DIR}/lib/wasm-micro-runtime")
 include("${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake")
@@ -32,7 +33,8 @@ set_target_properties(mvvm_wamr_runtime PROPERTIES
     POSITION_INDEPENDENT_CODE ON)
 
 add_library(mvvm_dwarf_checkpoint STATIC
-    "${PROJECT_SOURCE_DIR}/src/dwarf_checkpoint.cpp")
+    "${PROJECT_SOURCE_DIR}/src/dwarf_checkpoint.cpp"
+    "${PROJECT_SOURCE_DIR}/src/dwarf_resume.cpp")
 target_include_directories(mvvm_dwarf_checkpoint
     PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
@@ -46,8 +48,18 @@ target_link_libraries(mvvm_dwarf_checkpoint
         PkgConfig::LIBDW
         PkgConfig::LIBUNWIND)
 
+add_executable(mvvm_dwarf_runner "${PROJECT_SOURCE_DIR}/src/dwarf_runner.cpp")
+target_compile_options(mvvm_dwarf_runner PRIVATE -g3 -fno-omit-frame-pointer)
+target_link_options(mvvm_dwarf_runner PRIVATE -Wl,--export-dynamic)
+target_link_libraries(mvvm_dwarf_runner PRIVATE mvvm_dwarf_checkpoint dl pthread m)
+
 option(MVVM_BUILD_DWARF_TESTS "Build DWARF checkpoint unit tests" ON)
 if(MVVM_BUILD_DWARF_TESTS)
+    add_executable(mvvm_dwarf_snapshot_mutator "${PROJECT_SOURCE_DIR}/test/dwarf_snapshot_mutator.cpp")
+    target_include_directories(mvvm_dwarf_snapshot_mutator PRIVATE "${PROJECT_SOURCE_DIR}/include")
+    add_executable(mvvm_reflection_codec_test "${PROJECT_SOURCE_DIR}/test/reflection_codec_test.cpp")
+    target_include_directories(mvvm_reflection_codec_test PRIVATE "${PROJECT_SOURCE_DIR}/include")
+    add_test(NAME mvvm_reflection_codec COMMAND mvvm_reflection_codec_test)
     add_executable(mvvm_dwarf_checkpoint_test
         "${PROJECT_SOURCE_DIR}/test/dwarf_checkpoint_test.cpp")
     target_compile_options(mvvm_dwarf_checkpoint_test PRIVATE
