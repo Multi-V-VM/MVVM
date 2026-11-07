@@ -1,0 +1,26 @@
+name: GPU translator CPU contracts
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gpu-translator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tensor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check translation ABI and reject altered PTX
+        working-directory: rust/tensor-wasm-jit
+        run: cargo test --locked --features cuda-oxide-backend --lib capi::
+      # Real production CC execution is a separate explicit hardware gate.
+      # No GPU-less fallback or skipped attestation is counted as CC success.

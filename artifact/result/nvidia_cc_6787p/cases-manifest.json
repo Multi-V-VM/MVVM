@@ -1,0 +1,32 @@
+{
+  "f32x4_add": {
+    "cases": 64,
+    "wasm_sha256": "16bbf27aad97b58ffcbdfb983aa90d73ca83d1ea4634bc1050fd958680816dc0",
+    "cases_sha256": "b4ca76a26f56dc2ff528efbecb67f15e1d3b2e23bea1aef17f76c67124977ed2"
+  },
+  "f32x4_sub": {
+    "cases": 64,
+    "wasm_sha256": "ce1caa4343aa175e943f389f42d003799b1625939af00f8516a1dab77e480d8d",
+    "cases_sha256": "404505df650ccea0a4395f24bbf7b5e69844dd70a1d4c6b07d80fd85b88b53a5"
+  },
+  "f32x4_mul": {
+    "cases": 64,
+    "wasm_sha256": "0958cf2a1bb8205f06f90138564dee1b25594fb32375024d9fadd6ddd81e731c",
+    "cases_sha256": "b5b9090711f911c8a609c004f91acae0cea080b63ffaa9abb613358ab89694db"
+  },
+  "i32x4_add": {
+    "cases": 64,
+    "wasm_sha256": "f6b06c6205973b4172d47d93345148d95dca2e752b31e3f8a45bb0ef69845fd1",
+    "cases_sha256": "f64f1197bb1f13e1c9afea87faa9b92246d4949e192ce0c21c7f97f1ff077d71"
+  },
+  "i32x4_sub": {
+    "cases": 64,
+    "wasm_sha256": "e38fbf6892b4377920f4368e4feec1cbeec67ec30bf275d96e8cd3d5176c54af",
+    "cases_sha256": "28ffc6dc2750106d553da61b3f85e8ce6eccd55a8ce5789eb88812305a2118ef"
+  },
+  "i32x4_mul": {
+    "cases": 64,
+    "wasm_sha256": "a51796398baa227a5b82ed25bf05e185ae36d591b42d6b630c2f0d9d0d2b66ad",
+    "cases_sha256": "ca81e6a633ca751452baae403593000630333e9ef967765f9a81bbdc994bca93"
+  }
+}

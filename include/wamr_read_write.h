@@ -28,17 +28,7 @@
 #include "wamr_attestation.h"
 #endif
 
-struct WriteStream {
-    virtual bool write(const char *data, std::size_t sz) const { return false; };
-    virtual ~WriteStream() = default;
-};
-struct ReadStream {
-    virtual bool read(char *data, std::size_t sz) const { return false; };
-    virtual bool ignore(std::size_t sz) const { return false; };
-    virtual const char *read_view(size_t len) { return nullptr; }
-    virtual std::size_t tellg() const { return 0; };
-    virtual ~ReadStream() = default;
-};
+#include "wamr_stream.h"
 struct FwriteStream : public WriteStream {
     FILE *file;
     bool write(const char *data, std::size_t sz) const override { return fwrite(data, sz, 1, file) == 1; }

@@ -10,8 +10,9 @@
 #ifndef WAMR_GPU_CC_FRAMEWORK_H
 #define WAMR_GPU_CC_FRAMEWORK_H
 
-#include "wamr_security_framework.h"
-#include "wamr_type.h"
+#include <cstddef>
+#include <cstdint>
+#include "wamr_security_policy.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -89,8 +90,10 @@ struct GPUKernel {
     GPUKernelFormat format = GPUKernelFormat::UNKNOWN;
     size_t num_parameters = 0;
     size_t required_shared_memory = 0;
-    std::vector<uint8_t> signature; // Code signature for verification
+    std::vector<uint8_t> signature; // Translation integrity digest; not a publisher signature
     std::vector<uint8_t> rewritten_module;
+    std::vector<uint8_t> source_module;
+    std::string entry_name;
     std::string requested_function;
     uint32_t function_index = 0;
     uint64_t fingerprint = 0;
@@ -162,6 +165,8 @@ public:
 
     void *allocateSecureMemory(size_t size, MemoryType type) override;
     void freeSecureMemory(void *ptr) override;
+    bool copyToDevice(void *device, const void *host, size_t bytes);
+    bool copyFromDevice(void *host, const void *device, size_t bytes);
     bool encryptMemory(void *ptr, size_t size) override;
     bool decryptMemory(void *ptr, size_t size) override;
 

@@ -1,0 +1,17 @@
+
+==============NVSMI CONF-COMPUTE LOG==============
+
+    CC State                   : ON
+    Multi-GPU Mode             : None
+    CPU CC Capabilities        : INTEL TDX
+    GPU CC Capabilities        : CC Capable
+    CC GPUs Ready State        : Ready
+
+DevTools Mode: OFF
+g++-16 (Ubuntu 16-20260315-1ubuntu1~24~ppa1) 16.0.1 20260315 (experimental) [trunk r16-8100-g3aca3bae8ee]
+Name: nv-attestation-sdk
+Version: 2.7.3
+Name: wasmtime
+Version: 50.0.1
+02dbae9193f5977ea1e5608c9cfb3d3930b6f9097ee43347f55d87a4d7cf9cb1  /root/mvvm-gpu-test/nvidia_gpu_cc_test
+31a87b35bce2f91a850aed13738960d28c9137b3bf518e1f24e72bd5a1d24436  /root/mvvm-gpu-test/libtensor_wasm_jit.a

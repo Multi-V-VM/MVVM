@@ -22,11 +22,6 @@ static inline void *aligned_alloc_wrapper(size_t alignment, size_t size) { retur
 static inline void aligned_free_wrapper(void *ptr) { std::free(ptr); }
 #endif
 
-// For TDX attestation on Intel platforms
-#ifdef __linux__
-#include "../lib/wasm-micro-runtime/core/shared/platform/linux-tdx/tdx_attestation.h"
-#endif
-
 namespace mvvm {
 namespace gpu {
 
@@ -35,7 +30,7 @@ struct GPUCCFramework::Impl {
     std::unique_ptr<GPUCCInterface> gpu_interface;
     GPUVendor current_vendor;
     bool initialized = false;
-    PerformanceMetrics metrics;
+    PerformanceMetrics metrics{};
     security::SecurityPolicy security_level = security::SecurityPolicy::POLICY_BALANCED;
 
     // Timing utilities
@@ -128,8 +123,10 @@ bool GPUCCFramework::setupSecureComputation(const std::vector<CCFeature> &featur
 
     pImpl->metrics.encryption_overhead_ms = pImpl->endTiming();
 
-    SPDLOG_INFO("GPU runtime initialized and nonce-bound local attestation evidence acquired; remote vendor "
-                "collateral verification is still required");
+    if (pImpl->current_vendor == GPUVendor::NVIDIA)
+        SPDLOG_INFO("Production NVIDIA CC initialized after attestation verifier acceptance");
+    else
+        SPDLOG_INFO("GPU runtime initialized; external vendor collateral verification is still required");
     return true;
 }
 
@@ -138,6 +135,8 @@ bool GPUCCFramework::verifySecureEnvironment() {
         return false;
     }
 
+    if (pImpl->current_vendor == GPUVendor::NVIDIA)
+        return pImpl->gpu_interface->verifyDevice();
     // Get attestation report
     auto report = pImpl->gpu_interface->getAttestationReport();
     if (report.empty()) {
@@ -172,6 +171,10 @@ bool GPUCCFramework::secureDataTransferToGPU(const void *host_data, void *gpu_da
             return false;
         }
     }
+    if (pImpl->current_vendor == GPUVendor::NVIDIA) {
+        auto *backend = dynamic_cast<NVIDIAGPUCCImpl *>(pImpl->gpu_interface.get());
+        return backend && backend->copyToDevice(gpu_data, host_data, size);
+    }
     // This abstraction has host pointers, not CUDA/HIP/Level-Zero handles.
     // Copy only into a buffer registered by the platform implementation; no
     // caller-owned const buffer is ever encrypted in place.
@@ -205,6 +208,10 @@ bool GPUCCFramework::secureDataTransferFromGPU(const void *gpu_data, void *host_
     }
     if (decrypt && !pImpl->gpu_interface->decryptMemory(const_cast<void *>(gpu_data), size))
         return false;
+    if (pImpl->current_vendor == GPUVendor::NVIDIA) {
+        auto *backend = dynamic_cast<NVIDIAGPUCCImpl *>(pImpl->gpu_interface.get());
+        return backend && backend->copyFromDevice(host_data, gpu_data, size);
+    }
     std::memcpy(host_data, gpu_data, size);
 
     pImpl->metrics.memory_transfer_time_ms += pImpl->endTiming();
@@ -219,6 +226,15 @@ bool GPUCCFramework::registerSecureKernel(const std::string &name, const void *c
 
     if (name.empty() || !code || code_size == 0)
         return false;
+    if (pImpl->current_vendor == GPUVendor::NVIDIA) {
+        WasmToGPUTranslator translator;
+        WasmToGPUTranslator::TranslationOptions options;
+        const auto device = pImpl->gpu_interface->getCurrentDevice();
+        options.target_compute_capability = device.capability.major_version * 10 + device.capability.minor_version;
+        auto kernel = translator.translateModule(code, code_size, options);
+        kernel.name = name;
+        return kernel.valid() && pImpl->gpu_interface->loadSecureKernel(kernel);
+    }
     GPUKernel kernel;
     kernel.name = name;
     kernel.binary_code.resize(code_size);
@@ -282,9 +298,8 @@ bool GPUCCFramework::setMigrationAttestationVerifier(AttestationVerifier verifie
 }
 
 void *GPUCCFramework::remapRestoredPointer(uint64_t old_address) const {
-    return pImpl->initialized && pImpl->gpu_interface
-               ? pImpl->gpu_interface->remapRestoredPointer(old_address)
-               : nullptr;
+    return pImpl->initialized && pImpl->gpu_interface ? pImpl->gpu_interface->remapRestoredPointer(old_address)
+                                                      : nullptr;
 }
 
 GPUCCFramework::PerformanceMetrics GPUCCFramework::getPerformanceMetrics() const { return pImpl->metrics; }

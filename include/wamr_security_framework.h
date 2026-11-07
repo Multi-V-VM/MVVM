@@ -11,6 +11,7 @@
 #define WAMR_SECURITY_FRAMEWORK_H
 
 #include "wamr_attestation.h"
+#include "wamr_security_policy.h"
 #include "wamr_type.h"
 #include <functional>
 #include <memory>
@@ -34,14 +35,6 @@ enum class ThreatType {
     RESOURCE_EXHAUSTION, // DoS via excessive migrations
     PRIVILEGE_ESCALATION, // Gaining unauthorized access
     DATA_LEAKAGE // Exposure of sensitive data
-};
-
-// Security policies
-enum class SecurityPolicy {
-    POLICY_STRICT, // All security measures enabled
-    POLICY_BALANCED, // Balance between security and performance
-    POLICY_MINIMAL, // Basic security only
-    POLICY_CUSTOM // User-defined policy
 };
 
 // Cryptographic algorithms

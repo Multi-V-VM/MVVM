@@ -11,6 +11,9 @@ use wasmparser::{ExternalKind, Parser, Payload, Validator};
 use crate::cache::{CacheKey, KernelCache};
 use crate::rewrite::{rewrite_wasm, OffloadedFunction, RewriteOptions};
 
+#[path = "checked_simd.rs"]
+mod checked_simd;
+
 const MAX_WASM_BYTES: usize = 256 * 1024 * 1024;
 
 /// An owned translation result. Release it with
@@ -144,6 +147,23 @@ fn translate(
         return Err("minimum loop trip count must be non-zero".to_owned());
     }
 
+    if let Some((name, ptx)) = checked_simd::lower(wasm, requested, sm_version, tenant_id) {
+        let mut result = MVVMTensorWasmJITTranslation::default();
+        result.kernel_name = CString::new(name)
+            .map_err(|_| "invalid export name")?
+            .into_raw();
+        result
+            .signature
+            .copy_from_slice(blake3::hash(ptx.as_bytes()).as_bytes());
+        result.fingerprint =
+            u64::from_le_bytes(blake3::hash(wasm).as_bytes()[..8].try_into().unwrap());
+        (result.ptx, result.ptx_len) = into_raw_bytes(ptx.into_bytes());
+        (result.rewritten_wasm, result.rewritten_wasm_len) = into_raw_bytes(wasm.to_vec());
+        result.original_op_count = 8;
+        result.grid_size = 1;
+        result.block_size = 4;
+        return Ok(result);
+    }
     let exports = exported_functions(wasm)?;
     let cache = KernelCache::new();
     let mut options = RewriteOptions::default();

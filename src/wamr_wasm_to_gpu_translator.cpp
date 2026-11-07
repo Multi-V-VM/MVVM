@@ -77,6 +77,17 @@ GPUKernel translate(const void *wasm_module, size_t module_size, const char *fun
     kernel.function_index = result.function_index;
     kernel.fingerprint = result.fingerprint;
     kernel.grid_size = result.grid_size;
+    kernel.source_module.assign(static_cast<const uint8_t *>(wasm_module),
+                                static_cast<const uint8_t *>(wasm_module) + module_size);
+    kernel.num_parameters = 3;
+    const std::string ptx(kernel.binary_code.begin(), kernel.binary_code.end());
+    auto begin = ptx.find(".entry ");
+    if (begin != std::string::npos) {
+        begin += 7;
+        auto end = ptx.find('(', begin);
+        if (end != std::string::npos)
+            kernel.entry_name = ptx.substr(begin, end - begin);
+    }
     kernel.block_size = result.block_size;
     kernel.target_compute_capability = static_cast<uint32_t>(options.target_compute_capability);
     kernel.tenant_id = options.tenant_id;

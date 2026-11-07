@@ -1,0 +1,13 @@
+
+==============NVSMI CONF-COMPUTE LOG==============
+
+    CC State                   : ON
+    Multi-GPU Mode             : None
+    CPU CC Capabilities        : INTEL TDX
+    GPU CC Capabilities        : CC Capable
+    CC GPUs Ready State        : Not Ready
+
+NVIDIA RTX PRO 6000 Blackwell Server Edition, 590.48.01, 97887 MiB
+6.8.0-106-generic
+tdx_guest_present
+SecureBoot enabled
