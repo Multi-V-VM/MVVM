@@ -13,6 +13,17 @@ add_compile_options(
     $<$<COMPILE_LANGUAGE:CXX>:-std=c++26>
     $<$<COMPILE_LANGUAGE:CXX>:-freflection>)
 
+option(MVVM_BUILD_TCP_GATEWAY "Build the Linux sniffer TCP replay gateway" OFF)
+if(MVVM_BUILD_TCP_GATEWAY)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        message(FATAL_ERROR "TCP replay gateway requires Linux")
+    endif()
+    find_path(PCAP_INCLUDE_DIR pcap/pcap.h REQUIRED)
+    find_library(PCAP_LIBRARY pcap REQUIRED)
+    add_executable(gateway_tcp_rr gateway/tcp_rr.cpp)
+    target_include_directories(gateway_tcp_rr PRIVATE ${PCAP_INCLUDE_DIR})
+    target_link_libraries(gateway_tcp_rr PRIVATE ${PCAP_LIBRARY})
+endif()
 include(CTest)
 option(MVVM_BUILD_REFLECTION_TESTS "Build portable C++26 codec tests" ON)
 if(BUILD_TESTING AND MVVM_BUILD_REFLECTION_TESTS)

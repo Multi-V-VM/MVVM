@@ -28,7 +28,7 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             ca-certificates git gcc-16 g++-16 cmake ninja-build pkg-config \
-            libdw-dev libunwind-dev llvm-20-dev clang-20 lld-20 \
+            libdw-dev libunwind-dev libpcap-dev llvm-20-dev clang-20 lld-20 \
             zlib1g-dev libzstd-dev libedit-dev libffi-dev libpfm4-dev python3 binutils
       - uses: actions/checkout@v5
       - name: Checkout the pinned runtime
@@ -38,9 +38,11 @@ jobs:
       - name: Configure and build the runtime
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
-            -DCMAKE_C_COMPILER=gcc-16 -DCMAKE_CXX_COMPILER=g++-16
+            -DCMAKE_C_COMPILER=gcc-16 -DCMAKE_CXX_COMPILER=g++-16 -DMVVM_BUILD_TCP_GATEWAY=ON
           cmake --build build --parallel 2
           ctest --test-dir build --output-on-failure
+      - name: Validate sniffer TCP record and replay
+        run: python3 test/test_tcp_rr.py "$PWD/build/gateway_tcp_rr" "$PWD/gateway-results" --interface-ready
       - name: Build the patched AOT compiler
         run: |
           cmake -S lib/wasm-micro-runtime/wamr-compiler -B build-wamrc -G Ninja \
@@ -61,6 +63,7 @@ jobs:
         with:
           name: dwarf-linux-${{ matrix.build }}
           path: |
+            gateway-results/summary.json
             results/*.json
             results/*.jsonl
             aot-artifacts/SHA256SUMS
