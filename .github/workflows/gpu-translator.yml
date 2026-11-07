@@ -21,6 +21,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Check translation ABI and reject altered PTX
         working-directory: rust/tensor-wasm-jit
-        run: cargo test --locked --features cuda-oxide-backend --lib capi::
+        run: |
+          cargo test --locked --features cuda-oxide-backend --lib capi::
       # Real production CC execution is a separate explicit hardware gate.
       # No GPU-less fallback or skipped attestation is counted as CC success.
