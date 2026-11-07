@@ -53,6 +53,12 @@ target_compile_options(mvvm_dwarf_runner PRIVATE -g3 -fno-omit-frame-pointer)
 target_link_options(mvvm_dwarf_runner PRIVATE -Wl,--export-dynamic)
 target_link_libraries(mvvm_dwarf_runner PRIVATE mvvm_dwarf_checkpoint dl pthread m)
 
+if(MVVM_BUILD_NVIDIA_CC)
+    target_sources(mvvm_dwarf_runner PRIVATE "${PROJECT_SOURCE_DIR}/src/dwarf_gpu.cpp")
+    target_compile_definitions(mvvm_dwarf_runner PRIVATE MVVM_DWARF_GPU=1)
+    target_link_libraries(mvvm_dwarf_runner PRIVATE mvvm_nvidia_cc)
+endif()
+
 option(MVVM_BUILD_DWARF_TESTS "Build DWARF checkpoint unit tests" ON)
 if(MVVM_BUILD_DWARF_TESTS)
     add_executable(mvvm_dwarf_snapshot_mutator "${PROJECT_SOURCE_DIR}/test/dwarf_snapshot_mutator.cpp")

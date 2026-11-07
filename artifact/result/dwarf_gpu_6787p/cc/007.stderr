@@ -1,0 +1,3 @@
+**** Attestation Successful ****
+{"attested": true, "nonce": "b75de15da5d2c26c7402b5831741d31719d43ca648a6685c3c8567ee6a2c04b8", "claims": {"sub": "NVIDIA-PLATFORM-ATTESTATION", "x-nvidia-ver": "2.0", "nbf": 1794080948, "iss": "https://nras.attestation.nvidia.com", "x-nvidia-overall-att-result": true, "submods": {"GPU-0": ["DIGEST", ["SHA-256", "e96d229ce69848e5fa7648387c5d06238d259228a6904a6b83c5a8b49bf09665"]]}, "eat_nonce": "b75de15da5d2c26c7402b5831741d31719d43ca648a6685c3c8567ee6a2c04b8", "exp": 1794084548, "iat": 1794080948, "jti": "727588a4-9e33-4165-a759-d70ec5e0a3f0"}}
+FAIL: CPU/GPU snapshot authentication failed

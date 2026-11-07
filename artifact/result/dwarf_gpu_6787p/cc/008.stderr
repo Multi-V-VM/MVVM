@@ -1,0 +1,3 @@
+**** Attestation Successful ****
+{"attested": true, "nonce": "aeaa3e665bbe238d38ca42fb4b0339df766fa671680d7b7593331141baeb8796", "claims": {"sub": "NVIDIA-PLATFORM-ATTESTATION", "x-nvidia-ver": "2.0", "nbf": 1794080951, "iss": "https://nras.attestation.nvidia.com", "x-nvidia-overall-att-result": true, "submods": {"GPU-0": ["DIGEST", ["SHA-256", "c9002f36ce7076abc2400013916cee5e236be2b13628b4340dd1932cfa2284fc"]]}, "eat_nonce": "aeaa3e665bbe238d38ca42fb4b0339df766fa671680d7b7593331141baeb8796", "exp": 1794084551, "iat": 1794080951, "jti": "62edb644-f964-4ee7-9999-14a6845dc2b5"}}
+FAIL: root invocation argument mismatch

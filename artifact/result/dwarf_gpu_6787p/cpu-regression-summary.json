@@ -1,0 +1,378 @@
+{
+  "host": "gpu01",
+  "arch": "x86_64",
+  "cpu": null,
+  "correctness": [
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 1,
+      "snapshot": "indirect-1.snapshot",
+      "sha256": "59f31c5df6a5e0be81ac1d0a2d1951673669cc727430d1811efc314aae3520e1",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.49012,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 2,
+      "snapshot": "indirect-2.snapshot",
+      "sha256": "b6742b7db07a9536cf10ccfd8b6cf868ed249ea2556f0ea1fda86344d0a7979b",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.49012,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 49,
+      "snapshot": "indirect-49.snapshot",
+      "sha256": "f442f29e582f13be53600a7a76e266a82c4f4e052aa599c464eb24ca6f570888",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.49012,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 50,
+      "snapshot": "indirect-50.snapshot",
+      "sha256": "14f01100fbb42e9bc342ed71ed137b987f0c9690f70259eb56c81936aa99290c",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.49012,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 99,
+      "snapshot": "indirect-99.snapshot",
+      "sha256": "12333c8341ab5fd1ebb294b16e66ec65c4ce14847dfe56853d3d0a30457a434c",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.49012,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 100,
+      "snapshot": "indirect-100.snapshot",
+      "sha256": "667ffb8a5bb2e2dd9760bcd8da9d51a6578516672b2ea63c3088dbd65bcc062d",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.49012,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 1,
+      "snapshot": "coremark-1.snapshot",
+      "sha256": "75e67af995273b95bb53ed5bc4e086c71bfd5544894e5224202b7f829409e064",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 51.63389,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 50,
+      "snapshot": "coremark-50.snapshot",
+      "sha256": "1014819e3d4a84562c0d7882ca5bf9831126a4a9b1f053cf4902b4a714e0643f",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 51.63389,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 513,
+      "snapshot": "coremark-513.snapshot",
+      "sha256": "edbe03129b319071db022a783343528b30742a42d1a5b46d751bef81a432d8c4",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 51.63389,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 1024,
+      "snapshot": "coremark-1024.snapshot",
+      "sha256": "5140fbec92c0dabea6a2728024ca58d3fae077b7620cfa2bf2e320b598173f00",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 51.63389,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 51200,
+      "snapshot": "coremark-51200.snapshot",
+      "sha256": "54dc81711cd9a979c8561b8673012bffc6c7328a7037be4530d46acc3aa6492c",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 51.63389,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 102400,
+      "snapshot": "coremark-102400.snapshot",
+      "sha256": "fc02032ea00b3bc4a5bc23e1e9e75e235f7408ef7b36d0b0bbbe7ebc05f32401",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 51.63389,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "x86_64"
+      }
+    }
+  ],
+  "correctness_cases_passed": 12,
+  "negative_cases_passed": 7,
+  "timings": [
+    {
+      "workload": "indirect",
+      "variant": "plain",
+      "iterations": 1000000,
+      "samples_ms": [
+        337.723468
+      ],
+      "median_ms": 337.723468,
+      "min_ms": 337.723468,
+      "max_ms": 337.723468
+    },
+    {
+      "workload": "indirect",
+      "variant": "o4-segue",
+      "iterations": 1000000,
+      "samples_ms": [
+        189.328309
+      ],
+      "median_ms": 189.328309,
+      "min_ms": 189.328309,
+      "max_ms": 189.328309
+    },
+    {
+      "workload": "indirect",
+      "variant": "dwarf",
+      "iterations": 1000000,
+      "samples_ms": [
+        330.047305
+      ],
+      "median_ms": 330.047305,
+      "min_ms": 330.047305,
+      "max_ms": 330.047305
+    },
+    {
+      "workload": "coremark",
+      "variant": "plain",
+      "iterations": 1000,
+      "samples_ms": [
+        712.756888
+      ],
+      "median_ms": 712.756888,
+      "min_ms": 712.756888,
+      "max_ms": 712.756888
+    },
+    {
+      "workload": "coremark",
+      "variant": "o4-segue",
+      "iterations": 1000,
+      "samples_ms": [
+        1128.222236
+      ],
+      "median_ms": 1128.222236,
+      "min_ms": 1128.222236,
+      "max_ms": 1128.222236
+    },
+    {
+      "workload": "coremark",
+      "variant": "dwarf",
+      "iterations": 1000,
+      "samples_ms": [
+        711.009279
+      ],
+      "median_ms": 711.009279,
+      "min_ms": 711.009279,
+      "max_ms": 711.009279
+    }
+  ],
+  "repeats": 1
+}

@@ -103,3 +103,24 @@ configuration; it does not isolate the cause of the earlier QEMU 9.2 stall.
 clean-boot eight-vCPU repeat. Host firmware and host workloads were not restarted. The negative corrupted-snapshot case
 intentionally produces a vendor evidence-validation failure, followed by a
 successful restore of the unmodified snapshot.
+
+## DWARF integration follow-up
+
+The process-level GPU participant and real-Wasm benchmark are described in
+[DWARF_GPU.md](DWARF_GPU.md). The eight-vCPU guest above later developed a
+long-running RCU/soft-lockup failure (captured on 2026-11-07). Its short-test
+success is not a claim of long-duration SMP stability. Subsequent continuation
+experiments use a one-vCPU guest; see the README for their current validation
+status. A one-vCPU idle freeze was also observed, so the original short-test
+result does not establish long-duration stability for either configuration.
+
+After the host stopped returning SSH banners, an authorized BMC graceful
+restart restored access. The previous host kernel journal recorded a CPU 60
+soft lockup in `sha512_transform_rorx`, reached through module-signature
+verification in `modprobe`; this is an observation, not an isolated root cause.
+The combined test then booted with QEMU 10.0.94, one vCPU, 4 GiB RAM and
+`idle=poll`, and completed its first separate-process DWARF/GPU restore.
+These settings are part of the benchmark configuration. They do not establish
+that `idle=poll` fixes either earlier stall, or that long-duration SMP operation
+is reliable. Unlike the earlier standalone test, this follow-up did restart
+the host with the owner's permission.

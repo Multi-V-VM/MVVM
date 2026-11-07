@@ -1,0 +1,10 @@
+
+==============NVSMI CONF-COMPUTE LOG==============
+
+    CC State                   : ON
+    Multi-GPU Mode             : None
+    CPU CC Capabilities        : INTEL TDX
+    GPU CC Capabilities        : CC Capable
+    CC GPUs Ready State        : Ready
+
+ 19:56:50 up 1 min,  1 user,  load average: 0.27, 0.18, 0.07

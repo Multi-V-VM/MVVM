@@ -1,0 +1,348 @@
+{
+  "mode": "plain",
+  "repeats": 5,
+  "checkpoint_checks": [
+    1,
+    8,
+    16
+  ],
+  "negative_checks": 3,
+  "workload_sha256": "420be5ca038a5f8d77d6712ef04cb616e0c98c11e5a14d02472f7bbc89b24e01",
+  "runner_sha256": "50a840d6c987e366456ff8e3811182de1890d07a5a1381496a2dd7f76c2b5996",
+  "benchmarks": [
+    {
+      "iterations": 1000,
+      "samples": [
+        {
+          "aot_ms": 27.695335,
+          "dwarf_ms": 27.748806,
+          "baseline_wall_ms": 298.73687000000257,
+          "migration_wall_ms": 616.7250610000003,
+          "migration_extra_ms": 317.98819099999776,
+          "recovery_wall_ms": 302.9827020000013,
+          "gpu_init_ms": 142.977025,
+          "cpu_capture_ms": 16.648839,
+          "cpu_encode_ms": 1.871944,
+          "gpu_capture_ms": 9.129311,
+          "gpu_restore_ms": 0.823784,
+          "stack_restore_ms": 1.580337,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        },
+        {
+          "aot_ms": 26.945553,
+          "dwarf_ms": 27.569207,
+          "baseline_wall_ms": 296.8220290000012,
+          "migration_wall_ms": 610.5867029999993,
+          "migration_extra_ms": 313.7646739999981,
+          "recovery_wall_ms": 297.5492419999988,
+          "gpu_init_ms": 143.533463,
+          "cpu_capture_ms": 16.995645,
+          "cpu_encode_ms": 1.851558,
+          "gpu_capture_ms": 9.277093,
+          "gpu_restore_ms": 0.837848,
+          "stack_restore_ms": 1.589873,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        },
+        {
+          "aot_ms": 27.658069,
+          "dwarf_ms": 27.353674,
+          "baseline_wall_ms": 293.4699490000021,
+          "migration_wall_ms": 617.4356699999989,
+          "migration_extra_ms": 323.96572099999685,
+          "recovery_wall_ms": 301.41328499999884,
+          "gpu_init_ms": 140.208889,
+          "cpu_capture_ms": 16.799445,
+          "cpu_encode_ms": 1.879254,
+          "gpu_capture_ms": 9.492129,
+          "gpu_restore_ms": 0.865351,
+          "stack_restore_ms": 1.583093,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        },
+        {
+          "aot_ms": 27.270202,
+          "dwarf_ms": 27.555334,
+          "baseline_wall_ms": 296.03544900000145,
+          "migration_wall_ms": 618.1567480000006,
+          "migration_extra_ms": 322.1212989999991,
+          "recovery_wall_ms": 300.61911499999997,
+          "gpu_init_ms": 141.208085,
+          "cpu_capture_ms": 16.847928,
+          "cpu_encode_ms": 1.853795,
+          "gpu_capture_ms": 9.024198,
+          "gpu_restore_ms": 0.857629,
+          "stack_restore_ms": 1.592431,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        },
+        {
+          "aot_ms": 27.494501,
+          "dwarf_ms": 27.346486,
+          "baseline_wall_ms": 297.0927980000013,
+          "migration_wall_ms": 637.6739759999984,
+          "migration_extra_ms": 340.5811779999971,
+          "recovery_wall_ms": 306.6899589999998,
+          "gpu_init_ms": 142.736415,
+          "cpu_capture_ms": 18.998762,
+          "cpu_encode_ms": 2.041001,
+          "gpu_capture_ms": 10.166045,
+          "gpu_restore_ms": 0.915478,
+          "stack_restore_ms": 1.647527,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        }
+      ],
+      "statistics": {
+        "aot_ms": {
+          "median": 27.494501,
+          "min": 26.945553,
+          "max": 27.695335
+        },
+        "dwarf_ms": {
+          "median": 27.555334,
+          "min": 27.346486,
+          "max": 27.748806
+        },
+        "baseline_wall_ms": {
+          "median": 296.8220290000012,
+          "min": 293.4699490000021,
+          "max": 298.73687000000257
+        },
+        "migration_wall_ms": {
+          "median": 617.4356699999989,
+          "min": 610.5867029999993,
+          "max": 637.6739759999984
+        },
+        "migration_extra_ms": {
+          "median": 322.1212989999991,
+          "min": 313.7646739999981,
+          "max": 340.5811779999971
+        },
+        "recovery_wall_ms": {
+          "median": 301.41328499999884,
+          "min": 297.5492419999988,
+          "max": 306.6899589999998
+        },
+        "gpu_init_ms": {
+          "median": 142.736415,
+          "min": 140.208889,
+          "max": 143.533463
+        },
+        "cpu_capture_ms": {
+          "median": 16.847928,
+          "min": 16.648839,
+          "max": 18.998762
+        },
+        "cpu_encode_ms": {
+          "median": 1.871944,
+          "min": 1.851558,
+          "max": 2.041001
+        },
+        "gpu_capture_ms": {
+          "median": 9.277093,
+          "min": 9.024198,
+          "max": 10.166045
+        },
+        "gpu_restore_ms": {
+          "median": 0.857629,
+          "min": 0.823784,
+          "max": 0.915478
+        },
+        "stack_restore_ms": {
+          "median": 1.589873,
+          "min": 1.580337,
+          "max": 1.647527
+        },
+        "save_attest_ms": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "restore_attest_ms": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "snapshot_bytes": {
+          "median": 2231800,
+          "min": 2231800,
+          "max": 2231800
+        }
+      }
+    },
+    {
+      "iterations": 10000,
+      "samples": [
+        {
+          "aot_ms": 356.892554,
+          "dwarf_ms": 254.093066,
+          "baseline_wall_ms": 573.0550759999993,
+          "migration_wall_ms": 839.8341009999974,
+          "migration_extra_ms": 266.7790249999981,
+          "recovery_wall_ms": 408.40933799999846,
+          "gpu_init_ms": 173.870753,
+          "cpu_capture_ms": 16.96827,
+          "cpu_encode_ms": 1.824652,
+          "gpu_capture_ms": 8.982274,
+          "gpu_restore_ms": 0.846668,
+          "stack_restore_ms": 1.506854,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        },
+        {
+          "aot_ms": 250.442046,
+          "dwarf_ms": 257.732568,
+          "baseline_wall_ms": 531.1489460000018,
+          "migration_wall_ms": 839.563695999999,
+          "migration_extra_ms": 308.4147499999972,
+          "recovery_wall_ms": 413.5377670000011,
+          "gpu_init_ms": 141.428905,
+          "cpu_capture_ms": 16.033175,
+          "cpu_encode_ms": 1.742652,
+          "gpu_capture_ms": 8.688441,
+          "gpu_restore_ms": 0.861999,
+          "stack_restore_ms": 1.543646,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        },
+        {
+          "aot_ms": 251.401582,
+          "dwarf_ms": 257.69909,
+          "baseline_wall_ms": 529.4756459999945,
+          "migration_wall_ms": 862.2069799999963,
+          "migration_extra_ms": 332.73133400000177,
+          "recovery_wall_ms": 434.2279970000007,
+          "gpu_init_ms": 144.260324,
+          "cpu_capture_ms": 15.541755,
+          "cpu_encode_ms": 1.851364,
+          "gpu_capture_ms": 8.985981,
+          "gpu_restore_ms": 1.030022,
+          "stack_restore_ms": 1.682627,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        },
+        {
+          "aot_ms": 253.642896,
+          "dwarf_ms": 251.746077,
+          "baseline_wall_ms": 524.405834999996,
+          "migration_wall_ms": 841.4406830000019,
+          "migration_extra_ms": 317.0348480000058,
+          "recovery_wall_ms": 414.68745499999926,
+          "gpu_init_ms": 142.07675,
+          "cpu_capture_ms": 15.687128,
+          "cpu_encode_ms": 1.684576,
+          "gpu_capture_ms": 8.300692,
+          "gpu_restore_ms": 0.771646,
+          "stack_restore_ms": 1.51685,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        },
+        {
+          "aot_ms": 251.44422,
+          "dwarf_ms": 252.040698,
+          "baseline_wall_ms": 520.3406230000028,
+          "migration_wall_ms": 837.6916189999904,
+          "migration_extra_ms": 317.3509959999876,
+          "recovery_wall_ms": 410.98684099999616,
+          "gpu_init_ms": 140.502118,
+          "cpu_capture_ms": 16.055899,
+          "cpu_encode_ms": 1.748388,
+          "gpu_capture_ms": 8.679262,
+          "gpu_restore_ms": 0.939261,
+          "stack_restore_ms": 1.517597,
+          "save_attest_ms": 0.0,
+          "restore_attest_ms": 0.0,
+          "snapshot_bytes": 2231800
+        }
+      ],
+      "statistics": {
+        "aot_ms": {
+          "median": 251.44422,
+          "min": 250.442046,
+          "max": 356.892554
+        },
+        "dwarf_ms": {
+          "median": 254.093066,
+          "min": 251.746077,
+          "max": 257.732568
+        },
+        "baseline_wall_ms": {
+          "median": 529.4756459999945,
+          "min": 520.3406230000028,
+          "max": 573.0550759999993
+        },
+        "migration_wall_ms": {
+          "median": 839.8341009999974,
+          "min": 837.6916189999904,
+          "max": 862.2069799999963
+        },
+        "migration_extra_ms": {
+          "median": 317.0348480000058,
+          "min": 266.7790249999981,
+          "max": 332.73133400000177
+        },
+        "recovery_wall_ms": {
+          "median": 413.5377670000011,
+          "min": 408.40933799999846,
+          "max": 434.2279970000007
+        },
+        "gpu_init_ms": {
+          "median": 142.07675,
+          "min": 140.502118,
+          "max": 173.870753
+        },
+        "cpu_capture_ms": {
+          "median": 16.033175,
+          "min": 15.541755,
+          "max": 16.96827
+        },
+        "cpu_encode_ms": {
+          "median": 1.748388,
+          "min": 1.684576,
+          "max": 1.851364
+        },
+        "gpu_capture_ms": {
+          "median": 8.688441,
+          "min": 8.300692,
+          "max": 8.985981
+        },
+        "gpu_restore_ms": {
+          "median": 0.861999,
+          "min": 0.771646,
+          "max": 1.030022
+        },
+        "stack_restore_ms": {
+          "median": 1.517597,
+          "min": 1.506854,
+          "max": 1.682627
+        },
+        "save_attest_ms": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "restore_attest_ms": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "snapshot_bytes": {
+          "median": 2231800,
+          "min": 2231800,
+          "max": 2231800
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-07",
+  "source_base_commit": "2d51a15f18978a8bf164869df5beb76bd139edf9",
+  "wamr_commit": "7f46ed5d74c80ddfeba47df2c3385f544170a7af",
+  "host": "6787p",
+  "host_kernel": "7.0.0-38-generic",
+  "guest_kernel": "6.8.0-106-generic",
+  "guest_vcpus": 1,
+  "guest_memory_gib": 4,
+  "guest_kernel_extra_args": "idle=poll",
+  "qemu_version": "10.0.94",
+  "firmware": "OVMF.inteltdx.ms.fd",
+  "gpu": "RTX PRO 6000 Blackwell Server Edition",
+  "driver": "590.48.01",
+  "cuda_driver_api": "13.1",
+  "cuda_build_toolkit": "12.9",
+  "compiler": "g++-16 16.0.1 20260315",
+  "rust_library_sha256": "e7261cbfbc4ca693844b55b26385f018c37a60a5d8e74833841c19072e37822e",
+  "modes": {
+    "cc": "TDX + hardware CC-On + strict attested backend",
+    "plain": "regular KVM + hardware CC-Off + direct CUDA comparator"
+  },
+  "repeats": 5,
+  "iterations": [
+    1000,
+    10000
+  ],
+  "scope": "Sequential process replacement on one GPU; not network or cross-GPU migration",
+  "run_order": [
+    "cc",
+    "plain"
+  ],
+  "snapshot_keys_and_snapshot_payloads": "excluded",
+  "source_sha256": {
+    "src/dwarf_gpu.cpp": "a251468308ce9195d4691d960b2f82ed45129f83db4e846c8030c312712abd73",
+    "src/dwarf_runner.cpp": "5a51844daefaa05b12397c6ace23c20df1ba7c37d3393ccbd33d7c105a79e84f",
+    "include/mvvm/dwarf_gpu.hpp": "83e1cb3c9e6b3a26797d743af52e509cb796661dae839d9ced9245de910fcd18",
+    "test/dwarf_gpu_workload.c": "33d76f5a2b6d798bbb6ebfd4977ad94cf60038ab906b42aa5e9cc5f626190e87",
+    "test/run_dwarf_gpu_benchmarks.py": "08e57f2fc1053c67f66f0ee165cb6f4be73779a5a1b2de6d93985c1a6f388c58"
+  },
+  "final_state": "GPU CC-On, TDX guest, Ready; separate-process smoke passed again"
+}

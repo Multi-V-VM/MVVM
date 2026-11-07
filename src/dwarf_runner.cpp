@@ -1,6 +1,11 @@
 // Native AOT/DWARF experiment runner. The debug ELF uses the same WAMR ABI as
 // its companion AOT container; this preserves DWARF for libdwfl discovery.
 #include "mvvm/dwarf_resume.hpp"
+#ifdef MVVM_DWARF_GPU
+#include "mvvm/dwarf_gpu.hpp"
+#include <csignal>
+#include <unistd.h>
+#endif
 #include "mvvm/reflection_codec.hpp"
 #include "aot_runtime.h"
 #include <dlfcn.h>
@@ -19,6 +24,9 @@ NativeContinuation saved;
 std::string identity, callback_error;
 std::uint64_t checkpoint_index=1, checkpoint_count=0;
 bool saving=false;
+#ifdef MVVM_DWARF_GPU
+std::unique_ptr<mvvm::dwarf::GPUContinuation> gpu;
+#endif
 std::uint64_t compiler_schema=0;
 std::uint32_t entry_argument=0;
 double capture_ms=0;
@@ -65,13 +73,22 @@ int main(int argc,char** argv) {
         if(!checkpoint_index) throw std::runtime_error("checkpoint index starts at one");
         auto iterations=static_cast<std::uint32_t>(std::stoul(argv[6]));
         entry_argument=iterations;
+        std::vector<NativeSymbol> symbols;
+#ifdef MVVM_DWARF_GPU
+        if(getenv("MVVM_GPU_MODE")) {
+            signal(SIGPIPE,SIG_IGN);
+            gpu=std::make_unique<mvvm::dwarf::GPUContinuation>();
+            symbols=gpu->symbols();
+        }
+#endif
         NativeSymbol symbol{const_cast<char*>("mvvm_checkpoint"),reinterpret_cast<void*>(checkpoint),"()",nullptr};
+        symbols.push_back(symbol);
         RuntimeInitArgs init{};
         init.mem_alloc_type=Alloc_With_Allocator;
         init.mem_alloc_option.allocator.malloc_func=reinterpret_cast<void*>(malloc);
         init.mem_alloc_option.allocator.realloc_func=reinterpret_cast<void*>(realloc);
         init.mem_alloc_option.allocator.free_func=reinterpret_cast<void*>(free);
-        init.native_module_name="env"; init.native_symbols=&symbol; init.n_native_symbols=1;
+        init.native_module_name="env"; init.native_symbols=symbols.data(); init.n_native_symbols=symbols.size();
         if(!wasm_runtime_full_init(&init)) throw std::runtime_error("WAMR init failed");
         char error[512]{};
         auto module=wasm_runtime_load(reinterpret_cast<std::uint8_t*>(aot.data()),aot.size(),error,sizeof(error));
@@ -102,6 +119,9 @@ int main(int argc,char** argv) {
         double decode_ms=0;
         if(mode=="restore") {
             auto bytes=read_file(argv[5]); auto t=Clock::now();
+#ifdef MVVM_DWARF_GPU
+            if(gpu) bytes=gpu->open(bytes);
+#endif
             auto decoded=mvvm::codec::decode<NativeContinuation>(std::as_bytes(std::span(bytes)));
             if(!decoded) throw std::runtime_error(decoded.error());
             saved=std::move(*decoded);
@@ -118,6 +138,9 @@ int main(int argc,char** argv) {
             std::memcpy(inst->memories[0]->memory_data,saved.memory.data(),saved.memory.size());
             std::memcpy(inst->global_data,saved.globals.data(),saved.globals.size());
             for(std::uint32_t i=0;i<inst->table_count;++i) std::copy(saved.tables[i].begin(),saved.tables[i].end(),inst->tables[i]->elems);
+            #ifdef MVVM_DWARF_GPU
+            if(gpu) gpu->restore();
+#endif
             mvvm::dwarf::arm_native_restore(saved.frames);
             decode_ms=std::chrono::duration<double,std::milli>(Clock::now()-t).count();
         }
@@ -134,6 +157,9 @@ int main(int argc,char** argv) {
             if(saved.frames.empty()) throw std::runtime_error("checkpoint did not capture native AOT frames");
             auto et=Clock::now(); auto encoded=mvvm::codec::encode(saved);
             encode_ms=std::chrono::duration<double,std::milli>(Clock::now()-et).count();
+#ifdef MVVM_DWARF_GPU
+            if(gpu) encoded=gpu->seal(encoded);
+#endif
             bytes_written=encoded.size(); std::ofstream out(argv[5],std::ios::binary|std::ios::trunc);
             out.write(reinterpret_cast<const char*>(encoded.data()),encoded.size());
             if(!out) throw std::runtime_error("snapshot write failed");
@@ -145,6 +171,12 @@ int main(int argc,char** argv) {
         if(ef && !wasm_runtime_call_wasm(env,ef,0,effects)) throw std::runtime_error("effects export failed");
         std::size_t slots=0; for(const auto& f:saved.frames) slots+=f.slots.size();
         std::cout<<std::format("{{\"mode\":\"{}\",\"iterations\":{},\"result\":{},\"effects\":{},\"frames\":{},\"slots\":{},\"bytes\":{},\"run_ms\":{:.6f},\"capture_ms\":{:.6f},\"encode_ms\":{:.6f},\"decode_ms\":{:.6f},\"stack_restore_ms\":{:.6f}}}\n",mode,iterations,result,effects[0],saved.frames.size(),slots,bytes_written,run_ms,capture_ms,encode_ms,decode_ms,restore_ms);
+        #ifdef MVVM_DWARF_GPU
+        if(gpu) {
+            std::cout<<std::format("{{\"gpu_mode\":\"{}\",\"gpu_init_ms\":{:.6f},\"gpu_capture_ms\":{:.6f},\"gpu_restore_ms\":{:.6f},\"attest_ms\":{:.6f},\"attestations\":{},\"pid\":{},\"gpu_launches\":{}}}\n",gpu->mode(),gpu->init_ms,gpu->capture_ms,gpu->restore_ms,gpu->attest_ms,gpu->attestations,getpid(),gpu->launches);
+            gpu.reset();
+        }
+#endif
         wasm_runtime_destroy_exec_env(env); wasm_runtime_deinstantiate(instance);
         wasm_runtime_unload(module); if(dso) dlclose(dso); wasm_runtime_destroy();
         return 0;

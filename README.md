@@ -1,6 +1,85 @@
 # Migratable Velocity Virtual Machine
 [![MacOS](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-windows.yml/badge.svg)](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-windows.yml)[![MacOS](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-macos.yml/badge.svg)](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-macos.yml)[![Ubuntu](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/Multi-V-VM/MVVM/actions/workflows/build-ubuntu.yml)[![Generate page](https://github.com/Multi-V-VM/Multi-V-VM.github.io/actions/workflows/mkdocs.yml/badge.svg)](https://github.com/Multi-V-VM/Multi-V-VM.github.io/actions/workflows/mkdocs.yml)
 
+## DWARF + NVIDIA GPU continuation
+
+The working branch integrates registered GPU allocations and the checked
+`tensor-wasm-jit` kernel into the native DWARF checkpoint flow. Wasm uses stable
+integer handles; a new process restores GPU memory and remaps those handles
+before rebuilding the native call chain. CPU and GPU state are authenticated
+together in one encrypted snapshot. Build and reproduction instructions are in
+[docs/DWARF_GPU.md](docs/DWARF_GPU.md).
+
+Measured on 6787p on 2026-11-07: RTX PRO 6000 Blackwell Server Edition,
+Ubuntu 24.04 / kernel 6.8.0-106, NVIDIA 590.48.01, QEMU 10.0.94,
+one vCPU, 4 GiB RAM and `idle=poll`; GCC 16 with C++26 reflection.
+The same guest image, Wasm/AOT/debug artifacts and runner were used in both
+modes. GPU kernels are translated from Wasm by `tensor-wasm-jit`.
+
+| Check | Result |
+|---|---|
+| Combined GCC 16 / C++26 runner | Built in an Ubuntu 24.04 container; executed in both guests |
+| CPU native DWARF regression | 12 x86 restore positions and 7 rejection cases; RISC-V unit tests 2/2 |
+| Standalone production GPU CC preflight | 384 source-Wasm/GPU comparisons and restored-context execution |
+| Real-Wasm DWARF + GPU process replacement | First/middle/final checkpoints passed in CC-On and CC-Off |
+| Snapshot/invocation rejection | Modified ciphertext, wrong key and wrong root argument rejected in both modes |
+| Repeated performance experiment | 1,000 and 10,000 iterations, 5 repetitions per configuration |
+
+The workload checkpoints after a GPU kernel completes but before its result
+reaches Wasm memory. A fresh process restores the native call chain, device
+output and an additional 1 MiB device allocation. Result, side effects and
+GPU launch counts are checked: the 16-iteration middle-checkpoint test returns
+2321 with 16 effects, executing 8 GPU operations before saving and exactly 8
+after restoring, with 2 native frames and 24 DWARF slots.
+
+Measured medians; times in milliseconds. Both modes use the same Wasm and runner binary.
+
+| Iterations | KVM / CC-Off AOT | TDX / CC-On AOT | TDX / CC-On DWARF | Combined CC overhead (AOT) | DWARF overhead (CC-On) |
+|---:|---:|---:|---:|---:|---:|
+| 1000 | 27.495 | 69.628 | 69.035 | +153.24% | -0.85% |
+| 10000 | 251.444 | 640.219 | 642.449 | +154.62% | +0.35% |
+
+Combined CC overhead includes TDX, GPU CC and the strict runtime path; it does not isolate GPU encryption.
+
+| Mode | Iterations | Uninterrupted process | Save + restore processes | Added migration time (paired median) | Migration overhead (ratio of medians) | Destination recovery | Snapshot bytes |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| plain | 1000 | 296.822 | 617.436 | 322.121 | +108.02% | 301.413 | 2231800 |
+| plain | 10000 | 529.476 | 839.834 | 317.035 | +58.62% | 413.538 | 2231800 |
+| cc | 1000 | 4030.765 | 10115.735 | 6091.836 | +150.96% | 5034.625 | 2244155 |
+| cc | 10000 | 4551.230 | 10740.713 | 6156.807 | +136.00% | 5369.535 | 2244155 |
+
+| Mode | Iterations | CPU capture | GPU capture + outer encryption | GPU restore | Native stack restore | Save-process attestation | Restore-process attestation |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| plain | 1000 | 16.848 | 9.277 | 0.858 | 1.590 | 0.000 | 0.000 |
+| plain | 10000 | 16.033 | 8.688 | 0.862 | 1.518 | 0.000 | 0.000 |
+| cc | 1000 | 20.484 | 1042.687 | 1028.857 | 1.774 | 2008.892 | 1995.440 |
+| cc | 10000 | 19.974 | 1013.680 | 1028.622 | 1.912 | 2038.618 | 2018.341 |
+
+Attestation is included in the relevant phase and process totals, not added again.
+The workload launches four SIMD lanes at a time and keeps 1 MiB of additional device state. These are small-kernel/process-migration measurements, not GPU peak-throughput or LLM results.
+Each mode passed first/middle/last checkpoint recovery and 3 negative cases; each timing uses 5 repetitions. Raw samples and min/max are retained in the JSON artifacts.
+
+At 10,000 iterations, the measured DWARF execution difference is **+0.35%**;
+the -0.85% difference at 1,000 iterations is not evidence of a speedup.
+CC migration adds a paired median **6.157 seconds**, while native stack restore
+is **1.912 ms**. GPU initialization and remote attestation dominate the
+process-level cost. These five-sample sequential measurements do not establish
+statistical significance for sub-percent execution differences.
+
+[Raw samples, phase timings, hashes and platform records](artifact/result/dwarf_gpu_6787p/)
+are retained alongside the [reproduction procedure](docs/DWARF_GPU.md).
+Migration here is local replacement by a new process on the same GPU; network
+transfer, cross-GPU restore and an application-scale workload were not measured.
+The driver rejects CC-Off inside TDX, so the comparator uses regular KVM with
+CC-Off and measures the whole CC configuration rather than GPU encryption alone.
+
+Earlier eight-vCPU and one-vCPU guests experienced stalls. After an authorized
+host restart, this one-vCPU polling configuration completed both experiments.
+It does not establish long-duration SMP stability or isolate the earlier fault;
+see the [platform follow-up](docs/NVIDIA_CC.md#dwarf-integration-follow-up).
+After the comparison, the GPU was restored to CC-On and the combined smoke
+test passed again in TDX.
+
 ![arch](./doc/img_4.png)
 
 The rise of AI agents powered by Large Language
