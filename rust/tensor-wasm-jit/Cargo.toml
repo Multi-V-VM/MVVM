@@ -190,7 +190,7 @@ version = "0.12"
 optional = true
 
 [dependencies.lru]
-version = "0.12"
+version = "0.16"
 
 [dependencies.parking_lot]
 version = "0.12"
