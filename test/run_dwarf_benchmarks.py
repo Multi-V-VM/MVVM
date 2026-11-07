@@ -15,9 +15,12 @@ p.add_argument("artifacts",type=Path)
 p.add_argument("output",type=Path)
 p.add_argument("--cross-from",type=Path)
 p.add_argument("--repeats",type=int,default=5)
+p.add_argument("--cpu",type=int,help="Pin the experiment and child processes to one native CPU")
 a=p.parse_args()
 a.output.mkdir(parents=True,exist_ok=True)
 arch=platform.machine()
+if a.cpu is not None:
+    os.sched_setaffinity(0,{a.cpu})
 rows=[]
 def invoke(name,mode,n,point,snapshot,variant="dwarf",expect_failure=False,dso_override=None):
     stem=a.artifacts/f"{name}.{arch}"
@@ -64,7 +67,8 @@ else:
     truncated.write_bytes((a.output/"indirect-50.snapshot").read_bytes()[:-7])
     invoke("indirect","restore",100,50,truncated,expect_failure=True)
     invoke("indirect","restore",100,50,a.output/"coremark-50.snapshot",expect_failure=True)
-    for kind in ("pc","slot"):
+    invoke("indirect","restore",101,50,a.output/"indirect-50.snapshot",expect_failure=True)
+    for kind in ("pc","slot","schema"):
         mutated=a.output/f"invalid-{kind}.snapshot"
         subprocess.run([str(a.runner.parent/"mvvm_dwarf_snapshot_mutator"),str(a.output/"indirect-50.snapshot"),str(mutated),kind],check=True)
         invoke("indirect","restore",100,50,mutated,expect_failure=True)
@@ -86,6 +90,6 @@ else:
             snapshot=a.output/f"timing-{name}-{rep}.snapshot"
             invoke(name,"save",n,point,snapshot)
             equal(invoke(name,"restore",n,point,snapshot),baseline)
-    summary={"host":platform.node(),"arch":arch,"correctness":correctness,"correctness_cases_passed":len(correctness),"negative_cases_passed":5,"timings":timings,"repeats":a.repeats}
+    summary={"host":platform.node(),"arch":arch,"cpu":a.cpu,"correctness":correctness,"correctness_cases_passed":len(correctness),"negative_cases_passed":7,"timings":timings,"repeats":a.repeats}
 (a.output/"summary.json").write_text(json.dumps(summary,indent=2)+"\n")
 print(json.dumps(summary,indent=2),flush=True)

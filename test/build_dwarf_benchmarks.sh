@@ -10,6 +10,10 @@ python3 "$root/test/coremark_dwarf/prepare.py" "$coremark" "$out/coremark"
 clang-20 --target=wasm32 -mno-reference-types -O2 -nostdlib -Wl,--no-entry -Wl,--export=run -Wl,--export=effects -Wl,--allow-undefined "$root/test/dwarf_resume_workload.c" -o "$out/indirect.wasm"
 clang-20 --target=wasm32 -mno-reference-types -O2 -fno-builtin -nostdlib -I"$out/coremark" -Wl,--no-entry -Wl,--export=run -Wl,--export=effects -Wl,--allow-undefined "$out/coremark/driver.c" "$out/coremark/core_list_join.c" "$out/coremark/core_matrix.c" "$out/coremark/core_state.c" "$out/coremark/core_util.c" -o "$out/coremark.wasm"
 common=(--size-level=3 --disable-simd --bounds-checks=0 --stack-bounds-checks=0 --disable-aux-stack-check)
+dwarf_args=(--format=llvmir-unopt --mllvm=-mvvm-dwarf-resume)
+if [[ ${DWARF_OPTIMIZE:-1} == 1 ]]; then
+  dwarf_args=(--format=llvmir-opt --mllvm=-mvvm-dwarf-resume --mllvm=-mvvm-dwarf-optimize)
+fi
 for arch in riscv64 x86_64; do
   target=(--target="$arch")
   llc_args=()
@@ -23,7 +27,7 @@ for arch in riscv64 x86_64; do
     base="$out/$name.$arch"
     "$WAMRC" "${target[@]}" "${common[@]}" --opt-level=3 -o "$base.aot" "$out/$name.wasm"
     "$WAMRC" "${target[@]}" "${common[@]}" --opt-level=4 --enable-segue -o "$base.o4-segue.aot" "$out/$name.wasm"
-    "$WAMRC" "${target[@]}" "${common[@]}" --opt-level=3 --format=llvmir-unopt --mllvm=-mvvm-dwarf-resume -o "$base.ll" "$out/$name.wasm"
+    "$WAMRC" "${target[@]}" "${common[@]}" --opt-level=3 "${dwarf_args[@]}" -o "$base.ll" "$out/$name.wasm"
     llc-20 -O3 -filetype=obj -relocation-model=pic -generate-arange-section "${llc_args[@]}" "$base.ll" -o "$base.o"
     if [[ $(uname -m) == "$arch" ]]; then
       gcc-16 -shared "$base.o" -o "$base.so"

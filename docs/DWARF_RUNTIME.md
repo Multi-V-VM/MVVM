@@ -79,9 +79,13 @@ prefix and does not use QEMU.
   checks disabled. The Wasm retains the same no-op checkpoint imports.
 - `o4-segue`: requests O4 and Segue with the same checks disabled. WAMR 2.4.5
   clamps O4 to O3. Segue applies on x86-64, not RISC-V; this is not an O4 score.
-- `dwarf`: native debug ELF with continuation lowering. Functions currently
-  use `optnone`/`noinline`, LLVM code generation O3 and pinned volatile slots.
-  Overhead includes this conservative lowering and hook costs, not only DWARF.
+- `dwarf`: native debug ELF with optimized continuation lowering (the build
+  script default). A call-graph pass leaves non-suspending functions untouched.
+  Promoting Wasm locals to SSA and checking dominance after adding resume
+  edges identifies only values that actually require DWARF-backed spills.
+  LLVM O3 optimizes the remaining code; an inline TLS flag avoids helper calls
+  during normal execution. Resumable functions remain noinline. Set
+  `DWARF_OPTIMIZE=0` to reproduce the conservative optnone baseline.
 - `run_ms`: export execution, excluding load/setup, file I/O and shutdown.
 - `capture_ms`: native stack extraction and copying guest state at the hook.
 - `encode_ms`: reflection encoding, excluding file writes.
@@ -107,6 +111,22 @@ start functions, other OSes, and 32-bit/big-endian targets are not validated.
 LLVM verification rejects unsupported live values; DWARF decode, slot schema
 and resume-PC checks fail rather than substituting missing values.
 
-The pass is opt-in (`--mllvm=-mvvm-dwarf-resume`). Ordinary compiler output is
+The pass is opt-in (`--mllvm=-mvvm-dwarf-resume`); add
+`--mllvm=-mvvm-dwarf-optimize` and use optimized LLVM IR for the fast version.
+Snapshots also validate a compiler-generated continuation schema and root
+invocation argument; incompatible lowering variants are rejected. A single
+DWARF module cache is reused while rebuilding all frames of one continuation.
+Ordinary compiler output is
 unaffected apart from native-call CFI. Raw measurements and tested identifiers
 are in `artifact/result/dwarf_native_20261107`.
+
+## CI coverage
+
+The Linux workflow builds GCC 16/C++26 Debug and Release configurations, builds
+the patched LLVM 20 AOT compiler, and executes native checkpoint restoration
+and rejection tests. It uses the Ubuntu 26.04 package repositories and no
+private WASI/LLVM download server. macOS and Windows run the portable
+reflection codec tests using native GCC 16 toolchains. They do not claim that
+the Linux/libdw native continuation runtime is ported to those systems.
+Workflow names distinguish this coverage from the legacy build pipelines and
+do not trigger the old automatic release publisher for experiment branches.

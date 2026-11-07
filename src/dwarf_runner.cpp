@@ -19,6 +19,8 @@ NativeContinuation saved;
 std::string identity, callback_error;
 std::uint64_t checkpoint_index=1, checkpoint_count=0;
 bool saving=false;
+std::uint64_t compiler_schema=0;
+std::uint32_t entry_argument=0;
 double capture_ms=0;
 std::vector<char> read_file(const char* path) {
     std::ifstream f(path,std::ios::binary);
@@ -34,6 +36,7 @@ void checkpoint(wasm_exec_env_t env) {
         if(inst->memory_count!=1) throw std::runtime_error("experiment requires one linear memory");
         auto* mem=inst->memories[0];
         saved.module_identity=identity;
+        saved.compiler_schema=compiler_schema; saved.entry_argument=entry_argument;
         saved.frames=mvvm::dwarf::capture_native_continuation();
         saved.memory.assign(reinterpret_cast<std::byte*>(mem->memory_data),reinterpret_cast<std::byte*>(mem->memory_data)+mem->memory_data_size);
         saved.globals.assign(reinterpret_cast<std::byte*>(inst->global_data),reinterpret_cast<std::byte*>(inst->global_data)+inst->global_data_size);
@@ -61,6 +64,7 @@ int main(int argc,char** argv) {
         saving=mode=="save"; checkpoint_index=std::stoull(argv[7]);
         if(!checkpoint_index) throw std::runtime_error("checkpoint index starts at one");
         auto iterations=static_cast<std::uint32_t>(std::stoul(argv[6]));
+        entry_argument=iterations;
         NativeSymbol symbol{const_cast<char*>("mvvm_checkpoint"),reinterpret_cast<void*>(checkpoint),"()",nullptr};
         RuntimeInitArgs init{};
         init.mem_alloc_type=Alloc_With_Allocator;
@@ -77,6 +81,9 @@ int main(int argc,char** argv) {
         if(std::string_view(argv[3])!="-") {
           dso=dlopen(argv[3],RTLD_NOW|RTLD_LOCAL);
           if(!dso) throw std::runtime_error(dlerror());
+          auto* schema=reinterpret_cast<const std::uint64_t*>(dlsym(dso,"mvvm_dwarf_schema_id"));
+          if(!schema) throw std::runtime_error("missing compiler continuation schema");
+          compiler_schema=*schema;
           for(std::uint32_t i=0;i<am->func_count;++i) {
             auto name=std::format("aot_func#{}",i);
             auto* f=dlsym(dso,name.c_str());
@@ -99,6 +106,8 @@ int main(int argc,char** argv) {
             if(!decoded) throw std::runtime_error(decoded.error());
             saved=std::move(*decoded);
             if(saved.module_identity!=identity) throw std::runtime_error("snapshot Wasm identity mismatch");
+            if(saved.compiler_schema!=compiler_schema) throw std::runtime_error("compiler continuation schema mismatch");
+            if(saved.entry_argument!=iterations) throw std::runtime_error("root invocation argument mismatch");
             if(inst->memory_count!=1 || saved.memory.size()!=inst->memories[0]->memory_data_size || saved.globals.size()!=inst->global_data_size) throw std::runtime_error("snapshot memory/global layout mismatch");
             if(saved.tables.size()!=inst->table_count) throw std::runtime_error("snapshot table count mismatch");
             for(std::uint32_t i=0;i<inst->table_count;++i) {

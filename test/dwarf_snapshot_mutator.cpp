@@ -19,6 +19,8 @@ int main(int argc,char** argv) {
             std::memcpy(slot.bytes.data(),&invalid,sizeof(invalid)); found=true;
         }
         if(!found) return 5;
+    } else if(std::string_view(argv[3])=="schema") {
+        value->compiler_schema^=1;
     } else if(std::string_view(argv[3])=="slot") {
         value->frames.front().slots.front().name+="-invalid";
     } else return 6;

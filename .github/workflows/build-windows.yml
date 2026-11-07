@@ -1,90 +1,50 @@
-name: build-windows
+name: C++26 codec Windows
 
-on: push
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codec-windows-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  codec:
+    name: Native GCC 16 reflection (${{ matrix.build }})
     runs-on: windows-latest
-
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         build: [Debug, Release]
-        standard: [cxx23]
-
     defaults:
       run:
-        shell: bash
-
-    name: "${{matrix.standard}}-${{matrix.build}}"
+        shell: msys2 {0}
     steps:
-    - uses: actions/checkout@v4
-    - name: Checkout
-      run: |
-        git submodule update --init --recursive
-
-    - name: Install Choco Dependency
-      uses: crazy-max/ghaction-chocolatey@v2
-      with:
-        args: install wget msys2 ninja
-
-    - name: Install Dependency
-      run: |
-        cd D:
-        git clone https://github.com/microsoft/vcpkg
-        cd vcpkg
-        git checkout a56d892ac792797d779eae79d3423e0131422628
-        ./bootstrap-vcpkg.bat
-        ./vcpkg install fmt:x64-windows cxxopts:x64-windows spdlog:x64-windows detours:x64-windows jsoncpp:x64-windows openssl:x64-windows zlib:x64-windows zstd:x64-windows pkgconf:x64-windows
-        echo "C:/tools/msys64/usr/bin/" >> "$GITHUB_PATH"
-        C:/tools/msys64/usr/bin/pacman.exe --noconfirm -S gcc
-
-    - name: Install WASI SDK
-      run: |
-        cd D:
-        wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-21/wasi-sdk-21.0.m-mingw.tar.gz -O D:/wasi-sdk-21.0.m-mingw.tar.gz
-        tar -xzf wasi-sdk-21.0.m-mingw.tar.gz
-        mv wasi-sdk-21.0+m wasi-sdk
-
-    - name: Make WASM LD no check features
-      run: |
-        mv D:/wasi-sdk/bin/wasm-ld.exe D:/wasi-sdk/bin/wasm-ld.bak
-        rm -rf "C:/Program Files/LLVM/"
-        
-    - name: Install LLVM SDK
-      run: |
-        cd "C:/Program Files/"
-        wget http://108.181.27.85/about/LLVM.zip -O LLVM.zip
-        unzip LLVM.zip
-        cp "C:/Program Files/LLVM/tools/llvm/wasm-ld.exe" D:/wasi-sdk/bin/wasm-ld.exe
-        
-    - name: Make WASI Socket Ext
-      run: |
-        cd lib/wasm-micro-runtime/samples/socket-api/
-        echo "C:/ProgramData/chocolatey/bin/" >> "$GITHUB_PATH"
-        cmake . -DWASI_SDK_DIR=D:/wasi-sdk -G"Unix Makefiles" -DCMAKE_C_COMPILER=C:/tools/msys64/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/tools/msys64/usr/bin/g++.exe
-        make
-
-    - name: configure cmake
-      run: |
-        cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ &&cmake -S $GITHUB_WORKSPACE -B build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake -DLLVM_DIR="C:/Program Files/LLVM/share/llvm" -DBUILD_SHARED_LIBS=OFF -Dcrypto_LIBRARY=D:/vcpkg/installed/x64-windows/bin/libcrypto.lib -DBUILD_DEPS=ON -DS2N_NO_PQ_ASM=ON
-        sed -i "s/add_library(uv SHARED/add_library(uv/g" build/_deps/libuv-src/CMakeLists.txt
-
-    - name: Install benchmark
-      run: |
-        cp -r "C:/Program Files/LLVM/bench" build/
-        cp -r "C:/Program Files/LLVM/build" lib/wasm-micro-runtime/wamr-compiler
-
-    - name: build
-      working-directory: ${{runner.workspace}}/MVVM/build
-      run: |
-        cmake --build . --config ${{matrix.build}}
-
-    - name: Upload artifacts
-      if: success()
-      uses: actions/upload-artifact@v4
-      with:
-        name: mvvm-windows-${{matrix.build}}-${{matrix.standard}}
-        path: |
-          ${{runner.workspace}}/build/MVVM_*.exe
-        retention-days: 7 
+      - uses: actions/checkout@v5
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+      - name: Build and test the portable codec
+        run: |
+          gcc --version
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+            -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
+            -DMVVM_ENABLE_DWARF_RUNTIME=OFF -DMVVM_ENABLE_LEGACY_RUNTIME=OFF
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codec-windows-${{ matrix.build }}
+          path: build/Testing/Temporary/LastTest.log
+          if-no-files-found: error

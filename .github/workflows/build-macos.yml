@@ -1,69 +1,41 @@
-name: build-macos
+name: C++26 codec macOS
 
-on: push
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codec-macos-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  codec:
+    name: Native GCC 16 reflection (${{ matrix.build }})
     runs-on: macos-15
-
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         build: [Debug, Release]
-        standard: [cxx23]
-
-    defaults:
-      run:
-        shell: bash
-
-    name: "${{matrix.standard}}-${{matrix.build}}"
     steps:
-    - uses: actions/checkout@v4
-    - name: List Xcode installations
-      run: sudo ls -1 /Applications | grep "Xcode"
-      
-    - name: Select Xcode 16.2
-      run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-
-    - name: Install Dependency
-      run: brew install cxxopts fmt llvm@14 ninja spdlog openblas jsoncpp openssl zstd
-
-    - name: Checkout
-      run: |
-        git submodule update --init --recursive
-
-    - name: Install WASI SDK
-      run: |
-        cd /opt
-        sudo wget http://108.181.27.85/wasi/wasi-sdk-20.0-macos.tar.gz
-        sudo tar -xzf wasi-sdk-*.tar.gz
-
-    - name: Make WASI Socket Ext
-      run: |
-        cd lib/wasm-micro-runtime/samples/socket-api/
-        cmake .
-        make -j
-
-    - name: Install AOT wamrc
-      run: |
-        cd lib/wasm-micro-runtime/wamr-compiler
-        mkdir build
-        cd build
-        cmake .. -DWAMR_BUILD_AOT=1 -DWAMR_BUILD_AOT_STACK_FRAME=1 -DWAMR_BUILD_DEBUG_AOT=0 -DWAMR_BUILD_DUMP_CALL_STACK=1  -DWAMR_BUILD_CUSTOM_NAME_SECTION=1 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_WITH_CUSTOM_LLVM=1 -DWAMR_BUILD_LOAD_CUSTOM_SECTION=1 -DLLVM_DIR=/opt/homebrew/opt/llvm@14/lib/cmake/llvm/
-        make -j
-
-    - name: configure cmake
-      run: cd lib/wasm-micro-runtime/core/deps/ && bash ./install_tensorflow.sh && cd ../../../../ && LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/ cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/opt/homebrew/opt/llvm@14/lib/cmake/llvm/
-
-    - name: build
-      working-directory: ${{runner.workspace}}/build
-      run: LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/ cmake --build . --config ${{matrix.build}}
-
-    - name: Upload artifacts
-      if: success()
-      uses: actions/upload-artifact@v4
-      with:
-        name: mvvm-macos-${{matrix.build}}-${{matrix.standard}}
-        path: |
-          ${{runner.workspace}}/build/MVVM_*
-        retention-days: 7
+      - uses: actions/checkout@v5
+      - name: Install the native GCC 16 toolchain
+        run: brew install gcc cmake ninja
+      - name: Build and test the portable codec
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+            -DCMAKE_C_COMPILER="$(brew --prefix)/bin/gcc-16" \
+            -DCMAKE_CXX_COMPILER="$(brew --prefix)/bin/g++-16" \
+            -DMVVM_ENABLE_DWARF_RUNTIME=OFF -DMVVM_ENABLE_LEGACY_RUNTIME=OFF
+          cmake --build build --parallel 3
+          ctest --test-dir build --output-on-failure
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codec-macos-${{ matrix.build }}
+          path: build/Testing/Temporary/LastTest.log
+          if-no-files-found: error

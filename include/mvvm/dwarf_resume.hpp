@@ -9,6 +9,8 @@ struct SlotValue { std::string name; std::vector<std::byte> bytes; };
 struct ContinuationFrame { std::uint32_t function; std::vector<SlotValue> slots; };
 struct NativeContinuation {
     std::string module_identity;
+    std::uint64_t compiler_schema=0;
+    std::uint32_t entry_argument=0;
     std::vector<ContinuationFrame> frames;
     std::vector<std::byte> memory;
     std::vector<std::byte> globals;

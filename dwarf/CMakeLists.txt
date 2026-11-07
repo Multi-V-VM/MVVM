@@ -57,9 +57,6 @@ option(MVVM_BUILD_DWARF_TESTS "Build DWARF checkpoint unit tests" ON)
 if(MVVM_BUILD_DWARF_TESTS)
     add_executable(mvvm_dwarf_snapshot_mutator "${PROJECT_SOURCE_DIR}/test/dwarf_snapshot_mutator.cpp")
     target_include_directories(mvvm_dwarf_snapshot_mutator PRIVATE "${PROJECT_SOURCE_DIR}/include")
-    add_executable(mvvm_reflection_codec_test "${PROJECT_SOURCE_DIR}/test/reflection_codec_test.cpp")
-    target_include_directories(mvvm_reflection_codec_test PRIVATE "${PROJECT_SOURCE_DIR}/include")
-    add_test(NAME mvvm_reflection_codec COMMAND mvvm_reflection_codec_test)
     add_executable(mvvm_dwarf_checkpoint_test
         "${PROJECT_SOURCE_DIR}/test/dwarf_checkpoint_test.cpp")
     target_compile_options(mvvm_dwarf_checkpoint_test PRIVATE

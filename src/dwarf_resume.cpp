@@ -16,6 +16,9 @@
 
 static_assert(std::endian::native==std::endian::little,
               "native continuation slots currently require little-endian ISAs");
+// The generated code reads this TLS flag without a normal-path helper call.
+// 0=running, 1=suspending, 2=rebuilding the destination native call chain.
+extern "C" { thread_local std::uint32_t mvvm_dwarf_state=0; }
 
 namespace mvvm::dwarf {
 namespace {
@@ -26,6 +29,7 @@ thread_local bool rewinding=false;
 thread_local double restore_ms=0;
 struct DwflDeleter { void operator()(Dwfl* d)const { if(d) dwfl_end(d); } };
 using Debug=std::unique_ptr<Dwfl,DwflDeleter>;
+thread_local Debug restore_debug;
 Debug open_debug() {
     static const Dwfl_Callbacks cb{.find_elf=dwfl_linux_proc_find_elf,.find_debuginfo=dwfl_standard_find_debuginfo,.section_address=dwfl_offline_section_address,.debuginfo_path=nullptr};
     Debug d(dwfl_begin(&cb));
@@ -129,17 +133,18 @@ std::vector<ContinuationFrame> capture_native_continuation() {
 void arm_native_restore(const std::vector<ContinuationFrame>& frames) {
     if(frames.empty()) throw std::runtime_error("empty native continuation");
     restore_frames=frames; restore_next=0; rewinding=true; suspended=false; restore_ms=0;
+    restore_debug.reset(); mvvm_dwarf_state=2;
 }
 bool finish_native_rewind() {
     if(!rewinding) return false;
     if(restore_next!=restore_frames.size()) throw std::runtime_error("checkpoint reached before all frames restored");
-    rewinding=false; return true;
+    rewinding=false; mvvm_dwarf_state=0; restore_debug.reset(); return true;
 }
 bool native_suspend_pending(){return suspended;}
 bool native_rewind_pending(){return rewinding;}
 double native_restore_time_ms(){return restore_ms;}
-void request_native_suspend(){suspended=true;}
-void reset_native_continuation(){suspended=false; rewinding=false; restore_frames.clear(); restore_next=0;}
+void request_native_suspend(){suspended=true; mvvm_dwarf_state=1;}
+void reset_native_continuation(){suspended=false; rewinding=false; restore_frames.clear(); restore_next=0; mvvm_dwarf_state=0; restore_debug.reset();}
 
 std::uint32_t enter(std::uint32_t expected_function,std::uint32_t site_count) {
     if(!rewinding) return 0;
@@ -147,7 +152,8 @@ std::uint32_t enter(std::uint32_t expected_function,std::uint32_t site_count) {
     if(restore_next>=restore_frames.size()) throw std::runtime_error("unexpected extra native frame during restore");
     const auto& source=restore_frames[restore_next];
     if(source.function!=expected_function) throw std::runtime_error("native restore function mismatch");
-    auto d=open_debug(); unw_context_t context; unw_cursor_t cursor;
+    if(!restore_debug) restore_debug=open_debug();
+    auto& d=restore_debug; unw_context_t context; unw_cursor_t cursor;
     unw_getcontext(&context); unw_init_local(&cursor,&context);
     do {
         std::uint32_t function=0; auto target=locations(d.get(),cursor,function);

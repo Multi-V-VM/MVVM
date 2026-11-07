@@ -14,12 +14,21 @@ add_compile_options(
     $<$<COMPILE_LANGUAGE:CXX>:-freflection>)
 
 include(CTest)
+option(MVVM_BUILD_REFLECTION_TESTS "Build portable C++26 codec tests" ON)
+if(BUILD_TESTING AND MVVM_BUILD_REFLECTION_TESTS)
+    add_executable(mvvm_reflection_codec_test test/reflection_codec_test.cpp)
+    target_include_directories(mvvm_reflection_codec_test PRIVATE include)
+    add_test(NAME mvvm_reflection_codec COMMAND mvvm_reflection_codec_test)
+endif()
 option(MVVM_ENABLE_DWARF_RUNTIME
        "Build the C++26 reflection + DWARF runtime" ON)
 option(MVVM_ENABLE_LEGACY_RUNTIME
        "Build the pre-DWARF WAMR-internal checkpoint implementation" OFF)
 
 if(MVVM_ENABLE_DWARF_RUNTIME)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        message(FATAL_ERROR "The native DWARF runtime currently supports Linux. Set MVVM_ENABLE_DWARF_RUNTIME=OFF to build portable codec tests.")
+    endif()
     add_subdirectory(dwarf)
 endif()
 

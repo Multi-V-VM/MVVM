@@ -1,71 +1,68 @@
-name: build-ubuntu
+name: DWARF Linux GCC 16
 
-on: push
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dwarf-linux-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  native:
+    name: Native AOT and DWARF (${{ matrix.build }})
     runs-on: ubuntu-24.04
-
+    container: ubuntu:26.04
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         build: [Debug, Release]
-        standard: [cxx23]
-
-    defaults:
-      run:
-        shell: bash
-
-    name: "${{matrix.standard}}-${{matrix.build}}"
     steps:
-    - uses: actions/checkout@v4
-    - name: Install Dependency
-      run: sudo apt install libssl-dev gcc g++ libspdlog-dev libfmt-dev llvm-14-dev libedit-dev libcxxopts-dev libpfm4-dev ninja-build libpcap-dev libopenblas-pthread-dev libibverbs-dev librdmacm-dev libjsoncpp-dev
-      
-    - name: Checkout
-      run: |
-        git submodule update --init --recursive
-
-    - name: Install WASI SDK
-      run: |
-        cd /opt
-        sudo wget http://108.181.27.85/wasi/wasi-sdk-21.0-linux.tar.gz
-        sudo tar -xzf wasi-sdk-*.tar.gz
-        mv wasi-sdk-21 wasi-sdk
-        
-    - name: Make WASI Socket Ext
-      run: |
-        cd lib/wasm-micro-runtime/samples/socket-api/
-        cmake . -DCMAKE_C_COMPILER_WORK=1 -DCMAKE_CXX_COMPILER_WORK=1
-        make -j
-
-    - name: Install AOT wamrc
-      run: |
-        cd lib/wasm-micro-runtime/wamr-compiler
-        mkdir build
-        cd build
-        cmake .. -DWAMR_BUILD_AOT=1 -DWAMR_BUILD_AOT_STACK_FRAME=1 -DWAMR_BUILD_DEBUG_AOT=0 -DWAMR_BUILD_DUMP_CALL_STACK=1 -DWAMR_BUILD_CUSTOM_NAME_SECTION=1 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_WITH_CUSTOM_LLVM=1 -DWAMR_BUILD_LOAD_CUSTOM_SECTION=1 -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm/
-        make -j
-
-    - name: configure cmake
-      run: |
-        sudo touch /usr/lib/llvm-14/lib/libMLIRSupportIndentedOstream.a
-        cd lib/wasm-micro-runtime/core/deps/
-        bash ./install_tensorflow.sh
-        # Fix missing cstdint header in TensorFlow Lite
-        sed -i '19a#include <cstdint>' tensorflow-src/tensorflow/lite/kernels/internal/spectrogram.cc
-        cd ../../../../
-        cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build}} -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm/ -DCMAKE_CXX_FLAGS="-Wno-error=stringop-overflow"
-
-    - name: build
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config ${{matrix.build}}
-
-    - name: Upload artifacts
-      if: success()
-      uses: actions/upload-artifact@v4
-      with:
-        name: mvvm-ubuntu-${{matrix.build}}-${{matrix.standard}}
-        path: |
-          ${{runner.workspace}}/build/MVVM_*
-        retention-days: 7
+      - name: Install GCC 16 and LLVM 20
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates git gcc-16 g++-16 cmake ninja-build pkg-config \
+            libdw-dev libunwind-dev llvm-20-dev clang-20 lld-20 \
+            zlib1g-dev libzstd-dev libedit-dev libffi-dev libpfm4-dev python3 binutils
+      - uses: actions/checkout@v5
+      - name: Checkout the pinned runtime
+        run: git submodule update --init lib/wasm-micro-runtime
+      - name: Configure and build the runtime
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+            -DCMAKE_C_COMPILER=gcc-16 -DCMAKE_CXX_COMPILER=g++-16
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+      - name: Build the patched AOT compiler
+        run: |
+          cmake -S lib/wasm-micro-runtime/wamr-compiler -B build-wamrc -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-16 -DCMAKE_CXX_COMPILER=g++-16 \
+            -DWAMR_BUILD_WITH_CUSTOM_LLVM=1 -DLLVM_DIR=/usr/lib/llvm-20/lib/cmake/llvm
+          cmake --build build-wamrc --parallel 2
+      - name: Validate real native save and restore
+        run: |
+          git clone https://github.com/eembc/coremark.git coremark-source
+          git -C coremark-source checkout 1f483d5b8316753a742cbf5590caf5bd0a4e4777
+          DWARF_OPTIMIZE=1 WAMRC="$PWD/build-wamrc/wamrc" \
+            bash test/build_dwarf_benchmarks.sh "$PWD/aot-artifacts" "$PWD/coremark-source"
+          python3 test/run_dwarf_benchmarks.py "$PWD/build/dwarf/mvvm_dwarf_runner" \
+            "$PWD/aot-artifacts" "$PWD/results" --repeats 2
+      - name: Preserve native test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dwarf-linux-${{ matrix.build }}
+          path: |
+            results/*.json
+            results/*.jsonl
+            aot-artifacts/SHA256SUMS
+            build/Testing/Temporary/LastTest.log
+            build/dwarf/mvvm_dwarf_runner
+          if-no-files-found: error
+          retention-days: 14
