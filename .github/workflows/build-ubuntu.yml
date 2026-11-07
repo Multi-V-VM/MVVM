@@ -29,7 +29,7 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             ca-certificates git gcc-16 g++-16 cmake ninja-build pkg-config \
             libdw-dev libunwind-dev libpcap-dev llvm-20-dev clang-20 lld-20 \
-            zlib1g-dev libzstd-dev libedit-dev libffi-dev libpfm4-dev python3 binutils
+            zlib1g-dev libzstd-dev libedit-dev libffi-dev libpfm4-dev python3 python3-pyelftools binutils
       - uses: actions/checkout@v5
       - name: Checkout the pinned runtime
         run: |

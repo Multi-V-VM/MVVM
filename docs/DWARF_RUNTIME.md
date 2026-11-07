@@ -26,6 +26,11 @@ compiler's dispatches. Each target frame's slot addresses are resolved from its
 own DWARF. No source native stack image or machine addresses are restored.
 No Asyncify transformation is used.
 
+DWARF here describes compiler-generated continuation slots for Wasm execution,
+not the original C/C++ source variables. Recovery does not require source-level
+DWARF and does not decompile native code back into Wasm. It reconstructs the
+Wasm continuation on another native AOT call stack.
+
 The experiment uses a debug ELF companion because ordinary WAMR AOT containers
 do not provide an ELF mapping discoverable by libdwfl. The runner binds the
 companion's `aot_func#N` symbols to the corresponding loaded AOT module before
@@ -42,7 +47,7 @@ save/restore processes.
 ## Reproduce
 
 Prerequisites: GCC/g++ 16 with reflection, CMake, Ninja, libdw-dev,
-libunwind-dev, LLVM/Clang 20, binutils, and Python 3. The WAMR submodule is pinned
+libunwind-dev, LLVM/Clang 20, binutils, Python 3, and `python3-pyelftools`. The WAMR submodule is pinned
 to the tested patch on upstream WAMR 2.4.5; no history rebase is needed.
 
 ```sh
@@ -119,6 +124,70 @@ DWARF module cache is reused while rebuilding all frames of one continuation.
 Ordinary compiler output is
 unaffected apart from native-call CFI. Raw measurements and tested identifiers
 are in `artifact/result/dwarf_native_20261107`.
+
+## Checkpoint completeness
+
+The compiler emits `mvvm_dwarf_requirements`, an allocated read-only ELF object
+independent of `.debug_info`. Its `MVVMREQ3` encoding records functions,
+continuation call targets, slot names and byte widths. The entire inventory is
+bound to `mvvm_dwarf_schema_id`. It contains no stack offsets, machine addresses
+or value payloads, and cannot substitute for missing DWARF locations.
+
+The inventory conservatively requires every scalar continuation slot in a
+function at every one of its safe points. Compiler dominance analysis identifies
+values that require spills after resume edges are added; unsupported live types
+or slot widths fail compilation. This is a conservative contract for this
+compiler pipeline, not a general liveness proof for arbitrary native binaries.
+It may reject a missing slot even when that slot is dead at the current site.
+
+On capture and destination-frame reconstruction, libdw's variables must match
+that independent inventory exactly. Missing/duplicate/unexpected variables,
+width mismatches, unavailable or unsupported locations and invalid resume PCs
+fail. All slots in a destination frame are validated before any are written.
+An incomplete capture propagates an error before snapshot serialization or
+publication. Compiler-created spills remain necessary, but there is no runtime
+spill-address fallback when DWARF is unavailable. Parsed inventories are cached
+only for a capture/restore operation; ordinary execution never parses them.
+Pre-inventory debug companions fail capture, and old snapshots fail schema
+validation. Rebuild companions and regenerate snapshots, including GPU workloads.
+
+Concrete negative test: `test/delete_dwarf_entry.py` removes the 15-byte
+`DW_TAG_variable` for `mvvm_slot_0:l1.1.reg2mem` in the indirect workload's
+`aot_func#0`. This holds the loop accumulator initialized to 17 and used after
+the indirect call. The mutator repairs DIE references and public indexes,
+verifies exactly one DIE disappeared, and checks every allocated ELF section
+is unchanged. Both saving and restoring then report:
+
+```text
+FAIL: missing required DWARF slot mvvm_slot_0:l1.1.reg2mem in function 0
+```
+
+No rejected checkpoint file exists. A separate snapshot mutation deletes one
+serialized slot. Together with existing malformed-PC, renamed-slot, schema,
+identity, argument, truncation and stripped-DWARF cases, the suite has 10
+negative cases per native ISA. Actual correctness covers first/middle/final
+positions and compares final result and side-effect count with uninterrupted
+execution: 12 x86-native, 12 RISC-V-native and 12 in each cross-ISA direction.
+
+Incremental timing experiment on 6787p, Xeon 6710E, GCC 16 Release / LLVM 20:
+use identical Wasm inputs, one CPU (8), one warmup and 11 measured rounds, with
+before/after ordering shuffled by fixed seed 20261107. Indirect uses 10,000,000
+iterations and CoreMark-derived uses 10,000. Every timing round also saves and
+restores in separate processes and checks result/side effects. The before
+compiler is `7f46ed5d74c80ddfeba47df2c3385f544170a7af`; the before runtime is
+MVVM `c315376ae044c89fe506647470d185689c26c0a6` with the same CPU-only build options.
+
+```sh
+python3 test/measure_dwarf_integrity.py   /path/to/before/mvvm_dwarf_runner /path/to/after/mvvm_dwarf_runner   /path/to/before/artifacts /path/to/after/artifacts   /path/to/fresh/results --cpu 8 --repeats 11
+```
+
+Execution medians changed -0.95% (indirect) and -0.03% (CoreMark-derived), within
+shared-host timing variation; no speedup is established. Capture changed by
++0.006 ms and +0.069 ms, native restore by +0.005 ms and +0.035 ms. These are
+incremental costs of completeness enforcement, not total continuation overhead.
+[Raw results](../artifact/result/dwarf_integrity_20261107/) retain all samples,
+negative diagnostics, deletion evidence and artifact hashes. The original
+NAS/LINPACK execution-only chart and earlier GPU experiments have separate scopes.
 
 ## CI coverage
 

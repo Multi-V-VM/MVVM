@@ -8,6 +8,7 @@ from pathlib import Path
 import platform
 import statistics
 import subprocess
+from delete_dwarf_entry import delete_entry
 
 p=argparse.ArgumentParser()
 p.add_argument("runner",type=Path)
@@ -70,13 +71,23 @@ else:
     invoke("indirect","restore",100,50,truncated,expect_failure=True)
     invoke("indirect","restore",100,50,a.output/"coremark-50.snapshot",expect_failure=True)
     invoke("indirect","restore",101,50,a.output/"indirect-50.snapshot",expect_failure=True)
-    for kind in ("pc","slot","schema"):
+    for kind in ("pc","slot","schema","drop-slot"):
         mutated=a.output/f"invalid-{kind}.snapshot"
         subprocess.run([str(a.runner.parent/"mvvm_dwarf_snapshot_mutator"),str(a.output/"indirect-50.snapshot"),str(mutated),kind],check=True)
         invoke("indirect","restore",100,50,mutated,expect_failure=True)
     stripped=a.output/f"stripped.{arch}.so"
     subprocess.run(["objcopy","--strip-debug",str(a.artifacts/f"indirect.{arch}.so"),str(stripped)],check=True)
     invoke("indirect","save",100,50,a.output/"should-not-exist",expect_failure=True,dso_override=stripped)
+    assert not (a.output/"should-not-exist").exists()
+    missing=a.output/f"missing-one-die.{arch}.so"
+    mutation=delete_entry(a.artifacts/f"indirect.{arch}.so",missing,"aot_func#0",None)
+    (a.output/"deleted-dwarf-entry.json").write_text(json.dumps(mutation,indent=2)+"\n")
+    rejected=a.output/"missing-one-die.snapshot"
+    assert not rejected.exists(), "use a fresh output directory for the negative test"
+    for mode,snapshot in (("save",rejected),("restore",a.output/"indirect-50.snapshot")):
+        failure=invoke("indirect",mode,100,50,snapshot,expect_failure=True,dso_override=missing)
+        assert "missing required DWARF slot " + mutation["deleted_slot"] in failure["stderr"],failure
+    assert not rejected.exists(), "incomplete capture published a checkpoint"
     timings=[]
     for name,n,point in (("indirect",1000000,500000),("coremark",1000,512000)):
         baseline=None
@@ -92,6 +103,6 @@ else:
             snapshot=a.output/f"timing-{name}-{rep}.snapshot"
             invoke(name,"save",n,point,snapshot)
             equal(invoke(name,"restore",n,point,snapshot),baseline)
-    summary={"host":platform.node(),"arch":arch,"cpu":a.cpu,"correctness":correctness,"correctness_cases_passed":len(correctness),"negative_cases_passed":7,"timings":timings,"repeats":a.repeats}
+    summary={"host":platform.node(),"arch":arch,"cpu":a.cpu,"correctness":correctness,"correctness_cases_passed":len(correctness),"negative_cases_passed":sum(row.get("negative",False) for row in rows),"timings":timings,"repeats":a.repeats}
 (a.output/"summary.json").write_text(json.dumps(summary,indent=2)+"\n")
 print(json.dumps(summary,indent=2),flush=True)

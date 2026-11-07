@@ -1,0 +1,8 @@
+{
+  "function": "aot_func#0",
+  "deleted_slot": "mvvm_slot_0:l1.1.reg2mem",
+  "deleted_die_bytes": 15,
+  "dies_before": 27,
+  "dies_after": 26,
+  "allocated_sections_unchanged": true
+}

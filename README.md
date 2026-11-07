@@ -80,6 +80,35 @@ see the [platform follow-up](docs/NVIDIA_CC.md#dwarf-integration-follow-up).
 After the comparison, the GPU was restored to CC-On and the combined smoke
 test passed again in TDX.
 
+## DWARF checkpoint completeness
+
+The runtime now checks an independent compiler-emitted inventory before accepting
+native frames. A missing required DWARF variable, unavailable location, wrong
+width, or incomplete snapshot rejects capture/restore; there is no offset-based
+fallback. The inventory records slot names, widths and continuation sites, not
+value locations. The values still come exclusively from DWARF.
+
+On 2026-11-07, x86-64 and RISC-V each passed 12 separate-process restores and
+10 rejection cases; both cross-ISA directions passed another 12 restores each.
+The negative test deletes exactly one live accumulator variable DIE while
+preserving all allocated ELF sections. Capture and restore both reject it;
+capture produces no checkpoint file.
+
+Matched x86 before/after medians, 11 repetitions plus a warmup, pinned to CPU 8:
+
+| Workload | Execution before → after | Change | Capture before → after | Native restore before → after |
+|---|---:|---:|---:|---:|
+| Indirect calls | 258.232 → 255.767 ms | -0.95% | 1.735 → 1.741 ms | 0.504 → 0.509 ms |
+| CoreMark-derived | 671.985 → 671.755 ms | -0.03% | 1.691 → 1.760 ms | 0.554 → 0.589 ms |
+
+These measure the **incremental completeness-check cost**, not total DWARF versus
+native-C overhead. Normal execution adds no inventory lookup. The shared host
+has unlocked frequency; the small negative differences do not establish a
+speedup. This experiment is separate from the earlier GPU measurements above.
+Old debug companions/checkpoints must be regenerated for the new inventory schema.
+[Reproduction and boundaries](docs/DWARF_RUNTIME.md#checkpoint-completeness) ·
+[Raw samples and correctness results](artifact/result/dwarf_integrity_20261107/).
+
 ![arch](./doc/img_4.png)
 
 The rise of AI agents powered by Large Language

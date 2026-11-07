@@ -1,0 +1,384 @@
+{
+  "host": "wr5219",
+  "arch": "riscv64",
+  "cpu": 4,
+  "correctness": [
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 1,
+      "snapshot": "indirect-1.snapshot",
+      "sha256": "684e3bfc2c45552ff5f79c8c1124426089700c7496f740799e24ddfaa6213b87",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.02918,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 2,
+      "snapshot": "indirect-2.snapshot",
+      "sha256": "72e84dc8c23d777d4479ecc625bad1e1a464c49b8a755fd166ed9dee514d55e6",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.02918,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 49,
+      "snapshot": "indirect-49.snapshot",
+      "sha256": "4b6ec1e2bdbd1bc08f0b53bd67bf7fd9036a61f29f1c4682aa07c68db1447b52",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.02918,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 50,
+      "snapshot": "indirect-50.snapshot",
+      "sha256": "13321025caa9804d9897a23d8cce45d681c0a2af4b53a288d81da2171972a04a",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.02918,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 99,
+      "snapshot": "indirect-99.snapshot",
+      "sha256": "00c0e1572f097e144fe1fdef13104da032176f92a551a0c10e96c03107944b83",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.02918,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "indirect",
+      "iterations": 100,
+      "point": 100,
+      "snapshot": "indirect-100.snapshot",
+      "sha256": "f9298f325c99bd620bd2e2109b66283994789724279c1f318033261e8dff6d6d",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 50767,
+        "effects": 100,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 0.02918,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "indirect",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 1,
+      "snapshot": "coremark-1.snapshot",
+      "sha256": "129bbfee9417764ef1e9e5ae2f5dee054a3ec8382809a2b04aec65de8737c6e4",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 21.776097,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 50,
+      "snapshot": "coremark-50.snapshot",
+      "sha256": "42e6d2818fcfbba45eabb8b86ead05f2a7af10eb04f105b9010f4db73ae1dcb8",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 21.776097,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 513,
+      "snapshot": "coremark-513.snapshot",
+      "sha256": "d104af4dae2e3041f436e6b4254ff57941ff420b5f9420a87865515c6ee48f09",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 21.776097,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 1024,
+      "snapshot": "coremark-1024.snapshot",
+      "sha256": "05fdbd3231d0dea88c0a602d739258aa230b3ffea82996d1d67e5c3e094b37c5",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 21.776097,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 51200,
+      "snapshot": "coremark-51200.snapshot",
+      "sha256": "53385211676af34fa7aa7aebba354371108e672a7500e55f129ed0ae6f1fa02e",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 21.776097,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    },
+    {
+      "workload": "coremark",
+      "iterations": 100,
+      "point": 102400,
+      "snapshot": "coremark-102400.snapshot",
+      "sha256": "5b1e6283b35bc0cee4e6dc49e77b6b34822724ff5335bf913fd4a43b976d77d5",
+      "expected": {
+        "mode": "baseline",
+        "iterations": 100,
+        "result": 39052,
+        "effects": 102400,
+        "frames": 0,
+        "slots": 0,
+        "bytes": 0,
+        "run_ms": 21.776097,
+        "capture_ms": 0.0,
+        "encode_ms": 0.0,
+        "decode_ms": 0.0,
+        "stack_restore_ms": 0.0,
+        "workload": "coremark",
+        "variant": "plain",
+        "point": 1,
+        "arch": "riscv64"
+      }
+    }
+  ],
+  "correctness_cases_passed": 12,
+  "negative_cases_passed": 10,
+  "timings": [
+    {
+      "workload": "indirect",
+      "variant": "plain",
+      "iterations": 1000000,
+      "samples_ms": [
+        69.607526,
+        70.856953
+      ],
+      "median_ms": 70.23223949999999,
+      "min_ms": 69.607526,
+      "max_ms": 70.856953
+    },
+    {
+      "workload": "indirect",
+      "variant": "o4-segue",
+      "iterations": 1000000,
+      "samples_ms": [
+        68.72135,
+        68.72921
+      ],
+      "median_ms": 68.72528,
+      "min_ms": 68.72135,
+      "max_ms": 68.72921
+    },
+    {
+      "workload": "indirect",
+      "variant": "dwarf",
+      "iterations": 1000000,
+      "samples_ms": [
+        69.713766,
+        74.015471
+      ],
+      "median_ms": 71.8646185,
+      "min_ms": 69.713766,
+      "max_ms": 74.015471
+    },
+    {
+      "workload": "coremark",
+      "variant": "plain",
+      "iterations": 1000,
+      "samples_ms": [
+        211.580293,
+        213.158572
+      ],
+      "median_ms": 212.36943250000002,
+      "min_ms": 211.580293,
+      "max_ms": 213.158572
+    },
+    {
+      "workload": "coremark",
+      "variant": "o4-segue",
+      "iterations": 1000,
+      "samples_ms": [
+        213.562814,
+        215.264784
+      ],
+      "median_ms": 214.41379899999998,
+      "min_ms": 213.562814,
+      "max_ms": 215.264784
+    },
+    {
+      "workload": "coremark",
+      "variant": "dwarf",
+      "iterations": 1000,
+      "samples_ms": [
+        225.491184,
+        226.47751
+      ],
+      "median_ms": 225.984347,
+      "min_ms": 225.491184,
+      "max_ms": 226.47751
+    }
+  ],
+  "repeats": 2
+}

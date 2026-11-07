@@ -1,5 +1,6 @@
 #include "mvvm/dwarf_resume.hpp"
 #include "mvvm/reflection_codec.hpp"
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -23,6 +24,11 @@ int main(int argc,char** argv) {
         value->compiler_schema^=1;
     } else if(std::string_view(argv[3])=="slot") {
         value->frames.front().slots.front().name+="-invalid";
+    } else if(std::string_view(argv[3])=="drop-slot") {
+        auto& slots=value->frames.front().slots;
+        auto found=std::ranges::find_if(slots,[](const auto& slot){return slot.name!="mvvm_pc";});
+        if(found==slots.end()) return 8;
+        slots.erase(found);
     } else return 6;
     auto encoded=mvvm::codec::encode(*value);
     std::ofstream out(argv[2],std::ios::binary);
