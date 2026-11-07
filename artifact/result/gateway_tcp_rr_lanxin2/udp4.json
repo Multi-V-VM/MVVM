@@ -1,0 +1,66 @@
+{
+  "host": "wr5219",
+  "ip": "127.0.0.1",
+  "request_datagram_sizes": [
+    0,
+    1,
+    8,
+    8,
+    1280,
+    32000
+  ],
+  "response_datagram_sizes": [
+    1,
+    2,
+    9,
+    9,
+    1281,
+    32001
+  ],
+  "pcap_sha256": "e69868782e3aed9b08dcedd947b774a042fe522e3ed323416c29ec4d7bf82c13",
+  "checks": [
+    {
+      "record": "{\"captured_packets\":12,\"dropped\":0}\n"
+    },
+    {
+      "args": [
+        "inspect",
+        "/tmp/mvvm-rr-udp4/udp.pcap",
+        "127.0.0.1",
+        "46059"
+      ],
+      "rc": 0,
+      "stdout": "{\"client_bytes\":33297,\"server_bytes\":33303,\"events\":12,\"duplicates\":0}\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "replay-client",
+        "/tmp/mvvm-rr-udp4/udp.pcap",
+        "127.0.0.1",
+        "46059",
+        "127.0.0.1",
+        "50881"
+      ],
+      "rc": 0,
+      "stdout": "{\"transport\":\"udp\",\"kernel_established\":false,\"sent\":33297,\"received\":33303,\"packets\":12,\"duplicates\":0}\n",
+      "stderr": ""
+    },
+    {
+      "replay_server": "{\"transport\":\"udp\",\"kernel_established\":false,\"sent\":33303,\"received\":33297,\"packets\":12,\"duplicates\":0}\n"
+    },
+    {
+      "args": [
+        "replay-client",
+        "/tmp/mvvm-rr-udp4/udp.pcap",
+        "127.0.0.1",
+        "46059",
+        "127.0.0.1",
+        "48882"
+      ],
+      "rc": 1,
+      "stdout": "",
+      "stderr": "gateway: UDP datagram length mismatch or socket error\n"
+    }
+  ]
+}

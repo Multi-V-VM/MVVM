@@ -1,4 +1,4 @@
-# Sniffer TCP record/replay gateway
+# Sniffer IPv4/IPv6 TCP and UDP record/replay gateway
 
 `gateway_tcp_rr` is the independently buildable Linux gateway entry point for
 packet-derived record/replay. It does not depend on the legacy WAMR socket
@@ -56,8 +56,8 @@ requests and verifies responses from the live target.
 
 ## Scope
 
-One complete IPv4 TCP connection per capture, Ethernet (including VLAN),
-Linux SLL and SLL2 framing. IPv6, IP fragmentation, TCP Fast Open, resets,
+One IPv4 or IPv6 flow per capture, Ethernet (including VLAN),
+Linux SLL and SLL2 framing. IP fragmentation, IPv6 scope IDs/routing/security headers, TCP Fast Open, resets,
 multiple flows, live-tail replay, original packet timing, TCP-option identity,
 and continuing a still-live old connection are not implemented. Kernel socket
 options/ISNs are freshly negotiated. Capture has a 256 MiB limit, streams and
@@ -90,3 +90,36 @@ they do not claim packet loss or reordering was induced in the network.
 The Linux Debug/Release CI builds and runs this integration test alongside
 the existing native DWARF checks. The archived JSON records exact commands,
 exit codes, byte counts and capture SHA256.
+
+## IPv6 and UDP
+
+IPv6 literals are accepted in all endpoint arguments (for example `::1`).
+TCP uses the same SYN-based reconstruction on both address families.
+IPv6 hop-by-hop and destination-options headers are parsed in offline captures;
+the live BPF capture filter targets ordinary directly encapsulated TCP/UDP.
+Routing, fragment, security extension headers and jumbograms fail explicitly.
+
+Append `udp` to the record command to select UDP (`tcp` is the default):
+
+```sh
+sudo build-gateway/gateway_tcp_rr record lo ::1 9090 udp6.pcap 10 udp
+build-gateway/gateway_tcp_rr replay-client udp6.pcap ::1 9090 ::1 9091
+build-gateway/gateway_tcp_rr replay-server udp6.pcap ::1 9090 ::1 9092
+```
+
+Offline inspection/replay detects TCP versus UDP from the capture and rejects
+mixed protocols/flows. UDP has no SYN or kernel ESTABLISHED state: replay
+creates a fresh datagram socket, preserves each packet boundary (including
+empty and duplicate datagrams), and checks both length and payload. Server
+replay learns the first client with recvfrom/MSG_PEEK, then connects the socket
+to that peer. The first recorded packet must originate at the client. UDP does
+not have sequence numbers or FIN; missing/reordered UDP packets cannot be
+inferred from PCAP alone. Recorded order is retained, with no deduplication,
+retransmission, loss recovery or packet-timing guarantee. End-of-log is the
+UDP replay boundary and does not imply that all future traffic was captured.
+
+Native lanxin2 tests cover TCP4/TCP6 with 256 KiB requests, and UDP4/UDP6 with
+six request/response datagrams (0, 1, 8, 8, 1280, 32000 request bytes). Both
+client and server roles pass, including zero-length and duplicate UDP payloads;
+a mismatched UDP response is rejected. These are isolated loopback tests, not
+physical-network throughput or loss measurements.

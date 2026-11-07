@@ -1,0 +1,154 @@
+{
+  "host": "wr5219",
+  "payload_bytes": 262144,
+  "response_bytes": 262148,
+  "pcap_sha256": "bcafd1e5fe665044e191461183257de7c500335a9fc088785f964a274f5c7f8a",
+  "checks": [
+    {
+      "record": "{\"captured_packets\":97,\"dropped\":0}\n"
+    },
+    {
+      "args": [
+        "inspect",
+        "/tmp/mvvm-rr-tcp4/tcp.pcap",
+        "127.0.0.1",
+        "58363"
+      ],
+      "rc": 0,
+      "stdout": "{\"client_bytes\":262144,\"server_bytes\":262148,\"events\":51,\"duplicates\":0}\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "replay-client",
+        "/tmp/mvvm-rr-tcp4/tcp.pcap",
+        "127.0.0.1",
+        "58363",
+        "127.0.0.1",
+        "51245"
+      ],
+      "rc": 0,
+      "stdout": "{\"transport\":\"tcp\",\"kernel_established\":true,\"sent\":262144,\"received\":262148,\"packets\":97,\"duplicates\":0}\n",
+      "stderr": ""
+    },
+    {
+      "replay_server": "{\"transport\":\"tcp\",\"kernel_established\":true,\"sent\":262148,\"received\":262144,\"packets\":97,\"duplicates\":0}\n"
+    },
+    {
+      "args": [
+        "replay-client",
+        "/tmp/mvvm-rr-tcp4/tcp.pcap",
+        "127.0.0.1",
+        "58363",
+        "127.0.0.1",
+        "43857"
+      ],
+      "rc": 1,
+      "stdout": "",
+      "stderr": "gateway: replay mismatch at received byte 0\n"
+    },
+    {
+      "args": [
+        "inspect",
+        "/tmp/mvvm-rr-tcp4/duplicate.pcap",
+        "127.0.0.1",
+        "58363"
+      ],
+      "rc": 0,
+      "stdout": "{\"client_bytes\":262144,\"server_bytes\":262148,\"events\":51,\"duplicates\":1}\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "replay-client",
+        "/tmp/mvvm-rr-tcp4/duplicate.pcap",
+        "127.0.0.1",
+        "58363",
+        "127.0.0.1",
+        "40401"
+      ],
+      "rc": 0,
+      "stdout": "{\"transport\":\"tcp\",\"kernel_established\":true,\"sent\":262144,\"received\":262148,\"packets\":98,\"duplicates\":1}\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "inspect",
+        "/tmp/mvvm-rr-tcp4/missing-syn.pcap",
+        "127.0.0.1",
+        "58363"
+      ],
+      "rc": 1,
+      "stdout": "",
+      "stderr": "gateway: capture must start at client SYN\n"
+    },
+    {
+      "args": [
+        "inspect",
+        "/tmp/mvvm-rr-tcp4/missing-fin.pcap",
+        "127.0.0.1",
+        "58363"
+      ],
+      "rc": 1,
+      "stdout": "",
+      "stderr": "gateway: incomplete capture: gap or missing FIN\n"
+    },
+    {
+      "args": [
+        "inspect",
+        "/tmp/mvvm-rr-tcp4/gap.pcap",
+        "127.0.0.1",
+        "58363"
+      ],
+      "rc": 1,
+      "stdout": "",
+      "stderr": "gateway: incomplete capture: gap or missing FIN\n"
+    },
+    {
+      "args": [
+        "inspect",
+        "/tmp/mvvm-rr-tcp4/conflict.pcap",
+        "127.0.0.1",
+        "58363"
+      ],
+      "rc": 1,
+      "stdout": "",
+      "stderr": "gateway: conflicting retransmission\n"
+    },
+    {
+      "args": [
+        "inspect",
+        "/tmp/mvvm-rr-tcp4/reordered.pcap",
+        "127.0.0.1",
+        "58363"
+      ],
+      "rc": 0,
+      "stdout": "{\"client_bytes\":262144,\"server_bytes\":262148,\"events\":51,\"duplicates\":0}\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "replay-client",
+        "/tmp/mvvm-rr-tcp4/reordered.pcap",
+        "127.0.0.1",
+        "58363",
+        "127.0.0.1",
+        "53529"
+      ],
+      "rc": 0,
+      "stdout": "{\"transport\":\"tcp\",\"kernel_established\":true,\"sent\":262144,\"received\":262148,\"packets\":97,\"duplicates\":0}\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "inspect",
+        "/tmp/mvvm-rr-tcp4/truncated.pcap",
+        "127.0.0.1",
+        "58363"
+      ],
+      "rc": 1,
+      "stdout": "",
+      "stderr": "gateway: pcap read failed\n"
+    }
+  ]
+}

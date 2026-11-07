@@ -42,7 +42,11 @@ jobs:
           cmake --build build --parallel 2
           ctest --test-dir build --output-on-failure
       - name: Validate sniffer TCP record and replay
-        run: python3 test/test_tcp_rr.py "$PWD/build/gateway_tcp_rr" "$PWD/gateway-results" --interface-ready
+        run: |
+          python3 test/test_tcp_rr.py "$PWD/build/gateway_tcp_rr" "$PWD/gateway-results/tcp4" --interface-ready
+          python3 test/test_tcp_rr.py "$PWD/build/gateway_tcp_rr" "$PWD/gateway-results/tcp6" --interface-ready --ipv6
+          python3 test/test_udp_rr.py "$PWD/build/gateway_tcp_rr" "$PWD/gateway-results/udp4" --interface-ready
+          python3 test/test_udp_rr.py "$PWD/build/gateway_tcp_rr" "$PWD/gateway-results/udp6" --interface-ready --ipv6
       - name: Build the patched AOT compiler
         run: |
           cmake -S lib/wasm-micro-runtime/wamr-compiler -B build-wamrc -G Ninja \
@@ -63,7 +67,7 @@ jobs:
         with:
           name: dwarf-linux-${{ matrix.build }}
           path: |
-            gateway-results/summary.json
+            gateway-results/**/summary.json
             results/*.json
             results/*.jsonl
             aot-artifacts/SHA256SUMS
