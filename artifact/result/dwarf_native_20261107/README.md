@@ -1,5 +1,9 @@
 # DWARF native continuation baseline, 2026-11-07 UTC
 
+The subsequent optimized implementation and nine-run pinned measurements are
+in [OPTIMIZED_RESULTS.md](OPTIMIZED_RESULTS.md). This file preserves the
+original conservative baseline and its measurement conditions.
+
 Native RISC-V (lanxin2/wr5219) and x86-64 (giga/Threadripper 7960X).
 WAMR patch: `231d3ab0e2e7832d22064178a536c703ab117642`, based on upstream 2.4.5.
 GCC 16 C++26 reflection and std::format are used; no Asyncify, Yalantinglibs or C++ fmt.
