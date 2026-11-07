@@ -1,6 +1,31 @@
 cmake_minimum_required(VERSION 3.22)
 project(MVVM LANGUAGES C CXX)
-set(CMAKE_CXX_STANDARD 23)
+
+if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+   CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+    message(FATAL_ERROR
+        "The DWARF MVVM runtime requires GCC 16 or newer; "
+        "configure with CC=gcc-16 CXX=g++-16")
+endif()
+# CMake 3.22 does not know the CXX26 feature level.  Pass the GCC 16
+# dialect explicitly so every C++ target is nevertheless compiled as C++26.
+add_compile_options(
+    $<$<COMPILE_LANGUAGE:CXX>:-std=c++26>
+    $<$<COMPILE_LANGUAGE:CXX>:-freflection>)
+
+include(CTest)
+option(MVVM_ENABLE_DWARF_RUNTIME
+       "Build the C++26 reflection + DWARF runtime" ON)
+option(MVVM_ENABLE_LEGACY_RUNTIME
+       "Build the pre-DWARF WAMR-internal checkpoint implementation" OFF)
+
+if(MVVM_ENABLE_DWARF_RUNTIME)
+    add_subdirectory(dwarf)
+endif()
+
+if(NOT MVVM_ENABLE_LEGACY_RUNTIME)
+    return()
+endif()
 
 option(MVVM_ENABLE_WASI_NN "Build the TensorFlow Lite WASI-NN backend" OFF)
 option(MVVM_ENABLE_RDMA "Build the libibverbs/rdma-core transport" OFF)
