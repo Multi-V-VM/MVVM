@@ -1,0 +1,38 @@
+COMMAND ["gcc-16", "-O3", "-std=gnu99", "-march=x86-64", "-ffp-contract=off", "-Wno-attributes", "-I/root/mvvm-bench-suite/prepared/nas/common", "-I/root/mvvm-bench-suite/prepared/nas/FT", "/root/mvvm-bench-suite/native.c", "/root/mvvm-bench-suite/prepared/nas/FT/ft.c", "/root/mvvm-bench-suite/wrapper.c", "/root/mvvm-bench-suite/prepared/nas/common/c_print_results.c", "/root/mvvm-bench-suite/prepared/nas/common/c_timers.c", "/root/mvvm-bench-suite/prepared/nas/common/wtime.c", "/root/mvvm-bench-suite/prepared/nas/common/c_randdp.c", "-lm", "-o", "/root/mvvm-bench-suite/artifacts/ft.gcc"]
+COMMAND ["/opt/wasi-sdk/bin/clang-21", "--target=wasm32-wasi", "--sysroot=/root/mvvm-bench-suite/wasi-libc/usr", "-O3", "-std=gnu99", "-ffp-contract=off", "-mno-reference-types", "-mexec-model=reactor", "-I/root/mvvm-bench-suite/prepared/nas/common", "-I/root/mvvm-bench-suite/prepared/nas/FT", "/root/mvvm-bench-suite/prepared/nas/FT/ft.c", "/root/mvvm-bench-suite/wrapper.c", "/root/mvvm-bench-suite/prepared/nas/common/c_print_results.c", "/root/mvvm-bench-suite/prepared/nas/common/c_timers.c", "/root/mvvm-bench-suite/prepared/nas/common/wtime.c", "/root/mvvm-bench-suite/prepared/nas/common/c_randdp.c", "-Wl,--export=run", "-Wl,--export=effects", "-Wl,-z,stack-size=8388608", "-lm", "-o", "/root/mvvm-bench-suite/artifacts/ft.wasm"]
+/root/mvvm-bench-suite/prepared/nas/FT/ft.c:220:1: warning: non-void function does not return a value [-Wreturn-type]
+  220 | }
+      | ^
+1 warning generated.
+COMMAND ["/root/mvvm-gpu-cc-20261107/wamrc-build/wamrc", "--target=x86_64", "--cpu=x86-64", "--size-level=3", "--disable-simd", "--bounds-checks=0", "--stack-bounds-checks=0", "--disable-aux-stack-check", "--opt-level=3", "-o", "/root/mvvm-bench-suite/artifacts/ft.aot", "/root/mvvm-bench-suite/artifacts/ft.wasm"]
+Create AoT compiler with:
+  target:        x86_64
+  target cpu:    x86-64
+  target triple: x86_64-pc-linux-gnu
+  cpu features:
+  opt level:     3
+  size level:    3
+  output format: AoT file
+Compile success, file /root/mvvm-bench-suite/artifacts/ft.aot was generated.
+COMMAND ["/root/mvvm-gpu-cc-20261107/wamrc-build/wamrc", "--target=x86_64", "--cpu=x86-64", "--size-level=3", "--disable-simd", "--bounds-checks=0", "--stack-bounds-checks=0", "--disable-aux-stack-check", "--opt-level=4", "--enable-segue", "-o", "/root/mvvm-bench-suite/artifacts/ft.segue.aot", "/root/mvvm-bench-suite/artifacts/ft.wasm"]
+Create AoT compiler with:
+  target:        x86_64
+  target cpu:    x86-64
+  target triple: x86_64-pc-linux-gnu
+  cpu features:
+  opt level:     3
+  size level:    3
+  output format: AoT file
+Compile success, file /root/mvvm-bench-suite/artifacts/ft.segue.aot was generated.
+COMMAND ["/root/mvvm-gpu-cc-20261107/wamrc-build/wamrc", "--target=x86_64", "--cpu=x86-64", "--size-level=3", "--disable-simd", "--bounds-checks=0", "--stack-bounds-checks=0", "--disable-aux-stack-check", "--opt-level=3", "--format=llvmir-opt", "--mllvm=-mvvm-dwarf-resume", "--mllvm=-mvvm-dwarf-optimize", "-o", "/root/mvvm-bench-suite/artifacts/ft.ll", "/root/mvvm-bench-suite/artifacts/ft.wasm"]
+Create AoT compiler with:
+  target:        x86_64
+  target cpu:    x86-64
+  target triple: x86_64-pc-linux-gnu
+  cpu features:
+  opt level:     3
+  size level:    3
+  output format: optimized LLVM IR
+Compile success, file /root/mvvm-bench-suite/artifacts/ft.ll was generated.
+COMMAND ["llc-20", "-O3", "-filetype=obj", "-relocation-model=pic", "-generate-arange-section", "/root/mvvm-bench-suite/artifacts/ft.ll", "-o", "/root/mvvm-bench-suite/artifacts/ft.o"]
+COMMAND ["gcc-16", "-shared", "/root/mvvm-bench-suite/artifacts/ft.o", "-o", "/root/mvvm-bench-suite/artifacts/ft.so"]

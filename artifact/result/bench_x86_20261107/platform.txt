@@ -1,0 +1,42 @@
+Linux gpu01 7.0.0-38-generic #38-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  4 09:10:14 UTC 2026 x86_64 GNU/Linux
+gcc-16 (Ubuntu 16-20260322-1ubuntu1) 16.0.1 20260322 (experimental) [trunk r16-8246-g569ace1fa50]
+clang version 21.1.4-wasi-sdk (https://github.com/llvm/llvm-project 222fc11f2b8f25f6a0f4976272ef1bb7bf49521d)
+Architecture:                            x86_64
+CPU op-mode(s):                          32-bit, 64-bit
+Address sizes:                           46 bits physical, 48 bits virtual
+Byte Order:                              Little Endian
+CPU(s):                                  64
+On-line CPU(s) list:                     0-63
+Vendor ID:                               GenuineIntel
+Model name:                              Intel(R) Xeon(R) 6710E
+CPU family:                              6
+Model:                                   175
+Thread(s) per core:                      1
+Core(s) per socket:                      64
+Socket(s):                               1
+Stepping:                                3
+CPU(s) scaling MHz:                      30%
+CPU max MHz:                             3200.0000
+CPU min MHz:                             800.0000
+BogoMIPS:                                4800.00
+powersave
+87c610c51c25220d6342345422842a70497f994e9b3d0b539e5f7f8ce23df864  /root/mvvm-bench-suite/wasi-libc_0.0~git20250726.3f7eb4c-4_all.deb
+e6212cb5f72d671f4b9d1bfe3f8094c595a4f092f7e65cfdbed12e6b9971897b  /root/mvvm-gpu-cc-20261107/build/dwarf/mvvm_dwarf_runner
+434268e9db141559d41cb26b7d1edb16f14eec9f57440ab39ff278e11cce8481  /root/mvvm-gpu-cc-20261107/wamrc-build/wamrc
+#define	PROBLEM_SIZE	24
+#define	DT_DEFAULT	0.0008
+#define	NA	7000
+#define	NONZER	8
+#define	NITER	15
+#define	CLASS	 'W'
+#define	M	25
+#define	NX	128
+#define	NY	128
+#define	NZ	32
+#define CLASS 'W'
+#define	ISIZ1	33
+#define	ITMAX_DEFAULT	300
+#define	DT_DEFAULT	1.5e-3
+#define	NIT_DEFAULT	40
+#define	PROBLEM_SIZE	36
+#define	DT_DEFAULT	0.0015

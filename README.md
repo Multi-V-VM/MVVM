@@ -141,8 +141,42 @@ SPDLOG_LEVEL=debug ./MVVM_restore -t test/tcp_client.aot # All the wasi env will
 2. Go forward and never go back, all the calling into WASI land will row back to the call on recovery.
 3. Use AOT compiler convention with a stable point to achieve cross-platform.
 
-## Performance
-![perf](./doc/img_5.png)
+## Performance: x86-64 CPU benchmarks
+
+Measured on 6787p (Intel Xeon 6710E), pinned to CPU 8, on 2026-11-07.
+Each configuration has one warmup and seven measured runs in shuffled order.
+Eight NAS Class W programs passed their built-in verification; fixed-work
+LINPACK passed a solution-error bound of 1e-9. The figure excludes MG;
+[the complete measurements](artifact/result/bench_x86_20261107/RESULTS.md)
+retain all nine workloads, raw samples and observed min/max.
+
+![x86 CPU benchmark slowdown, excluding MG](artifact/result/bench_x86_20261107/x86_bench_slowdown_no_mg.png)
+
+**1× is native GCC 16 `-O3`; lower is faster.** Bars show median execution
+time relative to that baseline. Timings exclude process startup and module
+loading, and include the workload's ordinary I/O and verification. The host
+was shared and CPU frequency was not fixed. Whiskers are observed min/max,
+not confidence intervals.
+
+The requested `--opt-level=4 --enable-segue` is effectively **O3 + Segue**:
+WAMR clamps optimization levels above 3. All WAMR variants disable software
+memory/stack checks and SIMD. GCC and the Clang 21/WASI frontend both use O3;
+ratios also include compiler, libc/libm and ABI differences. This is not a
+measurement of isolated VM dispatch cost.
+
+The NAS DWARF column measures optimized continuation instrumentation around
+existing imports/indirect calls, without extra per-loop checkpoint imports.
+**No checkpoint/restore operation is timed or validated by this experiment.**
+LINPACK has zero resumable functions in this configuration, so its DWARF-mode
+value is marked N/A rather than presented as zero-cost migration. Small
+negative DWARF overheads are observed timing differences, not an established
+causal speedup. GPU process-migration results above are a separate experiment.
+
+[Full results and reproduction records](artifact/result/bench_x86_20261107/RESULTS.md)
+include [raw summaries](artifact/result/bench_x86_20261107/summary.json),
+[vector artwork](artifact/result/bench_x86_20261107/x86_bench_slowdown_no_mg.svg),
+and [per-run logs](artifact/result/bench_x86_20261107/run-logs.tar.gz).
+
 
 ## Use Cases
 1. Privacy-aware scheduling that automatically determines whether to execute locally or remotely based on data sensitivity and resource availability;

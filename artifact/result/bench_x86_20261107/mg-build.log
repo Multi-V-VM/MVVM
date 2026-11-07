@@ -1,0 +1,78 @@
+COMMAND ["gcc-16", "-O3", "-std=gnu99", "-march=x86-64", "-ffp-contract=off", "-Wno-attributes", "-I/root/mvvm-bench-suite/prepared/nas/common", "-I/root/mvvm-bench-suite/prepared/nas/MG", "/root/mvvm-bench-suite/native.c", "/root/mvvm-bench-suite/prepared/nas/MG/mg.c", "/root/mvvm-bench-suite/wrapper.c", "/root/mvvm-bench-suite/prepared/nas/common/c_print_results.c", "/root/mvvm-bench-suite/prepared/nas/common/c_timers.c", "/root/mvvm-bench-suite/prepared/nas/common/wtime.c", "/root/mvvm-bench-suite/prepared/nas/common/c_randdp.c", "-lm", "-o", "/root/mvvm-bench-suite/artifacts/mg.gcc"]
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c: In function ‘bench_main’:
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:121:9: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  121 |         fscanf(fp, "%d", &lt);
+      |         ^~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:123:9: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  123 |         fscanf(fp, "%d%d%d", &nx[lt], &ny[lt], &nz[lt]);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:125:9: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  125 |         fscanf(fp, "%d", &nit);
+      |         ^~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:128:13: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  128 |             fscanf(fp, "%d", &debug_vec[i]);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c: In function ‘zran3’:
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:985:21: warning: ‘bubble’ accessing 16592 bytes in a region of size 160 [-Wstringop-overflow=]
+  985 |                     bubble( ten, j1, j2, j3, MM, 1 );
+      |                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:985:21: note: referencing argument 1 of type ‘double[1037][2]’
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:985:21: warning: ‘bubble’ accessing 8296 bytes in a region of size 80 [-Wstringop-overflow=]
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:985:21: note: referencing argument 2 of type ‘int[1037][2]’
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:985:21: warning: ‘bubble’ accessing 8296 bytes in a region of size 80 [-Wstringop-overflow=]
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:985:21: note: referencing argument 3 of type ‘int[1037][2]’
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:985:21: warning: ‘bubble’ accessing 8296 bytes in a region of size 80 [-Wstringop-overflow=]
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:985:21: note: referencing argument 4 of type ‘int[1037][2]’
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:1146:13: note: in a call to function ‘bubble’
+ 1146 | static void bubble( double ten[M][2], int j1[M][2], int j2[M][2],
+      |             ^~~~~~
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:992:21: warning: ‘bubble’ accessing 16592 bytes in a region of size 160 [-Wstringop-overflow=]
+  992 |                     bubble( ten, j1, j2, j3, MM, 0 );
+      |                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:992:21: note: referencing argument 1 of type ‘double[1037][2]’
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:992:21: warning: ‘bubble’ accessing 8296 bytes in a region of size 80 [-Wstringop-overflow=]
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:992:21: note: referencing argument 2 of type ‘int[1037][2]’
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:992:21: warning: ‘bubble’ accessing 8296 bytes in a region of size 80 [-Wstringop-overflow=]
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:992:21: note: referencing argument 3 of type ‘int[1037][2]’
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:992:21: warning: ‘bubble’ accessing 8296 bytes in a region of size 80 [-Wstringop-overflow=]
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:992:21: note: referencing argument 4 of type ‘int[1037][2]’
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:1146:13: note: in a call to function ‘bubble’
+ 1146 | static void bubble( double ten[M][2], int j1[M][2], int j2[M][2],
+      |             ^~~~~~
+COMMAND ["/opt/wasi-sdk/bin/clang-21", "--target=wasm32-wasi", "--sysroot=/root/mvvm-bench-suite/wasi-libc/usr", "-O3", "-std=gnu99", "-ffp-contract=off", "-mno-reference-types", "-mexec-model=reactor", "-I/root/mvvm-bench-suite/prepared/nas/common", "-I/root/mvvm-bench-suite/prepared/nas/MG", "/root/mvvm-bench-suite/prepared/nas/MG/mg.c", "/root/mvvm-bench-suite/wrapper.c", "/root/mvvm-bench-suite/prepared/nas/common/c_print_results.c", "/root/mvvm-bench-suite/prepared/nas/common/c_timers.c", "/root/mvvm-bench-suite/prepared/nas/common/wtime.c", "/root/mvvm-bench-suite/prepared/nas/common/c_randdp.c", "-Wl,--export=run", "-Wl,--export=effects", "-Wl,-z,stack-size=8388608", "-lm", "-o", "/root/mvvm-bench-suite/artifacts/mg.wasm"]
+/root/mvvm-bench-suite/prepared/nas/MG/mg.c:331:1: warning: non-void function does not return a value [-Wreturn-type]
+  331 | }
+      | ^
+1 warning generated.
+COMMAND ["/root/mvvm-gpu-cc-20261107/wamrc-build/wamrc", "--target=x86_64", "--cpu=x86-64", "--size-level=3", "--disable-simd", "--bounds-checks=0", "--stack-bounds-checks=0", "--disable-aux-stack-check", "--opt-level=3", "-o", "/root/mvvm-bench-suite/artifacts/mg.aot", "/root/mvvm-bench-suite/artifacts/mg.wasm"]
+Create AoT compiler with:
+  target:        x86_64
+  target cpu:    x86-64
+  target triple: x86_64-pc-linux-gnu
+  cpu features:
+  opt level:     3
+  size level:    3
+  output format: AoT file
+Compile success, file /root/mvvm-bench-suite/artifacts/mg.aot was generated.
+COMMAND ["/root/mvvm-gpu-cc-20261107/wamrc-build/wamrc", "--target=x86_64", "--cpu=x86-64", "--size-level=3", "--disable-simd", "--bounds-checks=0", "--stack-bounds-checks=0", "--disable-aux-stack-check", "--opt-level=4", "--enable-segue", "-o", "/root/mvvm-bench-suite/artifacts/mg.segue.aot", "/root/mvvm-bench-suite/artifacts/mg.wasm"]
+Create AoT compiler with:
+  target:        x86_64
+  target cpu:    x86-64
+  target triple: x86_64-pc-linux-gnu
+  cpu features:
+  opt level:     3
+  size level:    3
+  output format: AoT file
+Compile success, file /root/mvvm-bench-suite/artifacts/mg.segue.aot was generated.
+COMMAND ["/root/mvvm-gpu-cc-20261107/wamrc-build/wamrc", "--target=x86_64", "--cpu=x86-64", "--size-level=3", "--disable-simd", "--bounds-checks=0", "--stack-bounds-checks=0", "--disable-aux-stack-check", "--opt-level=3", "--format=llvmir-opt", "--mllvm=-mvvm-dwarf-resume", "--mllvm=-mvvm-dwarf-optimize", "-o", "/root/mvvm-bench-suite/artifacts/mg.ll", "/root/mvvm-bench-suite/artifacts/mg.wasm"]
+Create AoT compiler with:
+  target:        x86_64
+  target cpu:    x86-64
+  target triple: x86_64-pc-linux-gnu
+  cpu features:
+  opt level:     3
+  size level:    3
+  output format: optimized LLVM IR
+Compile success, file /root/mvvm-bench-suite/artifacts/mg.ll was generated.
+COMMAND ["llc-20", "-O3", "-filetype=obj", "-relocation-model=pic", "-generate-arange-section", "/root/mvvm-bench-suite/artifacts/mg.ll", "-o", "/root/mvvm-bench-suite/artifacts/mg.o"]
+COMMAND ["gcc-16", "-shared", "/root/mvvm-bench-suite/artifacts/mg.o", "-o", "/root/mvvm-bench-suite/artifacts/mg.so"]

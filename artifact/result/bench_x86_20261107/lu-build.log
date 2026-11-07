@@ -1,0 +1,83 @@
+COMMAND ["gcc-16", "-O3", "-std=gnu99", "-march=x86-64", "-ffp-contract=off", "-Wno-attributes", "-I/root/mvvm-bench-suite/prepared/nas/common", "-I/root/mvvm-bench-suite/prepared/nas/LU", "/root/mvvm-bench-suite/native.c", "/root/mvvm-bench-suite/prepared/nas/LU/lu.c", "/root/mvvm-bench-suite/wrapper.c", "/root/mvvm-bench-suite/prepared/nas/common/c_print_results.c", "/root/mvvm-bench-suite/prepared/nas/common/c_timers.c", "/root/mvvm-bench-suite/prepared/nas/common/wtime.c", "/root/mvvm-bench-suite/prepared/nas/common/c_randdp.c", "-lm", "-o", "/root/mvvm-bench-suite/artifacts/lu.gcc"]
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c: In function ‘read_input’:
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2265:5: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 2265 |     fscanf(fp, "%d%d", &ipr, &inorm);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2269:5: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 2269 |     fscanf(fp, "%d", &itmax);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2273:5: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 2273 |     fscanf(fp, "%lf", &dt);
+      |     ^~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2277:5: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 2277 |     fscanf(fp, "%lf", &omega);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2281:5: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 2281 |     fscanf(fp, "%lf%lf%lf%lf%lf",
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 2282 |            &tolrsd[0], &tolrsd[1], &tolrsd[2], &tolrsd[3], &tolrsd[4]);
+      |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2286:5: warning: ignoring return value of ‘fscanf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 2286 |     fscanf(fp, "%d%d%d", &nx0, &ny0, &nz0);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+COMMAND ["/opt/wasi-sdk/bin/clang-21", "--target=wasm32-wasi", "--sysroot=/root/mvvm-bench-suite/wasi-libc/usr", "-O3", "-std=gnu99", "-ffp-contract=off", "-mno-reference-types", "-mexec-model=reactor", "-I/root/mvvm-bench-suite/prepared/nas/common", "-I/root/mvvm-bench-suite/prepared/nas/LU", "/root/mvvm-bench-suite/prepared/nas/LU/lu.c", "/root/mvvm-bench-suite/wrapper.c", "/root/mvvm-bench-suite/prepared/nas/common/c_print_results.c", "/root/mvvm-bench-suite/prepared/nas/common/c_timers.c", "/root/mvvm-bench-suite/prepared/nas/common/wtime.c", "/root/mvvm-bench-suite/prepared/nas/common/c_randdp.c", "-Wl,--export=run", "-Wl,--export=effects", "-Wl,-z,stack-size=8388608", "-lm", "-o", "/root/mvvm-bench-suite/artifacts/lu.wasm"]
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:176:1: warning: non-void function does not return a value [-Wreturn-type]
+  176 | }
+      | ^
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2264:29: warning: while loop has empty body [-Wempty-body]
+ 2264 |     while(fgetc(fp) != '\n'); while(fgetc(fp) != '\n');
+      |                             ^
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2264:29: note: put the semicolon on a separate line to silence this warning
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2268:29: warning: while loop has empty body [-Wempty-body]
+ 2268 |     while(fgetc(fp) != '\n'); while(fgetc(fp) != '\n');
+      |                             ^
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2268:29: note: put the semicolon on a separate line to silence this warning
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2272:29: warning: while loop has empty body [-Wempty-body]
+ 2272 |     while(fgetc(fp) != '\n'); while(fgetc(fp) != '\n');
+      |                             ^
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2272:29: note: put the semicolon on a separate line to silence this warning
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2276:29: warning: while loop has empty body [-Wempty-body]
+ 2276 |     while(fgetc(fp) != '\n'); while(fgetc(fp) != '\n');
+      |                             ^
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2276:29: note: put the semicolon on a separate line to silence this warning
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2280:29: warning: while loop has empty body [-Wempty-body]
+ 2280 |     while(fgetc(fp) != '\n'); while(fgetc(fp) != '\n');
+      |                             ^
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2280:29: note: put the semicolon on a separate line to silence this warning
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2285:29: warning: while loop has empty body [-Wempty-body]
+ 2285 |     while(fgetc(fp) != '\n'); while(fgetc(fp) != '\n');
+      |                             ^
+/root/mvvm-bench-suite/prepared/nas/LU/lu.c:2285:29: note: put the semicolon on a separate line to silence this warning
+7 warnings generated.
+COMMAND ["/root/mvvm-gpu-cc-20261107/wamrc-build/wamrc", "--target=x86_64", "--cpu=x86-64", "--size-level=3", "--disable-simd", "--bounds-checks=0", "--stack-bounds-checks=0", "--disable-aux-stack-check", "--opt-level=3", "-o", "/root/mvvm-bench-suite/artifacts/lu.aot", "/root/mvvm-bench-suite/artifacts/lu.wasm"]
+Create AoT compiler with:
+  target:        x86_64
+  target cpu:    x86-64
+  target triple: x86_64-pc-linux-gnu
+  cpu features:
+  opt level:     3
+  size level:    3
+  output format: AoT file
+Compile success, file /root/mvvm-bench-suite/artifacts/lu.aot was generated.
+COMMAND ["/root/mvvm-gpu-cc-20261107/wamrc-build/wamrc", "--target=x86_64", "--cpu=x86-64", "--size-level=3", "--disable-simd", "--bounds-checks=0", "--stack-bounds-checks=0", "--disable-aux-stack-check", "--opt-level=4", "--enable-segue", "-o", "/root/mvvm-bench-suite/artifacts/lu.segue.aot", "/root/mvvm-bench-suite/artifacts/lu.wasm"]
+Create AoT compiler with:
+  target:        x86_64
+  target cpu:    x86-64
+  target triple: x86_64-pc-linux-gnu
+  cpu features:
+  opt level:     3
+  size level:    3
+  output format: AoT file
+Compile success, file /root/mvvm-bench-suite/artifacts/lu.segue.aot was generated.
+COMMAND ["/root/mvvm-gpu-cc-20261107/wamrc-build/wamrc", "--target=x86_64", "--cpu=x86-64", "--size-level=3", "--disable-simd", "--bounds-checks=0", "--stack-bounds-checks=0", "--disable-aux-stack-check", "--opt-level=3", "--format=llvmir-opt", "--mllvm=-mvvm-dwarf-resume", "--mllvm=-mvvm-dwarf-optimize", "-o", "/root/mvvm-bench-suite/artifacts/lu.ll", "/root/mvvm-bench-suite/artifacts/lu.wasm"]
+Create AoT compiler with:
+  target:        x86_64
+  target cpu:    x86-64
+  target triple: x86_64-pc-linux-gnu
+  cpu features:
+  opt level:     3
+  size level:    3
+  output format: optimized LLVM IR
+Compile success, file /root/mvvm-bench-suite/artifacts/lu.ll was generated.
+COMMAND ["llc-20", "-O3", "-filetype=obj", "-relocation-model=pic", "-generate-arange-section", "/root/mvvm-bench-suite/artifacts/lu.ll", "-o", "/root/mvvm-bench-suite/artifacts/lu.o"]
+COMMAND ["gcc-16", "-shared", "/root/mvvm-bench-suite/artifacts/lu.o", "-o", "/root/mvvm-bench-suite/artifacts/lu.so"]
