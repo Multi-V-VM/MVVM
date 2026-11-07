@@ -253,7 +253,7 @@ void replay(const Trace &tr, Endpoint target, bool server_role) {
     }
     tcp_info info{};
     socklen_t sz = sizeof(info);
-    require(getsockopt(fd.n, IPPROTO_TCP, TCP_INFO, &info, &sz) == 0 && info.tcpi_state == TCP_ESTABLISHED,
+    require(getsockopt(fd.n, IPPROTO_TCP, TCP_INFO, &info, &sz) == 0 && (info.tcpi_state == TCP_ESTABLISHED || info.tcpi_state == TCP_CLOSE_WAIT),
             "kernel TCP not established");
     size_t sent{}, received{};
     unsigned local = server_role ? 1 : 0;
@@ -338,7 +338,7 @@ void record(const char *iface, Endpoint server, const char *file, unsigned secon
     require(stats.ps_drop == 0 && stats.ps_ifdrop == 0, "capture dropped packets; recording unusable");
     std::cout << std::format("{{\"captured_packets\":{},\"dropped\":{}}}\n", count, stats.ps_drop);
 }
-int main(int argc, char **argv) {
+int gateway_tcp_rr_main(int argc, char **argv) {
     try {
         require(argc >= 2, "record IFACE SERVER_IP PORT PCAP SECONDS | replay-client/replay-server PCAP ORIGINAL_IP "
                            "PORT TARGET_IP PORT | inspect PCAP SERVER_IP PORT");

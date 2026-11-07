@@ -1,5 +1,6 @@
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines")
-add_executable(gateway ${SOURCE_FILES} main.cpp)
+add_executable(gateway ${SOURCE_FILES} main.cpp tcp_rr.cpp)
+target_compile_definitions(gateway PRIVATE MVVM_GATEWAY_WITH_LEGACY=1)
 target_link_libraries(gateway pcap spdlog::spdlog crafter resolv MVVM_export)
 add_executable(playground ${SOURCE_FILES} playground.cpp)
 target_link_libraries(playground crafter pcap resolv)

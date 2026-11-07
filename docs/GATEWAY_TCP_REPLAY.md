@@ -2,13 +2,17 @@
 
 `gateway_tcp_rr` is the independently buildable Linux gateway entry point for
 packet-derived record/replay. It does not depend on the legacy WAMR socket
-control protocol or libcrafter. Existing `gateway/main.cpp` remains the legacy
-migration proxy and is not wired to this new replay CLI.
+control protocol or libcrafter. Both builds enter through `gateway/main.cpp`, which dispatches record/replay
+commands before opening any legacy listeners. `gateway/tcp_rr.cpp` implements
+the shared engine. The legacy `gateway` target enables
+`MVVM_GATEWAY_WITH_LEGACY`; with no command it runs the original migration
+proxy. The independent `gateway_tcp_rr` target compiles the same main without
+the legacy dependencies. Unknown commands fail.
 
 The selected semantics are **new kernel connections from the recorded SYN**:
 replay-client calls connect, replay-server listens/accepts. Linux performs a
-new SYN/SYN-ACK/ACK handshake; TCP_INFO must report ESTABLISHED before data is
-replayed. Old sequence numbers, congestion state and unacknowledged kernel
+new SYN/SYN-ACK/ACK handshake; TCP_INFO must confirm a completed connection (ESTABLISHED, or CLOSE_WAIT
+when the peer has already half-closed) before data is replayed. Old sequence numbers, congestion state and unacknowledged kernel
 queues are not transplanted into a live remote connection. No TCP_REPAIR or
 raw SYN injection is used. The destination endpoint is explicit, so testing
 can use an isolated service instead of re-executing requests on production.

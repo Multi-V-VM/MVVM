@@ -2,46 +2,46 @@
   "host": "wr5219",
   "payload_bytes": 262144,
   "response_bytes": 262148,
-  "pcap_sha256": "5d53226abd9217a797955dc89d1e6d8cf9411d3ca10e94a091fbba38330e7f31",
+  "pcap_sha256": "c8aa031fabec6ec84e4a480a83305bda130e3987881a01e2194a45b767436c1a",
   "checks": [
     {
-      "record": "{\"captured_packets\":97,\"dropped\":0}\n"
+      "record": "{\"captured_packets\":93,\"dropped\":0}\n"
     },
     {
       "args": [
         "inspect",
-        "/tmp/mvvm-gateway-results-final/tcp.pcap",
+        "/tmp/mvvm-gateway-integrated-results/tcp.pcap",
         "127.0.0.1",
-        "36465"
+        "58797"
       ],
       "rc": 0,
-      "stdout": "{\"client_bytes\":262144,\"server_bytes\":262148,\"events\":51,\"duplicates\":0}\n",
+      "stdout": "{\"client_bytes\":262144,\"server_bytes\":262148,\"events\":49,\"duplicates\":0}\n",
       "stderr": ""
     },
     {
       "args": [
         "replay-client",
-        "/tmp/mvvm-gateway-results-final/tcp.pcap",
+        "/tmp/mvvm-gateway-integrated-results/tcp.pcap",
         "127.0.0.1",
-        "36465",
+        "58797",
         "127.0.0.1",
-        "35831"
+        "50059"
       ],
       "rc": 0,
-      "stdout": "{\"kernel_established\":true,\"sent\":262144,\"received\":262148,\"packets\":97,\"duplicates\":0}\n",
+      "stdout": "{\"kernel_established\":true,\"sent\":262144,\"received\":262148,\"packets\":93,\"duplicates\":0}\n",
       "stderr": ""
     },
     {
-      "replay_server": "{\"kernel_established\":true,\"sent\":262148,\"received\":262144,\"packets\":97,\"duplicates\":0}\n"
+      "replay_server": "{\"kernel_established\":true,\"sent\":262148,\"received\":262144,\"packets\":93,\"duplicates\":0}\n"
     },
     {
       "args": [
         "replay-client",
-        "/tmp/mvvm-gateway-results-final/tcp.pcap",
+        "/tmp/mvvm-gateway-integrated-results/tcp.pcap",
         "127.0.0.1",
-        "36465",
+        "58797",
         "127.0.0.1",
-        "42559"
+        "47811"
       ],
       "rc": 1,
       "stdout": "",
@@ -50,33 +50,33 @@
     {
       "args": [
         "inspect",
-        "/tmp/mvvm-gateway-results-final/duplicate.pcap",
+        "/tmp/mvvm-gateway-integrated-results/duplicate.pcap",
         "127.0.0.1",
-        "36465"
+        "58797"
       ],
       "rc": 0,
-      "stdout": "{\"client_bytes\":262144,\"server_bytes\":262148,\"events\":51,\"duplicates\":1}\n",
+      "stdout": "{\"client_bytes\":262144,\"server_bytes\":262148,\"events\":49,\"duplicates\":1}\n",
       "stderr": ""
     },
     {
       "args": [
         "replay-client",
-        "/tmp/mvvm-gateway-results-final/duplicate.pcap",
+        "/tmp/mvvm-gateway-integrated-results/duplicate.pcap",
         "127.0.0.1",
-        "36465",
+        "58797",
         "127.0.0.1",
-        "35453"
+        "51695"
       ],
       "rc": 0,
-      "stdout": "{\"kernel_established\":true,\"sent\":262144,\"received\":262148,\"packets\":98,\"duplicates\":1}\n",
+      "stdout": "{\"kernel_established\":true,\"sent\":262144,\"received\":262148,\"packets\":94,\"duplicates\":1}\n",
       "stderr": ""
     },
     {
       "args": [
         "inspect",
-        "/tmp/mvvm-gateway-results-final/missing-syn.pcap",
+        "/tmp/mvvm-gateway-integrated-results/missing-syn.pcap",
         "127.0.0.1",
-        "36465"
+        "58797"
       ],
       "rc": 1,
       "stdout": "",
@@ -85,9 +85,9 @@
     {
       "args": [
         "inspect",
-        "/tmp/mvvm-gateway-results-final/missing-fin.pcap",
+        "/tmp/mvvm-gateway-integrated-results/missing-fin.pcap",
         "127.0.0.1",
-        "36465"
+        "58797"
       ],
       "rc": 1,
       "stdout": "",
@@ -96,9 +96,9 @@
     {
       "args": [
         "inspect",
-        "/tmp/mvvm-gateway-results-final/gap.pcap",
+        "/tmp/mvvm-gateway-integrated-results/gap.pcap",
         "127.0.0.1",
-        "36465"
+        "58797"
       ],
       "rc": 1,
       "stdout": "",
@@ -107,9 +107,9 @@
     {
       "args": [
         "inspect",
-        "/tmp/mvvm-gateway-results-final/conflict.pcap",
+        "/tmp/mvvm-gateway-integrated-results/conflict.pcap",
         "127.0.0.1",
-        "36465"
+        "58797"
       ],
       "rc": 1,
       "stdout": "",
@@ -118,33 +118,33 @@
     {
       "args": [
         "inspect",
-        "/tmp/mvvm-gateway-results-final/reordered.pcap",
+        "/tmp/mvvm-gateway-integrated-results/reordered.pcap",
         "127.0.0.1",
-        "36465"
+        "58797"
       ],
       "rc": 0,
-      "stdout": "{\"client_bytes\":262144,\"server_bytes\":262148,\"events\":51,\"duplicates\":0}\n",
+      "stdout": "{\"client_bytes\":262144,\"server_bytes\":262148,\"events\":49,\"duplicates\":0}\n",
       "stderr": ""
     },
     {
       "args": [
         "replay-client",
-        "/tmp/mvvm-gateway-results-final/reordered.pcap",
+        "/tmp/mvvm-gateway-integrated-results/reordered.pcap",
         "127.0.0.1",
-        "36465",
+        "58797",
         "127.0.0.1",
-        "46055"
+        "53547"
       ],
       "rc": 0,
-      "stdout": "{\"kernel_established\":true,\"sent\":262144,\"received\":262148,\"packets\":97,\"duplicates\":0}\n",
+      "stdout": "{\"kernel_established\":true,\"sent\":262144,\"received\":262148,\"packets\":93,\"duplicates\":0}\n",
       "stderr": ""
     },
     {
       "args": [
         "inspect",
-        "/tmp/mvvm-gateway-results-final/truncated.pcap",
+        "/tmp/mvvm-gateway-integrated-results/truncated.pcap",
         "127.0.0.1",
-        "36465"
+        "58797"
       ],
       "rc": 1,
       "stdout": "",

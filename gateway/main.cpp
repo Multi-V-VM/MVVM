@@ -1,3 +1,27 @@
+#include "tcp_rr.hpp"
+#include <string_view>
+
+#ifdef MVVM_GATEWAY_WITH_LEGACY
+int legacy_gateway_main();
+#endif
+
+// One gateway entry point. Dispatch before opening legacy listeners or sniffers.
+int main(int argc, char **argv) {
+    if (argc > 1) {
+        const std::string_view mode(argv[1]);
+        if (mode == "record" || mode == "inspect" || mode == "replay-client" || mode == "replay-server")
+            return gateway_tcp_rr_main(argc, argv);
+        // Unknown arguments fail instead of silently starting the legacy proxy.
+        return gateway_tcp_rr_main(argc, argv);
+    }
+#ifdef MVVM_GATEWAY_WITH_LEGACY
+    return legacy_gateway_main();
+#else
+    return gateway_tcp_rr_main(argc, argv);
+#endif
+}
+
+#ifdef MVVM_GATEWAY_WITH_LEGACY
 /*
  * The WebAssembly Live Migration Project
  *
@@ -323,7 +347,7 @@ void sigterm_handler(int sig) {
 //     op_data->op = MVVM_SOCK_FIN;
 //     send_fin("172.17.0.3",12346,"172.17.0.2",15772,((char *)op_data));
 // }
-int main() {
+int legacy_gateway_main() {
     spdlog::cfg::load_env_levels();
     struct sockaddr_in address{};
     int opt = 1;
@@ -675,3 +699,5 @@ int main() {
         }
     }
 }
+
+#endif // MVVM_GATEWAY_WITH_LEGACY
