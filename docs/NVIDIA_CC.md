@@ -81,7 +81,7 @@ it does not establish migration to a second GPU or cross-vendor compatibility.
 guest, Ubuntu 24.04 / kernel 6.8.0-106, NVIDIA 590.48.01, CUDA 13.1,
 GCC 16. The signed Canonical open module is used with Secure Boot enabled.
 The complete test passed 384 source-Wasm/GPU comparisons, six kernels,
-17,532-byte encrypted snapshot, and restored-context execution. Results and
+17,540-byte encrypted snapshot in the eight-vCPU repeat, and restored-context execution. Results and
 fixture/source hashes are in `artifact/result/nvidia_cc_6787p/`.
 
 The guest must preload `ecdsa_generic` and `ecdh` and keep the GPU open through
@@ -93,9 +93,13 @@ A locally signed DKMS module was rejected by Secure Boot; its files were backed
 up in the isolated test guest and replaced in module lookup by the matching
 Canonical-signed modules. The original base VM disk was not modified.
 
-Validation used one virtual CPU after the initial eight-vCPU guest showed an
-RCU stall. The run establishes the GPU backend behavior in the working guest;
-the multi-vCPU guest stability issue is not claimed fixed. Host firmware and
-host workloads were not restarted. The negative corrupted-snapshot case
+The initial eight-vCPU guest on QEMU 9.2 showed an RCU stall. A one-vCPU
+baseline passed first. After fixing module lookup, LKCA and persistence setup,
+the guest was shut down cleanly and booted with QEMU 10.0.94 and eight vCPUs.
+The full 384-case CC test and restored-context execution passed again, without
+an RCU stall recorded during the repeat. This establishes the tested working
+configuration; it does not isolate the cause of the earlier QEMU 9.2 stall.
+`single-vcpu-summary.json` preserves the first run; `summary.json` records the
+clean-boot eight-vCPU repeat. Host firmware and host workloads were not restarted. The negative corrupted-snapshot case
 intentionally produces a vendor evidence-validation failure, followed by a
 successful restore of the unmodified snapshot.

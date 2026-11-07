@@ -1,0 +1,11 @@
+8
+
+==============NVSMI CONF-COMPUTE LOG==============
+
+    CC State                   : ON
+    Multi-GPU Mode             : None
+    CPU CC Capabilities        : INTEL TDX
+    GPU CC Capabilities        : CC Capable
+    CC GPUs Ready State        : Not Ready
+
+{"cc_on":true,"vendor_attestation":true,"wasm_cpu_gpu_cases":384,"kernels":6,"snapshot_bytes":17540,"restored_execution":true}

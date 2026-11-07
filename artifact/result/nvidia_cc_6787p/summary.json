@@ -3,10 +3,10 @@
   "vendor_attestation": true,
   "wasm_cpu_gpu_cases": 384,
   "kernels": 6,
-  "snapshot_bytes": 17532,
+  "snapshot_bytes": 17540,
   "restored_execution": true,
   "host": "6787p",
-  "guest": "isolated Intel TDX VM, one vCPU",
+  "guest": "isolated Intel TDX VM, eight vCPUs",
   "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
   "driver": "590.48.01",
   "guest_kernel": "6.8.0-106-generic",
@@ -28,14 +28,16 @@
     "wrong migration key",
     "corrupted snapshot evidence"
   ],
-  "hardware_log_sha256": "113c5b63228a17f80989ae5f2a06f842247b18df2a0b94c4f423b9986b9d2178",
+  "hardware_log_sha256": "e37f644a5c7ea3449fb2d2a1ddbabfc8123f8eb34e9a03cc7b14ca644f09db2f",
   "test_binary_sha256": "02dbae9193f5977ea1e5608c9cfb3d3930b6f9097ee43347f55d87a4d7cf9cb1",
   "tensor_jit_static_library_sha256": "31a87b35bce2f91a850aed13738960d28c9137b3bf518e1f24e72bd5a1d24436",
   "not_validated": [
     "arbitrary Wasm functions",
     "cross-GPU migration",
-    "remote CPU TDX quote appraisal",
-    "eight-vCPU guest stability"
+    "remote CPU TDX quote appraisal"
   ],
-  "recorded_at_utc": "2026-11-07T07:27:47.237380+00:00"
+  "recorded_at_utc": "2026-11-07T07:44:24.447658+00:00",
+  "qemu": "10.0.94",
+  "clean_boot_retest": true,
+  "kernel_stall_detected_during_test": false
 }
